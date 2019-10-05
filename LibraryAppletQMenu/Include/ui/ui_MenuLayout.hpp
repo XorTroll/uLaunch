@@ -3,7 +3,6 @@
 #include <q_Include.hpp>
 #include <pu/Plutonium>
 #include <ui/ui_SideMenu.hpp>
-#include <ui/ui_ClickableImage.hpp>
 #include <ui/ui_RawData.hpp>
 
 namespace ui

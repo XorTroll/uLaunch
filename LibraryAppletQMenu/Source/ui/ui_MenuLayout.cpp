@@ -61,7 +61,7 @@ namespace ui
                     qapp->CloseWithFadeOut();
                     return;
                 }
-                else qapp->CreateShowDialog("Title launch", "An error ocurred attempting to launch the title:\n")
+                // else qapp->CreateShowDialog("Title launch", "An error ocurred attempting to launch the title:\n")
                 reader.FinishRead();
             }
         }
