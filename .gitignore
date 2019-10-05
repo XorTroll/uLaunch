@@ -1,0 +1,7 @@
+build/
+.vscode/
+Out/
+*.elf
+*.npdm
+*.nso
+*.nsp

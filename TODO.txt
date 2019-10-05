@@ -1,0 +1,4 @@
+Several other menus (settings, account...)
+Option to change user (relogin) or account password
+Proper result codes (everything is 0xDEAD)
+QMenu launching code is barely broken - find a new system or fix it
