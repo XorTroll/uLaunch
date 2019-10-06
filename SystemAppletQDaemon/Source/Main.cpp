@@ -8,11 +8,12 @@
 #include <am/am_HomeMenu.hpp>
 #include <am/am_QCommunications.hpp>
 #include <util/util_Convert.hpp>
+#include <ipc/ipc_IDaemonService.hpp>
 
 extern "C"
 {
     u32 __nx_applet_type = AppletType_SystemApplet;
-    size_t __nx_heap_size = 0x3000000;//0x1000000;
+    size_t __nx_heap_size = 0x1000000;
 }
 
 void CommonSleepHandle()
@@ -51,6 +52,8 @@ void HandleGeneralChannel()
                         appletStartSleepSequence(true);
                         break;
                     }
+                    default:
+                        break;
                 }
             }
         }
@@ -63,6 +66,9 @@ u128 selected_uid = 0;
 u64 titlelaunch_flag = 0;
 bool titlelaunch_system = false;
 
+HosMutex latestqlock;
+am::QMenuMessage latestqmenumsg = am::QMenuMessage::Invalid;
+
 void HandleAppletMessage()
 {
     u32 nmsg = 0;
@@ -74,6 +80,7 @@ void HandleAppletMessage()
         {
             case os::AppletMessage::HomeButton:
             {
+                bool used_to_reopen_menu = false;
                 if(am::ApplicationIsActive())
                 {
                     if(am::ApplicationHasForeground())
@@ -87,16 +94,22 @@ void HandleAppletMessage()
                             fwrite(app_buf, 1, 1280 * 720 * 4, f);
                             fclose(f);
                         }
-                        
-                        // Get what the user was doing before returning to QMenu
                         am::HomeMenuSetForeground();
                         am::QDaemon_LaunchQMenu(am::QMenuStartMode::MenuApplicationSuspended);
+                        used_to_reopen_menu = true;
                     }
                 }
-                else if(am::LibraryAppletIsQMenu())
+                if(am::LibraryAppletIsQMenu() && !used_to_reopen_menu)
                 {
-                    am::QDaemonCommandWriter writer(am::QMenuMessage::HomeRequest);
+                    std::scoped_lock lock(latestqlock);
+                    latestqmenumsg = am::QMenuMessage::HomeRequest;
                 }
+                break;
+            }
+            case os::AppletMessage::SdCardOut:
+            {
+                // SD card out? Cya!
+                appletStartShutdownSequence();
                 break;
             }
             case os::AppletMessage::PowerButton:
@@ -104,6 +117,8 @@ void HandleAppletMessage()
                 appletStartSleepSequence(true);
                 break;
             }
+            default:
+                break;
         }
     }
     svcSleepThread(100000000L);
@@ -153,9 +168,27 @@ void HandleQMenuMessage()
                         am::QDaemonCommandResultWriter res(0);
                         res.FinishWrite();
                     }
-
                     break;
                 }
+                case am::QDaemonMessage::ResumeApplication:
+                {
+                    reader.FinishRead();
+
+                    if(!am::ApplicationIsActive())
+                    {
+                        am::QDaemonCommandResultWriter res(0xBABE1);
+                        res.FinishWrite();
+                    }
+                    else
+                    {
+                        am::ApplicationSetForeground();
+                        am::QDaemonCommandResultWriter res(0);
+                        res.FinishWrite();
+                    }
+                    break;
+                }
+                default:
+                    break;
             }
         }
     }
@@ -167,55 +200,40 @@ namespace qdaemon
     {
         app_buf = new u8[1280 * 720 * 4]();
         fs::CreateDirectory(Q_BASE_SD_DIR);
-        fs::CreateDirectory(Q_BASE_SD_DIR "/user");
-        fs::CreateDirectory(Q_BASE_SD_DIR "/title");
-        fs::CreateDirectory(Q_BASE_SD_DIR "/nro");
-        fs::CreateDirectory(Q_BASE_SD_DIR "/entries");
 
-        consoleInit(NULL);
-
-        svcSleepThread(500'000'000); // Wait for proper moment
+        svcSleepThread(100'000'000); // Wait for proper moment
     }
 
     void Exit()
     {
         delete[] app_buf;
     }
+
+    void DaemonServiceMain(void *arg)
+    {
+        static auto server = WaitableManager(2);
+        server.AddWaitable(new ServiceServer<ipc::IDaemonService>("daemon", 0x10));
+        server.Process();
+    }
+
+    Result LaunchDaemonServiceThread()
+    {
+        Thread daemon;
+        R_TRY(threadCreate(&daemon, &DaemonServiceMain, NULL, 0x4000, 0x2b, -2));
+        R_TRY(threadStart(&daemon));
+        return 0;
+    }
 }
 
 int main()
 {
     qdaemon::Initialize();
+    qdaemon::LaunchDaemonServiceThread();
 
-    CONSOLE_OUT("QDaemon - in!");
     am::QDaemon_LaunchQMenu(am::QMenuStartMode::StartupScreen);
 
     while(true)
     {
-        /*
-        hidScanInput();
-        auto k = hidKeysDown(CONTROLLER_P1_AUTO);
-        if(k & KEY_A)
-        {
-            CONSOLE_OUT("QMenu IsActive? -> " << std::boolalpha << am::LibraryAppletIsActive());
-        }
-        else if(k & KEY_B)
-        {
-            nsInitialize();
-            auto [rc, tit] = os::QueryInstalledTitles(false);
-            nsExit();
-
-            accountInitialize();
-            auto [rc2, us] = os::QuerySystemAccounts(false);
-            accountExit();
-
-            CONSOLE_OUT("Launching title " << util::FormatApplicationId(tit[0].app_id) << "...");
-
-            rc = am::ApplicationStart(tit[0].app_id, false, us[0]);
-            CONSOLE_FMT("am::ApplicationStart(tit[0].app_id, false, us[0]) -> 0x%X", rc);
-        }
-        */
-
         HandleGeneralChannel();
         HandleAppletMessage();
         HandleQMenuMessage();

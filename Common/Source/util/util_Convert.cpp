@@ -42,4 +42,18 @@ namespace util
         strm << std::uppercase << std::setfill('0') << std::setw(16) << std::hex << app_id;
         return strm.str();
     }
+
+    std::string FormatResultDisplay(Result rc)
+    {
+        char res[0x20] = {0};
+        sprintf(res, "%04d-%04d", R_MODULE(rc) + 2000, R_DESCRIPTION(rc));   
+        return std::string(res);
+    }
+
+    std::string FormatResultHex(Result rc)
+    {
+        char res[0x20] = {0};
+        sprintf(res, "0x%X", rc);
+        return std::string(res);
+    }
 }

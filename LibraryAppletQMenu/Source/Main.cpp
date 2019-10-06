@@ -24,14 +24,12 @@ namespace qmenu
         accountInitialize();
         nsInitialize();
         db::Mount();
-        fs::CreateDirectory(Q_BASE_DB_DIR);
-        fs::CreateDirectory(Q_BASE_DB_DIR "/user");
-        auto [rc, menulist] = cfg::LoadTitleList(true);
-        list = menulist;
+        am::QMenu_InitializeDaemonService();
     }
 
     void Exit()
     {
+        am::QMenu_FinalizeDaemonService();
         db::Unmount();
         nsExit();
         accountExit();
@@ -40,15 +38,31 @@ namespace qmenu
 
 u8 *app_buf;
 
+extern "C"
+{
+    void userAppInit(void)
+    {
+        qmenu::Initialize();
+    }
+
+    void userAppExit(void)
+    {
+        delete[] app_buf;
+        qmenu::Exit();
+    }
+}
+
 int main()
 {
-    qmenu::Initialize();
     app_buf = new u8[1280 * 720 * 4]();
+    fs::CreateDirectory(Q_BASE_DB_DIR);
+    fs::CreateDirectory(Q_BASE_DB_DIR "/user");
+    auto [_rc, menulist] = cfg::LoadTitleList(true);
+    list = menulist;
 
-    am::QMenuCommandReader reader;
-    if(reader)
+    auto [rc, smode] = am::QMenu_ProcessInput();
+    if(R_SUCCEEDED(rc))
     {
-        auto smode = (am::QMenuStartMode)reader.Read<u32>();
         if(smode != am::QMenuStartMode::Invalid)
         {
             auto renderer = pu::ui::render::Renderer::New(SDL_INIT_EVERYTHING, pu::ui::render::RendererInitOptions::RendererEverything, pu::ui::render::RendererHardwareFlags);
@@ -56,8 +70,10 @@ int main()
 
             if(smode == am::QMenuStartMode::MenuApplicationSuspended)
             {
+                /*
                 auto app_id = reader.Read<u64>();
                 qapp->SetSuspendedApplicationId(app_id);
+                */
 
                 FILE *f = fopen(Q_BASE_SD_DIR "/temp-suspended.rgba", "rb");
                 if(f)
@@ -67,8 +83,6 @@ int main()
                 }
             }
 
-            reader.FinishRead();
-
             qapp->SetStartMode(smode);
             qapp->Prepare();
             
@@ -76,11 +90,6 @@ int main()
             else qapp->ShowWithFadeIn();
         }
     }
-
-    reader.FinishRead();
-
-    delete[] app_buf;
-    qmenu::Exit();
 
     return 0;
 }

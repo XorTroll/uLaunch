@@ -14,15 +14,15 @@ namespace ui
 
         switch(this->stmode)
         {
-            case am::QMenuStartMode::StartupScreen:
-                this->LoadLayout(this->startupLayout);
-                break;
             case am::QMenuStartMode::MenuNormal:
                 this->LoadMenu();
                 break;
             case am::QMenuStartMode::MenuApplicationSuspended:
-                this->LoadMenu();
                 this->SetTitleSuspended(true);
+                this->LoadMenu();
+                break;
+            default:
+                this->LoadLayout(this->startupLayout);
                 break;
         }
     }

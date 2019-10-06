@@ -19,7 +19,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	../Common/Source ../Common/Source/am ../Common/Source/cfg ../Common/Source/db ../Common/Source/fs ../Common/Source/os ../Common/Source/util Source
+SOURCES		:=	../Common/Source ../Common/Source/am ../Common/Source/cfg ../Common/Source/db ../Common/Source/fs ../Common/Source/os ../Common/Source/util Source Source/ipc
 DATA		:=	data
 INCLUDES	:=	../Common/Include Include
 EXEFS_SRC	:=	exefs_src
@@ -39,13 +39,13 @@ CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++17
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
-LIBS	:= -lnx
+LIBS	:= -lstratosphere -lnx
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS	:= $(PORTLIBS) $(LIBNX)
+LIBDIRS	:= $(PORTLIBS) $(LIBNX) $(CURDIR)/../libstratosphere
 
 
 #---------------------------------------------------------------------------------
@@ -134,11 +134,13 @@ all: $(BUILD)
 
 $(BUILD):
 	@[ -d $@ ] || mkdir -p $@
+	@$(MAKE) -C ../libstratosphere/
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
+	@$(MAKE) clean -C ../libstratosphere/
 	@rm -fr $(BUILD) $(TARGET).nsp $(TARGET).npdm $(TARGET).nso $(TARGET).elf
 
 

@@ -13,30 +13,26 @@ namespace ui
     MenuLayout::MenuLayout(void *raw)
     {
         this->susptr = raw;
-        this->icounter = 0;
+        this->mode = 0;
         this->rawalpha = 255;
 
         this->bgSuspendedRaw = RawData::New(0, 0, raw, 1280, 720, 4);
-        this->bgSuspendedRaw->SetVisible(false);
         this->Add(this->bgSuspendedRaw);
 
-        this->debugMenu = SideMenu::New(pu::ui::Color(0, 120, 255, 255), pu::ui::Color());
+        this->itemsMenu = SideMenu::New(pu::ui::Color(0, 120, 255, 255), pu::ui::Color());
         for(auto itm: list.root.titles)
         {
             std::string iconpth;
             if((cfg::TitleType)itm.title_type == cfg::TitleType::Installed) iconpth = cfg::GetTitleCacheIconPath(itm.app_id);
             else if((cfg::TitleType)itm.title_type == cfg::TitleType::Homebrew) iconpth = cfg::GetNROCacheIconPath(itm.nro_path);
-            this->debugMenu->AddItem(iconpth);
+            this->itemsMenu->AddItem(iconpth);
         }
         for(auto folder: list.folders)
         {
-            this->debugMenu->AddItem("romfs:/Test.jpg");
+            this->itemsMenu->AddItem("romfs:/Test.jpg");
         }
-        this->debugMenu->SetOnItemSelected(std::bind(&MenuLayout::menu_Click, this, std::placeholders::_1));
-        this->Add(this->debugMenu);
-
-        this->suspendedRaw = RawData::New(0, 0, raw, 1280, 720, 4);
-        this->Add(this->suspendedRaw);
+        this->itemsMenu->SetOnItemSelected(std::bind(&MenuLayout::menu_Click, this, std::placeholders::_1));
+        this->Add(this->itemsMenu);
 
         this->SetOnInput(std::bind(&MenuLayout::OnInput, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
     }
@@ -46,7 +42,6 @@ namespace ui
         if(index < list.root.titles.size())
         {
             auto title = list.root.titles[index];
-            qapp->CreateShowDialog("Title", util::FormatApplicationId(title.app_id), {"Ok"}, true);
             if(!qapp->IsTitleSuspended())
             {
                 am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchApplication);
@@ -55,13 +50,16 @@ namespace ui
                 writer.FinishWrite();
 
                 am::QMenuCommandResultReader reader;
-                qapp->CreateShowDialog("Command", "0x" + util::FormatApplicationId(reader.GetResult()) + "\n0x" + util::FormatApplicationId(reader.GetReadResult()), {"Ok"}, true);
                 if(reader && R_SUCCEEDED(reader.GetReadResult()))
                 {
                     qapp->CloseWithFadeOut();
                     return;
                 }
-                // else qapp->CreateShowDialog("Title launch", "An error ocurred attempting to launch the title:\n")
+                else
+                {
+                    auto rc = reader.GetReadResult();
+                    qapp->CreateShowDialog("Title launch", "An error ocurred attempting to launch the title:\n" + util::FormatResultDisplay(rc) + " (" + util::FormatResultHex(rc) + ")", { "Ok" }, true);
+                }
                 reader.FinishRead();
             }
         }
@@ -72,38 +70,93 @@ namespace ui
         }
     }
 
-    void MenuLayout::OnInput(u64 up, u64 down, u64 held, pu::ui::Touch pos)
+    void MenuLayout::OnInput(u64 down, u64 up, u64 held, pu::ui::Touch pos)
     {
+        auto [rc, msg] = am::QMenu_GetLatestQMenuMessage();
+        switch(msg)
+        {
+            case am::QMenuMessage::HomeRequest:
+            {
+                if(qapp->IsTitleSuspended())
+                {
+                    if(this->mode == 1) this->mode = 2;
+                }
+                else while(this->itemsMenu->GetSelectedItem() > 0) this->itemsMenu->HandleMoveLeft();
+                break;
+            }
+            default:
+                break;
+        }
+
+        /*
+        if(down & KEY_X)
+        {
+            auto [rc, msg] = am::QMenu_GetLatestQMenuMessage();
+            qapp->CreateShowDialog("HOME SWEET HOME", "0x" + util::FormatApplicationId((u32)msg), {"Ok"}, true);
+            if(qapp->IsTitleSuspended())
+            {
+                if(this->mode == 1) this->mode = 2;
+            }
+            else while(this->itemsMenu->GetSelectedItem() > 0) this->itemsMenu->HandleMoveLeft();
+        }
+        */
+
         if(this->susptr != NULL)
         {
-            if(this->icounter >= 0)
+
+            if(this->mode == 0)
             {
-                this->icounter++;
-                if(this->icounter >= 40)
-                {
-                    this->icounter = -1;
-                }
-            }
-            else
-            {
-                if(this->bgSuspendedRaw->IsVisible())
+                if(this->rawalpha == 80) this->mode = 1;
+                else
                 {
                     this->bgSuspendedRaw->SetAlphaFactor(this->rawalpha);
-                    this->rawalpha += 15;
-                    if(this->rawalpha > 175) this->rawalpha = 175;
+                    this->rawalpha -= 10;
+                    if(this->rawalpha < 80) this->rawalpha = 80;
+                    else
+                    {
+                        s32 cw = this->bgSuspendedRaw->GetWidth();
+                        s32 ch = this->bgSuspendedRaw->GetHeight();
+                        // 16:9 ratio
+                        cw -= 16;
+                        ch -= 9;
+                        s32 x = (1280 - cw) / 2;
+                        s32 y = (720 - ch) / 2;
+                        this->bgSuspendedRaw->SetX(x);
+                        this->bgSuspendedRaw->SetY(y);
+                        this->bgSuspendedRaw->SetWidth(cw);
+                        this->bgSuspendedRaw->SetHeight(ch);
+                    }
+                }
+            }
+            else if(this->mode == 2)
+            {
+                if(this->rawalpha == 255)
+                {
+                    this->bgSuspendedRaw->SetAlphaFactor(this->rawalpha);
+                    am::QMenuCommandWriter writer(am::QDaemonMessage::ResumeApplication);
+                    writer.FinishWrite();
+
+                    am::QMenuCommandResultReader reader;
+                    reader.FinishRead();
                 }
                 else
                 {
-                    if(this->rawalpha == 0)
-                    {
-                        this->suspendedRaw->SetVisible(false);
-                        this->bgSuspendedRaw->SetVisible(true);
-                    }
+                    this->bgSuspendedRaw->SetAlphaFactor(this->rawalpha);
+                    this->rawalpha += 10;
+                    if(this->rawalpha > 255) this->rawalpha = 255;
                     else
                     {
-                        this->suspendedRaw->SetAlphaFactor(this->rawalpha);
-                        this->rawalpha -= 20;
-                        if(this->rawalpha < 0) this->rawalpha = 0;
+                        s32 cw = this->bgSuspendedRaw->GetWidth();
+                        s32 ch = this->bgSuspendedRaw->GetHeight();
+                        // 16:9 ratio
+                        cw += 16;
+                        ch += 9;
+                        s32 x = (1280 - cw) / 2;
+                        s32 y = (720 - ch) / 2;
+                        this->bgSuspendedRaw->SetX(x);
+                        this->bgSuspendedRaw->SetY(y);
+                        this->bgSuspendedRaw->SetWidth(cw);
+                        this->bgSuspendedRaw->SetHeight(ch);
                     }
                 }
             }

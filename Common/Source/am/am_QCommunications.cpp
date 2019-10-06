@@ -5,6 +5,8 @@
 
 namespace am
 {
+    Service daemon_srv;
+
     #define Q_AM_LOOP_TRY_WITH(...) { \
         Result rc = 0; \
         do \
@@ -37,6 +39,55 @@ namespace am
         LibAppletArgs in_args;
         auto rc = QMenu_QDaemonReadImpl(&in_args, sizeof(LibAppletArgs), false);
         return MakeResultWith(rc, (QMenuStartMode)in_args.LaVersion);
+    }
+
+    Result QMenu_InitializeDaemonService()
+    {
+        if(serviceIsActive(&daemon_srv)) return 0;
+        return smGetService(&daemon_srv, "daemon");
+    }
+
+    ResultWith<QMenuMessage> QMenu_GetLatestQMenuMessage()
+    {
+        QMenuMessage msg = QMenuMessage::Invalid;
+
+        IpcCommand c;
+        ipcInitialize(&c);
+
+        struct Raw
+        {
+            u64 magic;
+            u64 cmdid;
+        } *raw = (struct Raw*)ipcPrepareHeader(&c, sizeof(*raw));
+
+        raw->magic = SFCI_MAGIC;
+        raw->cmdid = 0;
+
+        auto rc = serviceIpcDispatch(&daemon_srv);
+
+        if(R_SUCCEEDED(rc))
+        {
+            IpcParsedCommand r;
+            ipcParse(&r);
+
+            struct Response
+            {
+                u64 magic;
+                u64 res;
+                u32 msg;
+            } *resp = (struct Response*)r.Raw;
+
+            rc = resp->res;
+
+            if(R_SUCCEEDED(rc)) msg = (QMenuMessage)resp->msg;
+        }
+
+        return MakeResultWith(rc, msg);
+    }
+
+    void QMenu_FinalizeDaemonService()
+    {
+        serviceClose(&daemon_srv);
     }
 
     Result QDaemon_QMenuWriteImpl(void *data, size_t size, bool wait)

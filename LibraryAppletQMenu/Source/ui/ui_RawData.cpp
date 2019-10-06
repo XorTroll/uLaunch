@@ -80,7 +80,7 @@ namespace ui
         if(this->ntex != NULL)
         {
             Drawer->SetBaseRenderAlpha(this->falpha);
-            Drawer->RenderTexture(this->ntex, X, Y);
+            Drawer->RenderTexture(this->ntex, X, Y, { -1, this->w, this->h, -1 });
             Drawer->UnsetBaseRenderAlpha();
         }
     }

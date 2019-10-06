@@ -7,7 +7,7 @@ namespace os
     enum class GeneralChannelMessage : u32
     {
         Invalid,
-        HomeButton = 2,
+        HomeButton = 2, // Is this really HOME button? Never fires...
         Sleep = 3,
         Shutdown = 5,
         Reboot = 6,

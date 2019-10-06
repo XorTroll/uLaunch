@@ -15,7 +15,7 @@ namespace am
     enum class QMenuMessage
     {
         Invalid,
-        HomeRequest
+        HomeRequest,
     };
 
     enum class QDaemonMessage
@@ -23,12 +23,17 @@ namespace am
         Invalid,
         SetSelectedUser,
         LaunchApplication,
-        TerminateApplication
+        ResumeApplication,
+        TerminateApplication,
+        GetLatestMessage,
     };
 
     Result QDaemon_LaunchQMenu(QMenuStartMode mode);
 
     ResultWith<QMenuStartMode> QMenu_ProcessInput();
+    Result QMenu_InitializeDaemonService();
+    ResultWith<QMenuMessage> QMenu_GetLatestQMenuMessage();
+    void QMenu_FinalizeDaemonService();
 
     Result QDaemon_QMenuWriteImpl(void *data, size_t size, bool wait);
     Result QDaemon_QMenuReadImpl(void *data, size_t size, bool wait);

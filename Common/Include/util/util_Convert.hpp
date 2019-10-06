@@ -7,4 +7,6 @@ namespace util
     std::string Format128NintendoStyle(u128 value);
     u64 Get64FromString(std::string val);
     std::string FormatApplicationId(u64 app_id);
+    std::string FormatResultDisplay(Result rc);
+    std::string FormatResultHex(Result rc);
 }

@@ -14,14 +14,13 @@ namespace ui
             PU_SMART_CTOR(MenuLayout)
 
             void menu_Click(u32 index);
-            void OnInput(u64 up, u64 down, u64 held, pu::ui::Touch pos);
+            void OnInput(u64 down, u64 up, u64 held, pu::ui::Touch pos);
             void SetSuspendedRawData(void *raw);
         private:
             void *susptr;
-            SideMenu::Ref debugMenu;
-            RawData::Ref suspendedRaw;
+            SideMenu::Ref itemsMenu;
             RawData::Ref bgSuspendedRaw;
-            s8 icounter;
+            u32 mode;
             s32 rawalpha;
     };
 }

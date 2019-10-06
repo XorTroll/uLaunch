@@ -7,6 +7,8 @@ namespace am
 
     bool LibraryAppletIsActive()
     {
+        if(applet_holder.StateChangedEvent.revent == INVALID_HANDLE) return false;
+        if(!serviceIsActive(&applet_holder.s)) return false;
         return !appletHolderCheckFinished(&applet_holder);
     }
 
@@ -17,11 +19,12 @@ namespace am
 
     void LibraryAppletTerminate()
     {
-        appletHolderRequestExitOrTerminate(&applet_holder, 500'000'000);
+        appletHolderRequestExitOrTerminate(&applet_holder, 10'000'000);
     }
 
     Result LibraryAppletStart(AppletId id, u32 la_version, void *in_data, size_t in_size)
     {
+        if(LibraryAppletIsActive()) LibraryAppletTerminate();
         appletHolderClose(&applet_holder);
         LibAppletArgs largs;
         libappletArgsCreate(&largs, la_version);
