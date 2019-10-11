@@ -25,7 +25,7 @@ namespace am
         LaunchApplication,
         ResumeApplication,
         TerminateApplication,
-        GetLatestMessage,
+        GetSuspendedApplicationId
     };
 
     Result QDaemon_LaunchQMenu(QMenuStartMode mode);

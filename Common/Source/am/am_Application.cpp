@@ -4,7 +4,7 @@ namespace am
 {
     extern bool home_focus;
     AppletApplication app_holder;
-    bool launched;
+    u64 latest_appid;
 
     bool ApplicationIsActive()
     {
@@ -45,6 +45,8 @@ namespace am
         R_TRY(appletApplicationStart(&app_holder));
         R_TRY(ApplicationSetForeground());
 
+        latest_appid = app_id;
+
         return 0;
     }
 
@@ -58,5 +60,10 @@ namespace am
         auto rc = appletApplicationRequestForApplicationToGetForeground(&app_holder);
         if(R_SUCCEEDED(rc)) home_focus = false;
         return rc;
+    }
+
+    u64 ApplicationGetId()
+    {
+        return latest_appid;
     }
 }

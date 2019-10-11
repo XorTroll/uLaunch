@@ -14,6 +14,8 @@ namespace fs
     void DeleteDirectory(std::string path);
     void DeleteFile(std::string path);
 
+    bool WriteFile(std::string path, void *data, size_t size, bool overwrite);
+    bool ReadFile(std::string path, void *data, size_t size);
     size_t GetFileSize(std::string path);
 
     void ForEachFileIn(std::string dir, std::function<void(std::string name, std::string path)> fn);

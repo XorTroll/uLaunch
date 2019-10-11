@@ -25,12 +25,8 @@ namespace os
                 {
                     auto fname = cfg::GetTitleCacheIconPath(rec.app_id);
                     fs::DeleteFile(fname);
-                    FILE *f = fopen(fname.c_str(), "wb");
-                    if(f)
-                    {
-                        fwrite(control.icon, 1, sizeof(control.icon), f);
-                        fclose(f);
-                    }
+                    db::Commit();
+                    fs::WriteFile(fname, control.icon, sizeof(control.icon), true);
                 }
             }
             titles.push_back(rec);

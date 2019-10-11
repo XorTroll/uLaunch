@@ -33,13 +33,7 @@ namespace db
         auto filename = GetUserPasswordFilePath(user_id);
         if(fs::ExistsFile(filename))
         {
-            FILE *f = fopen(filename.c_str(), "rb");
-            if(f)
-            {
-                fread(&pb, 1, sizeof(PassBlock), f);
-                fclose(f);
-                return SuccessResultWith(pb);
-            }
+            if(fs::ReadFile(filename, &pb, sizeof(pb))) return SuccessResultWith(pb);
         }
         return MakeResultWith(0xdead, pb);
     }
@@ -54,30 +48,16 @@ namespace db
     {
         std::string pwd;
         auto filename = GetUserPasswordFilePath(user_id);
-        if(fs::ExistsFile(filename))
-        {
-            FILE *f = fopen(filename.c_str(), "rb");
-            if(f)
-            {
-                fclose(f);
-                return 0xdead;
-            }
-        }
-        fs::DeleteFile(filename);
-        FILE *f = fopen(filename.c_str(), "wb");
-        if(f)
-        {
-            if((password.length() > 15) || (password.empty())) return 0xdead1;
-            PassBlock pb = {};
-            memcpy(&pb.uid, &user_id, sizeof(u128));
-            char tmppass[0x10] = {0};
-            strcpy(tmppass, password.c_str());
-            sha256CalculateHash(pb.pass_sha, tmppass, 0x10);
-            fwrite(&pb, 1, sizeof(PassBlock), f);
-            fclose(f);
-            Commit();
-        }
-        else return 0xdead2;
+        if(fs::ExistsFile(filename)) return 0xdead;
+
+        if((password.length() > 15) || (password.empty())) return 0xdead1;
+        PassBlock pb = {};
+        memcpy(&pb.uid, &user_id, sizeof(u128));
+        char tmppass[0x10] = {0};
+        strcpy(tmppass, password.c_str());
+        sha256CalculateHash(pb.pass_sha, tmppass, 0x10);
+
+        if(!fs::WriteFile(filename, &pb, sizeof(pb), true)) return 0xdead2;
         return 0;
     }
 

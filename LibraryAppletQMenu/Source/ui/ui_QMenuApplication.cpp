@@ -6,7 +6,7 @@ namespace ui
 {
     void QMenuApplication::OnLoad()
     {
-        pu::ui::render::SetDefaultFont("romfs:/Gilroy-Bold.ttf");
+        pu::ui::render::SetDefaultFont("romfs:/default/ui/Font.ttf");
 
         this->startupLayout = StartupLayout::New(pu::ui::Color(10, 120, 255, 255));
         this->menuLayout = MenuLayout::New(app_buf);

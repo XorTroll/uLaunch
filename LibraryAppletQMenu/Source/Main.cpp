@@ -24,6 +24,12 @@ namespace qmenu
         accountInitialize();
         nsInitialize();
         db::Mount();
+        fs::CreateDirectory(Q_BASE_DB_DIR);
+        fs::CreateDirectory(Q_BASE_SD_DIR);
+        fs::CreateDirectory(Q_BASE_SD_DIR "/title");
+        fs::CreateDirectory(Q_BASE_SD_DIR "/user");
+        fs::CreateDirectory(Q_BASE_SD_DIR "/nro");
+        db::Commit();
         am::QMenu_InitializeDaemonService();
     }
 
@@ -38,25 +44,10 @@ namespace qmenu
 
 u8 *app_buf;
 
-extern "C"
-{
-    void userAppInit(void)
-    {
-        qmenu::Initialize();
-    }
-
-    void userAppExit(void)
-    {
-        delete[] app_buf;
-        qmenu::Exit();
-    }
-}
-
 int main()
 {
     app_buf = new u8[1280 * 720 * 4]();
-    fs::CreateDirectory(Q_BASE_DB_DIR);
-    fs::CreateDirectory(Q_BASE_DB_DIR "/user");
+    qmenu::Initialize();
     auto [_rc, menulist] = cfg::LoadTitleList(true);
     list = menulist;
 
@@ -70,10 +61,11 @@ int main()
 
             if(smode == am::QMenuStartMode::MenuApplicationSuspended)
             {
-                /*
-                auto app_id = reader.Read<u64>();
-                qapp->SetSuspendedApplicationId(app_id);
-                */
+                am::QMenuCommandWriter writer(am::QDaemonMessage::GetSuspendedApplicationId);
+                writer.FinishWrite();
+                am::QMenuCommandResultReader reader;
+                if(reader) qapp->SetSuspendedApplicationId(reader.Read<u64>());
+                reader.FinishRead();
 
                 FILE *f = fopen(Q_BASE_SD_DIR "/temp-suspended.rgba", "rb");
                 if(f)
@@ -90,6 +82,9 @@ int main()
             else qapp->ShowWithFadeIn();
         }
     }
+
+    delete[] app_buf;
+    qmenu::Exit();
 
     return 0;
 }

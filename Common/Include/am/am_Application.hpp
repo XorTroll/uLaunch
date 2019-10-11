@@ -20,4 +20,5 @@ namespace am
     Result ApplicationStart(u64 app_id, bool system, u128 user_id);
     bool ApplicationHasForeground();
     Result ApplicationSetForeground();
+    u64 ApplicationGetId();
 }

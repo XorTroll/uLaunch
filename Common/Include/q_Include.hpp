@@ -22,7 +22,8 @@ using JSON = nlohmann::json;
 #define Q_BASE_DIR "reqwrite"
 #define Q_BASE_SD_DIR "sdmc:/" Q_BASE_DIR
 #define Q_DB_MOUNT_NAME "qsave"
-#define Q_BASE_DB_DIR Q_DB_MOUNT_NAME ":/" Q_BASE_DIR
+#define Q_DB_MOUNT_PATH Q_DB_MOUNT_NAME ":/"
+#define Q_BASE_DB_DIR Q_DB_MOUNT_PATH Q_BASE_DIR
 
 #define Q_MENU_JSON Q_BASE_SD_DIR "/menu.json"
 

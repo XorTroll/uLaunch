@@ -38,15 +38,10 @@ namespace os
                             if(R_SUCCEEDED(rc))
                             {
                                 auto iconcache = GetIconCacheImagePath(uidbuf[i]);
-                                fs::DeleteFile(iconcache);
-                                FILE *f = fopen(iconcache.c_str(), "wb");
-                                if(f)
-                                {
-                                    fwrite(imgbuf, 1, imgsz, f);
-                                    fclose(f);
-                                }
+                                fs::WriteFile(iconcache, imgbuf, imgsz, true);
                             }
                         }
+                        accountProfileClose(&prof);
                     }
                 }
             }

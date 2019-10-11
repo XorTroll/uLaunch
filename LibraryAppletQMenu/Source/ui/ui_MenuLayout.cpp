@@ -20,6 +20,10 @@ namespace ui
         this->Add(this->bgSuspendedRaw);
 
         this->itemsMenu = SideMenu::New(pu::ui::Color(0, 120, 255, 255), pu::ui::Color());
+
+        // Add first item for all titles menu
+        this->itemsMenu->AddItem("romfs:/default/ui/AllTitles.png");
+
         for(auto itm: list.root.titles)
         {
             std::string iconpth;
@@ -29,7 +33,8 @@ namespace ui
         }
         for(auto folder: list.folders)
         {
-            this->itemsMenu->AddItem("romfs:/Test.jpg");
+            // TODO: folder logic
+            this->itemsMenu->AddItem("romfs:/default/Folder.png");
         }
         this->itemsMenu->SetOnItemSelected(std::bind(&MenuLayout::menu_Click, this, std::placeholders::_1));
         this->Add(this->itemsMenu);
@@ -39,34 +44,42 @@ namespace ui
 
     void MenuLayout::menu_Click(u32 index)
     {
-        if(index < list.root.titles.size())
+        if(index == 0)
         {
-            auto title = list.root.titles[index];
-            if(!qapp->IsTitleSuspended())
-            {
-                am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchApplication);
-                writer.Write<u64>(title.app_id);
-                writer.Write<bool>(false);
-                writer.FinishWrite();
-
-                am::QMenuCommandResultReader reader;
-                if(reader && R_SUCCEEDED(reader.GetReadResult()))
-                {
-                    qapp->CloseWithFadeOut();
-                    return;
-                }
-                else
-                {
-                    auto rc = reader.GetReadResult();
-                    qapp->CreateShowDialog("Title launch", "An error ocurred attempting to launch the title:\n" + util::FormatResultDisplay(rc) + " (" + util::FormatResultHex(rc) + ")", { "Ok" }, true);
-                }
-                reader.FinishRead();
-            }
+            qapp->CreateShowDialog("A", "All titles", {"Ok"}, true);
         }
         else
         {
-            auto folder = list.folders[index - list.root.titles.size()];
-            qapp->CreateShowDialog("Folder", folder.name, {"Ok"}, true);
+            u32 realidx = index - 1;
+            if(realidx < list.root.titles.size())
+            {
+                auto title = list.root.titles[realidx];
+                if(!qapp->IsTitleSuspended())
+                {
+                    am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchApplication);
+                    writer.Write<u64>(title.app_id);
+                    writer.Write<bool>(false);
+                    writer.FinishWrite();
+
+                    am::QMenuCommandResultReader reader;
+                    if(reader && R_SUCCEEDED(reader.GetReadResult()))
+                    {
+                        qapp->CloseWithFadeOut();
+                        return;
+                    }
+                    else
+                    {
+                        auto rc = reader.GetReadResult();
+                        qapp->CreateShowDialog("Title launch", "An error ocurred attempting to launch the title:\n" + util::FormatResultDisplay(rc) + " (" + util::FormatResultHex(rc) + ")", { "Ok" }, true);
+                    }
+                    reader.FinishRead();
+                }
+            }
+            else
+            {
+                auto folder = list.folders[realidx - list.root.titles.size()];
+                qapp->CreateShowDialog("Folder", folder.name, {"Ok"}, true);
+            }
         }
     }
 
@@ -87,19 +100,6 @@ namespace ui
             default:
                 break;
         }
-
-        /*
-        if(down & KEY_X)
-        {
-            auto [rc, msg] = am::QMenu_GetLatestQMenuMessage();
-            qapp->CreateShowDialog("HOME SWEET HOME", "0x" + util::FormatApplicationId((u32)msg), {"Ok"}, true);
-            if(qapp->IsTitleSuspended())
-            {
-                if(this->mode == 1) this->mode = 2;
-            }
-            else while(this->itemsMenu->GetSelectedItem() > 0) this->itemsMenu->HandleMoveLeft();
-        }
-        */
 
         if(this->susptr != NULL)
         {

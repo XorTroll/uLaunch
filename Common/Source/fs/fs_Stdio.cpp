@@ -1,7 +1,11 @@
 #include <fs/fs_Stdio.hpp>
+#include <util/util_String.hpp>
+#include <db/db_Save.hpp>
 
 namespace fs
 {
+    #define FS_COMMIT_IF_DB_PATH(path) db::Commit();
+
     static bool ExistsImpl(size_t st_mode, std::string path)
     {
         struct stat st;
@@ -21,26 +25,56 @@ namespace fs
     void CreateDirectory(std::string path)
     {
         mkdir(path.c_str(), 777);
+        FS_COMMIT_IF_DB_PATH(path)
     }
 
     void CreateFile(std::string path)
     {
         fsdevCreateFile(path.c_str(), 0, 0);
+        FS_COMMIT_IF_DB_PATH(path)
     }
 
     void CreateConcatenationFile(std::string path)
     {
         fsdevCreateFile(path.c_str(), 0, FS_CREATE_BIG_FILE);
+        FS_COMMIT_IF_DB_PATH(path)
     }
 
     void DeleteDirectory(std::string path)
     {
         fsdevDeleteDirectoryRecursively(path.c_str());
+        FS_COMMIT_IF_DB_PATH(path)
     }
 
     void DeleteFile(std::string path)
     {
         remove(path.c_str());
+        FS_COMMIT_IF_DB_PATH(path)
+    }
+
+    bool WriteFile(std::string path, void *data, size_t size, bool overwrite)
+    {
+        FILE *f = fopen(path.c_str(), overwrite ? "wb" : "ab+");
+        if(f)
+        {
+            fwrite(data, 1, size, f);
+            fclose(f);
+            FS_COMMIT_IF_DB_PATH(path)
+            return true;
+        }
+        return false;
+    }
+
+    bool ReadFile(std::string path, void *data, size_t size)
+    {
+        FILE *f = fopen(path.c_str(), "rb");
+        if(f)
+        {
+            fread(data, 1, size, f);
+            fclose(f);
+            return true;
+        }
+        return false;
     }
 
     size_t GetFileSize(std::string path)
@@ -86,6 +120,8 @@ namespace fs
     void MoveFile(std::string p1, std::string p2)
     {
         rename(p1.c_str(), p2.c_str());
+        FS_COMMIT_IF_DB_PATH(p1)
+        FS_COMMIT_IF_DB_PATH(p2)
     }
 
     void CopyFile(std::string p, std::string np)
@@ -111,6 +147,7 @@ namespace fs
                 }
                 delete[] tmp;
                 fclose(outf);
+                FS_COMMIT_IF_DB_PATH(np)
             }
             fclose(inf);
         }

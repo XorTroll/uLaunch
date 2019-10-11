@@ -3,6 +3,7 @@
 #include <util/util_JSON.hpp>
 #include <util/util_String.hpp>
 #include <fs/fs_Stdio.hpp>
+#include <db/db_Save.hpp>
 #include <util/util_Convert.hpp>
 
 namespace cfg
@@ -160,13 +161,7 @@ namespace cfg
                                                     fseek(f, hdr.size + ahdr.icon.size, SEEK_SET);
                                                     if(fread(iconbuf, ahdr.icon.size, 1, f) == 1)
                                                     {
-                                                        fs::DeleteFile(nroimg);
-                                                        FILE *iconf = fopen(nroimg.c_str(), "wb");
-                                                        if(iconf)
-                                                        {
-                                                            fwrite(iconbuf, 1, ahdr.icon.size, iconf);
-                                                            fclose(iconf);
-                                                        }
+                                                        fs::WriteFile(nroimg, iconbuf, ahdr.icon.size, true);
                                                     }
                                                     delete[] iconbuf;
                                                 }
@@ -200,108 +195,6 @@ namespace cfg
                 }
             }
         }
-
-
-
-        // Search SD card for installed title extensions or homebrew accessors
-        fs::ForEachFileIn(Q_BASE_SD_DIR "/entries", [&](std::string name, std::string path)
-        {
-            if(util::StringEndsWith(name, ".json"))
-            {
-                auto [rc, json] = util::LoadJSONFromFile(path);
-                if(R_SUCCEEDED(rc))
-                {
-                    TitleType type = (TitleType)json.value("type", 0u);
-                    if(type == TitleType::Installed)
-                    {
-                        std::string appidstr = json.value("application_id", "");
-                        if(!appidstr.empty())
-                        {
-                            std::string folder = json.value("folder", "");
-                            u64 appid = util::Get64FromString(appidstr);
-                            if(appid > 0)
-                            {
-                                if(!folder.empty()) MoveTitleToDirectory(list, appid, folder);
-                            }
-                        }
-                    }
-                    else if(type == TitleType::Homebrew)
-                    {
-                        std::string nropath = json.value("nro_path", "");
-                        if(!nropath.empty())
-                        {
-                            TitleRecord rec = {};
-                            rec.title_type = (u32)type;
-                            rec.nro_path = "sdmc:";
-                            if(nropath.front() != '/') rec.nro_path += "/";
-                            rec.nro_path += nropath;
-                            std::string folder = json.value("folder", "");
-                            rec.sub_folder = folder;
-                            if(cache)
-                            {
-                                auto nroimg = GetNROCacheIconPath(rec.nro_path);
-                                FILE *f = fopen(rec.nro_path.c_str(), "rb");
-                                if(f)
-                                {
-                                    NroStart st = {};
-                                    if(fread(&st, sizeof(NroStart), 1, f) == 1)
-                                    {
-                                        NroHeader hdr = {};
-                                        if(fread(&hdr, sizeof(NroHeader), 1, f) == 1)
-                                        {
-                                            fseek(f, hdr.size, SEEK_SET);
-                                            NroAssetHeader ahdr = {};
-                                            if(fread(&ahdr, sizeof(NroAssetHeader), 1, f) == 1)
-                                            {
-                                                if(ahdr.magic == NROASSETHEADER_MAGIC)
-                                                {
-                                                    if(ahdr.icon.size > 0)
-                                                    {
-                                                        u8 *iconbuf = new u8[ahdr.icon.size]();
-                                                        fseek(f, hdr.size + ahdr.icon.size, SEEK_SET);
-                                                        if(fread(iconbuf, ahdr.icon.size, 1, f) == 1)
-                                                        {
-                                                            fs::DeleteFile(nroimg);
-                                                            FILE *iconf = fopen(nroimg.c_str(), "wb");
-                                                            if(iconf)
-                                                            {
-                                                                fwrite(iconbuf, 1, ahdr.icon.size, iconf);
-                                                                fclose(iconf);
-                                                            }
-                                                        }
-                                                        delete[] iconbuf;
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    fclose(f);
-                                }
-                            }
-                            if(folder.empty())
-                            {
-                                list.root.titles.push_back(rec);
-                            }
-                            else
-                            {
-                                auto find = STLITER_FINDWITHCONDITION(list.folders, fld, (fld.name == folder));
-                                if(STLITER_ISFOUND(list.folders, find))
-                                {
-                                    STLITER_UNWRAP(find).titles.push_back(rec);
-                                }
-                                else
-                                {
-                                    TitleFolder fld = {};
-                                    fld.name = folder;
-                                    fld.titles.push_back(rec);
-                                    list.folders.push_back(fld);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        });
         return SuccessResultWith(list);
     }
 
