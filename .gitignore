@@ -1,6 +1,7 @@
 build/
 .vscode/
 Out/
+SdOut/
 *.elf
 *.npdm
 *.nso

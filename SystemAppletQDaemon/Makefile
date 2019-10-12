@@ -27,7 +27,7 @@ EXEFS_SRC	:=	exefs_src
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
-ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE
+ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE -Wl,-wrap,apmInitialize -Wl,-wrap,apmSetPerformanceConfiguration -Wl,-wrap,apmExit
 
 CFLAGS	:=	-g -Wall -O2 -ffunction-sections \
 			$(ARCH) $(DEFINES)
@@ -135,7 +135,10 @@ all: $(BUILD)
 $(BUILD):
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) -C ../libstratosphere/
+	@rm -rf $(CURDIR)/Out
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
+	@mkdir -p $(CURDIR)/Out
+	@cp $(OUTPUT).nsp $(CURDIR)/Out/exefs.nsp
 
 #---------------------------------------------------------------------------------
 clean:
