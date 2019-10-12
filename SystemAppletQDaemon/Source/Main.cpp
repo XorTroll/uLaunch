@@ -16,6 +16,18 @@ extern "C"
     size_t __nx_heap_size = 0x3000000;//0x1000000;
 }
 
+u8 *app_buf;
+u128 selected_uid = 0;
+hb::TargetInput hblaunch_flag = {};
+hb::TargetInput hbapplaunch_copy = {};
+hb::TargetInput hbapplaunch_flag = {};
+bool hblaunched = false;
+u64 titlelaunch_flag = 0;
+bool titlelaunch_system = false;
+
+HosMutex latestqlock;
+am::QMenuMessage latestqmenumsg = am::QMenuMessage::Invalid;
+
 void CommonSleepHandle()
 {
     appletStartSleepSequence(true);
@@ -61,13 +73,30 @@ void HandleGeneralChannel()
     svcSleepThread(100000000L);
 }
 
-u8 *app_buf;
-u128 selected_uid = 0;
-u64 titlelaunch_flag = 0;
-bool titlelaunch_system = false;
-
-HosMutex latestqlock;
-am::QMenuMessage latestqmenumsg = am::QMenuMessage::Invalid;
+void HandleHomeButton()
+{
+    bool used_to_reopen_menu = false;
+    if(am::LibraryAppletIsActive() && !am::LibraryAppletIsQMenu())
+    {
+        am::LibraryAppletTerminate();
+        am::QDaemon_LaunchQMenu(am::QMenuStartMode::MenuHomebrewMode);
+        return;
+    }
+    if(am::ApplicationIsActive())
+    {
+        if(am::ApplicationHasForeground())
+        {
+            am::HomeMenuSetForeground();
+            am::QDaemon_LaunchQMenu(am::QMenuStartMode::MenuApplicationSuspended);
+            used_to_reopen_menu = true;
+        }
+    }
+    if(am::LibraryAppletIsQMenu() && !used_to_reopen_menu)
+    {
+        std::scoped_lock lock(latestqlock);
+        latestqmenumsg = am::QMenuMessage::HomeRequest;
+    }
+}
 
 void HandleAppletMessage()
 {
@@ -80,21 +109,7 @@ void HandleAppletMessage()
         {
             case os::AppletMessage::HomeButton:
             {
-                bool used_to_reopen_menu = false;
-                if(am::ApplicationIsActive())
-                {
-                    if(am::ApplicationHasForeground())
-                    {
-                        am::HomeMenuSetForeground();
-                        am::QDaemon_LaunchQMenu(am::QMenuStartMode::MenuApplicationSuspended);
-                        used_to_reopen_menu = true;
-                    }
-                }
-                if(am::LibraryAppletIsQMenu() && !used_to_reopen_menu)
-                {
-                    std::scoped_lock lock(latestqlock);
-                    latestqmenumsg = am::QMenuMessage::HomeRequest;
-                }
+                HandleHomeButton();
                 break;
             }
             case os::AppletMessage::SdCardOut:
@@ -134,7 +149,6 @@ void HandleQMenuMessage()
                 case am::QDaemonMessage::LaunchApplication:
                 {
                     auto app_id = reader.Read<u64>();
-                    auto is_system = reader.Read<bool>();
                     reader.FinishRead();
 
                     if(am::ApplicationIsActive())
@@ -155,7 +169,6 @@ void HandleQMenuMessage()
                     else
                     {
                         titlelaunch_flag = app_id;
-                        titlelaunch_system = is_system;
                         am::QDaemonCommandResultWriter res(0);
                         res.FinishWrite();
                     }
@@ -178,19 +191,64 @@ void HandleQMenuMessage()
                     }
                     break;
                 }
-                case am::QDaemonMessage::GetSuspendedApplicationId:
+                case am::QDaemonMessage::GetSuspendedInfo:
                 {
+                    reader.FinishRead();
+                    
+                    am::QSuspendedInfo info = {};
+                    cfg::TitleType tmptype = cfg::TitleType::Invalid;
+                    if(am::ApplicationIsActive())
+                    {
+                        tmptype = cfg::TitleType::Installed;
+                        if(am::ApplicationGetId() == OS_FLOG_APP_ID) tmptype = cfg::TitleType::Homebrew;
+                    }
+
+                    if(tmptype == cfg::TitleType::Installed) info.app_id = am::ApplicationGetId();
+                    else if(tmptype == cfg::TitleType::Homebrew) memcpy(&info.input, &hbapplaunch_copy, sizeof(hbapplaunch_copy));
+
+                    am::QDaemonCommandResultWriter writer(0);
+                    writer.Write<am::QSuspendedInfo>(info);
+                    writer.FinishWrite();
+
+                    break;
+                }
+                case am::QDaemonMessage::LaunchHomebrewLibApplet:
+                {
+                    auto ipt = reader.Read<hb::TargetInput>();
+                    reader.FinishRead();
+
+                    hblaunch_flag = ipt;
+
+                    am::QDaemonCommandResultWriter res(0);
+                    res.FinishWrite();
+
+                    break;
+                }
+                case am::QDaemonMessage::LaunchHomebrewApplication:
+                {
+                    auto ipt = reader.Read<hb::TargetInput>();
                     reader.FinishRead();
 
                     if(am::ApplicationIsActive())
                     {
-                        am::QDaemonCommandResultWriter res(0);
-                        res.Write<u64>(am::ApplicationGetId());
+                        am::QDaemonCommandResultWriter res(0xBABE1);
+                        res.FinishWrite();
+                    }
+                    else if(selected_uid == 0)
+                    {
+                        am::QDaemonCommandResultWriter res(0xBABE2);
+                        res.FinishWrite();
+                    }
+                    else if(titlelaunch_flag > 0)
+                    {
+                        am::QDaemonCommandResultWriter res(0xBABE3);
                         res.FinishWrite();
                     }
                     else
                     {
-                        am::QDaemonCommandResultWriter res(0xDEAD1);
+                        memcpy(&hbapplaunch_copy, &ipt, sizeof(ipt));
+                        memcpy(&hbapplaunch_flag, &ipt, sizeof(ipt));
+                        am::QDaemonCommandResultWriter res(0);
                         res.FinishWrite();
                     }
                     break;
@@ -297,7 +355,7 @@ int main()
         {
             if(!am::LibraryAppletIsActive())
             {
-                auto rc = am::ApplicationStart(titlelaunch_flag, titlelaunch_system, selected_uid);
+                am::ApplicationStart(titlelaunch_flag, false, selected_uid);
                 svcSleepThread(500'000'000);
                 if(!am::ApplicationIsActive())
                 {
@@ -307,7 +365,43 @@ int main()
                 titlelaunch_flag = 0;
             }
         }
-
+        if(strlen(hbapplaunch_flag.nro_path))
+        {
+            if(!am::LibraryAppletIsActive())
+            {
+                am::ApplicationStart(OS_FLOG_APP_ID, true, selected_uid, &hbapplaunch_flag, sizeof(hbapplaunch_flag));
+                svcSleepThread(500'000'000);
+                if(!am::ApplicationIsActive())
+                {
+                    // Title failed to launch, so we re-launch QMenu this way...
+                    am::QDaemon_LaunchQMenu(am::QMenuStartMode::MenuLaunchFailure);
+                }
+                hbapplaunch_flag.nro_path[0] = '\0';
+            }
+        }
+        if(strlen(hblaunch_flag.nro_path))
+        {
+            if(!am::LibraryAppletIsActive())
+            {
+                am::QDaemon_LaunchQHbTarget(hblaunch_flag);
+                svcSleepThread(500'000'000);
+                if(!am::LibraryAppletIsActive())
+                {
+                    // Title failed to launch, so we re-launch QMenu this way...
+                    am::QDaemon_LaunchQMenu(am::QMenuStartMode::MenuLaunchFailure);
+                }
+                else hblaunched = true;
+                hblaunch_flag.nro_path[0] = '\0';
+            }
+        }
+        if(!am::LibraryAppletIsActive())
+        {
+            if(hblaunched)
+            {
+                am::QDaemon_LaunchQMenu(am::QMenuStartMode::MenuHomebrewMode);
+                hblaunched = false;
+            }
+        }
         svcSleepThread(10'000'000);
     }
 

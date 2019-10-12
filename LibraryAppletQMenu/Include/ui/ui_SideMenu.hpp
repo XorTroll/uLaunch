@@ -36,6 +36,7 @@ namespace ui
             u32 GetSelectedItem();
             u32 GetBaseItemIndex();
             void SetBaseItemIndex(u32 index);
+            void SetBasePositions(u32 SelectedIdx, u32 BaseIdx);
             void ClearBorderIcons();
             void UpdateBorderIcons();
         private:

@@ -8,6 +8,113 @@
 
 namespace cfg
 {
+    void CacheHomebrew(std::string nro_path)
+    {
+        auto nroimg = GetNROCacheIconPath(nro_path);
+        if(fs::ExistsFile(nroimg)) return; // Speed up (very rare chance that NROs have the exact same size...?)
+        FILE *f = fopen(nro_path.c_str(), "rb");
+        if(f)
+        {
+            NroStart st = {};
+            if(fread(&st, sizeof(NroStart), 1, f) == 1)
+            {
+                NroHeader hdr = {};
+                if(fread(&hdr, sizeof(NroHeader), 1, f) == 1)
+                {
+                    fseek(f, hdr.size, SEEK_SET);
+                    NroAssetHeader ahdr = {};
+                    if(fread(&ahdr, sizeof(NroAssetHeader), 1, f) == 1)
+                    {
+                        if(ahdr.magic == NROASSETHEADER_MAGIC)
+                        {
+                            if(ahdr.icon.size > 0)
+                            {
+                                u8 *iconbuf = new u8[ahdr.icon.size]();
+                                fseek(f, hdr.size + ahdr.icon.offset, SEEK_SET);
+                                if(fread(iconbuf, ahdr.icon.size, 1, f) == 1) fs::WriteFile(nroimg, iconbuf, ahdr.icon.size, true);
+                                delete[] iconbuf;
+                            }
+                        }
+                    }
+                }
+            }
+            fclose(f);
+        }
+    }
+
+    std::vector<TitleRecord> QueryAllHomebrew(bool cache, std::string base)
+    {
+        std::vector<TitleRecord> nros;
+
+        fs::ForEachFileIn(base, [&](std::string name, std::string path)
+        {
+            if(util::StringEndsWith(name, ".nro"))
+            {
+                auto sz = fs::GetFileSize(path);
+                if(sz > 0)
+                {
+                    if(cache) CacheHomebrew(path);
+
+                    TitleRecord rec = {};
+                    rec.title_type = (u32)TitleType::Homebrew;
+                    rec.nro_path = path;
+                    nros.push_back(rec);
+                }
+            }
+        });
+
+        fs::ForEachDirectoryIn(base, [&](std::string name, std::string path)
+        {
+            auto hb = QueryAllHomebrew(cache, path);
+            if(!hb.empty()) nros.insert(nros.begin(), hb.begin(), hb.end());
+        });
+
+        return nros;
+    }
+
+    RecordInformation GetRecordInformation(TitleRecord record)
+    {
+        RecordInformation info = {};
+        if((TitleType)record.title_type == TitleType::Homebrew)
+        {
+            info.icon_path = GetNROCacheIconPath(record.nro_path);
+            FILE *f = fopen(record.nro_path.c_str(), "rb");
+            if(f)
+            {
+                NroStart st = {};
+                if(fread(&st, sizeof(NroStart), 1, f) == 1)
+                {
+                    NroHeader hdr = {};
+                    if(fread(&hdr, sizeof(NroHeader), 1, f) == 1)
+                    {
+                        fseek(f, hdr.size, SEEK_SET);
+                        NroAssetHeader ahdr = {};
+                        if(fread(&ahdr, sizeof(NroAssetHeader), 1, f) == 1)
+                        {
+                            if(ahdr.magic == NROASSETHEADER_MAGIC)
+                            {
+                                if(ahdr.nacp.size > 0)
+                                {
+                                    fseek(f, hdr.size + ahdr.nacp.offset, SEEK_SET);
+                                    fread(&info.nacp, ahdr.nacp.size, 1, f);
+                                }
+                            }
+                        }
+                    }
+                }
+                fclose(f);
+            }
+        }
+        else
+        {
+            info.icon_path = GetTitleCacheIconPath(record.app_id);
+            NsApplicationControlData cdata = {};
+            nsGetApplicationControlData(1, record.app_id, &cdata, sizeof(cdata), NULL);
+            memcpy(&info.nacp, &cdata.nacp, sizeof(cdata.nacp));
+        }
+        return info;
+    }
+
     void SaveRecord(TitleRecord record)
     {
         JSON entry = JSON::object();
@@ -184,57 +291,15 @@ namespace cfg
                         TitleRecord rec = {};
                         rec.json_name = name;
                         rec.title_type = (u32)type;
-                        rec.nro_path = "sdmc:";
-                        if(nropath.front() != '/') rec.nro_path += "/";
-                        rec.nro_path += nropath;
+                        rec.nro_path = nropath;
                         std::string folder = entry.value("folder", "");
                         rec.sub_folder = folder;
-                        if(cache)
-                        {
-                            auto nroimg = GetNROCacheIconPath(rec.nro_path);
-                            FILE *f = fopen(rec.nro_path.c_str(), "rb");
-                            if(f)
-                            {
-                                NroStart st = {};
-                                if(fread(&st, sizeof(NroStart), 1, f) == 1)
-                                {
-                                    NroHeader hdr = {};
-                                    if(fread(&hdr, sizeof(NroHeader), 1, f) == 1)
-                                    {
-                                        fseek(f, hdr.size, SEEK_SET);
-                                        NroAssetHeader ahdr = {};
-                                        if(fread(&ahdr, sizeof(NroAssetHeader), 1, f) == 1)
-                                        {
-                                            if(ahdr.magic == NROASSETHEADER_MAGIC)
-                                            {
-                                                if(ahdr.icon.size > 0)
-                                                {
-                                                    u8 *iconbuf = new u8[ahdr.icon.size]();
-                                                    fseek(f, hdr.size + ahdr.icon.size, SEEK_SET);
-                                                    if(fread(iconbuf, ahdr.icon.size, 1, f) == 1)
-                                                    {
-                                                        fs::WriteFile(nroimg, iconbuf, ahdr.icon.size, true);
-                                                    }
-                                                    delete[] iconbuf;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                fclose(f);
-                            }
-                        }
-                        if(folder.empty())
-                        {
-                            list.root.titles.push_back(rec);
-                        }
+                        if(cache) CacheHomebrew(rec.nro_path);
+                        if(folder.empty()) list.root.titles.push_back(rec);
                         else
                         {
                             auto find = STLITER_FINDWITHCONDITION(list.folders, fld, (fld.name == folder));
-                            if(STLITER_ISFOUND(list.folders, find))
-                            {
-                                STLITER_UNWRAP(find).titles.push_back(rec);
-                            }
+                            if(STLITER_ISFOUND(list.folders, find)) STLITER_UNWRAP(find).titles.push_back(rec);
                             else
                             {
                                 TitleFolder fld = {};

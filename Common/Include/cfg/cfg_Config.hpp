@@ -6,8 +6,9 @@ namespace cfg
 {
     enum class TitleType : u32
     {
-        Installed = BIT(0),
-        Homebrew = BIT(1)
+        Invalid,
+        Installed,
+        Homebrew
     };
 
     struct TitleRecord
@@ -32,7 +33,45 @@ namespace cfg
         std::vector<TitleFolder> folders;
     };
 
+    struct ThemeManifest
+    {
+        std::string name;
+        u32 format_version;
+        std::string release;
+        std::string description;
+        std::string author;
+    };
+
+    struct UIConfig
+    {
+        u8 suspended_final_alpha;
+    };
+
+    struct SoundConfig
+    {
+        bool loop;
+        bool fade_in;
+        bool fade_out;
+    };
+
+    struct Theme
+    {
+        std::string path;
+        ThemeManifest manifest;
+        UIConfig ui;
+        SoundConfig sound;
+    };
+
+    struct RecordInformation
+    {
+        NacpStruct nacp;
+        std::string icon_path;
+    };
+
+    void CacheHomebrew(std::string nro_path);
     ResultWith<TitleList> LoadTitleList(bool cache);
+    std::vector<TitleRecord> QueryAllHomebrew(bool cache, std::string base = "sdmc:/switch");
+    RecordInformation GetRecordInformation(TitleRecord record);
 
     void SaveRecord(TitleRecord record);
     bool MoveTitleToDirectory(TitleList &list, u64 app_id, std::string dir);

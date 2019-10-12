@@ -7,16 +7,19 @@
 
 extern ui::QMenuApplication::Ref qapp;
 extern cfg::TitleList list;
+extern std::vector<cfg::TitleRecord> homebrew;
 
 namespace ui
 {
-    MenuLayout::MenuLayout(void *raw)
+    MenuLayout::MenuLayout(void *raw, u8 min_alpha, bool hb_mode)
     {
         this->susptr = raw;
         this->mode = 0;
         this->rawalpha = 255;
         this->root_idx = 0;
         this->warnshown = false;
+        this->minalpha = min_alpha;
+        this->homebrew_mode = hb_mode;
 
         this->bgSuspendedRaw = RawData::New(0, 0, raw, 1280, 720, 4);
         this->Add(this->bgSuspendedRaw);
@@ -33,69 +36,132 @@ namespace ui
 
     void MenuLayout::menu_Click(u64 down, u32 index)
     {
-        auto &folder = cfg::FindFolderByName(list, this->curfolder);
         if(index == 0)
         {
             if(down & KEY_A)
             {
-                qapp->CreateShowDialog("A", "All titles...", {"Ok"}, true);
+                if(this->homebrew_mode)
+                {
+                    qapp->CreateShowDialog("All", "All homebrew...", {"Ok"}, true);
+                }
+                else
+                {
+                    qapp->CreateShowDialog("All", "All titles...", {"Ok"}, true);
+                }
             }
         }
         else
         {
             u32 realidx = index - 1;
-            if(realidx < folder.titles.size())
+            if(this->homebrew_mode)
             {
-                auto title = folder.titles[realidx];
+                auto hb = homebrew[realidx];
                 if(down & KEY_A)
                 {
-                    if(!qapp->IsTitleSuspended())
-                    {
-                        if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew)
-                        {
-                            // TODO: Homebrew launching!
-                        }
-                        else
-                        {
-                            am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchApplication);
-                            writer.Write<u64>(title.app_id);
-                            writer.Write<bool>(false);
-                            writer.FinishWrite();
+                    am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchHomebrewLibApplet);
+                    hb::TargetInput ipt = {};
+                    strcpy(ipt.nro_path, hb.nro_path.c_str());
+                    strcpy(ipt.argv, hb.nro_path.c_str());
+                    writer.Write<hb::TargetInput>(ipt);
+                    writer.FinishWrite();
 
-                            am::QMenuCommandResultReader reader;
-                            if(reader && R_SUCCEEDED(reader.GetReadResult()))
-                            {
-                                qapp->CloseWithFadeOut();
-                                return;
-                            }
-                            else
-                            {
-                                auto rc = reader.GetReadResult();
-                                qapp->CreateShowDialog("Title launch", "An error ocurred attempting to launch the title:\n" + util::FormatResultDisplay(rc) + " (" + util::FormatResultHex(rc) + ")", { "Ok" }, true);
-                            }
-                            reader.FinishRead();
-                        }
-                    }
-                    else if(qapp->GetSuspendedApplicationId() == title.app_id)
-                    {
-                        // Pressed A on the suspended title - return to it
-                        if(this->mode == 1) this->mode = 2;
-                    }
+                    am::QMenuCommandResultReader reader;
+                    reader.FinishRead();
+
+                    qapp->CloseWithFadeOut();
+                    return;
                 }
                 else if(down & KEY_X)
                 {
-                    if(this->HandleFolderChange(title))
-                    {
-                        this->MoveFolder(this->curfolder, true);
-                    }
+                    auto sopt = qapp->CreateShowDialog("Add to menu", "Would you like to add this homebrew to the main menu?\nIt will be launched as a normal application,\n(THERE MIGHT BE BAN RISK FOR LAUNCHING IT THIS WAY!)", { "Yes", "Cancel" }, true);
+                    if(sopt == 0) cfg::SaveRecord(hb);
                 }
             }
             else
             {
-                auto foldr = list.folders[realidx - folder.titles.size()];
-                if(down & KEY_A)
+                auto &folder = cfg::FindFolderByName(list, this->curfolder);
+                if(realidx < folder.titles.size())
                 {
-                    this->MoveFolder(foldr.name, true);
+                    auto title = folder.titles[realidx];
+                    if(down & KEY_A)
+                    {
+                        if(!qapp->IsSuspended())
+                        {
+                            if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew)
+                            {
+                                am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchHomebrewApplication);
+                                hb::TargetInput ipt = {};
+                                strcpy(ipt.nro_path, title.nro_path.c_str());
+                                strcpy(ipt.argv, title.nro_path.c_str());
+                                writer.Write<hb::TargetInput>(ipt);
+                                writer.FinishWrite();
+
+                                am::QMenuCommandResultReader reader;
+                                if(reader && R_SUCCEEDED(reader.GetReadResult()))
+                                {
+                                    qapp->CloseWithFadeOut();
+                                    return;
+                                }
+                                else
+                                {
+                                    auto rc = reader.GetReadResult();
+                                    qapp->CreateShowDialog("Title launch", "An error ocurred attempting to launch the title:\n" + util::FormatResultDisplay(rc) + " (" + util::FormatResultHex(rc) + ")", { "Ok" }, true);
+                                }
+                                reader.FinishRead();
+                            }
+                            else
+                            {
+                                am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchApplication);
+                                writer.Write<u64>(title.app_id);
+                                writer.FinishWrite();
+
+                                am::QMenuCommandResultReader reader;
+                                if(reader && R_SUCCEEDED(reader.GetReadResult()))
+                                {
+                                    qapp->CloseWithFadeOut();
+                                    return;
+                                }
+                                else
+                                {
+                                    auto rc = reader.GetReadResult();
+                                    qapp->CreateShowDialog("Title launch", "An error ocurred attempting to launch the title:\n" + util::FormatResultDisplay(rc) + " (" + util::FormatResultHex(rc) + ")", { "Ok" }, true);
+                                }
+                                reader.FinishRead();
+                            }
+                        }
+                        else
+                        {
+                            if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew)
+                            {
+                                if(title.nro_path == qapp->GetSuspendedHomebrewPath())
+                                {
+                                    if(this->mode == 1) this->mode = 2;
+                                }
+                            }
+                            else
+                            {
+                                if(title.app_id == qapp->GetSuspendedApplicationId())
+                                {
+                                    if(this->mode == 1) this->mode = 2;
+                                }
+                            }
+                        }
+                    }
+                    else if(down & KEY_X)
+                    {
+                        if(this->HandleFolderChange(title))
+                        {
+                            this->MoveFolder(this->curfolder, true);
+                        }
+                    }
+                }
+                else
+                {
+                    auto foldr = list.folders[realidx - folder.titles.size()];
+                    if(down & KEY_A)
+                    {
+                        this->MoveFolder(foldr.name, true);
+                    }
                 }
             }
         }
@@ -105,46 +171,65 @@ namespace ui
     {
         if(fade) qapp->FadeOut();
 
-        if(this->curfolder.empty())
+        if(this->homebrew_mode)
         {
-            // Moving from root to a folder, let's save the indexes we were on
-            this->root_idx = itemsMenu->GetSelectedItem();
-            this->root_baseidx = itemsMenu->GetBaseItemIndex();
-        }
-
-        auto &folder = cfg::FindFolderByName(list, name);
-        this->itemsMenu->ClearItems();
-
-        // Add first item for all titles menu
-        this->itemsMenu->AddItem("romfs:/default/ui/AllTitles.png");
-        u32 tmpidx = 0;
-        for(auto itm: folder.titles)
-        {
-            std::string iconpth;
-            if((cfg::TitleType)itm.title_type == cfg::TitleType::Installed) iconpth = cfg::GetTitleCacheIconPath(itm.app_id);
-            else if((cfg::TitleType)itm.title_type == cfg::TitleType::Homebrew) iconpth = cfg::GetNROCacheIconPath(itm.nro_path);
-            this->itemsMenu->AddItem(iconpth);
-            if(qapp->GetSuspendedApplicationId() == itm.app_id) this->itemsMenu->SetSuspendedItem(tmpidx + 1); // 1st item is always "all titles"!
-            tmpidx++;
-        }
-        if(name.empty())
-        {
-            std::vector<cfg::TitleFolder> folders;
-            for(auto folder: list.folders)
+            this->itemsMenu->ClearItems();
+            this->itemsMenu->AddItem("romfs:/default/ui/AllTitles.png");
+            for(auto itm: homebrew)
             {
-                if(!folder.titles.empty())
-                {
-                    folders.push_back(folder);
-                    this->itemsMenu->AddItem("romfs:/default/ui/Folder.png");
-                }
+                std::string iconpth = cfg::GetNROCacheIconPath(itm.nro_path);
+                this->itemsMenu->AddItem(iconpth);
             }
-            list.folders = folders;
-            this->itemsMenu->SetSelectedItem(this->root_idx);
-            this->itemsMenu->SetBaseItemIndex(this->root_baseidx);
         }
-        this->itemsMenu->UpdateBorderIcons();
+        else
+        {
+            if(this->curfolder.empty())
+            {
+                // Moving from root to a folder, let's save the indexes we were on
+                this->root_idx = itemsMenu->GetSelectedItem();
+                this->root_baseidx = itemsMenu->GetBaseItemIndex();
+            }
 
-        this->curfolder = name;
+            auto &folder = cfg::FindFolderByName(list, name);
+            this->itemsMenu->ClearItems();
+
+            // Add first item for all titles menu
+            this->itemsMenu->AddItem("romfs:/default/ui/AllTitles.png");
+            u32 tmpidx = 0;
+            for(auto itm: folder.titles)
+            {
+                std::string iconpth;
+                if((cfg::TitleType)itm.title_type == cfg::TitleType::Installed)
+                {
+                    iconpth = cfg::GetTitleCacheIconPath(itm.app_id);
+                    if(qapp->IsTitleSuspended()) if(qapp->GetSuspendedApplicationId() == itm.app_id) this->itemsMenu->SetSuspendedItem(tmpidx + 1); // 1st item is always "all titles"!
+                }
+                else
+                {
+                    iconpth = cfg::GetNROCacheIconPath(itm.nro_path);
+                    if(qapp->IsHomebrewSuspended()) if(qapp->GetSuspendedHomebrewPath() == itm.nro_path) this->itemsMenu->SetSuspendedItem(tmpidx + 1); // 1st item is always "all titles"!
+                }
+                this->itemsMenu->AddItem(iconpth);
+                tmpidx++;
+            }
+            if(name.empty())
+            {
+                std::vector<cfg::TitleFolder> folders;
+                for(auto folder: list.folders)
+                {
+                    if(!folder.titles.empty())
+                    {
+                        folders.push_back(folder);
+                        this->itemsMenu->AddItem("romfs:/default/ui/Folder.png");
+                    }
+                }
+                list.folders = folders;
+                this->itemsMenu->SetBasePositions(this->root_idx, this->root_baseidx);
+            }
+            this->itemsMenu->UpdateBorderIcons();
+
+            this->curfolder = name;
+        }
 
         if(fade) qapp->FadeIn();
     }
@@ -166,7 +251,7 @@ namespace ui
         {
             case am::QMenuMessage::HomeRequest:
             {
-                if(qapp->IsTitleSuspended())
+                if(qapp->IsSuspended())
                 {
                     if(this->mode == 1) this->mode = 2;
                 }
@@ -181,12 +266,16 @@ namespace ui
         {
             if(this->mode == 0)
             {
-                if(this->rawalpha == 80) this->mode = 1;
+                if(this->rawalpha == this->minalpha)
+                {
+                    this->bgSuspendedRaw->SetAlphaFactor(this->rawalpha);
+                    this->mode = 1;
+                }
                 else
                 {
                     this->bgSuspendedRaw->SetAlphaFactor(this->rawalpha);
                     this->rawalpha -= 10;
-                    if(this->rawalpha < 80) this->rawalpha = 80;
+                    if(this->rawalpha < this->minalpha) this->rawalpha = this->minalpha;
                     else
                     {
                         s32 cw = this->bgSuspendedRaw->GetWidth();
@@ -241,10 +330,16 @@ namespace ui
         {
             if(!this->curfolder.empty()) this->MoveFolder("", true);
         }
-        else if(down & KEY_L)
+        else if(down & KEY_R)
         {
-            qapp->CreateShowDialog("A", "Id -> " + util::FormatApplicationId(qapp->GetSuspendedApplicationId()), {"Ok"}, true);
+            this->ChangeMenuMode();
         }
+    }
+
+    void MenuLayout::ChangeMenuMode()
+    {
+        this->homebrew_mode = !this->homebrew_mode;
+        this->MoveFolder("", true);
     }
 
     bool MenuLayout::HandleFolderChange(cfg::TitleRecord &rec)

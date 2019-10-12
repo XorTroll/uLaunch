@@ -51,7 +51,13 @@ namespace ui
         {
             auto ricon = this->ricons[i];
             Drawer->RenderTexture(ricon, basex, Y, { -1, ItemSize, ItemSize, -1 });
-            
+            if(this->suspitm >= 0)
+            {
+                if((this->baseiconidx + i) == (u32)suspitm)
+                {
+                    Drawer->RenderRectangleFill(this->suspclr, basex, Y + ItemSize + FocusMargin, ItemSize, FocusSize);
+                }
+            }
             if(this->cursoricon != NULL)
             {
                 if((this->baseiconidx + i) == selitm)
@@ -61,13 +67,6 @@ namespace ui
                 else if((this->baseiconidx + i) == preselitm)
                 {
                     Drawer->RenderTexture(this->cursoricon, basex - Margin, Y - Margin, { movalpha, CursorSize, CursorSize, -1 });
-                }
-            }
-            if(this->suspitm >= 0)
-            {
-                if((this->baseiconidx + i) == (u32)suspitm)
-                {
-                    Drawer->RenderRectangleFill(this->suspclr, basex, Y + ItemSize + FocusMargin, ItemSize, FocusSize);
                 }
             }
             basex += ItemSize + Margin;
@@ -133,7 +132,7 @@ namespace ui
 
     void SideMenu::SetSelectedItem(u32 Index)
     {
-        this->selitm = Index;
+        if(Index < this->icons.size()) this->selitm = Index;
     }
 
     void SideMenu::HandleMoveLeft()
@@ -233,6 +232,15 @@ namespace ui
     void SideMenu::SetBaseItemIndex(u32 index)
     {
         this->baseiconidx = index;
+    }
+
+    void SideMenu::SetBasePositions(u32 SelectedIdx, u32 BaseIdx)
+    {
+        if(SelectedIdx < this->icons.size())
+        {
+            this->SetSelectedItem(SelectedIdx);
+            this->SetBaseItemIndex(BaseIdx);
+        }
     }
 
     void SideMenu::ClearBorderIcons()

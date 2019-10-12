@@ -1,6 +1,7 @@
 
 #pragma once
 #include <q_Include.hpp>
+#include <hb/hb_Target.hpp>
 
 namespace am
 {
@@ -9,6 +10,7 @@ namespace am
         Invalid,
         StartupScreen,
         MenuNormal,
+        MenuHomebrewMode,
         MenuApplicationSuspended,
         MenuLaunchFailure
     };
@@ -26,12 +28,24 @@ namespace am
         LaunchApplication,
         ResumeApplication,
         TerminateApplication,
-        GetSuspendedApplicationId
+        GetSuspendedInfo,
+        LaunchHomebrewLibApplet,
+        LaunchHomebrewApplication
+    };
+
+    struct QSuspendedInfo
+    {
+        hb::TargetInput input; // Set if homebrew (via flog takeover) is suspended
+        u64 app_id; // Set if any title (other than flog) is suspended
     };
 
     Result QDaemon_LaunchQMenu(QMenuStartMode mode);
+    Result QDaemon_LaunchQHbTarget(hb::TargetInput input);
 
+    Result QLibraryAppletReadStorage(void *data, size_t size);
+    Result QApplicationReadStorage(void *data, size_t size);
     ResultWith<QMenuStartMode> QMenu_ProcessInput();
+
     Result QMenu_InitializeDaemonService();
     ResultWith<QMenuMessage> QMenu_GetLatestQMenuMessage();
     void QMenu_FinalizeDaemonService();
@@ -50,8 +64,8 @@ namespace am
         u32 val;
     };
 
-    static constexpr u32 Magic = 0xAABBCCDD;
-    static constexpr size_t BlockSize = 0x400;
+    static constexpr u32 Magic = 0x434D4151;
+    static constexpr size_t BlockSize = 0x2000;
 
     template<QCommandRWFunction WriteFn>
     class QCommandWriter

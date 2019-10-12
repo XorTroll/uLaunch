@@ -16,6 +16,7 @@ extern "C"
 
 ui::QMenuApplication::Ref qapp;
 cfg::TitleList list;
+std::vector<cfg::TitleRecord> homebrew;
 
 namespace qmenu
 {
@@ -32,6 +33,9 @@ namespace qmenu
         fs::CreateDirectory(Q_BASE_SD_DIR "/nro");
         db::Commit();
         am::QMenu_InitializeDaemonService();
+
+        // Cache all homebrew (is this too slow...?)
+        homebrew = cfg::QueryAllHomebrew(true);
     }
 
     void Exit()
@@ -60,22 +64,7 @@ int main()
             auto renderer = pu::ui::render::Renderer::New(SDL_INIT_EVERYTHING, pu::ui::render::RendererInitOptions::RendererEverything, pu::ui::render::RendererHardwareFlags);
             qapp = ui::QMenuApplication::New(renderer);
 
-            u64 susappid = 0;
-
-            if(smode == am::QMenuStartMode::MenuApplicationSuspended)
-            {
-                am::QMenuCommandWriter writer(am::QDaemonMessage::GetSuspendedApplicationId);
-                writer.FinishWrite();
-                am::QMenuCommandResultReader reader;
-                if(reader) susappid = reader.Read<u64>();
-                reader.FinishRead();
-
-                bool flag;
-                appletGetLastApplicationCaptureImageEx(app_buf, 1280 * 720 * 4, &flag);
-            }
-
             qapp->SetStartMode(smode);
-            qapp->SetSuspendedApplicationId(susappid);
             qapp->Prepare();
             
             if(smode == am::QMenuStartMode::MenuApplicationSuspended) qapp->Show();

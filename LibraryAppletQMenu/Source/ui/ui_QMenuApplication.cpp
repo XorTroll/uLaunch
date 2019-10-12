@@ -8,19 +8,28 @@ namespace ui
     {
         pu::ui::render::SetDefaultFont("romfs:/default/ui/Font.ttf");
 
+        am::QMenuCommandWriter writer(am::QDaemonMessage::GetSuspendedInfo);
+        writer.FinishWrite();
+        am::QMenuCommandResultReader reader;
+        if(reader) this->suspinfo = reader.Read<am::QSuspendedInfo>();
+        reader.FinishRead();
+
+        if(this->IsSuspended())
+        {
+            bool flag;
+            appletGetLastApplicationCaptureImageEx(app_buf, 1280 * 720 * 4, &flag);
+        }
+
         this->startupLayout = StartupLayout::New(pu::ui::Color(10, 120, 255, 255));
-        this->menuLayout = MenuLayout::New(app_buf);
-        this->tsuspended = false;
+        bool hb = false;
+        if(this->stmode == am::QMenuStartMode::MenuHomebrewMode) hb = true;
+        this->menuLayout = MenuLayout::New(app_buf, 80, hb);
 
         switch(this->stmode)
         {
             case am::QMenuStartMode::MenuNormal:
-                this->LoadMenu();
-                break;
+            case am::QMenuStartMode::MenuHomebrewMode:
             case am::QMenuStartMode::MenuApplicationSuspended:
-                this->SetTitleSuspended(true);
-                this->LoadMenu();
-                break;
             case am::QMenuStartMode::MenuLaunchFailure:
                 this->LoadMenu();
                 break;
@@ -40,19 +49,34 @@ namespace ui
         this->LoadLayout(this->menuLayout);
     }
 
+    bool QMenuApplication::IsSuspended()
+    {
+        return (this->IsTitleSuspended() || this->IsHomebrewSuspended());
+    }
+
     bool QMenuApplication::IsTitleSuspended()
     {
-        return this->tsuspended;
+        return (this->suspinfo.app_id != 0);
+    }
+
+    bool QMenuApplication::IsHomebrewSuspended()
+    {
+        return strlen(this->suspinfo.input.nro_path);
+    }
+
+    std::string QMenuApplication::GetSuspendedHomebrewPath()
+    {
+        return this->suspinfo.input.nro_path;
+    }
+
+    u64 QMenuApplication::GetSuspendedApplicationId()
+    {
+        return this->suspinfo.app_id;
     }
 
     bool QMenuApplication::LaunchFailed()
     {
         return (this->stmode == am::QMenuStartMode::MenuLaunchFailure);
-    }
-
-    void QMenuApplication::SetTitleSuspended(bool suspended)
-    {
-        this->tsuspended = suspended;
     }
     
     void QMenuApplication::SetSelectedUser(u128 user_id)
@@ -67,16 +91,5 @@ namespace ui
     u128 QMenuApplication::GetSelectedUser()
     {
         return this->selected_user;
-    }
-
-    void QMenuApplication::SetSuspendedApplicationId(u64 app_id)
-    {
-        this->SetTitleSuspended(app_id != 0);
-        this->suspended_appid = app_id;
-    }
-
-    u64 QMenuApplication::GetSuspendedApplicationId()
-    {
-        return this->suspended_appid;
     }
 }

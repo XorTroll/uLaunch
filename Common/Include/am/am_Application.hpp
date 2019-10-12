@@ -17,8 +17,9 @@ namespace am
 
     bool ApplicationIsActive();
     void ApplicationTerminate();
-    Result ApplicationStart(u64 app_id, bool system, u128 user_id);
+    Result ApplicationStart(u64 app_id, bool system, u128 user_id, void *data = NULL, size_t size = 0);
     bool ApplicationHasForeground();
     Result ApplicationSetForeground();
+    Result ApplicationSend(void *data, size_t size, AppletLaunchParameterKind kind = AppletLaunchParameterKind_UserChannel);
     u64 ApplicationGetId();
 }

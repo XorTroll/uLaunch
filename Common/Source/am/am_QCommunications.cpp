@@ -34,10 +34,32 @@ namespace am
         return LibraryAppletStart(AppletId_shop, (u32)mode, NULL, 0);
     }
 
+    Result QDaemon_LaunchQHbTarget(hb::TargetInput input)
+    {
+        return LibraryAppletStart(AppletId_miiEdit, (u32)am::Magic, &input, sizeof(input));
+    }
+
+    Result QLibraryAppletReadStorage(void *data, size_t size)
+    {
+        return QMenu_QDaemonReadImpl(data, size, false);
+    }
+
+    Result QApplicationReadStorage(void *data, size_t size)
+    {
+        AppletStorage st;
+        auto rc = appletPopLaunchParameter(&st, AppletLaunchParameterKind_UserChannel);
+        if(R_SUCCEEDED(rc))
+        {
+            rc = appletStorageRead(&st, 0, data, size);
+            appletStorageClose(&st);
+        }
+        return rc;
+    }
+
     ResultWith<QMenuStartMode> QMenu_ProcessInput()
     {
         LibAppletArgs in_args;
-        auto rc = QMenu_QDaemonReadImpl(&in_args, sizeof(LibAppletArgs), false);
+        auto rc = QLibraryAppletReadStorage(&in_args, sizeof(LibAppletArgs));
         return MakeResultWith(rc, (QMenuStartMode)in_args.LaVersion);
     }
 

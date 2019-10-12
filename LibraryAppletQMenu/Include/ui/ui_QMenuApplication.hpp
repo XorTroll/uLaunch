@@ -16,20 +16,20 @@ namespace ui
             void SetStartMode(am::QMenuStartMode mode);
             void LoadMenu();
 
+            bool IsSuspended();
             bool IsTitleSuspended();
+            bool IsHomebrewSuspended();
+            std::string GetSuspendedHomebrewPath();
+            u64 GetSuspendedApplicationId();
             bool LaunchFailed();
-            void SetTitleSuspended(bool suspended);
+
             void SetSelectedUser(u128 user_id);
             u128 GetSelectedUser();
-            void SetSuspendedApplicationId(u64 app_id);
-            u64 GetSuspendedApplicationId();
         private:
             am::QMenuStartMode stmode;
             StartupLayout::Ref startupLayout;
             MenuLayout::Ref menuLayout;
-
-            bool tsuspended;
+            am::QSuspendedInfo suspinfo;
             u128 selected_user;
-            u64 suspended_appid;
     };
 }

@@ -62,8 +62,6 @@ constexpr ResultWith<Args...> SuccessResultWith(Args &&...args)
     return MakeResultWith(0, args...);
 }
 
-static constexpr u64 HomeHeapSize = 0xB800000;
-
 // Console
 
 #include <iostream>

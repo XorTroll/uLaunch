@@ -21,7 +21,7 @@ Metadata is stored inside `/theme` directory. It is required for the theme to be
     ```json
     {
         "name": "My awesome theme",
-        "version": 0,
+        "format_version": 0,
         "release": "0.1",
         "description": "This is a really cool theme, check it out!",
         "author": "XorTroll"
@@ -32,7 +32,7 @@ Metadata is stored inside `/theme` directory. It is required for the theme to be
 
     - **name**: Theme name
 
-    - **version**: Theme format version (qlaunch updates might introduce changes to themes, thus a new format version would be out).
+    - **format_version**: Theme format version (qlaunch updates might introduce changes to themes, thus a new format version would be out).
 
     - **release**: Theme version string
 
@@ -83,5 +83,21 @@ Can be customized via files in `/ui`.
 - `ui/Folder.png` -> 256x256 PNG for folders in the main menu.
 
 - `ui/Cursor.png` -> 296x296 PNG for the cursor pointing at items in the main menu.
+
+- `ui/UI.json` -> JSON file with UI settings
+
+   Demo JSON:
+
+    ```json
+    {
+        "suspended_final_alpha": 80
+    }
+    ```
+
+    Properties:
+
+    - **suspended_final_alpha**: Final alpha the suspended title's capture will have (0 would be to fully hide it, default is 80)
+
+    Note: returning to/launching a title/applet and returning back to HOME menu will restart the music.
 
 > *TODO: more customizable stuff*
