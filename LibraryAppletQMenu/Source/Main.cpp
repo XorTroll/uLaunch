@@ -26,6 +26,7 @@ namespace qmenu
         db::Mount();
         fs::CreateDirectory(Q_BASE_DB_DIR);
         fs::CreateDirectory(Q_BASE_SD_DIR);
+        fs::CreateDirectory(Q_ENTRIES_PATH);
         fs::CreateDirectory(Q_BASE_SD_DIR "/title");
         fs::CreateDirectory(Q_BASE_SD_DIR "/user");
         fs::CreateDirectory(Q_BASE_SD_DIR "/nro");
@@ -59,23 +60,22 @@ int main()
             auto renderer = pu::ui::render::Renderer::New(SDL_INIT_EVERYTHING, pu::ui::render::RendererInitOptions::RendererEverything, pu::ui::render::RendererHardwareFlags);
             qapp = ui::QMenuApplication::New(renderer);
 
+            u64 susappid = 0;
+
             if(smode == am::QMenuStartMode::MenuApplicationSuspended)
             {
                 am::QMenuCommandWriter writer(am::QDaemonMessage::GetSuspendedApplicationId);
                 writer.FinishWrite();
                 am::QMenuCommandResultReader reader;
-                if(reader) qapp->SetSuspendedApplicationId(reader.Read<u64>());
+                if(reader) susappid = reader.Read<u64>();
                 reader.FinishRead();
 
-                FILE *f = fopen(Q_BASE_SD_DIR "/temp-suspended.rgba", "rb");
-                if(f)
-                {
-                    fread(app_buf, 1, 1280 * 720 * 4, f);
-                    fclose(f);
-                }
+                bool flag;
+                appletGetLastApplicationCaptureImageEx(app_buf, 1280 * 720 * 4, &flag);
             }
 
             qapp->SetStartMode(smode);
+            qapp->SetSuspendedApplicationId(susappid);
             qapp->Prepare();
             
             if(smode == am::QMenuStartMode::MenuApplicationSuspended) qapp->Show();

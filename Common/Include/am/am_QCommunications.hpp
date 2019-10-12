@@ -9,7 +9,8 @@ namespace am
         Invalid,
         StartupScreen,
         MenuNormal,
-        MenuApplicationSuspended
+        MenuApplicationSuspended,
+        MenuLaunchFailure
     };
 
     enum class QMenuMessage

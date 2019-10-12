@@ -78,8 +78,10 @@ Can be customized via files in `/ui`.
 
 - `ui/Font.ttf` -> TTF font used for all the UI.
 
-- `ui/AllTitles.png` -> 256x256 icon for the "all titles" entry in the main menu.
+- `ui/AllTitles.png` -> 256x256 PNG for the "all titles" entry in the main menu.
 
-- `ui/Folder.png` -> 256x256 icon for folders in the main menu.
+- `ui/Folder.png` -> 256x256 PNG for folders in the main menu.
+
+- `ui/Cursor.png` -> 296x296 PNG for the cursor pointing at items in the main menu.
 
 > *TODO: more customizable stuff*

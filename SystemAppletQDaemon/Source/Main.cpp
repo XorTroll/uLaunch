@@ -85,15 +85,6 @@ void HandleAppletMessage()
                 {
                     if(am::ApplicationHasForeground())
                     {
-                        bool flag;
-                        appletUpdateLastForegroundCaptureImage();
-                        appletGetLastForegroundCaptureImageEx(app_buf, 1280 * 720 * 4, &flag);
-                        FILE *f = fopen(Q_BASE_SD_DIR "/temp-suspended.rgba", "wb");
-                        if(f)
-                        {
-                            fwrite(app_buf, 1, 1280 * 720 * 4, f);
-                            fclose(f);
-                        }
                         am::HomeMenuSetForeground();
                         am::QDaemon_LaunchQMenu(am::QMenuStartMode::MenuApplicationSuspended);
                         used_to_reopen_menu = true;
@@ -307,7 +298,12 @@ int main()
             if(!am::LibraryAppletIsActive())
             {
                 auto rc = am::ApplicationStart(titlelaunch_flag, titlelaunch_system, selected_uid);
-                if(R_FAILED(rc)) am::QDaemon_LaunchQMenu(am::QMenuStartMode::StartupScreen);
+                svcSleepThread(500'000'000);
+                if(!am::ApplicationIsActive())
+                {
+                    // Title failed to launch, so we re-launch QMenu this way...
+                    am::QDaemon_LaunchQMenu(am::QMenuStartMode::MenuLaunchFailure);
+                }
                 titlelaunch_flag = 0;
             }
         }

@@ -21,6 +21,9 @@ namespace ui
                 this->SetTitleSuspended(true);
                 this->LoadMenu();
                 break;
+            case am::QMenuStartMode::MenuLaunchFailure:
+                this->LoadMenu();
+                break;
             default:
                 this->LoadLayout(this->startupLayout);
                 break;
@@ -40,6 +43,11 @@ namespace ui
     bool QMenuApplication::IsTitleSuspended()
     {
         return this->tsuspended;
+    }
+
+    bool QMenuApplication::LaunchFailed()
+    {
+        return (this->stmode == am::QMenuStartMode::MenuLaunchFailure);
     }
 
     void QMenuApplication::SetTitleSuspended(bool suspended)
@@ -63,7 +71,7 @@ namespace ui
 
     void QMenuApplication::SetSuspendedApplicationId(u64 app_id)
     {
-        this->SetTitleSuspended(true);
+        this->SetTitleSuspended(app_id != 0);
         this->suspended_appid = app_id;
     }
 

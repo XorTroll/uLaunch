@@ -2,18 +2,17 @@
 
 namespace ui
 {
-    SideMenu::SideMenu(pu::ui::Color FocusColor, pu::ui::Color SuspendedColor)
+    SideMenu::SideMenu(pu::ui::Color SuspendedColor, std::string CursorPath)
     {
         this->selitm = 0;
         this->suspitm = -1;
-        this->selclr = FocusColor;
         this->suspclr = SuspendedColor;
         this->baseiconidx = 0;
         this->movalpha = 0;
         this->leftbicon = NULL;
         this->rightbicon = NULL;
-        this->onfocus = [&](u32){};
-        this->onclick = [&](u32){};
+        this->cursoricon = pu::ui::render::LoadImage(CursorPath);
+        this->onselect = [&](u32,u64){};
     }
 
     s32 SideMenu::GetX()
@@ -38,9 +37,9 @@ namespace ui
         if(this->icons.empty()) return;
         if(this->ricons.empty())
         {
-            for(u32 i = 0; i < std::min((size_t)4, this->icons.size()); i++)
+            for(u32 i = 0; i < std::min((size_t)4, (this->icons.size() - this->baseiconidx)); i++)
             {
-                auto icon = pu::ui::render::LoadImage(this->icons[i]);
+                auto icon = pu::ui::render::LoadImage(this->icons[this->baseiconidx + i]);
                 this->ricons.push_back(icon);
             }
             this->UpdateBorderIcons();
@@ -52,17 +51,24 @@ namespace ui
         {
             auto ricon = this->ricons[i];
             Drawer->RenderTexture(ricon, basex, Y, { -1, ItemSize, ItemSize, -1 });
-            pu::ui::Color clr = this->selclr;
-            clr.A = 175 - movalpha;
-            pu::ui::Color preclr = this->selclr;
-            preclr.A = movalpha;
-            if((this->baseiconidx + i) == selitm)
+            
+            if(this->cursoricon != NULL)
             {
-                Drawer->RenderRectangleFill(clr, basex, Y, ItemSize, ItemSize);
+                if((this->baseiconidx + i) == selitm)
+                {
+                    Drawer->RenderTexture(this->cursoricon, basex - Margin, Y - Margin, { 255 - movalpha, CursorSize, CursorSize, -1 });
+                }
+                else if((this->baseiconidx + i) == preselitm)
+                {
+                    Drawer->RenderTexture(this->cursoricon, basex - Margin, Y - Margin, { movalpha, CursorSize, CursorSize, -1 });
+                }
             }
-            else if((this->baseiconidx + i) == preselitm)
+            if(this->suspitm >= 0)
             {
-                Drawer->RenderRectangleFill(preclr, basex, Y, ItemSize, ItemSize);
+                if((this->baseiconidx + i) == (u32)suspitm)
+                {
+                    Drawer->RenderRectangleFill(this->suspclr, basex, Y + ItemSize + FocusMargin, ItemSize, FocusSize);
+                }
             }
             basex += ItemSize + Margin;
         }
@@ -91,17 +97,12 @@ namespace ui
 
         if(Down & KEY_LEFT) HandleMoveLeft();
         else if(Down & KEY_RIGHT) HandleMoveRight();
-        else if(Down & KEY_A) (this->onclick)(selitm);
+        else (this->onselect)(Down, this->selitm);
     }
 
-    void SideMenu::SetOnItemSelected(std::function<void(u32)> Fn)
+    void SideMenu::SetOnItemSelected(std::function<void(u64, u32)> Fn)
     {
-        this->onclick = Fn;
-    }
-
-    void SideMenu::SetOnItemFocus(std::function<void(u32)> Fn)
-    {
-        this->onfocus = Fn;
+        this->onselect = Fn;
     }
 
     void SideMenu::ClearItems()
@@ -110,7 +111,9 @@ namespace ui
         for(auto &ricon: this->ricons) pu::ui::render::DeleteTexture(ricon);
         this->ricons.clear();
         this->selitm = 0;
+        this->baseiconidx = 0;
         this->suspitm = -1;
+        this->ClearBorderIcons();
     }
 
     void SideMenu::AddItem(std::string Icon)
@@ -141,8 +144,7 @@ namespace ui
             preselitm = selitm;
             selitm--;
             if(ilf) ReloadIcons(1);
-            else movalpha = 175;
-            (this->onfocus)(selitm);
+            else movalpha = 255;
         }
     }
 
@@ -154,8 +156,7 @@ namespace ui
             preselitm = selitm;
             selitm++;
             if(irl) ReloadIcons(2);
-            else movalpha = 175;
-            (this->onfocus)(selitm);
+            else movalpha = 255;
         }
     }
     
@@ -224,16 +225,31 @@ namespace ui
         this->UpdateBorderIcons();
     }
 
-    void SideMenu::UpdateBorderIcons()
+    u32 SideMenu::GetBaseItemIndex()
+    {
+        return this->baseiconidx;
+    }
+
+    void SideMenu::SetBaseItemIndex(u32 index)
+    {
+        this->baseiconidx = index;
+    }
+
+    void SideMenu::ClearBorderIcons()
     {
         if(leftbicon != NULL) pu::ui::render::DeleteTexture(leftbicon);
         leftbicon = NULL;
+        if(rightbicon != NULL) pu::ui::render::DeleteTexture(rightbicon);
+        rightbicon = NULL;
+    }
+
+    void SideMenu::UpdateBorderIcons()
+    {
+        this->ClearBorderIcons();
         if(baseiconidx > 0)
         {
             leftbicon = pu::ui::render::LoadImage(icons[baseiconidx - 1]);
         }
-        if(rightbicon != NULL) pu::ui::render::DeleteTexture(rightbicon);
-        rightbicon = NULL;
         if((baseiconidx + 4) < icons.size())
         {
             rightbicon = pu::ui::render::LoadImage(icons[baseiconidx + 4]);

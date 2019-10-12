@@ -12,6 +12,7 @@ namespace cfg
 
     struct TitleRecord
     {
+        std::string json_name; // Empty for non-SD, normal title records
         u32 title_type;
         std::string sub_folder; // Empty for root, name for a certain folder
 
@@ -33,7 +34,9 @@ namespace cfg
 
     ResultWith<TitleList> LoadTitleList(bool cache);
 
+    void SaveRecord(TitleRecord record);
     bool MoveTitleToDirectory(TitleList &list, u64 app_id, std::string dir);
+    TitleFolder &FindFolderByName(TitleList &list, std::string name);
 
     std::string GetTitleCacheIconPath(u64 app_id);
     std::string GetNROCacheIconPath(std::string path);

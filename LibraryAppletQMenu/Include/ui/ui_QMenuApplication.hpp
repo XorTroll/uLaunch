@@ -17,6 +17,7 @@ namespace ui
             void LoadMenu();
 
             bool IsTitleSuspended();
+            bool LaunchFailed();
             void SetTitleSuspended(bool suspended);
             void SetSelectedUser(u128 user_id);
             u128 GetSelectedUser();
