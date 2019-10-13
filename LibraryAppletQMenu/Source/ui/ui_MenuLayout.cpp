@@ -8,6 +8,8 @@
 extern ui::QMenuApplication::Ref qapp;
 extern cfg::TitleList list;
 extern std::vector<cfg::TitleRecord> homebrew;
+extern cfg::MenuConfig config;
+extern cfg::ProcessedTheme theme;
 
 namespace ui
 {
@@ -24,13 +26,14 @@ namespace ui
         this->bgSuspendedRaw = RawData::New(0, 0, raw, 1280, 720, 4);
         this->Add(this->bgSuspendedRaw);
 
-        this->itemsMenu = SideMenu::New(pu::ui::Color(0, 255, 120, 255), "romfs:/default/ui/Cursor.png");
+        this->itemsMenu = SideMenu::New(pu::ui::Color(0, 255, 120, 255), cfg::ProcessedThemeResource(theme, "ui/Cursor.png"));
         this->MoveFolder("", false);
         
         this->itemsMenu->SetOnItemSelected(std::bind(&MenuLayout::menu_Click, this, std::placeholders::_1, std::placeholders::_2));
         this->Add(this->itemsMenu);
         this->tp = std::chrono::steady_clock::now();
 
+        this->SetBackgroundImage(cfg::ProcessedThemeResource(theme, "ui/Background.png"));
         this->SetOnInput(std::bind(&MenuLayout::OnInput, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
     }
 
@@ -42,7 +45,18 @@ namespace ui
             {
                 if(this->homebrew_mode)
                 {
-                    qapp->CreateShowDialog("All", "All homebrew...", {"Ok"}, true);
+                    am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchHomebrewLibApplet);
+                    hb::TargetInput ipt = {};
+                    strcpy(ipt.nro_path, "sdmc:/hbmenu.nro"); // Launch normal hbmenu
+                    strcpy(ipt.argv, "sdmc:/hbmenu.nro");
+                    writer.Write<hb::TargetInput>(ipt);
+                    writer.FinishWrite();
+
+                    am::QMenuCommandResultReader reader;
+                    reader.FinishRead();
+
+                    qapp->CloseWithFadeOut();
+                    return;
                 }
                 else
                 {
@@ -89,6 +103,7 @@ namespace ui
                         {
                             if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew)
                             {
+                                qapp->CreateShowDialog("Homebrew accessor", title.nro_path, {"Ok"}, true);
                                 am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchHomebrewApplication);
                                 hb::TargetInput ipt = {};
                                 strcpy(ipt.nro_path, title.nro_path.c_str());
@@ -174,7 +189,7 @@ namespace ui
         if(this->homebrew_mode)
         {
             this->itemsMenu->ClearItems();
-            this->itemsMenu->AddItem("romfs:/default/ui/AllTitles.png");
+            this->itemsMenu->AddItem(cfg::ProcessedThemeResource(theme, "ui/Hbmenu.png"));
             for(auto itm: homebrew)
             {
                 std::string iconpth = cfg::GetNROCacheIconPath(itm.nro_path);
@@ -194,7 +209,7 @@ namespace ui
             this->itemsMenu->ClearItems();
 
             // Add first item for all titles menu
-            this->itemsMenu->AddItem("romfs:/default/ui/AllTitles.png");
+            this->itemsMenu->AddItem(cfg::ProcessedThemeResource(theme, "ui/AllTitles.png"));
             u32 tmpidx = 0;
             for(auto itm: folder.titles)
             {
@@ -220,7 +235,7 @@ namespace ui
                     if(!folder.titles.empty())
                     {
                         folders.push_back(folder);
-                        this->itemsMenu->AddItem("romfs:/default/ui/Folder.png");
+                        this->itemsMenu->AddItem(cfg::ProcessedThemeResource(theme, "ui/Folder.png"));
                     }
                 }
                 list.folders = folders;
@@ -334,6 +349,11 @@ namespace ui
         {
             this->ChangeMenuMode();
         }
+        else if(down & KEY_PLUS)
+        {
+            auto path = cfg::ProcessedThemeResource(theme, "ui/Cursor.png");
+            qapp->CreateShowDialog("'" + theme.base.path + "'", "'" + theme.base.manifest.name + "'\n'" + path + "'", {"OK"}, true);
+        }
     }
 
     void MenuLayout::ChangeMenuMode()
@@ -355,7 +375,7 @@ namespace ui
             auto rc = swkbdShow(&swkbd, dir, 500);
             if(R_SUCCEEDED(rc))
             {
-                cfg::MoveTitleToDirectory(list, rec.app_id, std::string(dir));
+                cfg::MoveRecordTo(list, rec, std::string(dir));
                 changedone = true;
             }
         }
@@ -364,7 +384,7 @@ namespace ui
             auto sopt = qapp->CreateShowDialog("Title move", "Would you like to move this entry outside the folder?", { "Yes", "Cancel" }, true);
             if(sopt == 0)
             {
-                cfg::MoveTitleToDirectory(list, rec.app_id, "");
+                cfg::MoveRecordTo(list, rec, "");
                 changedone = true;
             }
         }

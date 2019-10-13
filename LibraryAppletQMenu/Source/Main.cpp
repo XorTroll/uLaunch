@@ -17,6 +17,8 @@ extern "C"
 ui::QMenuApplication::Ref qapp;
 cfg::TitleList list;
 std::vector<cfg::TitleRecord> homebrew;
+cfg::MenuConfig config;
+cfg::ProcessedTheme theme;
 
 namespace qmenu
 {
@@ -28,6 +30,7 @@ namespace qmenu
         fs::CreateDirectory(Q_BASE_DB_DIR);
         fs::CreateDirectory(Q_BASE_SD_DIR);
         fs::CreateDirectory(Q_ENTRIES_PATH);
+        fs::CreateDirectory(Q_THEMES_PATH);
         fs::CreateDirectory(Q_BASE_SD_DIR "/title");
         fs::CreateDirectory(Q_BASE_SD_DIR "/user");
         fs::CreateDirectory(Q_BASE_SD_DIR "/nro");
@@ -36,6 +39,13 @@ namespace qmenu
 
         // Cache all homebrew (is this too slow...?)
         homebrew = cfg::QueryAllHomebrew(true);
+
+        // Load menu config
+        config = cfg::EnsureConfig();
+
+        // Load theme
+        auto th = cfg::LoadTheme(config.theme_name);
+        theme = cfg::ProcessTheme(th);
     }
 
     void Exit()

@@ -20,7 +20,7 @@ namespace ui
             appletGetLastApplicationCaptureImageEx(app_buf, 1280 * 720 * 4, &flag);
         }
 
-        this->startupLayout = StartupLayout::New(pu::ui::Color(10, 120, 255, 255));
+        this->startupLayout = StartupLayout::New();
         bool hb = false;
         if(this->stmode == am::QMenuStartMode::MenuHomebrewMode) hb = true;
         this->menuLayout = MenuLayout::New(app_buf, 80, hb);

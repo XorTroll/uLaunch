@@ -8,7 +8,7 @@
 
 1. [Features](#features)
 2. [Disclaimer](#disclaimer)
-3. [How does it work?](#how-does-it-work?)
+3. [How does it work?](#how-does-it-work)
 4. [Installing and removing](#installing-and-removing)
 5. [Compiling](#compiling)
 
@@ -60,7 +60,7 @@ Since launching this title should be impossible, it might involve ban risk, so *
 
 This is the technically actual qlaunch reimplementation. However, to avoid memory issues it does not use any kind of UI (except console for development debug, which is removed for releases), and thus it uses 16MB of heap, while official HOME menu uses 56MB.
 
-Instead, it uses [QMenu custom library applet](#QMenu%20(LibraryAppletQMenu)) (launches and communicates with it) in order to display a proper menu UI.
+Instead, it uses [QMenu custom library applet](#qmenu-libraryappletqmenu) (launches and communicates with it) in order to display a proper menu UI.
 
 But, if all the functionality is handled by QMenu, why is this daemon process necessary? Well, mainly since the system applet process has a lot of unique code it's the only one who can use, specially, related to title launching, focus managing...
 

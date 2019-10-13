@@ -11,7 +11,6 @@ namespace cfg
     void CacheHomebrew(std::string nro_path)
     {
         auto nroimg = GetNROCacheIconPath(nro_path);
-        if(fs::ExistsFile(nroimg)) return; // Speed up (very rare chance that NROs have the exact same size...?)
         FILE *f = fopen(nro_path.c_str(), "rb");
         if(f)
         {
@@ -115,6 +114,107 @@ namespace cfg
         return info;
     }
 
+    Theme LoadTheme(std::string base_name)
+    {
+        Theme theme = {};
+        auto themedir = std::string(Q_THEMES_PATH) + "/" + base_name;
+        if(base_name.empty()) themedir = CFG_THEME_DEFAULT;
+        theme.path = themedir;
+        auto metajson = themedir + "/theme/Manifest.json";
+        auto [rc, meta] = util::LoadJSONFromFile(metajson);
+        if(R_SUCCEEDED(rc))
+        {
+            theme.manifest.name = meta.value("name", "'" + base_name + "'");
+            theme.manifest.format_version = meta.value("format_version", CurrentThemeFormatVersion);
+            theme.manifest.release = meta.value("release", "");
+            theme.manifest.description = meta.value("description", "");
+            theme.manifest.author = meta.value("author", "");
+        }
+        return theme;
+    }
+
+    std::vector<Theme> LoadThemes()
+    {
+        std::vector<Theme> themes;
+
+        fs::ForEachDirectoryIn(Q_THEMES_PATH, [&](std::string name, std::string path)
+        {
+            Theme t = LoadTheme(name);
+            if(!t.path.empty()) themes.push_back(t);
+        });
+
+        return themes;
+    }
+
+    std::string ThemeResource(Theme &base, std::string resource_base)
+    {
+        auto base_res = base.path + "/" + resource_base;
+        if(fs::ExistsFile(base_res)) return base_res;
+        base_res = std::string(CFG_THEME_DEFAULT) + "/" + resource_base;
+        if(fs::ExistsFile(base_res)) return base_res;
+        return "";
+    }
+
+    std::string ProcessedThemeResource(ProcessedTheme &base, std::string resource_base)
+    {
+        return ThemeResource(base.base, resource_base);
+    }
+
+    ProcessedTheme ProcessTheme(Theme &base)
+    {
+        ProcessedTheme processed;
+        processed.base = base;
+        auto uijson = ThemeResource(base, "ui/UI.json");
+        auto [rc, ui] = util::LoadJSONFromFile(uijson);
+        if(R_SUCCEEDED(rc))
+        {
+            processed.ui.suspended_final_alpha = ui.value("suspended_final_alpha", 80);
+            auto bgmjson = ThemeResource(base, "sound/BGM.json");
+            auto [rc, bgm] = util::LoadJSONFromFile(bgmjson);
+            if(R_SUCCEEDED(rc))
+            {
+                processed.sound.loop = bgm.value("loop", true);
+                processed.sound.fade_in = bgm.value("fade_in", true);
+                processed.sound.fade_out = bgm.value("fade_in", true);
+            }
+        }
+        return processed;
+    }
+
+    MenuConfig CreateNewAndLoadConfig()
+    {
+        MenuConfig cfg = {};
+        SaveConfig(cfg);
+        return cfg;
+    }
+
+    MenuConfig LoadConfig()
+    {
+        MenuConfig cfg = {};
+        auto [rc, cfgjson] = util::LoadJSONFromFile(CFG_CONFIG_JSON);
+        if(R_SUCCEEDED(rc))
+        {
+            cfg.theme_name = cfgjson.value("theme_name", "");
+        }
+        return cfg;
+    }
+
+    MenuConfig EnsureConfig()
+    {
+        if(!fs::ExistsFile(CFG_CONFIG_JSON)) return CreateNewAndLoadConfig();
+        return LoadConfig();
+    }
+
+    void SaveConfig(MenuConfig &cfg)
+    {
+        fs::DeleteFile(CFG_CONFIG_JSON);
+        JSON j = JSON::object();
+        j["theme_name"] = cfg.theme_name;
+        std::ofstream ofs(CFG_CONFIG_JSON);
+        ofs << j;
+        ofs.close();
+    }
+
     void SaveRecord(TitleRecord record)
     {
         JSON entry = JSON::object();
@@ -182,6 +282,103 @@ namespace cfg
             TitleRecord title = {};
             title.app_id = app_id;
             title.title_type = (u32)TitleType::Installed;
+            title.json_name = recjson;
+            title.sub_folder = folder;
+
+            if(folder.empty()) // Add (move) it to root again
+            {
+                list.root.titles.push_back(title);
+            }
+            else // Add it to the new folder
+            {
+                auto find2 = STLITER_FINDWITHCONDITION(list.folders, fld, (fld.name == folder));
+                if(STLITER_ISFOUND(list.folders, find2))
+                {
+                    STLITER_UNWRAP(find2).titles.push_back(title);
+                }
+                else
+                {
+                    TitleFolder fld = {};
+                    fld.name = folder;
+                    fld.titles.push_back(title);
+                    list.folders.push_back(fld);
+                }
+            }
+
+            SaveRecord(title);
+        }
+
+        return title_found;
+    }
+
+    bool MoveRecordTo(TitleList &list, TitleRecord record, std::string folder)
+    {
+        bool title_found = false;
+        TitleRecord record_copy = {};
+        std::string recjson;
+
+        // Search in root first
+        if((TitleType)record.title_type == TitleType::Installed)
+        {
+            auto find = STLITER_FINDWITHCONDITION(list.root.titles, tit, (tit.title_type == record.title_type) && (tit.app_id == record.app_id));
+            if(STLITER_ISFOUND(list.root.titles, find))
+            {
+                if(folder.empty()) return true;  // It is already on root...?
+                recjson = STLITER_UNWRAP(find).json_name;
+
+                list.root.titles.erase(find);
+                title_found = true;
+            }
+        }
+        else
+        {
+            auto find = STLITER_FINDWITHCONDITION(list.root.titles, tit, (tit.title_type == record.title_type) && (tit.nro_path == record.nro_path));
+            if(STLITER_ISFOUND(list.root.titles, find))
+            {
+                if(folder.empty()) return true;  // It is already on root...?
+                recjson = STLITER_UNWRAP(find).json_name;
+
+                list.root.titles.erase(find);
+                title_found = true;
+            }
+        }
+
+        if(!title_found) // If not found yet, search on all dirs if the title is present
+        {
+            for(auto &fld: list.folders)
+            {
+                if((TitleType)record.title_type == TitleType::Installed)
+                {
+                    auto find = STLITER_FINDWITHCONDITION(fld.titles, tit, (tit.title_type == record.title_type) && (tit.app_id == record.app_id));
+                    if(STLITER_ISFOUND(fld.titles, find))
+                    {
+                        if(fld.name == folder) return true; // It is already on that folder...?
+                        recjson = STLITER_UNWRAP(find).json_name;
+
+                        fld.titles.erase(find);
+                        title_found = true;
+                        break;
+                    }
+                }
+                else
+                {
+                    auto find = STLITER_FINDWITHCONDITION(fld.titles, tit, (tit.title_type == record.title_type) && (tit.nro_path == record.nro_path));
+                    if(STLITER_ISFOUND(fld.titles, find))
+                    {
+                        if(fld.name == folder) return true; // It is already on that folder...?
+                        recjson = STLITER_UNWRAP(find).json_name;
+
+                        fld.titles.erase(find);
+                        title_found = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if(title_found) 
+        {
+            TitleRecord title = record;
             title.json_name = recjson;
             title.sub_folder = folder;
 

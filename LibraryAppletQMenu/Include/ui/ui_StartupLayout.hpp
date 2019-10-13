@@ -11,7 +11,7 @@ namespace ui
     class StartupLayout : public pu::ui::Layout
     {
         public:
-            StartupLayout(pu::ui::Color bgcolor);
+            StartupLayout();
             PU_SMART_CTOR(StartupLayout)
 
             void user_Click();

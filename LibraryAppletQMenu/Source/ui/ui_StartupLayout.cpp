@@ -5,25 +5,21 @@
 #include <fs/fs_Stdio.hpp>
 
 extern ui::QMenuApplication::Ref qapp;
+extern cfg::ProcessedTheme theme;
 
 namespace ui
 {
-    StartupLayout::StartupLayout(pu::ui::Color bgcolor)
+    StartupLayout::StartupLayout()
     {
-        this->SetBackgroundColor(bgcolor);
-
-        auto clr = bgcolor;
-        if(clr.R < 255) clr.R += std::min(20, 255 - clr.R);
-        if(clr.G < 255) clr.G += std::min(20, 255 - clr.G);
-        if(clr.B < 255) clr.B += std::min(20, 255 - clr.B);
+        this->SetBackgroundImage(cfg::ProcessedThemeResource(theme, "ui/Background.png"));
 
         this->infoText = pu::ui::elm::TextBlock::New(0, 100, "Welcome! Please select an account to use.");
         this->infoText->SetColor({ 235, 235, 235, 255 });
         this->infoText->SetHorizontalAlign(pu::ui::elm::HorizontalAlign::Center);
         this->Add(this->infoText);
 
-        this->usersMenu = pu::ui::elm::Menu::New(400, 160, 480, bgcolor, 100, 4);
-        this->usersMenu->SetOnFocusColor(clr);
+        this->usersMenu = pu::ui::elm::Menu::New(400, 160, 480, pu::ui::Color(0, 0, 0, 0), 100, 4);
+        this->usersMenu->SetOnFocusColor({ 255, 255, 255, 0 });
         
         auto [rc, users] = os::QuerySystemAccounts(true);
         if(R_SUCCEEDED(rc))

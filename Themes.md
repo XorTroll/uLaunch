@@ -40,8 +40,6 @@ Metadata is stored inside `/theme` directory. It is required for the theme to be
 
     - **author**: Theme author name(s)
 
-- `theme/Icon(.png?)` -> Icon (which size and format shall we use?)
-
 ## Sound
 
 Sound consists on custom *background music* and *sound effects* via files inside `/sound`.
@@ -83,6 +81,10 @@ Can be customized via files in `/ui`.
 - `ui/Folder.png` -> 256x256 PNG for folders in the main menu.
 
 - `ui/Cursor.png` -> 296x296 PNG for the cursor pointing at items in the main menu.
+
+- `ui/Background.png` -> 1280x720 PNG for the menu's background.
+
+- `ui/Hbmenu.png` -> 256x256 PNG for the option (in homebrew menu) to directly launch normal hbmenu NRO.
 
 - `ui/UI.json` -> JSON file with UI settings
 

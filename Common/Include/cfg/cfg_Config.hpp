@@ -58,6 +58,11 @@ namespace cfg
     {
         std::string path;
         ThemeManifest manifest;
+    };
+
+    struct ProcessedTheme
+    {
+        Theme base;
         UIConfig ui;
         SoundConfig sound;
     };
@@ -68,13 +73,34 @@ namespace cfg
         std::string icon_path;
     };
 
+    struct MenuConfig
+    {
+        std::string theme_name;
+    };
+
+    static constexpr u32 CurrentThemeFormatVersion = 0;
+
+    #define CFG_THEME_DEFAULT "romfs:/default"
+    #define CFG_CONFIG_JSON Q_BASE_SD_DIR "/config.json"
+
     void CacheHomebrew(std::string nro_path);
     ResultWith<TitleList> LoadTitleList(bool cache);
     std::vector<TitleRecord> QueryAllHomebrew(bool cache, std::string base = "sdmc:/switch");
     RecordInformation GetRecordInformation(TitleRecord record);
 
+    Theme LoadTheme(std::string base_name);
+    std::vector<Theme> LoadThemes();
+    std::string ThemeResource(Theme &base, std::string resource_base);
+    std::string ProcessedThemeResource(ProcessedTheme &base, std::string resource_base);
+    ProcessedTheme ProcessTheme(Theme &base);
+
+    MenuConfig CreateNewAndLoadConfig();
+    MenuConfig LoadConfig();
+    MenuConfig EnsureConfig();
+    void SaveConfig(MenuConfig &cfg);
+
     void SaveRecord(TitleRecord record);
-    bool MoveTitleToDirectory(TitleList &list, u64 app_id, std::string dir);
+    bool MoveRecordTo(TitleList &list, TitleRecord record, std::string folder);
     TitleFolder &FindFolderByName(TitleList &list, std::string name);
 
     std::string GetTitleCacheIconPath(u64 app_id);

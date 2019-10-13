@@ -25,6 +25,7 @@ using JSON = nlohmann::json;
 #define Q_DB_MOUNT_PATH Q_DB_MOUNT_NAME ":/"
 #define Q_BASE_DB_DIR Q_DB_MOUNT_PATH Q_BASE_DIR
 #define Q_ENTRIES_PATH Q_BASE_SD_DIR "/entries"
+#define Q_THEMES_PATH Q_BASE_SD_DIR "/themes"
 
 // Thanks SciresM
 #define R_TRY(res_expr) \
