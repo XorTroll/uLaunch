@@ -1,16 +1,24 @@
-# (Unnamed) qlaunch reimplementation
+# {insert cool name here}
 
-> Custom, open-source replacement for Nintendo Switch's HOME Menu (qlaunch)
+> Custom, open-source replacement for Nintendo Switch's HOME Menu (qlaunch), extending it with great, homebrew-orienteed functionality!
+
+- Note: *{qlaunch-reimpl}* will be replaced with the actual project's name when it is decided.
 
 {qlaunch-reimpl} is a very ambicious project, consisting on two custom library applets, a custom system application and a custom system applet, in order to replace the console's **HOME menu** with a custom, homebrew-orienteed one.
 
-- Note: *{qlaunch-reimpl}* will be replaced with the actual project's name when it is decided.
+- The project is licensed as **GPLv2**.
+
+- For those who are interested in how the UI was done, this project is, like [Goldleaf](https://github.com/XorTroll/Goldleaf), a good example of how powerful [Plutonium libraries](https://github.com/XorTroll/Plutonium) can be in order to make beautiful UIs.
+
+## Are you looking for help with themes? Check [this document](Themes.md) for more info!
 
 1. [Features](#features)
 2. [Disclaimer](#disclaimer)
 3. [How does it work?](#how-does-it-work)
 4. [Installing and removing](#installing-and-removing)
 5. [Compiling](#compiling)
+6. [Errors](#errors)
+7. [Credits](#credits)
 
 ## Features
 
@@ -100,7 +108,13 @@ Check if folders `0100000000001000`, `010000000000100B`, `0100000000001009` and 
 
 You will need devkitPro, devkitA64, libnx and all SDL2 libraries for switch development.
 
-Clone or download this repo and hit `make` in root. It should build everything and generate a `titles` folder ready for use inside `SdOut`.
+Clone (**recursively!**) this repo (uses libstratosphere and Plutonium submodules) and hit `make` in root. It should build everything and generate a `titles` folder ready for use inside `SdOut`.
+
+## Errors
+
+If you get a crash using {qlaunch-reimpl}, please check:
+
+- If the crash's title is `0100000000001000`, `010000000000100B`, `0100000000001009` or `01008BB00013C000` and **you know for sure you have this project in your SD**, then it is very likely related to this project.
 
 ## Credits
 
