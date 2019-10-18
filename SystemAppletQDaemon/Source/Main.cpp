@@ -21,9 +21,8 @@ u128 selected_uid = 0;
 hb::TargetInput hblaunch_flag = {};
 hb::TargetInput hbapplaunch_copy = {};
 hb::TargetInput hbapplaunch_flag = {};
-bool hblaunched = false;
 u64 titlelaunch_flag = 0;
-bool titlelaunch_system = false;
+WebCommonConfig webapplet_flag = {};
 
 HosMutex latestqlock;
 am::QMenuMessage latestqmenumsg = am::QMenuMessage::Invalid;
@@ -214,13 +213,8 @@ void HandleQMenuMessage()
                 }
                 case am::QDaemonMessage::LaunchHomebrewLibApplet:
                 {
-                    auto ipt = reader.Read<hb::TargetInput>();
+                    hblaunch_flag = reader.Read<hb::TargetInput>();
                     reader.FinishRead();
-
-                    hblaunch_flag = ipt;
-
-                    am::QDaemonCommandResultWriter res(0);
-                    res.FinishWrite();
 
                     break;
                 }
@@ -251,6 +245,13 @@ void HandleQMenuMessage()
                         am::QDaemonCommandResultWriter res(0);
                         res.FinishWrite();
                     }
+                    break;
+                }
+                case am::QDaemonMessage::OpenWebPage:
+                {
+                    webapplet_flag = reader.Read<WebCommonConfig>();
+                    reader.FinishRead();
+
                     break;
                 }
                 default:
@@ -325,8 +326,24 @@ namespace qdaemon
     void DaemonServiceMain(void *arg)
     {
         static auto server = WaitableManager(2);
-        server.AddWaitable(new ServiceServer<ipc::IDaemonService>("daemon", 0x10));
+        server.AddWaitable(new ServiceServer<ipc::IDaemonService>("qdaemon", 0x10));
         server.Process();
+    }
+
+    void ForegroundMain(void *arg)
+    {
+        u8 *demo = new u8[1280 * 720 * 4]();
+
+        usbCommsInitialize();
+        while(true)
+        {
+            appletUpdateLastForegroundCaptureImage();
+            bool tmp;
+            appletGetLastForegroundCaptureImageEx(demo, 1280 * 720 * 4, &tmp);
+            usbCommsWrite(demo, 1280 * 720 * 4);
+        }
+        usbCommsExit();
+        delete[] demo;
     }
 
     Result LaunchDaemonServiceThread()
@@ -336,12 +353,21 @@ namespace qdaemon
         R_TRY(threadStart(&daemon));
         return 0;
     }
+
+    Result LaunchForegroundThread()
+    {
+        Thread fg;
+        R_TRY(threadCreate(&fg, &ForegroundMain, NULL, 0x4000, 0x2b, -2));
+        R_TRY(threadStart(&fg));
+        return 0;
+    }
 }
 
 int main()
 {
     qdaemon::Initialize();
     qdaemon::LaunchDaemonServiceThread();
+    qdaemon::LaunchForegroundThread();
 
     am::QDaemon_LaunchQMenu(am::QMenuStartMode::StartupScreen);
 
@@ -351,6 +377,20 @@ int main()
         HandleAppletMessage();
         HandleQMenuMessage();
 
+        if(webapplet_flag.version > 0) // A valid version in this config is always >= 0x20000
+        {
+            if(!am::LibraryAppletIsActive())
+            {
+                am::WebAppletStart(&webapplet_flag);
+                svcSleepThread(500'000'000);
+                if(!am::LibraryAppletIsActive())
+                {
+                    // Web applet failed to launch...
+                    am::QDaemon_LaunchQMenu(am::QMenuStartMode::MenuLaunchFailure);
+                }
+                memset(&webapplet_flag, 0, sizeof(webapplet_flag));
+            }
+        }
         if(titlelaunch_flag > 0)
         {
             if(!am::LibraryAppletIsActive())
@@ -387,19 +427,24 @@ int main()
                 svcSleepThread(500'000'000);
                 if(!am::LibraryAppletIsActive())
                 {
-                    // Title failed to launch, so we re-launch QMenu this way...
+                    // QHbTarget libapplet failed to launch...
                     am::QDaemon_LaunchQMenu(am::QMenuStartMode::MenuLaunchFailure);
                 }
-                else hblaunched = true;
                 hblaunch_flag.nro_path[0] = '\0';
             }
         }
         if(!am::LibraryAppletIsActive())
         {
-            if(hblaunched)
+            switch(am::LibraryAppletGetId())
             {
-                am::QDaemon_LaunchQMenu(am::QMenuStartMode::MenuHomebrewMode);
-                hblaunched = false;
+                case am::QHbTargetAppletId:
+                    am::QDaemon_LaunchQMenu(am::QMenuStartMode::MenuHomebrewMode);
+                    break;
+                case AppletId_web:
+                    am::QDaemon_LaunchQMenu(am::QMenuStartMode::MenuNormal);
+                    break;
+                default:
+                    break;
             }
         }
         svcSleepThread(10'000'000);

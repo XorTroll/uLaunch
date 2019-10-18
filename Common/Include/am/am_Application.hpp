@@ -1,6 +1,7 @@
 
 #pragma once
 #include <q_Include.hpp>
+#include <os/os_Titles.hpp>
 
 namespace am
 {
@@ -14,6 +15,7 @@ namespace am
     } PACKED;
 
     static constexpr u32 SelectedUserMagic = 0xC79497CA;
+    static constexpr u64 QHbTargetSystemApplicationId = OS_FLOG_APP_ID;
 
     bool ApplicationIsActive();
     void ApplicationTerminate();

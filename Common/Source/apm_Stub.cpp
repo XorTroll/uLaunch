@@ -2,7 +2,7 @@
 
 extern "C"
 {
-    // Due to a weird bug with apm (and thanks that it isn't basically used in libnx) I stub it here to avoid any crashes.
+    // Due to a weird bug with apm (and thanks that it isn't basically used in libnx) it is stubbed here to avoid any crashes.
 
     Result __wrap_apmInitialize()
     {

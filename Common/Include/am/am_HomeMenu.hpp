@@ -6,4 +6,6 @@ namespace am
 {
     bool HomeMenuHasForeground();
     Result HomeMenuSetForeground();
+
+    Result OpenWebPage(std::string url);
 }

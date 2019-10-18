@@ -30,7 +30,8 @@ namespace am
         TerminateApplication,
         GetSuspendedInfo,
         LaunchHomebrewLibApplet,
-        LaunchHomebrewApplication
+        LaunchHomebrewApplication,
+        OpenWebPage
     };
 
     struct QSuspendedInfo
@@ -65,7 +66,7 @@ namespace am
     };
 
     static constexpr u32 Magic = 0x434D4151;
-    static constexpr size_t BlockSize = 0x2000;
+    static constexpr size_t BlockSize = 0x4000;
 
     template<QCommandRWFunction WriteFn>
     class QCommandWriter
@@ -98,7 +99,7 @@ namespace am
                 if(!write_done)
                 {
                     WriteFn(data_block, BlockSize, false);
-                    delete[] data_block;
+                    if(data_block) delete[] data_block;
                     write_done = true;
                 }
             }
@@ -152,7 +153,7 @@ namespace am
             {
                 if(!read_done)
                 {
-                    delete[] data_block;
+                    if(data_block) delete[] data_block;
                     read_done = true;
                 }
             }

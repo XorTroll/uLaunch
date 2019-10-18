@@ -4,6 +4,7 @@
 #include <pu/Plutonium>
 #include <ui/ui_SideMenu.hpp>
 #include <ui/ui_RawData.hpp>
+#include <ui/ui_ClickableImage.hpp>
 #include <cfg/cfg_Config.hpp>
 
 namespace ui
@@ -15,15 +16,18 @@ namespace ui
             PU_SMART_CTOR(MenuLayout)
 
             void menu_Click(u64 down, u32 index);
+            void menu_OnSelected(u32 index);
+            void toggle_Click();
             void MoveFolder(std::string name, bool fade);
             void OnInput(u64 down, u64 up, u64 held, pu::ui::Touch pos);
-            void ChangeMenuMode();
 
             bool HandleFolderChange(cfg::TitleRecord &rec);
         private:
             void *susptr;
             SideMenu::Ref itemsMenu;
             RawData::Ref bgSuspendedRaw;
+            pu::ui::elm::Image::Ref footerImage;
+            ClickableImage::Ref menuToggleClickable;
             std::string curfolder;
             std::chrono::steady_clock::time_point tp;
             bool warnshown;

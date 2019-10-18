@@ -5,6 +5,19 @@ namespace am
     AppletHolder applet_holder;
     AppletId applet_lastid;
 
+    // Grabbed from libnx's source
+    static u32 WebApplet_GetLaVersion()
+    {
+        u32 ver = 0;
+        u32 hosver = hosversionGet();
+        if(hosver >= MAKEHOSVERSION(8,0,0)) ver = 0x80000;
+        else if(hosver >= MAKEHOSVERSION(6,0,0)) ver = 0x60000;
+        else if(hosver >= MAKEHOSVERSION(5,0,0)) ver = 0x50000;
+        else if(hosver >= MAKEHOSVERSION(3,0,0)) ver = 0x30000;
+        else ver = 0x20000;
+        return ver;
+    }
+
     bool LibraryAppletIsActive()
     {
         if(applet_holder.StateChangedEvent.revent == INVALID_HANDLE) return false;
@@ -14,7 +27,7 @@ namespace am
 
     bool LibraryAppletIsQMenu()
     {
-        return (LibraryAppletIsActive() && (applet_lastid == AppletId_shop));
+        return (LibraryAppletIsActive() && (LibraryAppletGetId() == QMenuAppletId));
     }
 
     void LibraryAppletTerminate()
@@ -47,5 +60,17 @@ namespace am
     Result LibraryAppletRead(void *data, size_t size)
     {
         return libappletPopOutData(&applet_holder, data, size, NULL);
+    }
+
+    Result WebAppletStart(WebCommonConfig *web)
+    {
+        return LibraryAppletStart(AppletId_web, WebApplet_GetLaVersion(), &web->arg, sizeof(web->arg));
+    }
+
+    AppletId LibraryAppletGetId()
+    {
+        auto idcopy = applet_lastid;
+        if(!LibraryAppletIsActive()) applet_lastid = (AppletId)0; // Invalid
+        return idcopy;
     }
 }

@@ -31,12 +31,12 @@ namespace am
 
     Result QDaemon_LaunchQMenu(QMenuStartMode mode)
     {
-        return LibraryAppletStart(AppletId_shop, (u32)mode, NULL, 0);
+        return LibraryAppletStart(QMenuAppletId, (u32)mode, NULL, 0);
     }
 
     Result QDaemon_LaunchQHbTarget(hb::TargetInput input)
     {
-        return LibraryAppletStart(AppletId_miiEdit, (u32)am::Magic, &input, sizeof(input));
+        return LibraryAppletStart(QHbTargetAppletId, (u32)am::Magic, &input, sizeof(input));
     }
 
     Result QLibraryAppletReadStorage(void *data, size_t size)
@@ -66,7 +66,7 @@ namespace am
     Result QMenu_InitializeDaemonService()
     {
         if(serviceIsActive(&daemon_srv)) return 0;
-        return smGetService(&daemon_srv, "daemon");
+        return smGetService(&daemon_srv, "qdaemon");
     }
 
     ResultWith<QMenuMessage> QMenu_GetLatestQMenuMessage()

@@ -13,6 +13,7 @@ namespace ui
         this->rightbicon = NULL;
         this->cursoricon = pu::ui::render::LoadImage(CursorPath);
         this->onselect = [&](u32,u64){};
+        this->onselch = [&](u32){};
     }
 
     s32 SideMenu::GetX()
@@ -43,6 +44,7 @@ namespace ui
                 this->ricons.push_back(icon);
             }
             this->UpdateBorderIcons();
+            (this->onselch)(this->selitm);
         }
 
         u32 basex = X;
@@ -104,6 +106,11 @@ namespace ui
         this->onselect = Fn;
     }
 
+    void SideMenu::SetOnSelectionChanged(std::function<void(u32)> Fn)
+    {
+        this->onselch = Fn;
+    }
+
     void SideMenu::ClearItems()
     {
         this->icons.clear();
@@ -144,6 +151,7 @@ namespace ui
             selitm--;
             if(ilf) ReloadIcons(1);
             else movalpha = 255;
+            (this->onselch)(this->selitm);
         }
     }
 
@@ -156,6 +164,7 @@ namespace ui
             selitm++;
             if(irl) ReloadIcons(2);
             else movalpha = 255;
+            (this->onselch)(this->selitm);
         }
     }
     

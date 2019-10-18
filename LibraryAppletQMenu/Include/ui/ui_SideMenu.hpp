@@ -25,6 +25,7 @@ namespace ui
             void OnRender(pu::ui::render::Renderer::Ref &Drawer, s32 X, s32 Y) override;
             void OnInput(u64 Down, u64 Up, u64 Held, pu::ui::Touch Touch) override;
             void SetOnItemSelected(std::function<void(u64, u32)> Fn);
+            void SetOnSelectionChanged(std::function<void(u32)> Fn);
             void ClearItems();
             void AddItem(std::string Icon);
             void SetSuspendedItem(u32 Index);
@@ -49,6 +50,7 @@ namespace ui
             pu::ui::Color suspclr;
             std::vector<std::string> icons;
             std::function<void(u64, u32)> onselect;
+            std::function<void(u32)> onselch;
             std::vector<pu::ui::render::NativeTexture> ricons;
             pu::ui::render::NativeTexture cursoricon;
             pu::ui::render::NativeTexture leftbicon;

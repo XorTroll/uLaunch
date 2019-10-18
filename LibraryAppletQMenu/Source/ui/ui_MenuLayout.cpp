@@ -26,10 +26,19 @@ namespace ui
         this->bgSuspendedRaw = RawData::New(0, 0, raw, 1280, 720, 4);
         this->Add(this->bgSuspendedRaw);
 
+        this->menuToggleClickable = ClickableImage::New(0, 200, cfg::ProcessedThemeResource(theme, "ui/ToggleClick.png"));
+        this->menuToggleClickable->SetOnClick(std::bind(&MenuLayout::toggle_Click, this));
+        this->menuToggleClickable->SetHorizontalAlign(pu::ui::elm::HorizontalAlign::Center);
+        this->Add(this->menuToggleClickable);
+
+        this->footerImage = pu::ui::elm::Image::New(0, 585, cfg::ProcessedThemeResource(theme, "ui/BannerInstalled.png"));
+        this->Add(this->footerImage);
+
         this->itemsMenu = SideMenu::New(pu::ui::Color(0, 255, 120, 255), cfg::ProcessedThemeResource(theme, "ui/Cursor.png"));
         this->MoveFolder("", false);
         
         this->itemsMenu->SetOnItemSelected(std::bind(&MenuLayout::menu_Click, this, std::placeholders::_1, std::placeholders::_2));
+        this->itemsMenu->SetOnSelectionChanged(std::bind(&MenuLayout::menu_OnSelected, this, std::placeholders::_1));
         this->Add(this->itemsMenu);
         this->tp = std::chrono::steady_clock::now();
 
@@ -51,9 +60,6 @@ namespace ui
                     strcpy(ipt.argv, "sdmc:/hbmenu.nro");
                     writer.Write<hb::TargetInput>(ipt);
                     writer.FinishWrite();
-
-                    am::QMenuCommandResultReader reader;
-                    reader.FinishRead();
 
                     qapp->CloseWithFadeOut();
                     return;
@@ -79,9 +85,6 @@ namespace ui
                     writer.Write<hb::TargetInput>(ipt);
                     writer.FinishWrite();
 
-                    am::QMenuCommandResultReader reader;
-                    reader.FinishRead();
-
                     qapp->CloseWithFadeOut();
                     return;
                 }
@@ -103,7 +106,6 @@ namespace ui
                         {
                             if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew)
                             {
-                                qapp->CreateShowDialog("Homebrew accessor", title.nro_path, {"Ok"}, true);
                                 am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchHomebrewApplication);
                                 hb::TargetInput ipt = {};
                                 strcpy(ipt.nro_path, title.nro_path.c_str());
@@ -180,6 +182,33 @@ namespace ui
                 }
             }
         }
+    }
+
+    void MenuLayout::menu_OnSelected(u32 index)
+    {
+        if(!this->curfolder.empty()) this->footerImage->SetImage(cfg::ProcessedThemeResource(theme, "ui/BannerFolder.png")); // This way user always knows he's inside a folder
+        else if(index > 0)
+        {
+            u32 realidx = index - 1;
+            if(this->homebrew_mode) this->footerImage->SetImage(cfg::ProcessedThemeResource(theme, "ui/BannerHomebrew.png"));
+            else
+            {
+                auto &folder = cfg::FindFolderByName(list, this->curfolder);
+                if(realidx < folder.titles.size())
+                {
+                    auto title = folder.titles[realidx];
+                    if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew) this->footerImage->SetImage(cfg::ProcessedThemeResource(theme, "ui/BannerHomebrew.png"));
+                    else this->footerImage->SetImage(cfg::ProcessedThemeResource(theme, "ui/BannerInstalled.png"));
+                }
+                else this->footerImage->SetImage(cfg::ProcessedThemeResource(theme, "ui/BannerFolder.png"));
+            }
+        }
+        else
+        {
+            if(this->homebrew_mode) this->footerImage->SetImage(cfg::ProcessedThemeResource(theme, "ui/BannerHomebrew.png")); // Since it will launch hbmenu...
+            else this->footerImage->SetImage(cfg::ProcessedThemeResource(theme, "ui/BannerInstalled.png")); // Since it will show "all titles"...
+        }
+        
     }
 
     void MenuLayout::MoveFolder(std::string name, bool fade)
@@ -345,18 +374,30 @@ namespace ui
         {
             if(!this->curfolder.empty()) this->MoveFolder("", true);
         }
-        else if(down & KEY_R)
+        else if(down & KEY_MINUS)
         {
-            this->ChangeMenuMode();
-        }
-        else if(down & KEY_PLUS)
-        {
-            auto path = cfg::ProcessedThemeResource(theme, "ui/Cursor.png");
-            qapp->CreateShowDialog("'" + theme.base.path + "'", "'" + theme.base.manifest.name + "'\n'" + path + "'", {"OK"}, true);
+            SwkbdConfig swkbd;
+            swkbdCreate(&swkbd, 0);
+            swkbdConfigSetHeaderText(&swkbd, "Enter web page URL");
+            char url[500] = {0};
+            auto rc = swkbdShow(&swkbd, url, 500);
+            if(R_SUCCEEDED(rc))
+            {
+                WebCommonConfig web = {};
+                webPageCreate(&web, url);
+                webConfigSetWhitelist(&web, ".*");
+
+                am::QMenuCommandWriter writer(am::QDaemonMessage::OpenWebPage);
+                writer.Write<WebCommonConfig>(web);
+                writer.FinishWrite();
+
+                qapp->CloseWithFadeOut();
+                return;
+            }
         }
     }
 
-    void MenuLayout::ChangeMenuMode()
+    void MenuLayout::toggle_Click()
     {
         this->homebrew_mode = !this->homebrew_mode;
         this->MoveFolder("", true);
@@ -370,7 +411,7 @@ namespace ui
         {
             SwkbdConfig swkbd;
             swkbdCreate(&swkbd, 0);
-            swkbdConfigSetHeaderText(&swkbd, "Select directory name");
+            swkbdConfigSetHeaderText(&swkbd, "Enter directory name");
             char dir[500] = {0};
             auto rc = swkbdShow(&swkbd, dir, 500);
             if(R_SUCCEEDED(rc))
