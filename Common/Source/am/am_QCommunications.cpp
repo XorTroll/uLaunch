@@ -66,7 +66,7 @@ namespace am
     Result QMenu_InitializeDaemonService()
     {
         if(serviceIsActive(&daemon_srv)) return 0;
-        return smGetService(&daemon_srv, "qdaemon");
+        return smGetService(&daemon_srv, AM_QDAEMON_SERVICE_NAME);
     }
 
     ResultWith<QMenuMessage> QMenu_GetLatestQMenuMessage()

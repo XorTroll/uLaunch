@@ -37,6 +37,7 @@
             // 
             // CaptureBox
             // 
+            this.CaptureBox.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
             this.CaptureBox.Location = new System.Drawing.Point(12, 12);
             this.CaptureBox.Name = "CaptureBox";
             this.CaptureBox.Size = new System.Drawing.Size(1280, 720);

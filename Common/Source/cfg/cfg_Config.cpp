@@ -114,6 +114,22 @@ namespace cfg
         return info;
     }
 
+    NacpLanguageEntry *GetRecordInformationLanguageEntry(RecordInformation &info)
+    {
+        NacpLanguageEntry *lent = NULL;
+        nacpGetLanguageEntry(&info.nacp, &lent);
+        if(lent == NULL)
+        {
+            for(u32 i = 0; i < 16; i++)
+            {
+                lent = &info.nacp.lang[i];
+                if(strlen(lent->name) && strlen(lent->author)) break;
+                lent = NULL;
+            }
+        }
+        return lent;
+    }
+
     Theme LoadTheme(std::string base_name)
     {
         Theme theme = {};

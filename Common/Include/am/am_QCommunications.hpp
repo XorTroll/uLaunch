@@ -40,6 +40,8 @@ namespace am
         u64 app_id; // Set if any title (other than flog) is suspended
     };
 
+    #define AM_QDAEMON_SERVICE_NAME "qdmnsrv"
+
     Result QDaemon_LaunchQMenu(QMenuStartMode mode);
     Result QDaemon_LaunchQHbTarget(hb::TargetInput input);
 

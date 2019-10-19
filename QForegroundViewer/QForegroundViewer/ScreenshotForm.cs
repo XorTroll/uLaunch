@@ -91,6 +91,7 @@ namespace QForegroundViewer
             if(sfd.ShowDialog() == DialogResult.OK)
             {
                 ScreenshotBox.Image.Save(sfd.FileName, fmt);
+                MessageBox.Show("Screenshot successfully saved!");
             }
         }
     }

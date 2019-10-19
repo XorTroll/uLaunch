@@ -22,11 +22,15 @@ namespace ui
             void OnInput(u64 down, u64 up, u64 held, pu::ui::Touch pos);
 
             bool HandleFolderChange(cfg::TitleRecord &rec);
+            void HandleCloseSuspended();
         private:
             void *susptr;
             SideMenu::Ref itemsMenu;
             RawData::Ref bgSuspendedRaw;
-            pu::ui::elm::Image::Ref footerImage;
+            pu::ui::elm::TextBlock::Ref itemName;
+            pu::ui::elm::TextBlock::Ref itemAuthor;
+            pu::ui::elm::TextBlock::Ref itemVersion;
+            pu::ui::elm::Image::Ref bannerImage;
             ClickableImage::Ref menuToggleClickable;
             std::string curfolder;
             std::chrono::steady_clock::time_point tp;

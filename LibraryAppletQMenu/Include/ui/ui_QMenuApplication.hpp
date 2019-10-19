@@ -21,6 +21,7 @@ namespace ui
             bool IsHomebrewSuspended();
             std::string GetSuspendedHomebrewPath();
             u64 GetSuspendedApplicationId();
+            void NotifyEndSuspended();
             bool LaunchFailed();
 
             void SetSelectedUser(u128 user_id);

@@ -1,12 +1,13 @@
 #include <ui/ui_QMenuApplication.hpp>
 
 extern u8 *app_buf;
+extern cfg::ProcessedTheme theme;
 
 namespace ui
 {
     void QMenuApplication::OnLoad()
     {
-        pu::ui::render::SetDefaultFont("romfs:/default/ui/Font.ttf");
+        pu::ui::render::SetDefaultFont(cfg::ProcessedThemeResource(theme, "ui/Font.ttf"));
 
         am::QMenuCommandWriter writer(am::QDaemonMessage::GetSuspendedInfo);
         writer.FinishWrite();
@@ -72,6 +73,11 @@ namespace ui
     u64 QMenuApplication::GetSuspendedApplicationId()
     {
         return this->suspinfo.app_id;
+    }
+
+    void QMenuApplication::NotifyEndSuspended()
+    {
+        this->suspinfo = {};
     }
 
     bool QMenuApplication::LaunchFailed()

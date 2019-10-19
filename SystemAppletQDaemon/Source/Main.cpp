@@ -190,6 +190,14 @@ void HandleQMenuMessage()
                     }
                     break;
                 }
+                case am::QDaemonMessage::TerminateApplication:
+                {
+                    reader.FinishRead();
+
+                    am::ApplicationTerminate();
+
+                    break;
+                }
                 case am::QDaemonMessage::GetSuspendedInfo:
                 {
                     reader.FinishRead();
@@ -326,7 +334,7 @@ namespace qdaemon
     void DaemonServiceMain(void *arg)
     {
         static auto server = WaitableManager(2);
-        server.AddWaitable(new ServiceServer<ipc::IDaemonService>("qdaemon", 0x10));
+        server.AddWaitable(new ServiceServer<ipc::IDaemonService>(AM_QDAEMON_SERVICE_NAME, 0x10));
         server.Process();
     }
 

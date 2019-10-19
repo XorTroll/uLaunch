@@ -86,7 +86,10 @@ namespace QForegroundViewer
 
         public static void InitializePictureBox(PictureBox Box)
         {
-            Box.Image = new Bitmap(1280, 720);
+            int w = 1280;
+            int h = 720;
+
+            Box.Image = new Bitmap(w, h, PixelFormat.Format32bppArgb);
         }
 
         public static unsafe void ApplyRGBAToPictureBox(PictureBox Box, byte[] RGBA)

@@ -87,6 +87,7 @@ namespace cfg
     ResultWith<TitleList> LoadTitleList(bool cache);
     std::vector<TitleRecord> QueryAllHomebrew(bool cache, std::string base = "sdmc:/switch");
     RecordInformation GetRecordInformation(TitleRecord record);
+    NacpLanguageEntry *GetRecordInformationLanguageEntry(RecordInformation &info);
 
     Theme LoadTheme(std::string base_name);
     std::vector<Theme> LoadThemes();

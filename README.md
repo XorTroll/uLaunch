@@ -1,6 +1,6 @@
-# {insert cool name here}
+# {qlaunch-reimpl}
 
-> Custom, open-source replacement for Nintendo Switch's HOME Menu (qlaunch), extending it with great, homebrew-orienteed functionality!
+> Custom, open-source replacement for Nintendo Switch's HOME Menu (qlaunch), extending it with amazing, homebrew-orienteed functionality!
 
 - Note: *{qlaunch-reimpl}* will be replaced with the actual project's name when it is decided.
 
@@ -14,7 +14,7 @@
 
 1. [Features](#features)
 2. [Disclaimer](#disclaimer)
-3. [How does it work?](#how-does-it-work)
+3. [Project and subprojects](#project-and-subprojects)
 4. [Installing and removing](#installing-and-removing)
 5. [Compiling](#compiling)
 6. [Errors](#errors)
@@ -22,7 +22,7 @@
 
 ## Features
 
-This is the amount of features {qlaunch-reimpl} has compared to official qlaunch:
+This is the amount of features {qlaunch-reimpl} contains, compared to the original HOME menu:
 
 - Homebrew support
 
@@ -33,6 +33,12 @@ This is the amount of features {qlaunch-reimpl} has compared to official qlaunch
   - Custom basic homebrew menu
 
   - Option to add homebrew accessors to main menu (no more need of **forwarders**!)
+
+- Unique, cool extras
+
+  - Web browsing (via web-applet) directly from HOME menu!
+
+  - **Screenshot capturing** from PC itself via *QForegroundViewer*!
 
 - UI
 
@@ -60,7 +66,7 @@ This is the amount of features {qlaunch-reimpl} has compared to official qlaunch
 
 Since launching this title should be impossible, it might involve ban risk, so **use it at your own risk**. {qlaunch-reimpl} **warns on launching titles this way**.
 
-## How does it work?
+## Project and subprojects
 
 {qlaunch-reimpl} is split, as mentioned above, into several sub-projects:
 
@@ -89,6 +95,12 @@ This is the process which runs instead of flog, which is used to launch homebrew
 #### Library applet (LibraryAppletQHbTarget)
 
 This is the same process but, like in normal HOME menu and Album, it runs homebrew as an applet. However, exiting homebrew here will exit to HOME menu instead of exiting to hbmenu.
+
+### QForegroundViewer
+
+*QDaemon* daemon process, appart from usual (and special) HOME menu functions, it also sends the console's foreground display via USB as a raw RGBA8 1280x720 ~3MB buffer. **QForegroundViewer** is the PC tool (WinForms) which intercepts those sent buffers and renders them. It is a bit laggy, but can be *very* useful for taking quick screenshots!
+
+Unlike the other projects, this one isn't essential and {qlaunch-reimpl} would be perfectly usable ignoring this sent data.
 
 ## Installing and removing
 

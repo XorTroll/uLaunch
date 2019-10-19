@@ -86,6 +86,8 @@ Can be customized via files in `/ui`.
 
 - `ui/Hbmenu.png` -> 256x256 PNG for the option (in homebrew menu) to directly launch normal hbmenu NRO.
 
+- `ui/Banner{type}.png` -> Different 1280x135 PNG banners for menu item types (Folder, Homebrew or Installed)
+
 - `ui/UI.json` -> JSON file with UI settings
 
    Demo JSON:
