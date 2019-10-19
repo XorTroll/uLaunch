@@ -22,8 +22,12 @@ namespace ui
             appletGetLastApplicationCaptureImageEx(app_buf, 1280 * 720 * 4, &flag);
         }
 
-        auto [rc, json] = util::LoadJSONFromFile(cfg::ProcessedThemeResource(theme, "ui/UI.json"));
-        this->uijson = json;
+        auto [_rc, jui] = util::LoadJSONFromFile(cfg::ProcessedThemeResource(theme, "ui/UI.json"));
+        this->uijson = jui;
+        auto [_rc2, jbgm] = util::LoadJSONFromFile(cfg::ProcessedThemeResource(theme, "sound/BGM.json"));
+        this->bgmjson = jbgm;
+
+        this->bgm = pu::audio::Open(cfg::ProcessedThemeResource(theme, "sound/BGM.mp3"));
 
         this->startupLayout = StartupLayout::New();
         bool hb = false;
@@ -52,6 +56,7 @@ namespace ui
     void QMenuApplication::LoadMenu()
     {
         this->LoadLayout(this->menuLayout);
+        this->StartPlayBGM();
     }
 
     bool QMenuApplication::IsSuspended()
@@ -87,6 +92,25 @@ namespace ui
     bool QMenuApplication::LaunchFailed()
     {
         return (this->stmode == am::QMenuStartMode::MenuLaunchFailure);
+    }
+
+    void QMenuApplication::StartPlayBGM()
+    {
+        bool loop = this->bgmjson.value("loop", true);
+        int fade_milli = this->bgmjson.value("fade_in_ms", 1500);
+        if(this->bgm != NULL)
+        {
+            int loops = loop ? -1 : 1;
+            if(fade_milli > 0) pu::audio::PlayWithFadeIn(this->bgm, loops, fade_milli);
+            else pu::audio::Play(this->bgm, loops);
+        }
+    }
+
+    void QMenuApplication::StopPlayBGM()
+    {
+        int fade_milli = this->bgmjson.value("fade_out_ms", 500);
+        if(fade_milli > 0) pu::audio::FadeOut(fade_milli);
+        else pu::audio::Stop();
     }
     
     void QMenuApplication::SetSelectedUser(u128 user_id)

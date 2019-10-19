@@ -20,6 +20,7 @@ namespace ui
         this->mode = 0;
         this->rawalpha = 255;
         this->root_idx = 0;
+        this->root_baseidx = 0;
         this->warnshown = false;
         this->minalpha = min_alpha;
         this->homebrew_mode = hb_mode;
@@ -74,6 +75,7 @@ namespace ui
                     writer.Write<hb::TargetInput>(ipt);
                     writer.FinishWrite();
 
+                    qapp->StopPlayBGM();
                     qapp->CloseWithFadeOut();
                     return;
                 }
@@ -95,6 +97,7 @@ namespace ui
                     writer.Write<hb::TargetInput>(hb.nro_target);
                     writer.FinishWrite();
 
+                    qapp->StopPlayBGM();
                     qapp->CloseWithFadeOut();
                     return;
                 }
@@ -132,6 +135,7 @@ namespace ui
                                     writer.Write<hb::TargetInput>(title.nro_target);
                                     writer.FinishWrite();
 
+                                    qapp->StopPlayBGM();
                                     qapp->CloseWithFadeOut();
                                     return;
                                 }
@@ -144,6 +148,7 @@ namespace ui
                                     am::QMenuCommandResultReader reader;
                                     if(reader && R_SUCCEEDED(reader.GetReadResult()))
                                     {
+                                        qapp->StopPlayBGM();
                                         qapp->CloseWithFadeOut();
                                         return;
                                     }
@@ -164,6 +169,7 @@ namespace ui
                                 am::QMenuCommandResultReader reader;
                                 if(reader && R_SUCCEEDED(reader.GetReadResult()))
                                 {
+                                    qapp->StopPlayBGM();
                                     qapp->CloseWithFadeOut();
                                     return;
                                 }
@@ -483,6 +489,7 @@ namespace ui
                 writer.Write<WebCommonConfig>(web);
                 writer.FinishWrite();
 
+                qapp->StopPlayBGM();
                 qapp->CloseWithFadeOut();
                 return;
             }

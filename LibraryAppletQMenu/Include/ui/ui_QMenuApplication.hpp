@@ -30,6 +30,9 @@ namespace ui
                 return this->uijson.value<T>(name, def);
             }
 
+            void StartPlayBGM();
+            void StopPlayBGM();
+
             void SetSelectedUser(u128 user_id);
             u128 GetSelectedUser();
         private:
@@ -39,5 +42,7 @@ namespace ui
             am::QSuspendedInfo suspinfo;
             u128 selected_user;
             JSON uijson;
+            JSON bgmjson;
+            pu::audio::Music bgm;
     };
 }

@@ -1,5 +1,5 @@
 {
     "loop": true,
-    "fade_in": false,
-    "fade_out": false
+    "fade_in_ms": 1500,
+    "fade_out_ms": 500
 }
