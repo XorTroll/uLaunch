@@ -56,7 +56,7 @@ namespace cfg
 
                     TitleRecord rec = {};
                     rec.title_type = (u32)TitleType::Homebrew;
-                    rec.nro_path = path;
+                    strcpy(rec.nro_target.nro_path, path.c_str());
                     nros.push_back(rec);
                 }
             }
@@ -71,13 +71,29 @@ namespace cfg
         return nros;
     }
 
+    std::string GetRecordIconPath(TitleRecord record)
+    {
+        std::string icon;
+        if((TitleType)record.title_type == TitleType::Homebrew)
+        {
+            if(!record.icon.empty()) icon = record.icon;
+            else icon = GetNROCacheIconPath(record.nro_target.nro_path);
+        }
+        else
+        {
+            if(!record.icon.empty()) icon = record.icon;
+            else icon = GetTitleCacheIconPath(record.app_id);
+        }
+        return icon;
+    }
+
     RecordInformation GetRecordInformation(TitleRecord record)
     {
         RecordInformation info = {};
+        info.icon_path = GetRecordIconPath(record);
         if((TitleType)record.title_type == TitleType::Homebrew)
         {
-            info.icon_path = GetNROCacheIconPath(record.nro_path);
-            FILE *f = fopen(record.nro_path.c_str(), "rb");
+            FILE *f = fopen(record.nro_target.nro_path, "rb");
             if(f)
             {
                 NroStart st = {};
@@ -106,7 +122,6 @@ namespace cfg
         }
         else
         {
-            info.icon_path = GetTitleCacheIconPath(record.app_id);
             NsApplicationControlData cdata = {};
             nsGetApplicationControlData(1, record.app_id, &cdata, sizeof(cdata), NULL);
             memcpy(&info.nacp, &cdata.nacp, sizeof(cdata.nacp));
@@ -242,8 +257,10 @@ namespace cfg
         std::string json = basepath;
         if((TitleType)record.title_type == TitleType::Homebrew)
         {
-            json += "/" + std::to_string(fs::GetFileSize(record.nro_path)) + ".json";
-            entry["nro_path"] = record.nro_path;
+            json += "/" + std::to_string(fs::GetFileSize(record.nro_target.nro_path)) + ".json";
+            entry["nro_path"] = record.nro_target.nro_path;
+            if(strcmp(record.nro_target.nro_path, record.nro_target.argv) != 0) entry["nro_argv"] = record.nro_target.argv;
+            if(!record.icon.empty()) entry["icon"] = record.icon;
         }
         else if((TitleType)record.title_type == TitleType::Installed)
         {
@@ -348,7 +365,7 @@ namespace cfg
         }
         else
         {
-            auto find = STLITER_FINDWITHCONDITION(list.root.titles, tit, (tit.title_type == record.title_type) && (tit.nro_path == record.nro_path));
+            auto find = STLITER_FINDWITHCONDITION(list.root.titles, tit, (tit.title_type == record.title_type) && (strcmp(tit.nro_target.nro_path, record.nro_target.nro_path) == 0));
             if(STLITER_ISFOUND(list.root.titles, find))
             {
                 if(folder.empty()) return true;  // It is already on root...?
@@ -378,7 +395,7 @@ namespace cfg
                 }
                 else
                 {
-                    auto find = STLITER_FINDWITHCONDITION(fld.titles, tit, (tit.title_type == record.title_type) && (tit.nro_path == record.nro_path));
+                    auto find = STLITER_FINDWITHCONDITION(fld.titles, tit, (tit.title_type == record.title_type) && (strcmp(tit.nro_target.nro_path, record.nro_target.nro_path) == 0));
                     if(STLITER_ISFOUND(fld.titles, find))
                     {
                         if(fld.name == folder) return true; // It is already on that folder...?
@@ -504,10 +521,13 @@ namespace cfg
                         TitleRecord rec = {};
                         rec.json_name = name;
                         rec.title_type = (u32)type;
-                        rec.nro_path = nropath;
+                        std::string argv = entry.value("nro_argv", nropath);
+                        strcpy(rec.nro_target.nro_path, nropath.c_str());
+                        strcpy(rec.nro_target.argv, argv.c_str());
                         std::string folder = entry.value("folder", "");
                         rec.sub_folder = folder;
-                        if(cache) CacheHomebrew(rec.nro_path);
+                        rec.icon = entry.value("icon", "");
+                        if(cache) CacheHomebrew(rec.nro_target.nro_path);
                         if(folder.empty()) list.root.titles.push_back(rec);
                         else
                         {

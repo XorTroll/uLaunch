@@ -89,10 +89,7 @@ namespace ui
                 if(down & KEY_A)
                 {
                     am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchHomebrewLibApplet);
-                    hb::TargetInput ipt = {};
-                    strcpy(ipt.nro_path, hb.nro_path.c_str());
-                    strcpy(ipt.argv, hb.nro_path.c_str());
-                    writer.Write<hb::TargetInput>(ipt);
+                    writer.Write<hb::TargetInput>(hb.nro_target);
                     writer.FinishWrite();
 
                     qapp->CloseWithFadeOut();
@@ -100,8 +97,13 @@ namespace ui
                 }
                 else if(down & KEY_X)
                 {
-                    auto sopt = qapp->CreateShowDialog("Add to menu", "Would you like to add this homebrew to the main menu?\nIt will be launched as a normal application,\n(THERE MIGHT BE BAN RISK FOR LAUNCHING IT THIS WAY!)", { "Yes", "Cancel" }, true);
-                    if(sopt == 0) cfg::SaveRecord(hb);
+                    auto sopt = qapp->CreateShowDialog("Add to menu", "Would you like to add this homebrew to the main menu?", { "Yes", "Cancel" }, true);
+                    if(sopt == 0)
+                    {
+                        cfg::SaveRecord(hb);
+                        list.root.titles.push_back(hb);
+                        qapp->CreateShowDialog("Add to menu", "The homebrew was successfully added to the main menu.", { "Ok" }, true);
+                    }
                 }
             }
             else
@@ -116,25 +118,35 @@ namespace ui
                         {
                             if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew)
                             {
-                                am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchHomebrewApplication);
-                                hb::TargetInput ipt = {};
-                                strcpy(ipt.nro_path, title.nro_path.c_str());
-                                strcpy(ipt.argv, title.nro_path.c_str());
-                                writer.Write<hb::TargetInput>(ipt);
-                                writer.FinishWrite();
-
-                                am::QMenuCommandResultReader reader;
-                                if(reader && R_SUCCEEDED(reader.GetReadResult()))
+                                int sopt = qapp->CreateShowDialog("Homebrew launch", "How would you like to launch this homebrew?\nNOTE: Launching as application might involve BAN RISK.", { "Applet", "Application", "Cancel" }, true);
+                                if(sopt == 0)
                                 {
+                                    am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchHomebrewLibApplet);
+                                    writer.Write<hb::TargetInput>(title.nro_target);
+                                    writer.FinishWrite();
+
                                     qapp->CloseWithFadeOut();
                                     return;
                                 }
-                                else
+                                else if(sopt == 1)
                                 {
-                                    auto rc = reader.GetReadResult();
-                                    qapp->CreateShowDialog("Title launch", "An error ocurred attempting to launch the title:\n" + util::FormatResultDisplay(rc) + " (" + util::FormatResultHex(rc) + ")", { "Ok" }, true);
+                                    am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchHomebrewApplication);
+                                    writer.Write<hb::TargetInput>(title.nro_target);
+                                    writer.FinishWrite();
+
+                                    am::QMenuCommandResultReader reader;
+                                    if(reader && R_SUCCEEDED(reader.GetReadResult()))
+                                    {
+                                        qapp->CloseWithFadeOut();
+                                        return;
+                                    }
+                                    else
+                                    {
+                                        auto rc = reader.GetReadResult();
+                                        qapp->CreateShowDialog("Title launch", "An error ocurred attempting to launch the title:\n" + util::FormatResultDisplay(rc) + " (" + util::FormatResultHex(rc) + ")", { "Ok" }, true);
+                                    }
+                                    reader.FinishRead();
                                 }
-                                reader.FinishRead();
                             }
                             else
                             {
@@ -160,7 +172,7 @@ namespace ui
                         {
                             if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew)
                             {
-                                if(title.nro_path == qapp->GetSuspendedHomebrewPath())
+                                if(std::string(title.nro_target.nro_path) == qapp->GetSuspendedHomebrewPath())
                                 {
                                     if(this->mode == 1) this->mode = 2;
                                 }
@@ -180,7 +192,7 @@ namespace ui
                         {
                             if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew)
                             {
-                                if(title.nro_path == qapp->GetSuspendedHomebrewPath()) this->HandleCloseSuspended();
+                                if(std::string(title.nro_target.nro_path) == qapp->GetSuspendedHomebrewPath()) this->HandleCloseSuspended();
                             }
                             else
                             {
@@ -298,8 +310,7 @@ namespace ui
             this->itemsMenu->AddItem(cfg::ProcessedThemeResource(theme, "ui/Hbmenu.png"));
             for(auto itm: homebrew)
             {
-                std::string iconpth = cfg::GetNROCacheIconPath(itm.nro_path);
-                this->itemsMenu->AddItem(iconpth);
+                this->itemsMenu->AddItem(cfg::GetRecordIconPath(itm));
             }
         }
         else
@@ -319,18 +330,15 @@ namespace ui
             u32 tmpidx = 0;
             for(auto itm: folder.titles)
             {
-                std::string iconpth;
                 if((cfg::TitleType)itm.title_type == cfg::TitleType::Installed)
                 {
-                    iconpth = cfg::GetTitleCacheIconPath(itm.app_id);
                     if(qapp->IsTitleSuspended()) if(qapp->GetSuspendedApplicationId() == itm.app_id) this->itemsMenu->SetSuspendedItem(tmpidx + 1); // 1st item is always "all titles"!
                 }
                 else
                 {
-                    iconpth = cfg::GetNROCacheIconPath(itm.nro_path);
-                    if(qapp->IsHomebrewSuspended()) if(qapp->GetSuspendedHomebrewPath() == itm.nro_path) this->itemsMenu->SetSuspendedItem(tmpidx + 1); // 1st item is always "all titles"!
+                    if(qapp->IsHomebrewSuspended()) if(qapp->GetSuspendedHomebrewPath() == std::string(itm.nro_target.nro_path)) this->itemsMenu->SetSuspendedItem(tmpidx + 1); // 1st item is always "all titles"!
                 }
-                this->itemsMenu->AddItem(iconpth);
+                this->itemsMenu->AddItem(cfg::GetRecordIconPath(itm));
                 tmpidx++;
             }
             if(name.empty())
@@ -493,8 +501,7 @@ namespace ui
             auto rc = swkbdShow(&swkbd, dir, 500);
             if(R_SUCCEEDED(rc))
             {
-                cfg::MoveRecordTo(list, rec, std::string(dir));
-                changedone = true;
+                changedone = cfg::MoveRecordTo(list, rec, std::string(dir));
             }
         }
         else
@@ -502,8 +509,7 @@ namespace ui
             auto sopt = qapp->CreateShowDialog("Title move", "Would you like to move this entry outside the folder?", { "Yes", "Cancel" }, true);
             if(sopt == 0)
             {
-                cfg::MoveRecordTo(list, rec, "");
-                changedone = true;
+                changedone = cfg::MoveRecordTo(list, rec, "");
             }
         }
 

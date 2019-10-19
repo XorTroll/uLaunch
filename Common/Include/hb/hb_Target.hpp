@@ -10,5 +10,5 @@ namespace hb
         char argv[2048];
     };
 
-    void Target(TargetInput input, bool once);
+    void Target(TargetInput input, bool once); // Only used by QHbTarget processes
 }

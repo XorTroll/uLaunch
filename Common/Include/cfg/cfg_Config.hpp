@@ -1,6 +1,7 @@
 
 #pragma once
 #include <q_Include.hpp>
+#include <hb/hb_Target.hpp>
 
 namespace cfg
 {
@@ -16,9 +17,10 @@ namespace cfg
         std::string json_name; // Empty for non-SD, normal title records
         u32 title_type;
         std::string sub_folder; // Empty for root, name for a certain folder
+        std::string icon; // Custom icon, if specified
 
         u64 app_id; // TitleType::Installed
-        std::string nro_path; // TitleType::Homebrew
+        hb::TargetInput nro_target; // TitleType::Homebrew
     };
 
     struct TitleFolder
@@ -86,6 +88,7 @@ namespace cfg
     void CacheHomebrew(std::string nro_path);
     ResultWith<TitleList> LoadTitleList(bool cache);
     std::vector<TitleRecord> QueryAllHomebrew(bool cache, std::string base = "sdmc:/switch");
+    std::string GetRecordIconPath(TitleRecord record);
     RecordInformation GetRecordInformation(TitleRecord record);
     NacpLanguageEntry *GetRecordInformationLanguageEntry(RecordInformation &info);
 
