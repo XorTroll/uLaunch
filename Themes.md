@@ -53,8 +53,8 @@ Sound consists on custom *background music* and *sound effects* via files inside
     ```json
     {
         "loop": true,
-        "fade_in": true,
-        "fade_out": false
+        "fade_in_ms": 1500,
+        "fade_out_ms": 500
     }
     ```
 
@@ -62,9 +62,9 @@ Sound consists on custom *background music* and *sound effects* via files inside
 
     - **loop**: Whether to replay the MP3 file again, after it finishes
 
-    - **fade_in**: Whether starting the music should apply a fade-in effect.
+    - **fade_in_ms**: Time in milliseconds for the fade-in to be applied when the BGM starts playing. (0 = no fade-in)
 
-    - **fade_out**: Whether stopping the music should apply a fade-out effect.
+    - **fade_out_ms**: Time in milliseconds for the fade-out to be applied when the BGM stops playing. (0 = no fade-out)
 
     Note: returning to/launching a title/applet and returning back to HOME menu will restart the music.
 
