@@ -134,4 +134,4 @@ If you get a crash using {qlaunch-reimpl}, please check:
 
 - SciresM for [libstratosphere](https://github.com/Atmosphere-NX/libstratosphere).
 
-- Switchbrew team for libnx and the building toolchain.
+- Switchbrew team for libnx and [hbloader](https://github.com/switchbrew/nx-hbloader), the base of *QHbTarget projects (they're some useful wrappers of hbloader in the end)

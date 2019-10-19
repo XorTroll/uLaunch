@@ -1,6 +1,7 @@
 #include <ui/ui_MenuLayout.hpp>
 #include <os/os_Titles.hpp>
 #include <util/util_Convert.hpp>
+#include <util/util_JSON.hpp>
 #include <ui/ui_QMenuApplication.hpp>
 #include <os/os_HomeMenu.hpp>
 #include <fs/fs_Stdio.hpp>
@@ -23,6 +24,8 @@ namespace ui
         this->minalpha = min_alpha;
         this->homebrew_mode = hb_mode;
 
+        pu::ui::Color textclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
+
         this->bgSuspendedRaw = RawData::New(0, 0, raw, 1280, 720, 4);
         this->Add(this->bgSuspendedRaw);
 
@@ -37,9 +40,9 @@ namespace ui
         this->itemName = pu::ui::elm::TextBlock::New(40, 610, "", 30);
         this->itemAuthor = pu::ui::elm::TextBlock::New(45, 650, "", 20);
         this->itemVersion = pu::ui::elm::TextBlock::New(45, 675, "", 20);
-        this->itemName->SetColor({ 225, 225, 225, 255 });
-        this->itemAuthor->SetColor({ 225, 225, 225, 255 });
-        this->itemVersion->SetColor({ 225, 225, 225, 255 });
+        this->itemName->SetColor(textclr);
+        this->itemAuthor->SetColor(textclr);
+        this->itemVersion->SetColor(textclr);
         this->Add(this->itemName);
         this->Add(this->itemAuthor);
         this->Add(this->itemVersion);

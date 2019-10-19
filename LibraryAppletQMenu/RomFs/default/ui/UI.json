@@ -1,3 +1,5 @@
 {
-    "suspended_final_alpha": 80
+    "suspended_final_alpha": 80,
+    "menu_focus_color": "#5ebcffff",
+    "menu_bg_color": "#0094ffff"
 }

@@ -24,6 +24,12 @@ namespace ui
             void NotifyEndSuspended();
             bool LaunchFailed();
 
+            template<typename T>
+            T GetUIConfigValue(std::string name, T def)
+            {
+                return this->uijson.value<T>(name, def);
+            }
+
             void SetSelectedUser(u128 user_id);
             u128 GetSelectedUser();
         private:
@@ -32,5 +38,6 @@ namespace ui
             MenuLayout::Ref menuLayout;
             am::QSuspendedInfo suspinfo;
             u128 selected_user;
+            JSON uijson;
     };
 }

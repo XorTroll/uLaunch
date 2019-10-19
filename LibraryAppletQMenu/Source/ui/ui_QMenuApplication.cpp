@@ -1,4 +1,5 @@
 #include <ui/ui_QMenuApplication.hpp>
+#include <util/util_JSON.hpp>
 
 extern u8 *app_buf;
 extern cfg::ProcessedTheme theme;
@@ -20,6 +21,9 @@ namespace ui
             bool flag;
             appletGetLastApplicationCaptureImageEx(app_buf, 1280 * 720 * 4, &flag);
         }
+
+        auto [rc, json] = util::LoadJSONFromFile(cfg::ProcessedThemeResource(theme, "ui/UI.json"));
+        this->uijson = json;
 
         this->startupLayout = StartupLayout::New();
         bool hb = false;

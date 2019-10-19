@@ -13,13 +13,17 @@ namespace ui
     {
         this->SetBackgroundImage(cfg::ProcessedThemeResource(theme, "ui/Background.png"));
 
+        pu::ui::Color textclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
+        pu::ui::Color menufocusclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("menu_focus_color", "#5ebcffff"));
+        pu::ui::Color menubgclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("menu_bg_color", "#0094ffff"));
+
         this->infoText = pu::ui::elm::TextBlock::New(0, 100, "Welcome! Please select an account to use.");
-        this->infoText->SetColor({ 235, 235, 235, 255 });
+        this->infoText->SetColor(textclr);
         this->infoText->SetHorizontalAlign(pu::ui::elm::HorizontalAlign::Center);
         this->Add(this->infoText);
 
-        this->usersMenu = pu::ui::elm::Menu::New(400, 160, 480, pu::ui::Color(0, 120, 120, 255), 100, 4);
-        this->usersMenu->SetOnFocusColor({ 120, 0, 120, 255 });
+        this->usersMenu = pu::ui::elm::Menu::New(400, 160, 480, menubgclr, 100, 4);
+        this->usersMenu->SetOnFocusColor(menufocusclr);
         
         auto [rc, users] = os::QuerySystemAccounts(true);
         if(R_SUCCEEDED(rc))
@@ -37,6 +41,7 @@ namespace ui
                 auto uitm = pu::ui::elm::MenuItem::New(name);
                 uitm->SetIcon(path);
                 uitm->AddOnClick(std::bind(&StartupLayout::user_Click, this));
+                uitm->SetColor(textclr);
 
                 this->userlist.push_back(user);
                 this->passlist.push_back(has_pass);
