@@ -100,9 +100,13 @@ namespace ui
                     auto sopt = qapp->CreateShowDialog("Add to menu", "Would you like to add this homebrew to the main menu?", { "Yes", "Cancel" }, true);
                     if(sopt == 0)
                     {
-                        cfg::SaveRecord(hb);
-                        list.root.titles.push_back(hb);
-                        qapp->CreateShowDialog("Add to menu", "The homebrew was successfully added to the main menu.", { "Ok" }, true);
+                        if(cfg::ExistsRecord(list, hb)) qapp->CreateShowDialog("Add to menu", "The homebrew is alredy in the main menu.\nNothing was added nor removed.", { "Ok" }, true);
+                        else
+                        {
+                            cfg::SaveRecord(hb);
+                            list.root.titles.push_back(hb);
+                            qapp->CreateShowDialog("Add to menu", "The homebrew was successfully added to the main menu.", { "Ok" }, true);
+                        }
                     }
                 }
             }
@@ -118,7 +122,7 @@ namespace ui
                         {
                             if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew)
                             {
-                                int sopt = qapp->CreateShowDialog("Homebrew launch", "How would you like to launch this homebrew?\nNOTE: Launching as application might involve BAN RISK.", { "Applet", "Application", "Cancel" }, true);
+                                int sopt = qapp->CreateShowDialog("Homebrew launch", "How would you like to launch this homebrew?\n\nNOTE: Launching as application might involve BAN RISK, so use it at your own risk!", { "Applet", "Application", "Cancel" }, true);
                                 if(sopt == 0)
                                 {
                                     am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchHomebrewLibApplet);
@@ -518,11 +522,15 @@ namespace ui
 
     void MenuLayout::HandleCloseSuspended()
     {
-        am::QMenuCommandWriter writer(am::QDaemonMessage::TerminateApplication);
-        writer.FinishWrite();
+        auto sopt = qapp->CreateShowDialog("Suspended title", "Would you like to close this title?\nAll unsaved data will be lost.", { "Yes", "Cancel" }, true);
+        if(sopt == 0)
+        {
+            am::QMenuCommandWriter writer(am::QDaemonMessage::TerminateApplication);
+            writer.FinishWrite();
 
-        this->itemsMenu->UnsetSuspendedItem();
-        qapp->NotifyEndSuspended();
-        this->bgSuspendedRaw->SetAlphaFactor(0);
+            this->itemsMenu->UnsetSuspendedItem();
+            qapp->NotifyEndSuspended();
+            this->bgSuspendedRaw->SetAlphaFactor(0);
+        }
     }
 }

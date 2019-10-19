@@ -14,25 +14,22 @@ namespace cfg
         FILE *f = fopen(nro_path.c_str(), "rb");
         if(f)
         {
-            NroStart st = {};
-            if(fread(&st, sizeof(NroStart), 1, f) == 1)
+            fseek(f, sizeof(NroStart), SEEK_SET);
+            NroHeader hdr = {};
+            if(fread(&hdr, 1, sizeof(NroHeader), f) == sizeof(NroHeader))
             {
-                NroHeader hdr = {};
-                if(fread(&hdr, sizeof(NroHeader), 1, f) == 1)
+                fseek(f, hdr.size, SEEK_SET);
+                NroAssetHeader ahdr = {};
+                if(fread(&ahdr, 1, sizeof(NroAssetHeader), f) == sizeof(NroAssetHeader))
                 {
-                    fseek(f, hdr.size, SEEK_SET);
-                    NroAssetHeader ahdr = {};
-                    if(fread(&ahdr, sizeof(NroAssetHeader), 1, f) == 1)
+                    if(ahdr.magic == NROASSETHEADER_MAGIC)
                     {
-                        if(ahdr.magic == NROASSETHEADER_MAGIC)
+                        if(ahdr.icon.size > 0)
                         {
-                            if(ahdr.icon.size > 0)
-                            {
-                                u8 *iconbuf = new u8[ahdr.icon.size]();
-                                fseek(f, hdr.size + ahdr.icon.offset, SEEK_SET);
-                                if(fread(iconbuf, ahdr.icon.size, 1, f) == 1) fs::WriteFile(nroimg, iconbuf, ahdr.icon.size, true);
-                                delete[] iconbuf;
-                            }
+                            u8 *iconbuf = new u8[ahdr.icon.size]();
+                            fseek(f, hdr.size + ahdr.icon.offset, SEEK_SET);
+                            if(fread(iconbuf, 1, ahdr.icon.size, f) == ahdr.icon.size) fs::WriteFile(nroimg, iconbuf, ahdr.icon.size, true);
+                            delete[] iconbuf;
                         }
                     }
                 }
@@ -96,23 +93,20 @@ namespace cfg
             FILE *f = fopen(record.nro_target.nro_path, "rb");
             if(f)
             {
-                NroStart st = {};
-                if(fread(&st, sizeof(NroStart), 1, f) == 1)
+                fseek(f, sizeof(NroStart), SEEK_SET);
+                NroHeader hdr = {};
+                if(fread(&hdr, 1, sizeof(NroHeader), f) == sizeof(NroHeader))
                 {
-                    NroHeader hdr = {};
-                    if(fread(&hdr, sizeof(NroHeader), 1, f) == 1)
+                    fseek(f, hdr.size, SEEK_SET);
+                    NroAssetHeader ahdr = {};
+                    if(fread(&ahdr, 1, sizeof(NroAssetHeader), f) == sizeof(NroAssetHeader))
                     {
-                        fseek(f, hdr.size, SEEK_SET);
-                        NroAssetHeader ahdr = {};
-                        if(fread(&ahdr, sizeof(NroAssetHeader), 1, f) == 1)
+                        if(ahdr.magic == NROASSETHEADER_MAGIC)
                         {
-                            if(ahdr.magic == NROASSETHEADER_MAGIC)
+                            if(ahdr.nacp.size > 0)
                             {
-                                if(ahdr.nacp.size > 0)
-                                {
-                                    fseek(f, hdr.size + ahdr.nacp.offset, SEEK_SET);
-                                    fread(&info.nacp, ahdr.nacp.size, 1, f);
-                                }
+                                fseek(f, hdr.size + ahdr.nacp.offset, SEEK_SET);
+                                fread(&info.nacp, 1, ahdr.nacp.size, f);
                             }
                         }
                     }
@@ -246,7 +240,7 @@ namespace cfg
         ofs.close();
     }
 
-    void SaveRecord(TitleRecord record)
+    void SaveRecord(TitleRecord &record)
     {
         JSON entry = JSON::object();
         entry["type"] = record.title_type;
@@ -257,7 +251,9 @@ namespace cfg
         std::string json = basepath;
         if((TitleType)record.title_type == TitleType::Homebrew)
         {
-            json += "/" + std::to_string(fs::GetFileSize(record.nro_target.nro_path)) + ".json";
+            auto jsonname = std::to_string(fs::GetFileSize(record.nro_target.nro_path)) + ".json";
+            if(record.json_name.empty()) record.json_name = jsonname;
+            json += "/" + jsonname;
             entry["nro_path"] = record.nro_target.nro_path;
             if(strcmp(record.nro_target.nro_path, record.nro_target.argv) != 0) entry["nro_argv"] = record.nro_target.argv;
             if(!record.icon.empty()) entry["icon"] = record.icon;
@@ -265,11 +261,14 @@ namespace cfg
         else if((TitleType)record.title_type == TitleType::Installed)
         {
             auto strappid = util::FormatApplicationId(record.app_id);
-            json += "/" + strappid + ".json";
+            auto jsonname = strappid + ".json";
+            if(record.json_name.empty()) record.json_name = jsonname;
+            json += "/" + jsonname;
             entry["application_id"] = strappid;
         }
         if(!record.json_name.empty()) json = basepath + "/" + record.json_name;
         if(fs::ExistsFile(json)) fs::DeleteFile(json);
+
 
         std::ofstream ofs(json);
         ofs << entry;
@@ -452,6 +451,64 @@ namespace cfg
             }
         }
         return list.root;
+    }
+
+    bool ExistsRecord(TitleList &list, TitleRecord record)
+    {
+        bool title_found = false;
+        TitleRecord record_copy = {};
+        std::string recjson;
+
+        // Search in root first
+        if((TitleType)record.title_type == TitleType::Installed)
+        {
+            auto find = STLITER_FINDWITHCONDITION(list.root.titles, tit, (tit.title_type == record.title_type) && (tit.app_id == record.app_id));
+            if(STLITER_ISFOUND(list.root.titles, find))
+            {
+                if(!STLITER_UNWRAP(find).json_name.empty()) title_found = true;
+            }
+        }
+        else
+        {
+            auto find = STLITER_FINDWITHCONDITION(list.root.titles, tit, (tit.title_type == record.title_type) && (strcmp(tit.nro_target.nro_path, record.nro_target.nro_path) == 0));
+            if(STLITER_ISFOUND(list.root.titles, find))
+            {
+                if(!STLITER_UNWRAP(find).json_name.empty()) title_found = true;
+            }
+        }
+
+        if(!title_found) // If not found yet, search on all dirs if the title is present
+        {
+            for(auto &fld: list.folders)
+            {
+                if((TitleType)record.title_type == TitleType::Installed)
+                {
+                    auto find = STLITER_FINDWITHCONDITION(fld.titles, tit, (tit.title_type == record.title_type) && (tit.app_id == record.app_id));
+                    if(STLITER_ISFOUND(fld.titles, find))
+                    {
+                        if(!STLITER_UNWRAP(find).json_name.empty())
+                        {
+                            title_found = true;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    auto find = STLITER_FINDWITHCONDITION(fld.titles, tit, (tit.title_type == record.title_type) && (strcmp(tit.nro_target.nro_path, record.nro_target.nro_path) == 0));
+                    if(STLITER_ISFOUND(fld.titles, find))
+                    {
+                        if(!STLITER_UNWRAP(find).json_name.empty())
+                        {
+                            title_found = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        return title_found;
     }
 
     ResultWith<TitleList> LoadTitleList(bool cache)

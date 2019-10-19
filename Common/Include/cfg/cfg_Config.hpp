@@ -103,9 +103,10 @@ namespace cfg
     MenuConfig EnsureConfig();
     void SaveConfig(MenuConfig &cfg);
 
-    void SaveRecord(TitleRecord record);
+    void SaveRecord(TitleRecord &record);
     bool MoveRecordTo(TitleList &list, TitleRecord record, std::string folder);
     TitleFolder &FindFolderByName(TitleList &list, std::string name);
+    bool ExistsRecord(TitleList &list, TitleRecord record);
 
     std::string GetTitleCacheIconPath(u64 app_id);
     std::string GetNROCacheIconPath(std::string path);

@@ -18,8 +18,8 @@ namespace ui
         this->infoText->SetHorizontalAlign(pu::ui::elm::HorizontalAlign::Center);
         this->Add(this->infoText);
 
-        this->usersMenu = pu::ui::elm::Menu::New(400, 160, 480, pu::ui::Color(0, 0, 0, 0), 100, 4);
-        this->usersMenu->SetOnFocusColor({ 255, 255, 255, 0 });
+        this->usersMenu = pu::ui::elm::Menu::New(400, 160, 480, pu::ui::Color(0, 120, 120, 255), 100, 4);
+        this->usersMenu->SetOnFocusColor({ 120, 0, 120, 255 });
         
         auto [rc, users] = os::QuerySystemAccounts(true);
         if(R_SUCCEEDED(rc))
