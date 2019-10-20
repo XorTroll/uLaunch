@@ -26,9 +26,15 @@ namespace ui
             void HandleCloseSuspended();
         private:
             void *susptr;
+            bool last_hasconn;
+            u32 last_batterylvl;
+            bool last_charge;
             pu::ui::elm::Image::Ref topMenuImage;
             ClickableImage::Ref logo;
             pu::ui::elm::Image::Ref connIcon;
+            pu::ui::elm::TextBlock::Ref timeText;
+            pu::ui::elm::TextBlock::Ref batteryText;
+            pu::ui::elm::Image::Ref batteryIcon;
             SideMenu::Ref itemsMenu;
             RawData::Ref bgSuspendedRaw;
             pu::ui::elm::TextBlock::Ref itemName;

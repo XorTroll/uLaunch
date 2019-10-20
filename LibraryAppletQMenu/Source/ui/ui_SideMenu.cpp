@@ -205,7 +205,7 @@ namespace ui
 
     bool SideMenu::IsLeftFirst()
     {
-        u32 basex = GetProcessedX();
+        s32 basex = GetProcessedX();
         for(u32 i = 0; i < this->ricons.size(); i++)
         {
             if((basex == this->GetX()) && (this->selitm == (this->baseiconidx + i))) return true;
@@ -217,7 +217,7 @@ namespace ui
     bool SideMenu::IsRightLast()
     {
         if(this->selitm == (this->icons.size() - 1)) return true;
-        u32 basex = GetProcessedX();
+        s32 basex = GetProcessedX();
         for(u32 i = 0; i < this->ricons.size(); i++)
         {
             if((basex == 926) && (this->selitm == (this->baseiconidx + i))) return true;

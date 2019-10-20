@@ -1,5 +1,4 @@
 #include <am/am_QCommunications.hpp>
-#include <util/util_CFW.hpp>
 #include <fs/fs_Stdio.hpp>
 #include <am/am_LibraryApplet.hpp>
 

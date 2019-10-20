@@ -26,6 +26,8 @@ namespace qmenu
     {
         accountInitialize();
         nsInitialize();
+        nifmInitialize();
+        psmInitialize();
         db::Mount();
         fs::CreateDirectory(Q_BASE_DB_DIR);
         fs::CreateDirectory(Q_BASE_SD_DIR);
@@ -52,6 +54,8 @@ namespace qmenu
     {
         am::QMenu_FinalizeDaemonService();
         db::Unmount();
+        psmExit();
+        nifmExit();
         nsExit();
         accountExit();
     }

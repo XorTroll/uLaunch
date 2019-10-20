@@ -1,7 +1,7 @@
 #include <ui/ui_MenuLayout.hpp>
 #include <os/os_Titles.hpp>
 #include <util/util_Convert.hpp>
-#include <util/util_JSON.hpp>
+#include <util/util_Misc.hpp>
 #include <ui/ui_QMenuApplication.hpp>
 #include <os/os_HomeMenu.hpp>
 #include <fs/fs_Stdio.hpp>
@@ -21,6 +21,9 @@ namespace ui
         this->rawalpha = 255;
         this->root_idx = 0;
         this->root_baseidx = 0;
+        this->last_hasconn = false;
+        this->last_batterylvl = 0;
+        this->last_charge = false;
         this->warnshown = false;
         this->minalpha = min_alpha;
         this->homebrew_mode = hb_mode;
@@ -34,8 +37,19 @@ namespace ui
         this->Add(this->topMenuImage);
         this->logo = ClickableImage::New(610, 13 + 35, "romfs:/Logo.png");
         this->Add(this->logo);
-        this->connIcon = pu::ui::elm::Image::New(40 + 40, 18 + 35, cfg::ProcessedThemeResource(theme, "ui/ConnectionIcon.png"));
+        this->connIcon = pu::ui::elm::Image::New(80, 53, cfg::ProcessedThemeResource(theme, "ui/NoConnectionIcon.png"));
         this->Add(this->connIcon);
+        auto curtime = util::GetCurrentTime();
+        this->timeText = pu::ui::elm::TextBlock::New(515, 68, curtime);
+        this->timeText->SetColor(textclr);
+        this->Add(this->timeText);
+        auto lvl = util::GetBatteryLevel();
+        auto lvlstr = std::to_string(lvl) + "%";
+        this->batteryText = pu::ui::elm::TextBlock::New(700, 55, lvlstr);
+        this->batteryText->SetColor(textclr);
+        this->Add(this->batteryText);
+        this->batteryIcon = pu::ui::elm::Image::New(700, 80, cfg::ProcessedThemeResource(theme, "ui/BatteryNormalIcon.png"));
+        this->Add(this->batteryIcon);
 
         this->menuToggleClickable = ClickableImage::New(0, 200, cfg::ProcessedThemeResource(theme, "ui/ToggleClick.png"));
         this->menuToggleClickable->SetOnClick(std::bind(&MenuLayout::toggle_Click, this));
@@ -399,6 +413,36 @@ namespace ui
 
     void MenuLayout::OnInput(u64 down, u64 up, u64 held, pu::ui::Touch pos)
     {
+        NifmInternetConnectionType type;
+        u32 str;
+        NifmInternetConnectionStatus status;
+        nifmGetInternetConnectionStatus(&type, &str, &status);
+        bool hasconn = (status == NifmInternetConnectionStatus_Connected);
+        if(this->last_hasconn != hasconn)
+        {
+            if(hasconn) this->connIcon->SetImage(cfg::ProcessedThemeResource(theme, "ui/ConnectionIcon.png"));
+            else this->connIcon->SetImage(cfg::ProcessedThemeResource(theme, "ui/NoConnectionIcon.png"));
+            this->last_hasconn = hasconn;
+        }
+
+        auto curtime = util::GetCurrentTime();
+        this->timeText->SetText(curtime);
+
+        auto lvl = util::GetBatteryLevel();
+        if(this->last_batterylvl != lvl)
+        {
+            this->last_batterylvl = lvl;
+            auto lvlstr = std::to_string(lvl) + "%";
+            this->batteryText->SetText(lvlstr);
+        }
+        bool ch = util::IsCharging();
+        if(this->last_charge != ch)
+        {
+            this->last_charge = ch;
+            if(ch) this->batteryIcon->SetImage(cfg::ProcessedThemeResource(theme, "ui/BatteryChargingIcon.png"));
+            else this->batteryIcon->SetImage(cfg::ProcessedThemeResource(theme, "ui/BatteryNormalIcon.png"));
+        }
+
         auto ctp = std::chrono::steady_clock::now();
         if(std::chrono::duration_cast<std::chrono::milliseconds>(ctp - this->tp).count() >= 500)
         {

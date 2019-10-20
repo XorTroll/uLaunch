@@ -1,5 +1,5 @@
 #include <ui/ui_QMenuApplication.hpp>
-#include <util/util_JSON.hpp>
+#include <util/util_Misc.hpp>
 
 extern u8 *app_buf;
 extern cfg::ProcessedTheme theme;
