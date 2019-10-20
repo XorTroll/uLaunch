@@ -1,4 +1,6 @@
 
+export Q_VERSION := dev
+
 .PHONY: all clean
 
 all:

@@ -78,7 +78,7 @@ void HandleHomeButton()
     if(am::LibraryAppletIsActive() && !am::LibraryAppletIsQMenu())
     {
         am::LibraryAppletTerminate();
-        am::QDaemon_LaunchQMenu(am::QMenuStartMode::MenuHomebrewMode);
+        am::QDaemon_LaunchQMenu(am::QMenuStartMode::Menu);
         return;
     }
     if(am::ApplicationIsActive())
@@ -340,7 +340,7 @@ namespace qdaemon
 
     void ForegroundMain(void *arg)
     {
-        u8 *demo = new u8[1280 * 720 * 4]();
+        u8 *demo = new (std::align_val_t(0x1000)) u8[1280 * 720 * 4]();
 
         usbCommsInitialize();
         while(true)
@@ -446,10 +446,8 @@ int main()
             switch(am::LibraryAppletGetId())
             {
                 case am::QHbTargetAppletId:
-                    am::QDaemon_LaunchQMenu(am::QMenuStartMode::MenuHomebrewMode);
-                    break;
                 case AppletId_web:
-                    am::QDaemon_LaunchQMenu(am::QMenuStartMode::MenuNormal);
+                    am::QDaemon_LaunchQMenu(am::QMenuStartMode::Menu);
                     break;
                 default:
                     break;

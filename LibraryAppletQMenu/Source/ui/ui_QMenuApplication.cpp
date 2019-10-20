@@ -38,14 +38,11 @@ namespace ui
         this->bgm = pu::audio::Open(cfg::ProcessedThemeResource(theme, "sound/BGM.mp3"));
 
         this->startupLayout = StartupLayout::New();
-        bool hb = false;
-        if(this->stmode == am::QMenuStartMode::MenuHomebrewMode) hb = true;
-        this->menuLayout = MenuLayout::New(app_buf, 80, hb);
+        this->menuLayout = MenuLayout::New(app_buf, 80);
 
         switch(this->stmode)
         {
-            case am::QMenuStartMode::MenuNormal:
-            case am::QMenuStartMode::MenuHomebrewMode:
+            case am::QMenuStartMode::Menu:
             case am::QMenuStartMode::MenuApplicationSuspended:
             case am::QMenuStartMode::MenuLaunchFailure:
                 this->LoadMenu();

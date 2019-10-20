@@ -38,16 +38,19 @@
             // CaptureBox
             // 
             this.CaptureBox.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
-            this.CaptureBox.Location = new System.Drawing.Point(12, 12);
+            this.CaptureBox.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.CaptureBox.Location = new System.Drawing.Point(0, 0);
+            this.CaptureBox.Margin = new System.Windows.Forms.Padding(0);
             this.CaptureBox.Name = "CaptureBox";
-            this.CaptureBox.Size = new System.Drawing.Size(1280, 720);
+            this.CaptureBox.Size = new System.Drawing.Size(812, 331);
+            this.CaptureBox.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.CaptureBox.TabIndex = 0;
             this.CaptureBox.TabStop = false;
             // 
             // groupBox1
             // 
             this.groupBox1.Controls.Add(this.ScreenshotButton);
-            this.groupBox1.Location = new System.Drawing.Point(1305, 12);
+            this.groupBox1.Location = new System.Drawing.Point(12, 12);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Size = new System.Drawing.Size(200, 282);
             this.groupBox1.TabIndex = 1;
@@ -68,7 +71,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1517, 741);
+            this.ClientSize = new System.Drawing.Size(812, 331);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.CaptureBox);
             this.Name = "ViewerMainForm";

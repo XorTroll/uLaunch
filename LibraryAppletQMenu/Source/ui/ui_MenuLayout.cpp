@@ -14,7 +14,7 @@ extern cfg::ProcessedTheme theme;
 
 namespace ui
 {
-    MenuLayout::MenuLayout(void *raw, u8 min_alpha, bool hb_mode)
+    MenuLayout::MenuLayout(void *raw, u8 min_alpha)
     {
         this->susptr = raw;
         this->mode = 0;
@@ -26,7 +26,7 @@ namespace ui
         this->last_charge = false;
         this->warnshown = false;
         this->minalpha = min_alpha;
-        this->homebrew_mode = hb_mode;
+        this->homebrew_mode = false;
 
         pu::ui::Color textclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
 
@@ -36,6 +36,9 @@ namespace ui
         this->topMenuImage = pu::ui::elm::Image::New(40, 35, cfg::ProcessedThemeResource(theme, "ui/TopMenu.png"));
         this->Add(this->topMenuImage);
         this->logo = ClickableImage::New(610, 13 + 35, "romfs:/Logo.png");
+        this->logo->SetWidth(60);
+        this->logo->SetHeight(60);
+        this->logo->SetOnClick(std::bind(&MenuLayout::logo_Click, this));
         this->Add(this->logo);
         this->connIcon = pu::ui::elm::Image::New(80, 53, cfg::ProcessedThemeResource(theme, "ui/NoConnectionIcon.png"));
         this->Add(this->connIcon);
@@ -51,10 +54,18 @@ namespace ui
         this->batteryIcon = pu::ui::elm::Image::New(700, 80, cfg::ProcessedThemeResource(theme, "ui/BatteryNormalIcon.png"));
         this->Add(this->batteryIcon);
 
-        this->menuToggleClickable = ClickableImage::New(0, 200, cfg::ProcessedThemeResource(theme, "ui/ToggleClick.png"));
-        this->menuToggleClickable->SetOnClick(std::bind(&MenuLayout::toggle_Click, this));
-        this->menuToggleClickable->SetHorizontalAlign(pu::ui::elm::HorizontalAlign::Center);
-        this->Add(this->menuToggleClickable);
+        this->settings = ClickableImage::New(880, 53, cfg::ProcessedThemeResource(theme, "ui/SettingsIcon.png"));
+        this->settings->SetOnClick(std::bind(&MenuLayout::settings_Click, this));
+        this->Add(this->settings);
+
+        this->themes = ClickableImage::New(950, 53, cfg::ProcessedThemeResource(theme, "ui/ThemesIcon.png"));
+        this->themes->SetOnClick(std::bind(&MenuLayout::themes_Click, this));
+        this->Add(this->themes);
+
+        this->menuToggle = ClickableImage::New(0, 200, cfg::ProcessedThemeResource(theme, "ui/ToggleClick.png"));
+        this->menuToggle->SetOnClick(std::bind(&MenuLayout::menuToggle_Click, this));
+        this->menuToggle->SetHorizontalAlign(pu::ui::elm::HorizontalAlign::Center);
+        this->Add(this->menuToggle);
 
         this->bannerImage = pu::ui::elm::Image::New(0, 585, cfg::ProcessedThemeResource(theme, "ui/BannerInstalled.png"));
         this->Add(this->bannerImage);
@@ -122,17 +133,7 @@ namespace ui
             if(this->homebrew_mode)
             {
                 auto hb = homebrew[realidx];
-                if(down & KEY_A)
-                {
-                    am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchHomebrewLibApplet);
-                    writer.Write<hb::TargetInput>(hb.nro_target);
-                    writer.FinishWrite();
-
-                    pu::audio::Play(this->sfxTitleLaunch);
-                    qapp->StopPlayBGM();
-                    qapp->CloseWithFadeOut();
-                    return;
-                }
+                if(down & KEY_A) this->HandleHomebrewLaunch(hb);
                 else if(down & KEY_X)
                 {
                     auto sopt = qapp->CreateShowDialog("Add to menu", "Would you like to add this homebrew to the main menu?", { "Yes", "Cancel" }, true);
@@ -158,42 +159,7 @@ namespace ui
                     {
                         if(!qapp->IsSuspended())
                         {
-                            if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew)
-                            {
-                                int sopt = qapp->CreateShowDialog("Homebrew launch", "How would you like to launch this homebrew?\n\nNOTE: Launching as application might involve BAN RISK, so use it at your own risk!", { "Applet", "Application", "Cancel" }, true);
-                                if(sopt == 0)
-                                {
-                                    am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchHomebrewLibApplet);
-                                    writer.Write<hb::TargetInput>(title.nro_target);
-                                    writer.FinishWrite();
-
-                                    pu::audio::Play(this->sfxTitleLaunch);
-                                    qapp->StopPlayBGM();
-                                    qapp->CloseWithFadeOut();
-                                    return;
-                                }
-                                else if(sopt == 1)
-                                {
-                                    am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchHomebrewApplication);
-                                    writer.Write<hb::TargetInput>(title.nro_target);
-                                    writer.FinishWrite();
-
-                                    am::QMenuCommandResultReader reader;
-                                    if(reader && R_SUCCEEDED(reader.GetReadResult()))
-                                    {
-                                        pu::audio::Play(this->sfxTitleLaunch);
-                                        qapp->StopPlayBGM();
-                                        qapp->CloseWithFadeOut();
-                                        return;
-                                    }
-                                    else
-                                    {
-                                        auto rc = reader.GetReadResult();
-                                        qapp->CreateShowDialog("Title launch", "An error ocurred attempting to launch the title:\n" + util::FormatResultDisplay(rc) + " (" + util::FormatResultHex(rc) + ")", { "Ok" }, true);
-                                    }
-                                    reader.FinishRead();
-                                }
-                            }
+                            if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew) this->HandleHomebrewLaunch(title);
                             else
                             {
                                 am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchApplication);
@@ -321,7 +287,7 @@ namespace ui
                 {
                     auto foldr = list.folders[realidx - folder.titles.size()];
                     this->bannerImage->SetImage(cfg::ProcessedThemeResource(theme, "ui/BannerFolder.png"));
-                    this->itemAuthor->SetVisible(false);
+                    this->itemAuthor->SetText(std::to_string(foldr.titles.size()) + " entries");
                     this->itemVersion->SetVisible(false);
                     this->itemName->SetText(foldr.name);
                 }
@@ -561,11 +527,26 @@ namespace ui
         }
     }
 
-    void MenuLayout::toggle_Click()
+    void MenuLayout::menuToggle_Click()
     {
         pu::audio::Play(this->sfxMenuToggle);
         this->homebrew_mode = !this->homebrew_mode;
         this->MoveFolder("", true);
+    }
+
+    void MenuLayout::logo_Click()
+    {
+        qapp->CreateShowDialog("About {qlaunch-reimpl}", "{qlaunch-reimpl} v" + std::string(Q_VERSION) + "\n\n- Custom, open source, fully-featured HOME menu replacement.", { "Ok" }, true, "romfs:/Logo.png");
+    }
+
+    void MenuLayout::settings_Click()
+    {
+        qapp->CreateShowDialog("Settings", "Settings", {"Ok"}, true);
+    }
+
+    void MenuLayout::themes_Click()
+    {
+        qapp->CreateShowDialog("Themes", "Themes", {"Ok"}, true);
     }
 
     bool MenuLayout::HandleFolderChange(cfg::TitleRecord &rec)
@@ -607,6 +588,43 @@ namespace ui
             this->itemsMenu->UnsetSuspendedItem();
             qapp->NotifyEndSuspended();
             this->bgSuspendedRaw->SetAlphaFactor(0);
+        }
+    }
+
+    void MenuLayout::HandleHomebrewLaunch(cfg::TitleRecord &rec)
+    {
+        int sopt = qapp->CreateShowDialog("Homebrew launch", "How would you like to launch this homebrew?\n\nNOTE: Launching as application might involve BAN RISK, so use it at your own risk!", { "Applet", "Application", "Cancel" }, true);
+        if(sopt == 0)
+        {
+            am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchHomebrewLibApplet);
+            writer.Write<hb::TargetInput>(rec.nro_target);
+            writer.FinishWrite();
+
+            pu::audio::Play(this->sfxTitleLaunch);
+            qapp->StopPlayBGM();
+            qapp->CloseWithFadeOut();
+            return;
+        }
+        else if(sopt == 1)
+        {
+            am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchHomebrewApplication);
+            writer.Write<hb::TargetInput>(rec.nro_target);
+            writer.FinishWrite();
+
+            am::QMenuCommandResultReader reader;
+            if(reader && R_SUCCEEDED(reader.GetReadResult()))
+            {
+                pu::audio::Play(this->sfxTitleLaunch);
+                qapp->StopPlayBGM();
+                qapp->CloseWithFadeOut();
+                return;
+            }
+            else
+            {
+                auto rc = reader.GetReadResult();
+                qapp->CreateShowDialog("Title launch", "An error ocurred attempting to launch the title:\n" + util::FormatResultDisplay(rc) + " (" + util::FormatResultHex(rc) + ")", { "Ok" }, true);
+            }
+            reader.FinishRead();
         }
     }
 }

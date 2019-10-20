@@ -12,18 +12,22 @@ namespace ui
     class MenuLayout : public pu::ui::Layout
     {
         public:
-            MenuLayout(void *raw, u8 min_alpha, bool hb_mode);
+            MenuLayout(void *raw, u8 min_alpha);
             ~MenuLayout();
             PU_SMART_CTOR(MenuLayout)
 
             void menu_Click(u64 down, u32 index);
             void menu_OnSelected(u32 index);
-            void toggle_Click();
+            void menuToggle_Click();
+            void logo_Click();
+            void settings_Click();
+            void themes_Click();
             void MoveFolder(std::string name, bool fade);
             void OnInput(u64 down, u64 up, u64 held, pu::ui::Touch pos);
 
             bool HandleFolderChange(cfg::TitleRecord &rec);
             void HandleCloseSuspended();
+            void HandleHomebrewLaunch(cfg::TitleRecord &rec);
         private:
             void *susptr;
             bool last_hasconn;
@@ -35,13 +39,15 @@ namespace ui
             pu::ui::elm::TextBlock::Ref timeText;
             pu::ui::elm::TextBlock::Ref batteryText;
             pu::ui::elm::Image::Ref batteryIcon;
+            ClickableImage::Ref settings;
+            ClickableImage::Ref themes;
             SideMenu::Ref itemsMenu;
             RawData::Ref bgSuspendedRaw;
             pu::ui::elm::TextBlock::Ref itemName;
             pu::ui::elm::TextBlock::Ref itemAuthor;
             pu::ui::elm::TextBlock::Ref itemVersion;
             pu::ui::elm::Image::Ref bannerImage;
-            ClickableImage::Ref menuToggleClickable;
+            ClickableImage::Ref menuToggle;
             std::string curfolder;
             std::chrono::steady_clock::time_point tp;
             bool warnshown;

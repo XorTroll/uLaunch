@@ -9,8 +9,7 @@ namespace am
     {
         Invalid,
         StartupScreen,
-        MenuNormal,
-        MenuHomebrewMode,
+        Menu,
         MenuApplicationSuspended,
         MenuLaunchFailure
     };

@@ -22,7 +22,7 @@ cfg::ProcessedTheme theme;
 
 namespace qmenu
 {
-    void Initialize()
+    void Initialize(bool cache_homebrew)
     {
         accountInitialize();
         nsInitialize();
@@ -40,7 +40,7 @@ namespace qmenu
         am::QMenu_InitializeDaemonService();
 
         // Cache all homebrew (is this too slow...?)
-        homebrew = cfg::QueryAllHomebrew(true);
+        homebrew = cfg::QueryAllHomebrew(cache_homebrew);
 
         // Load menu config
         config = cfg::EnsureConfig();
@@ -65,14 +65,14 @@ u8 *app_buf;
 
 int main()
 {
-    app_buf = new u8[1280 * 720 * 4]();
-    qmenu::Initialize();
-    auto [_rc, menulist] = cfg::LoadTitleList(true);
-    list = menulist;
-
     auto [rc, smode] = am::QMenu_ProcessInput();
     if(R_SUCCEEDED(rc))
     {
+        app_buf = new u8[1280 * 720 * 4]();
+        qmenu::Initialize(smode == am::QMenuStartMode::StartupScreen); // Cache homebrew only on first launch
+        auto [_rc, menulist] = cfg::LoadTitleList(true);
+        list = menulist;
+
         if(smode != am::QMenuStartMode::Invalid)
         {
             auto renderer = pu::ui::render::Renderer::New(SDL_INIT_EVERYTHING, pu::ui::render::RendererInitOptions::RendererEverything, pu::ui::render::RendererHardwareFlags);
@@ -84,10 +84,10 @@ int main()
             if(smode == am::QMenuStartMode::MenuApplicationSuspended) qapp->Show();
             else qapp->ShowWithFadeIn();
         }
-    }
 
-    delete[] app_buf;
-    qmenu::Exit();
+        delete[] app_buf;
+        qmenu::Exit();
+    }
 
     return 0;
 }

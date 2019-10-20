@@ -107,7 +107,7 @@ namespace ui
             {
                 for(u32 i = 0; i < this->ricons.size(); i++)
                 {
-                    if((Touch.X >= basex) && (Touch.X < (basex + ItemSize)) && (Touch.Y >= basey) && (Touch.Y < (basey + ItemSize)))
+                    if((Touch.X >= basex) && (Touch.X < (basex + (s32)ItemSize)) && (Touch.Y >= basey) && (Touch.Y < (basey + (s32)ItemSize)))
                     {
                         if((this->baseiconidx + i) == selitm) (this->onselect)(KEY_A, this->selitm);
                         else

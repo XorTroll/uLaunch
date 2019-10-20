@@ -27,6 +27,10 @@ using JSON = nlohmann::json;
 #define Q_ENTRIES_PATH Q_BASE_SD_DIR "/entries"
 #define Q_THEMES_PATH Q_BASE_SD_DIR "/themes"
 
+#ifndef Q_VERSION
+#error Project's version isn't defined.
+#endif
+
 // Thanks SciresM
 #define R_TRY(res_expr) \
 ({ \
