@@ -18,7 +18,7 @@ namespace ui
 
     s32 SideMenu::GetX()
     {
-        return 88;
+        return 98;
     }
     s32 SideMenu::GetY()
     {
@@ -98,6 +98,31 @@ namespace ui
 
         if(Down & KEY_LEFT) HandleMoveLeft();
         else if(Down & KEY_RIGHT) HandleMoveRight();
+        else if(!Touch.IsEmpty())
+        {
+            s32 basex = this->GetProcessedX();
+            s32 basey = this->GetProcessedY();
+
+            if(this->cursoricon != NULL)
+            {
+                for(u32 i = 0; i < this->ricons.size(); i++)
+                {
+                    if((Touch.X >= basex) && (Touch.X < (basex + ItemSize)) && (Touch.Y >= basey) && (Touch.Y < (basey + ItemSize)))
+                    {
+                        if((this->baseiconidx + i) == selitm) (this->onselect)(KEY_A, this->selitm);
+                        else
+                        {
+                            preselitm = selitm;
+                            selitm = this->baseiconidx + i;
+                            movalpha = 255;
+                            (this->onselch)(this->selitm);
+                        }
+                        break;
+                    }
+                    basex += ItemSize + Margin;
+                }
+            }
+        }
         else (this->onselect)(Down, this->selitm);
     }
 
@@ -183,7 +208,7 @@ namespace ui
         u32 basex = GetProcessedX();
         for(u32 i = 0; i < this->ricons.size(); i++)
         {
-            if((basex == 88) && (this->selitm == (this->baseiconidx + i))) return true;
+            if((basex == this->GetX()) && (this->selitm == (this->baseiconidx + i))) return true;
             basex += ItemSize + Margin;
         }
         return false;
@@ -195,7 +220,7 @@ namespace ui
         u32 basex = GetProcessedX();
         for(u32 i = 0; i < this->ricons.size(); i++)
         {
-            if((basex == 916) && (this->selitm == (this->baseiconidx + i))) return true;
+            if((basex == 926) && (this->selitm == (this->baseiconidx + i))) return true;
             basex += ItemSize + Margin;
         }
         return false;

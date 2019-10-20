@@ -30,6 +30,13 @@ namespace ui
         this->bgSuspendedRaw = RawData::New(0, 0, raw, 1280, 720, 4);
         this->Add(this->bgSuspendedRaw);
 
+        this->topMenuImage = pu::ui::elm::Image::New(40, 35, cfg::ProcessedThemeResource(theme, "ui/TopMenu.png"));
+        this->Add(this->topMenuImage);
+        this->logo = ClickableImage::New(610, 13 + 35, "romfs:/Logo.png");
+        this->Add(this->logo);
+        this->connIcon = pu::ui::elm::Image::New(40 + 40, 18 + 35, cfg::ProcessedThemeResource(theme, "ui/ConnectionIcon.png"));
+        this->Add(this->connIcon);
+
         this->menuToggleClickable = ClickableImage::New(0, 200, cfg::ProcessedThemeResource(theme, "ui/ToggleClick.png"));
         this->menuToggleClickable->SetOnClick(std::bind(&MenuLayout::toggle_Click, this));
         this->menuToggleClickable->SetHorizontalAlign(pu::ui::elm::HorizontalAlign::Center);

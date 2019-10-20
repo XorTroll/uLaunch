@@ -26,6 +26,9 @@ namespace ui
             void HandleCloseSuspended();
         private:
             void *susptr;
+            pu::ui::elm::Image::Ref topMenuImage;
+            ClickableImage::Ref logo;
+            pu::ui::elm::Image::Ref connIcon;
             SideMenu::Ref itemsMenu;
             RawData::Ref bgSuspendedRaw;
             pu::ui::elm::TextBlock::Ref itemName;
