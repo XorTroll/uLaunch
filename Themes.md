@@ -60,7 +60,7 @@ Sound consists on custom *background music* and *sound effects* via files inside
 
     Properties:
 
-    - **loop**: Whether to replay the MP3 file again, after it finishes
+    - **loop**: Whether to replay the MP3 file again, after it finishes.
 
     - **fade_in_ms**: Time in milliseconds for the fade-in to be applied when the BGM starts playing. (0 = no fade-in)
 
@@ -68,7 +68,11 @@ Sound consists on custom *background music* and *sound effects* via files inside
 
     Note: returning to/launching a title/applet and returning back to HOME menu will restart the music.
 
-> *TODO: Sound effects*
+Sound effects consist on short WAV files.
+
+- `sound/TitleLaunch.wav` -> Sfx played when a title/homebrew is launched.
+
+- `sound/MenuToggle.wav` -> Sfx played when the menu is toggled (from main menu to homebrew mode and the opposite)
 
 ## UI
 

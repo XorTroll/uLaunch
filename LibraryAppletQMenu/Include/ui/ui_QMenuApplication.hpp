@@ -9,6 +9,7 @@ namespace ui
     {
         public:
             using Application::Application;
+            ~QMenuApplication();
             PU_SMART_CTOR(QMenuApplication)
 
             void OnLoad() override;
@@ -43,6 +44,9 @@ namespace ui
             u128 selected_user;
             JSON uijson;
             JSON bgmjson;
+            bool bgm_loop;
+            u32 bgm_fade_in_ms;
+            u32 bgm_fade_out_ms;
             pu::audio::Music bgm;
     };
 }

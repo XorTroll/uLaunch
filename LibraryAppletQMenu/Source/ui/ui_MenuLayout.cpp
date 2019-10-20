@@ -56,8 +56,17 @@ namespace ui
         this->Add(this->itemsMenu);
         this->tp = std::chrono::steady_clock::now();
 
+        this->sfxTitleLaunch = pu::audio::Load(cfg::ProcessedThemeResource(theme, "sound/TitleLaunch.wav"));
+        this->sfxMenuToggle = pu::audio::Load(cfg::ProcessedThemeResource(theme, "sound/MenuToggle.wav"));
+
         this->SetBackgroundImage(cfg::ProcessedThemeResource(theme, "ui/Background.png"));
         this->SetOnInput(std::bind(&MenuLayout::OnInput, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+    }
+
+    MenuLayout::~MenuLayout()
+    {
+        pu::audio::DeleteSfx(this->sfxTitleLaunch);
+        pu::audio::DeleteSfx(this->sfxMenuToggle);
     }
 
     void MenuLayout::menu_Click(u64 down, u32 index)
@@ -75,6 +84,7 @@ namespace ui
                     writer.Write<hb::TargetInput>(ipt);
                     writer.FinishWrite();
 
+                    pu::audio::Play(this->sfxTitleLaunch);
                     qapp->StopPlayBGM();
                     qapp->CloseWithFadeOut();
                     return;
@@ -97,6 +107,7 @@ namespace ui
                     writer.Write<hb::TargetInput>(hb.nro_target);
                     writer.FinishWrite();
 
+                    pu::audio::Play(this->sfxTitleLaunch);
                     qapp->StopPlayBGM();
                     qapp->CloseWithFadeOut();
                     return;
@@ -135,6 +146,7 @@ namespace ui
                                     writer.Write<hb::TargetInput>(title.nro_target);
                                     writer.FinishWrite();
 
+                                    pu::audio::Play(this->sfxTitleLaunch);
                                     qapp->StopPlayBGM();
                                     qapp->CloseWithFadeOut();
                                     return;
@@ -148,6 +160,7 @@ namespace ui
                                     am::QMenuCommandResultReader reader;
                                     if(reader && R_SUCCEEDED(reader.GetReadResult()))
                                     {
+                                        pu::audio::Play(this->sfxTitleLaunch);
                                         qapp->StopPlayBGM();
                                         qapp->CloseWithFadeOut();
                                         return;
@@ -169,6 +182,7 @@ namespace ui
                                 am::QMenuCommandResultReader reader;
                                 if(reader && R_SUCCEEDED(reader.GetReadResult()))
                                 {
+                                    pu::audio::Play(this->sfxTitleLaunch);
                                     qapp->StopPlayBGM();
                                     qapp->CloseWithFadeOut();
                                     return;
@@ -498,6 +512,7 @@ namespace ui
 
     void MenuLayout::toggle_Click()
     {
+        pu::audio::Play(this->sfxMenuToggle);
         this->homebrew_mode = !this->homebrew_mode;
         this->MoveFolder("", true);
     }

@@ -13,6 +13,7 @@ namespace ui
     {
         public:
             MenuLayout(void *raw, u8 min_alpha, bool hb_mode);
+            ~MenuLayout();
             PU_SMART_CTOR(MenuLayout)
 
             void menu_Click(u64 down, u32 index);
@@ -41,5 +42,7 @@ namespace ui
             u32 root_baseidx;
             u32 mode;
             s32 rawalpha;
+            pu::audio::Sfx sfxTitleLaunch;
+            pu::audio::Sfx sfxMenuToggle;
     };
 }

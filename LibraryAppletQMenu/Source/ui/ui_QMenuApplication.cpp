@@ -6,6 +6,11 @@ extern cfg::ProcessedTheme theme;
 
 namespace ui
 {
+    QMenuApplication::~QMenuApplication()
+    {
+        pu::audio::Delete(this->bgm);
+    }
+
     void QMenuApplication::OnLoad()
     {
         pu::ui::render::SetDefaultFont(cfg::ProcessedThemeResource(theme, "ui/Font.ttf"));
@@ -26,6 +31,9 @@ namespace ui
         this->uijson = jui;
         auto [_rc2, jbgm] = util::LoadJSONFromFile(cfg::ProcessedThemeResource(theme, "sound/BGM.json"));
         this->bgmjson = jbgm;
+        this->bgm_loop = this->bgmjson.value("loop", true);
+        this->bgm_fade_in_ms = this->bgmjson.value("fade_in_ms", 1500);
+        this->bgm_fade_out_ms = this->bgmjson.value("fade_out_ms", 500);
 
         this->bgm = pu::audio::Open(cfg::ProcessedThemeResource(theme, "sound/BGM.mp3"));
 
@@ -96,20 +104,17 @@ namespace ui
 
     void QMenuApplication::StartPlayBGM()
     {
-        bool loop = this->bgmjson.value("loop", true);
-        int fade_milli = this->bgmjson.value("fade_in_ms", 1500);
         if(this->bgm != NULL)
         {
-            int loops = loop ? -1 : 1;
-            if(fade_milli > 0) pu::audio::PlayWithFadeIn(this->bgm, loops, fade_milli);
+            int loops = this->bgm_loop ? -1 : 1;
+            if(this->bgm_fade_in_ms > 0) pu::audio::PlayWithFadeIn(this->bgm, loops, this->bgm_fade_in_ms);
             else pu::audio::Play(this->bgm, loops);
         }
     }
 
     void QMenuApplication::StopPlayBGM()
     {
-        int fade_milli = this->bgmjson.value("fade_out_ms", 500);
-        if(fade_milli > 0) pu::audio::FadeOut(fade_milli);
+        if(this->bgm_fade_out_ms > 0) pu::audio::FadeOut(this->bgm_fade_out_ms);
         else pu::audio::Stop();
     }
     
