@@ -45,6 +45,8 @@ namespace QForegroundViewer
                 Close();
             }
 
+            new ToolboxForm(this).Show();
+
             USBThread = new Thread(new ThreadStart(USBThreadMain));
             USBThread.Start();
         }
@@ -77,11 +79,6 @@ namespace QForegroundViewer
                 return false;
             }
             return true;
-        }
-
-        private void ScreenshotButton_Click(object sender, EventArgs e)
-        {
-            new ScreenshotForm(this).ShowDialog();
         }
 
         public static void InitializePictureBox(PictureBox Box)

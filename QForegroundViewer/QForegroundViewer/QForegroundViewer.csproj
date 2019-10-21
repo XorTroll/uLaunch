@@ -50,6 +50,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ToolboxForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ToolboxForm.Designer.cs">
+      <DependentUpon>ToolboxForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="ViewerMainForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -65,6 +71,9 @@
     <Compile Include="ScreenshotForm.Designer.cs">
       <DependentUpon>ScreenshotForm.cs</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="ToolboxForm.resx">
+      <DependentUpon>ToolboxForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="ViewerMainForm.resx">
       <DependentUpon>ViewerMainForm.cs</DependentUpon>
     </EmbeddedResource>

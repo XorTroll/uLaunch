@@ -94,5 +94,11 @@ namespace QForegroundViewer
                 MessageBox.Show("Screenshot successfully saved!");
             }
         }
+
+        private void ClipboardButton_Click(object sender, EventArgs e)
+        {
+            Clipboard.SetImage(ScreenshotBox.Image);
+            MessageBox.Show("Selected screenshot copied to clipboard.");
+        }
     }
 }

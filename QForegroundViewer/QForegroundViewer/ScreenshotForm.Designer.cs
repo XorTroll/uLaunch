@@ -35,6 +35,7 @@
             this.FormatList = new System.Windows.Forms.ComboBox();
             this.SaveButton = new System.Windows.Forms.Button();
             this.RefreshButton = new System.Windows.Forms.Button();
+            this.ClipboardButton = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.ScreenshotBox)).BeginInit();
             this.groupBox2.SuspendLayout();
@@ -98,7 +99,7 @@
             // 
             // SaveButton
             // 
-            this.SaveButton.Location = new System.Drawing.Point(12, 188);
+            this.SaveButton.Location = new System.Drawing.Point(12, 229);
             this.SaveButton.Name = "SaveButton";
             this.SaveButton.Size = new System.Drawing.Size(153, 55);
             this.SaveButton.TabIndex = 4;
@@ -116,11 +117,22 @@
             this.RefreshButton.UseVisualStyleBackColor = true;
             this.RefreshButton.Click += new System.EventHandler(this.RefreshButton_Click);
             // 
+            // ClipboardButton
+            // 
+            this.ClipboardButton.Location = new System.Drawing.Point(13, 189);
+            this.ClipboardButton.Name = "ClipboardButton";
+            this.ClipboardButton.Size = new System.Drawing.Size(171, 29);
+            this.ClipboardButton.TabIndex = 6;
+            this.ClipboardButton.Text = "Copy to clipboard";
+            this.ClipboardButton.UseVisualStyleBackColor = true;
+            this.ClipboardButton.Click += new System.EventHandler(this.ClipboardButton_Click);
+            // 
             // ScreenshotForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 333);
+            this.Controls.Add(this.ClipboardButton);
             this.Controls.Add(this.RefreshButton);
             this.Controls.Add(this.SaveButton);
             this.Controls.Add(this.groupBox2);
@@ -144,5 +156,6 @@
         private System.Windows.Forms.Button SaveButton;
         private System.Windows.Forms.Button RefreshButton;
         private System.Windows.Forms.ComboBox ScreenshotList;
+        private System.Windows.Forms.Button ClipboardButton;
     }
 }
