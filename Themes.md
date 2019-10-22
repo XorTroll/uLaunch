@@ -6,7 +6,11 @@
 
 Themes consist on plain directories replacing RomFs content.
 
-A valid theme must, at least, contain a `/theme` subdirectory and a `/theme/Manifest.json` within it (icon or actual modifications aren't neccessary)
+- Themes are place in `sd:/ulaunch/themes` directory.
+
+- A valid theme must, at least, contain a `/theme` subdirectory and a `/theme/Manifest.json` within it (icon or actual modifications aren't neccessary)
+
+Thus, a theme named `DemoTheme` should have its manifest JSON in `sd:/ulaunch/themes/DemoTheme/theme/Manifest.json`. Other assets (like UI) would go inside `sd:/ulaunch/themes/DemoTheme/ui`, `/sound`...
 
 **Important note:** any content (sound or UI) not found in the theme will be loaded from the default config, thus there is no need to provide every file (for instance, when making UI-only or sound-only changes)
 
@@ -48,7 +52,7 @@ Sound consists on custom *background music* and *sound effects* via files inside
 
 - `sound/BGM.json` -> JSON file with BGM settings
 
-   Demo JSON:
+   Demo JSON (with default values):
 
     ```json
     {
@@ -78,23 +82,9 @@ Sound effects consist on short WAV files.
 
 Can be customized via files in `/ui`.
 
-- `ui/Font.ttf` -> TTF font used for all the UI.
-
-- `ui/AllTitles.png` -> 256x256 PNG for the "all titles" entry in the main menu.
-
-- `ui/Folder.png` -> 256x256 PNG for folders in the main menu.
-
-- `ui/Cursor.png` -> 296x296 PNG for the cursor pointing at items in the main menu.
-
-- `ui/Background.png` -> 1280x720 PNG for the menu's background.
-
-- `ui/Hbmenu.png` -> 256x256 PNG for the option (in homebrew menu) to directly launch normal hbmenu NRO.
-
-- `ui/Banner{type}.png` -> Different 1280x135 PNG banners for menu item types (Folder, Homebrew or Installed)
-
 - `ui/UI.json` -> JSON file with UI settings
 
-   Demo JSON:
+   Demo JSON (with default values):
 
     ```json
     {
@@ -106,6 +96,32 @@ Can be customized via files in `/ui`.
 
     - **suspended_final_alpha**: Final alpha the suspended title's capture will have (0 would be to fully hide it, default is 80)
 
-    Note: returning to/launching a title/applet and returning back to HOME menu will restart the music.
+## General
 
-> *TODO: more customizable stuff*
+- `ui/Font.ttf` -> TTF font used for all the UI.
+
+## Main menu
+
+- `ui/AllTitles.png` -> 256x256 PNG for the "all titles" entry in the main menu.
+
+- `ui/Folder.png` -> 256x256 PNG for folders in the main menu.
+
+- `ui/Cursor.png` -> 296x296 PNG for the cursor pointing at items in the main menu.
+
+- `ui/Background.png` -> 1280x720 PNG for the main menu's background.
+
+- `ui/Hbmenu.png` -> 256x256 PNG for the option (in homebrew menu) to directly launch normal hbmenu NRO.
+
+- `ui/Banner{type}.png` -> Different 1280x135 PNG banners for menu item types (BannerFolder, BannerHomebrew or BannerInstalled)
+
+### Top menu
+
+The top menu is the small bar shown at the top of the main menu, whose background and icons are customizable.
+
+All the menu icons ({...}Icon.png) are 50x50 icons, except battery ones (BatteryNormalIcon and BatteryChargeIcon are 30x30)
+
+- `ui/TopMenu.png` -> Background of menu (1220x85 PNG)
+
+- Icon list (50x50): ConnectionIcon, NoConnectionIcon, SettingsIcon, ThemesIcon, USBIcon
+
+> *TODO: more menu icons*

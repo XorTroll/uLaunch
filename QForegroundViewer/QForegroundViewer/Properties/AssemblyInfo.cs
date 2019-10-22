@@ -7,11 +7,11 @@ using System.Runtime.InteropServices;
 // conjunto de atributos. Cambie estos valores de atributo para modificar la información
 // asociada con un ensamblado.
 [assembly: AssemblyTitle("QForegroundViewer")]
-[assembly: AssemblyDescription("{qlaunch-reimpl}'s foreground display viewer")]
+[assembly: AssemblyDescription("uLaunch's foreground display viewer")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Made by XorTroll")]
-[assembly: AssemblyProduct("{qlaunch-reimpl} project")]
-[assembly: AssemblyCopyright("Copyright © {qlaunch-reimpl} 2019")]
+[assembly: AssemblyProduct("uLaunch project")]
+[assembly: AssemblyCopyright("Copyright © uLaunch 2019")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

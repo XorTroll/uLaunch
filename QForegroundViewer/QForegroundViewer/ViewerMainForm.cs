@@ -37,11 +37,11 @@ namespace QForegroundViewer
                 var lst = new LstK(0, ref pat);
                 lst.MoveNext(out var dinfo);
                 USB = new UsbK(dinfo);
-                MessageBox.Show("Connection with {qlaunch-reimpl} was established.");
+                MessageBox.Show("Connection with uLaunch was established.");
             }
             catch
             {
-                MessageBox.Show("Unable to find connection. Have you installed libusbK drivers? Are you sure {qlaunch-reimpl} is opened?");
+                MessageBox.Show("Unable to find connection. Have you installed libusbK drivers? Are you sure uLaunch is opened?");
                 Close();
             }
 

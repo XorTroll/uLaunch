@@ -51,7 +51,7 @@
             this.ClientSize = new System.Drawing.Size(624, 321);
             this.Controls.Add(this.CaptureBox);
             this.Name = "ViewerMainForm";
-            this.Text = "{qlaunch-reimpl} - Foreground display viewer";
+            this.Text = "uLaunch - Foreground display viewer";
             ((System.ComponentModel.ISupportInitialize)(this.CaptureBox)).EndInit();
             this.ResumeLayout(false);
 

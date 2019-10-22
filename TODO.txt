@@ -1,4 +1,0 @@
-Several other menus (settings, account...)
-Option to change user (relogin) or account password
-Proper result codes (everything is 0xDEAD)
-Fix display in QForegroundViewer

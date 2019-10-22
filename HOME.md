@@ -26,7 +26,7 @@ qlaunch is the name of the process officially known as **HOME menu**.
 
 - Surprisingly, qlaunch's basic functionality (launching titles, detecting HOME press, systems other applets use to interact with it) hasn't (apparently) changed, at least not since 5.1.0 (oldest firmware I did tests related to qlaunch)
 
-## Custom implementation: {qlaunch-reimpl}
+## Custom implementation: uLaunch
 
 ### Homebrew limitations
 
@@ -70,7 +70,7 @@ Since eQlipse, I've taken advantage of a lost gem in the switch's system memory:
 
 It is important to note that it was stubbed, not removed. That means that the title is there, in your console's memory (on any version), but no longer launchable via the HOME menu trick, and the code would do nothing if it was launched.
 
-However, the fact that it is still there means that **every console has an application title built-in in their systems**. In fact, flog has a unique title category: it is a **system application**, which is completely similar to a normal application, but the difference is that these kind of titles come within the system.
+However, the fact that it is still there means that **every console has an application title built-in in their systems**. In fact, flog is a special title kind: it is a **system application**, which is completely similar to a normal application, but the difference is that these kind of titles come within the system.
 
 Theorerically, flog isn't the only system application, since **starter** (that special menu shown on the initial configuration of the console) seems to be one too.
 

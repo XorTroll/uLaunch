@@ -536,7 +536,7 @@ namespace ui
 
     void MenuLayout::logo_Click()
     {
-        qapp->CreateShowDialog("About {qlaunch-reimpl}", "{qlaunch-reimpl} v" + std::string(Q_VERSION) + "\n\n- Custom, open source, fully-featured HOME menu replacement.", { "Ok" }, true, "romfs:/Logo.png");
+        qapp->CreateShowDialog("About uLaunch", "uLaunch v" + std::string(Q_VERSION) + "\n\n- Custom, open source, fully-featured HOME menu replacement.", { "Ok" }, true, "romfs:/Logo.png");
     }
 
     void MenuLayout::settings_Click()

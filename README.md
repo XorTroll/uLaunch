@@ -1,10 +1,10 @@
-# {qlaunch-reimpl}
+# uLaunch
 
 > Custom, open-source replacement for Nintendo Switch's HOME Menu (qlaunch), extending it with amazing, homebrew-orienteed functionality!
 
-- Note: *{qlaunch-reimpl}* will be replaced with the actual project's name when it is decided.
+uLaunch is a very ambicious project, consisting on two custom library applets, a custom system application and a custom system applet, in order to replace the console's **HOME menu** with a custom, homebrew-orienteed one.
 
-{qlaunch-reimpl} is a very ambicious project, consisting on two custom library applets, a custom system application and a custom system applet, in order to replace the console's **HOME menu** with a custom, homebrew-orienteed one.
+## **NOTE:** the project is still a work-in-progress. Check what's left to do before release [here](TODO.md)!
 
 - The project is licensed as **GPLv2**.
 
@@ -22,7 +22,7 @@
 
 ## Features
 
-This is the amount of features {qlaunch-reimpl} contains, compared to the original HOME menu:
+This is the amount of features uLaunch contains, compared to the original HOME menu:
 
 - Homebrew support
 
@@ -62,13 +62,13 @@ This is the amount of features {qlaunch-reimpl} contains, compared to the origin
 
 ### Homebrew as applications
 
-{qlaunch-reimpl} launches homebrew present (added) to main menu as an application, taking advantage of **flog**'s built-in application title, which was stubbed but not removed, thus it's content can be overriden via LayeredFS and launched.
+uLaunch launches homebrew present (added) to main menu as an application, taking advantage of **flog**'s built-in application title, which was stubbed but not removed, thus it's content can be overriden via LayeredFS and launched.
 
-Since launching this title should be impossible, it might involve ban risk, so **use it at your own risk**. {qlaunch-reimpl} **warns on launching titles this way**.
+Since launching this title should be impossible, it might involve ban risk, so **use it at your own risk**. uLaunch **warns on launching titles this way**.
 
 ## Project and subprojects
 
-{qlaunch-reimpl} is split, as mentioned above, into several sub-projects:
+uLaunch is split, as mentioned above, into several sub-projects:
 
 ### QDaemon (SystemAppletQDaemon)
 
@@ -100,11 +100,13 @@ This is the same process but, like in normal HOME menu and Album, it runs homebr
 
 *QDaemon* daemon process, appart from usual (and special) HOME menu functions, it also sends the console's foreground display via USB as a raw RGBA8 1280x720 ~3MB buffer. **QForegroundViewer** is the PC tool (WinForms) which intercepts those sent buffers and renders them. It is a bit laggy, but can be *very* useful for taking quick screenshots!
 
-Unlike the other projects, this one isn't essential and {qlaunch-reimpl} would be perfectly usable ignoring this sent data.
+Unlike the other projects, this one isn't essential and uLaunch would be perfectly usable ignoring this sent data.
+
+For more technical information about uLaunch and qlaunch, check [this](HOME.md).
 
 ## Installing and removing
 
-In order to check {qlaunch-reimpl}'s installation, you will need to pay attention to the `titles` directory of the CFW you're using.
+In order to check uLaunch's installation, you will need to pay attention to the `titles` directory of the CFW you're using.
 
 ### How do I know whether it is installed?
 
@@ -124,7 +126,7 @@ Clone (**recursively!**) this repo (uses libstratosphere and Plutonium submodule
 
 ## Errors
 
-If you get a crash using {qlaunch-reimpl}, please check:
+If you get a crash using uLaunch, please check:
 
 - If the crash's title is `0100000000001000`, `010000000000100B`, `0100000000001009` or `01008BB00013C000` and **you know for sure you have this project in your SD**, then it is very likely related to this project.
 

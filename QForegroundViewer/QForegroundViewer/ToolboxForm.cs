@@ -22,8 +22,7 @@ namespace QForegroundViewer
 
         private void AboutButton_Click(object sender, EventArgs e)
         {
-            // TODO: change this before release
-            Process.Start("https://github.com/XorTroll/unnamed-qlaunch-reimpl");
+            Process.Start("https://github.com/XorTroll/uLaunch");
         }
 
         private void ScreenshotButton_Click(object sender, EventArgs e)

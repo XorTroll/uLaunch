@@ -48,7 +48,7 @@
             this.AboutButton.Name = "AboutButton";
             this.AboutButton.Size = new System.Drawing.Size(222, 45);
             this.AboutButton.TabIndex = 1;
-            this.AboutButton.Text = "About {qlaunch-reimpl}";
+            this.AboutButton.Text = "About uLaunch";
             this.AboutButton.UseVisualStyleBackColor = true;
             this.AboutButton.Click += new System.EventHandler(this.AboutButton_Click);
             // 

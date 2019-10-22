@@ -19,7 +19,7 @@
 #include <json.hpp>
 using JSON = nlohmann::json;
 
-#define Q_BASE_DIR "reqwrite"
+#define Q_BASE_DIR "ulaunch"
 #define Q_BASE_SD_DIR "sdmc:/" Q_BASE_DIR
 #define Q_DB_MOUNT_NAME "qsave"
 #define Q_DB_MOUNT_PATH Q_DB_MOUNT_NAME ":/"
@@ -28,7 +28,7 @@ using JSON = nlohmann::json;
 #define Q_THEMES_PATH Q_BASE_SD_DIR "/themes"
 
 #ifndef Q_VERSION
-#error Project's version isn't defined.
+#error uLaunch's release version isn't defined.
 #endif
 
 // Thanks SciresM
