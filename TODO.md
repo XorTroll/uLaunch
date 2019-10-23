@@ -8,7 +8,7 @@ All the stuff to do before first release:
 
 - User menu -> log off, change password, register password, delete or create users...
 
-- Theme meny -> browse themes in the SD card and select which one to use
+- Theme menu -> browse themes in the SD card and select which one to use
 
 - Document entry system (adding custom NROs with possible custom argv to main menu)
 
