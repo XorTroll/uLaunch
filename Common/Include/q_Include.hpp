@@ -31,6 +31,8 @@ using JSON = nlohmann::json;
 #error uLaunch's release version isn't defined.
 #endif
 
+static constexpr size_t RawRGBAScreenBufferSize = 1280 * 720 * 4;
+
 // Thanks SciresM
 #define R_TRY(res_expr) \
 ({ \

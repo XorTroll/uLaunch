@@ -1,5 +1,6 @@
 #include <ui/ui_MenuLayout.hpp>
 #include <os/os_Titles.hpp>
+#include <os/os_Account.hpp>
 #include <util/util_Convert.hpp>
 #include <util/util_Misc.hpp>
 #include <ui/ui_QMenuApplication.hpp>
@@ -9,7 +10,7 @@
 extern ui::QMenuApplication::Ref qapp;
 extern cfg::TitleList list;
 extern std::vector<cfg::TitleRecord> homebrew;
-extern cfg::MenuConfig config;
+extern cfg::Config config;
 extern cfg::ProcessedTheme theme;
 
 namespace ui
@@ -40,8 +41,16 @@ namespace ui
         this->logo->SetHeight(60);
         this->logo->SetOnClick(std::bind(&MenuLayout::logo_Click, this));
         this->Add(this->logo);
+
         this->connIcon = pu::ui::elm::Image::New(80, 53, cfg::ProcessedThemeResource(theme, "ui/NoConnectionIcon.png"));
         this->Add(this->connIcon);
+        this->users = ClickableImage::New(270, 53, ""); // On layout creation, no user is still selected...
+        this->users->SetOnClick(std::bind(&MenuLayout::users_Click, this));
+        this->Add(this->users);
+        this->web = ClickableImage::New(340, 53, cfg::ProcessedThemeResource(theme, "ui/WebIcon.png"));
+        this->web->SetOnClick(std::bind(&MenuLayout::web_Click, this));
+        this->Add(this->web);
+
         auto curtime = util::GetCurrentTime();
         this->timeText = pu::ui::elm::TextBlock::New(515, 68, curtime);
         this->timeText->SetColor(textclr);
@@ -57,7 +66,6 @@ namespace ui
         this->settings = ClickableImage::New(880, 53, cfg::ProcessedThemeResource(theme, "ui/SettingsIcon.png"));
         this->settings->SetOnClick(std::bind(&MenuLayout::settings_Click, this));
         this->Add(this->settings);
-
         this->themes = ClickableImage::New(950, 53, cfg::ProcessedThemeResource(theme, "ui/ThemesIcon.png"));
         this->themes->SetOnClick(std::bind(&MenuLayout::themes_Click, this));
         this->Add(this->themes);
@@ -503,28 +511,18 @@ namespace ui
         {
             if(!this->curfolder.empty()) this->MoveFolder("", true);
         }
-        else if(down & KEY_MINUS)
-        {
-            SwkbdConfig swkbd;
-            swkbdCreate(&swkbd, 0);
-            swkbdConfigSetHeaderText(&swkbd, "Enter web page URL");
-            char url[500] = {0};
-            auto rc = swkbdShow(&swkbd, url, 500);
-            if(R_SUCCEEDED(rc))
-            {
-                WebCommonConfig web = {};
-                webPageCreate(&web, url);
-                webConfigSetWhitelist(&web, ".*");
+        else if(down & KEY_UP) this->menuToggle_Click();
+        else if(down & KEY_ZL) this->HandleUserMenu();
+        else if(down & KEY_L) this->HandleWebPageOpen();
+        else if(down & KEY_R) this->HandleSettingsMenu();
+        else if(down & KEY_ZR) this->HandleThemesMenu();
+    }
 
-                am::QMenuCommandWriter writer(am::QDaemonMessage::OpenWebPage);
-                writer.Write<WebCommonConfig>(web);
-                writer.FinishWrite();
-
-                qapp->StopPlayBGM();
-                qapp->CloseWithFadeOut();
-                return;
-            }
-        }
+    void MenuLayout::SetUser(u128 user)
+    {
+        this->users->SetImage(os::GetIconCacheImagePath(user));
+        this->users->SetWidth(50);
+        this->users->SetHeight(50);
     }
 
     void MenuLayout::menuToggle_Click()
@@ -541,12 +539,22 @@ namespace ui
 
     void MenuLayout::settings_Click()
     {
-        qapp->CreateShowDialog("Settings", "Settings", {"Ok"}, true);
+        this->HandleSettingsMenu();
     }
 
     void MenuLayout::themes_Click()
     {
-        qapp->CreateShowDialog("Themes", "Themes", {"Ok"}, true);
+        this->HandleThemesMenu();
+    }
+
+    void MenuLayout::users_Click()
+    {
+        this->HandleUserMenu();
+    }
+
+    void MenuLayout::web_Click()
+    {
+        this->HandleWebPageOpen();
     }
 
     bool MenuLayout::HandleFolderChange(cfg::TitleRecord &rec)
@@ -607,24 +615,66 @@ namespace ui
         }
         else if(sopt == 1)
         {
-            am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchHomebrewApplication);
-            writer.Write<hb::TargetInput>(rec.nro_target);
+            if(config.system_title_override_enabled)
+            {
+                am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchHomebrewApplication);
+                writer.Write<hb::TargetInput>(rec.nro_target);
+                writer.FinishWrite();
+
+                am::QMenuCommandResultReader reader;
+                if(reader && R_SUCCEEDED(reader.GetReadResult()))
+                {
+                    pu::audio::Play(this->sfxTitleLaunch);
+                    qapp->StopPlayBGM();
+                    qapp->CloseWithFadeOut();
+                    return;
+                }
+                else
+                {
+                    auto rc = reader.GetReadResult();
+                    qapp->CreateShowDialog("Title launch", "An error ocurred attempting to launch the title:\n" + util::FormatResultDisplay(rc) + " (" + util::FormatResultHex(rc) + ")", { "Ok" }, true);
+                }
+                reader.FinishRead();
+            }
+            else qapp->CreateShowDialog("Title launch", "System title launching (via flog) is disabled.\nYou can enable it in settings.\n\nNote that this system (unlike title override) could involve ban risk!\nUse it at your own risk.", { "Ok" }, true);
+        }
+    }
+
+    void MenuLayout::HandleUserMenu()
+    {
+        qapp->CreateShowDialog("Users", "Users", {"Ok"}, true);
+    }
+
+    void MenuLayout::HandleWebPageOpen()
+    {
+        SwkbdConfig swkbd;
+        swkbdCreate(&swkbd, 0);
+        swkbdConfigSetHeaderText(&swkbd, "Enter web page URL");
+        char url[500] = {0};
+        auto rc = swkbdShow(&swkbd, url, 500);
+        if(R_SUCCEEDED(rc))
+        {
+            WebCommonConfig web = {};
+            webPageCreate(&web, url);
+            webConfigSetWhitelist(&web, ".*");
+
+            am::QMenuCommandWriter writer(am::QDaemonMessage::OpenWebPage);
+            writer.Write<WebCommonConfig>(web);
             writer.FinishWrite();
 
-            am::QMenuCommandResultReader reader;
-            if(reader && R_SUCCEEDED(reader.GetReadResult()))
-            {
-                pu::audio::Play(this->sfxTitleLaunch);
-                qapp->StopPlayBGM();
-                qapp->CloseWithFadeOut();
-                return;
-            }
-            else
-            {
-                auto rc = reader.GetReadResult();
-                qapp->CreateShowDialog("Title launch", "An error ocurred attempting to launch the title:\n" + util::FormatResultDisplay(rc) + " (" + util::FormatResultHex(rc) + ")", { "Ok" }, true);
-            }
-            reader.FinishRead();
+            qapp->StopPlayBGM();
+            qapp->CloseWithFadeOut();
+            return;
         }
+    }
+    
+    void MenuLayout::HandleSettingsMenu()
+    {
+        qapp->CreateShowDialog("Settings", "Settings", {"Ok"}, true);
+    }
+    
+    void MenuLayout::HandleThemesMenu()
+    {
+        qapp->CreateShowDialog("Themes", "Themes", {"Ok"}, true);
     }
 }

@@ -24,7 +24,7 @@ namespace ui
         if(this->IsSuspended())
         {
             bool flag;
-            appletGetLastApplicationCaptureImageEx(app_buf, 1280 * 720 * 4, &flag);
+            appletGetLastApplicationCaptureImageEx(app_buf, RawRGBAScreenBufferSize, &flag);
         }
 
         auto [_rc, jui] = util::LoadJSONFromFile(cfg::ProcessedThemeResource(theme, "ui/UI.json"));
@@ -45,8 +45,17 @@ namespace ui
             case am::QMenuStartMode::Menu:
             case am::QMenuStartMode::MenuApplicationSuspended:
             case am::QMenuStartMode::MenuLaunchFailure:
+            {
+                // Returned from applet/title, QDaemon has the user but we don't, so...
+                am::QMenuCommandWriter writer(am::QDaemonMessage::GetSelectedUser);
+                writer.FinishWrite();
+                am::QMenuCommandResultReader res;
+                this->selected_user = res.Read<u128>();
+                res.FinishRead();
+
                 this->LoadMenu();
                 break;
+            }
             default:
                 this->LoadLayout(this->startupLayout);
                 break;
@@ -60,6 +69,7 @@ namespace ui
 
     void QMenuApplication::LoadMenu()
     {
+        this->menuLayout->SetUser(this->selected_user);
         this->LoadLayout(this->menuLayout);
         this->StartPlayBGM();
     }

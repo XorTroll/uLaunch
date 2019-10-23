@@ -75,9 +75,11 @@ namespace cfg
         std::string icon_path;
     };
 
-    struct MenuConfig
+    struct Config
     {
         std::string theme_name;
+        bool system_title_override_enabled;
+        
     };
 
     static constexpr u32 CurrentThemeFormatVersion = 0;
@@ -98,10 +100,10 @@ namespace cfg
     std::string ProcessedThemeResource(ProcessedTheme &base, std::string resource_base);
     ProcessedTheme ProcessTheme(Theme &base);
 
-    MenuConfig CreateNewAndLoadConfig();
-    MenuConfig LoadConfig();
-    MenuConfig EnsureConfig();
-    void SaveConfig(MenuConfig &cfg);
+    Config CreateNewAndLoadConfig();
+    Config LoadConfig();
+    Config EnsureConfig();
+    void SaveConfig(Config &cfg);
 
     void SaveRecord(TitleRecord &record);
     bool MoveRecordTo(TitleList &list, TitleRecord record, std::string folder);

@@ -16,14 +16,16 @@ namespace QForegroundViewer
         private UsbK USB;
         private Thread USBThread;
 
+        public const long RawRGBAScreenBufferSize = 1280 * 720 * 4;
+
         public byte[][] CaptureBlocks = new byte[][]
         {
-            new byte[1280 * 720 * 4], // Current block
-            new byte[1280 * 720 * 4], // Temporary blocks (5)
-            new byte[1280 * 720 * 4],
-            new byte[1280 * 720 * 4],
-            new byte[1280 * 720 * 4],
-            new byte[1280 * 720 * 4],
+            new byte[RawRGBAScreenBufferSize], // Current block
+            new byte[RawRGBAScreenBufferSize], // Temporary blocks (5)
+            new byte[RawRGBAScreenBufferSize],
+            new byte[RawRGBAScreenBufferSize],
+            new byte[RawRGBAScreenBufferSize],
+            new byte[RawRGBAScreenBufferSize],
         };
 
         public ViewerMainForm()

@@ -262,6 +262,16 @@ void HandleQMenuMessage()
 
                     break;
                 }
+                case am::QDaemonMessage::GetSelectedUser:
+                {
+                    reader.FinishRead();
+
+                    am::QDaemonCommandResultWriter res(0);
+                    res.Write<u128>(selected_uid);
+                    res.FinishWrite();
+                    
+                    break;
+                }
                 default:
                     break;
             }
@@ -273,7 +283,7 @@ namespace qdaemon
 {
     void Initialize()
     {
-        app_buf = new u8[1280 * 720 * 4]();
+        app_buf = new u8[RawRGBAScreenBufferSize]();
         fs::CreateDirectory(Q_BASE_SD_DIR);
 
         // Debug testing mode
@@ -340,15 +350,15 @@ namespace qdaemon
 
     void ForegroundMain(void *arg)
     {
-        u8 *demo = new (std::align_val_t(0x1000)) u8[1280 * 720 * 4]();
+        u8 *demo = new (std::align_val_t(0x1000)) u8[RawRGBAScreenBufferSize]();
 
         usbCommsInitialize();
         while(true)
         {
             appletUpdateLastForegroundCaptureImage();
             bool tmp;
-            appletGetLastForegroundCaptureImageEx(demo, 1280 * 720 * 4, &tmp);
-            usbCommsWrite(demo, 1280 * 720 * 4);
+            appletGetLastForegroundCaptureImageEx(demo, RawRGBAScreenBufferSize, &tmp);
+            usbCommsWrite(demo, RawRGBAScreenBufferSize);
         }
         usbCommsExit();
         delete[] demo;

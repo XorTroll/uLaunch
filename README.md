@@ -72,6 +72,8 @@ uLaunch is split, as mentioned above, into several sub-projects:
 
 ### QDaemon (SystemAppletQDaemon)
 
+> This sub-project replaces qlaunch, aka title 0100000000001000.
+
 This is the technically actual qlaunch reimplementation. However, to avoid memory issues it does not use any kind of UI (except console for development debug, which is removed for releases), and thus it uses 16MB of heap, while official HOME menu uses 56MB.
 
 Instead, it uses [QMenu custom library applet](#qmenu-libraryappletqmenu) (launches and communicates with it) in order to display a proper menu UI.
@@ -82,6 +84,8 @@ But, if all the functionality is handled by QMenu, why is this daemon process ne
 
 ### QMenu (LibraryAppletQMenu)
 
+> This sub-project replaces eShop applet, aka title 010000000000100B.
+
 This is the HOME menu the user will see and interact with. It contains all the UI and sounc functionality, password, themes...
 
 ### QHbTarget
@@ -90,9 +94,13 @@ This is the name for two related projects, whose aim is to target and launch hom
 
 #### System application (SystemApplicationQHbTarget)
 
+> This sub-project replaces flog system application, aka title 01008BB00013C000.
+
 This is the process which runs instead of flog, which is used to launch homebrew as applications.
 
 #### Library applet (LibraryAppletQHbTarget)
+
+> This sub-project replaces Mii applet, aka title 010000000000100B.
 
 This is the same process but, like in normal HOME menu and Album, it runs homebrew as an applet. However, exiting homebrew here will exit to HOME menu instead of exiting to hbmenu.
 
@@ -137,3 +145,5 @@ If you get a crash using uLaunch, please check:
 - SciresM for [libstratosphere](https://github.com/Atmosphere-NX/libstratosphere).
 
 - Switchbrew team for libnx and [hbloader](https://github.com/switchbrew/nx-hbloader), the base of *QHbTarget projects (they're some useful wrappers of hbloader in the end)
+
+- [Icons8](https://icons8.com/) website for a big part of the icons used by the default style.

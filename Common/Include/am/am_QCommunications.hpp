@@ -30,7 +30,8 @@ namespace am
         GetSuspendedInfo,
         LaunchHomebrewLibApplet,
         LaunchHomebrewApplication,
-        OpenWebPage
+        OpenWebPage,
+        GetSelectedUser
     };
 
     struct QSuspendedInfo

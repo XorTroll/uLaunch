@@ -206,31 +206,33 @@ namespace cfg
         return processed;
     }
 
-    MenuConfig CreateNewAndLoadConfig()
+    Config CreateNewAndLoadConfig()
     {
-        MenuConfig cfg = {};
+        Config cfg = {};
+        cfg.system_title_override_enabled = false; // Due to ban risk, have it disabled by default.
         SaveConfig(cfg);
         return cfg;
     }
 
-    MenuConfig LoadConfig()
+    Config LoadConfig()
     {
-        MenuConfig cfg = {};
+        Config cfg = {};
         auto [rc, cfgjson] = util::LoadJSONFromFile(CFG_CONFIG_JSON);
         if(R_SUCCEEDED(rc))
         {
             cfg.theme_name = cfgjson.value("theme_name", "");
+            cfg.system_title_override_enabled = cfgjson.value("system_title_override_enabled", false);
         }
         return cfg;
     }
 
-    MenuConfig EnsureConfig()
+    Config EnsureConfig()
     {
         if(!fs::ExistsFile(CFG_CONFIG_JSON)) return CreateNewAndLoadConfig();
         return LoadConfig();
     }
 
-    void SaveConfig(MenuConfig &cfg)
+    void SaveConfig(Config &cfg)
     {
         fs::DeleteFile(CFG_CONFIG_JSON);
         JSON j = JSON::object();

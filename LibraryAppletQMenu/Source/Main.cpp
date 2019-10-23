@@ -17,7 +17,7 @@ extern "C"
 ui::QMenuApplication::Ref qapp;
 cfg::TitleList list;
 std::vector<cfg::TitleRecord> homebrew;
-cfg::MenuConfig config;
+cfg::Config config;
 cfg::ProcessedTheme theme;
 
 namespace qmenu
@@ -68,7 +68,7 @@ int main()
     auto [rc, smode] = am::QMenu_ProcessInput();
     if(R_SUCCEEDED(rc))
     {
-        app_buf = new u8[1280 * 720 * 4]();
+        app_buf = new u8[RawRGBAScreenBufferSize]();
         qmenu::Initialize(smode == am::QMenuStartMode::StartupScreen); // Cache homebrew only on first launch
         auto [_rc, menulist] = cfg::LoadTitleList(true);
         list = menulist;
