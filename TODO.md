@@ -6,7 +6,7 @@ All the stuff to do before first release:
 
 - Settings menu -> both console ones (device name, etc) and uLaunch's ones (also TODO ^)
 
-- User menu -> log off, change password, register password, change image?...
+- User menu -> log off, change password, register password, delete or create users...
 
 - Theme meny -> browse themes in the SD card and select which one to use
 
