@@ -24,4 +24,4 @@ This could be also considered as TODOs, but not really needed for a first releas
 
 - Improve QDaemons's IPC with two services, one only for QMenu and the other one for any process to interact with uLaunch
 
-- Wii-style pointer, which is working for normal homebrew (however small tests didn't work fine? need to test again)
+- Wii-style pointer, which is working for normal homebrew (however small tests didn't work fine, need to test again)
