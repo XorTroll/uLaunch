@@ -61,8 +61,6 @@ namespace ui
             bool warnshown;
             bool homebrew_mode;
             u8 minalpha;
-            u32 root_idx;
-            u32 root_baseidx;
             u32 mode;
             s32 rawalpha;
             pu::audio::Sfx sfxTitleLaunch;

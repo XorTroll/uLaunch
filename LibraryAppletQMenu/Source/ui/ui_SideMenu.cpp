@@ -139,7 +139,10 @@ namespace ui
     void SideMenu::ClearItems()
     {
         this->icons.clear();
-        for(auto &ricon: this->ricons) pu::ui::render::DeleteTexture(ricon);
+        for(auto ricon: this->ricons)
+        {
+            if(ricon != NULL) pu::ui::render::DeleteTexture(ricon);
+        }
         this->ricons.clear();
         this->selitm = 0;
         this->baseiconidx = 0;

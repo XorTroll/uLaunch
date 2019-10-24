@@ -14,20 +14,25 @@ extern "C"
     size_t __nx_heap_size = 0x10000000; // 256MB heap - now we can use as much as we want from the applet pool ;)
 }
 
+// Some global vars
+
 ui::QMenuApplication::Ref qapp;
 cfg::TitleList list;
 std::vector<cfg::TitleRecord> homebrew;
 cfg::Config config;
 cfg::ProcessedTheme theme;
+u8 *app_buf;
 
 namespace qmenu
 {
-    void Initialize(bool cache_homebrew)
+    void Initialize()
     {
         accountInitialize();
         nsInitialize();
         nifmInitialize();
         psmInitialize();
+        setsysInitialize();
+
         db::Mount();
         fs::CreateDirectory(Q_BASE_DB_DIR);
         fs::CreateDirectory(Q_BASE_SD_DIR);
@@ -37,10 +42,11 @@ namespace qmenu
         fs::CreateDirectory(Q_BASE_SD_DIR "/user");
         fs::CreateDirectory(Q_BASE_SD_DIR "/nro");
         db::Commit();
+
         am::QMenu_InitializeDaemonService();
 
         // Cache all homebrew (is this too slow...?)
-        homebrew = cfg::QueryAllHomebrew(cache_homebrew);
+        homebrew = cfg::QueryAllHomebrew(true);
 
         // Load menu config
         config = cfg::EnsureConfig();
@@ -53,7 +59,10 @@ namespace qmenu
     void Exit()
     {
         am::QMenu_FinalizeDaemonService();
+
         db::Unmount();
+
+        setsysExit();
         psmExit();
         nifmExit();
         nsExit();
@@ -61,15 +70,13 @@ namespace qmenu
     }
 }
 
-u8 *app_buf;
-
 int main()
 {
     auto [rc, smode] = am::QMenu_ProcessInput();
     if(R_SUCCEEDED(rc))
     {
         app_buf = new u8[RawRGBAScreenBufferSize]();
-        qmenu::Initialize(smode == am::QMenuStartMode::StartupScreen); // Cache homebrew only on first launch
+        qmenu::Initialize();
         auto [_rc, menulist] = cfg::LoadTitleList(true);
         list = menulist;
 

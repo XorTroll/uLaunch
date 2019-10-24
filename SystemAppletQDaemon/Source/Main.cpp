@@ -13,7 +13,11 @@
 extern "C"
 {
     u32 __nx_applet_type = AppletType_SystemApplet;
-    size_t __nx_heap_size = 0x3000000;//0x1000000;
+    #ifdef Q_DEV
+        size_t __nx_heap_size = 0x3000000; // Dev uses 3x heap (48MB, still pretty low) for debug console
+    #else
+        size_t __nx_heap_size = 0x1000000;
+    #endif
 }
 
 u8 *app_buf;
@@ -286,52 +290,54 @@ namespace qdaemon
         app_buf = new u8[RawRGBAScreenBufferSize]();
         fs::CreateDirectory(Q_BASE_SD_DIR);
 
-        // Debug testing mode
-        consoleInit(NULL);
-        CONSOLE_FMT("Welcome to QDaemon's debug mode!")
-        CONSOLE_FMT("")
-        CONSOLE_FMT("(A) -> Dump system save data to sd:/<q>/save_dump")
-        CONSOLE_FMT("(B) -> Delete everything in save data (except official HOME menu's content)")
-        CONSOLE_FMT("(X) -> Reboot system")
-        CONSOLE_FMT("(Y) -> Continue to QMenu (proceed launch)")
-        CONSOLE_FMT("")
+        #ifdef Q_DEV
+            // Debug testing mode
+            consoleInit(NULL);
+            CONSOLE_FMT("Welcome to QDaemon's debug mode!")
+            CONSOLE_FMT("")
+            CONSOLE_FMT("(A) -> Dump system save data to sd:/<q>/save_dump")
+            CONSOLE_FMT("(B) -> Delete everything in save data (except official HOME menu's content)")
+            CONSOLE_FMT("(X) -> Reboot system")
+            CONSOLE_FMT("(Y) -> Continue to QMenu (proceed launch)")
+            CONSOLE_FMT("")
 
-        while(true)
-        {
-            hidScanInput();
-            auto k = hidKeysDown(CONTROLLER_P1_AUTO);
-            if(k & KEY_A)
+            while(true)
             {
-                db::Mount();
-                fs::CopyDirectory(Q_DB_MOUNT_NAME ":/", Q_BASE_SD_DIR "/save_dump");
-                db::Unmount();
-                CONSOLE_FMT(" - Dump done.")
+                hidScanInput();
+                auto k = hidKeysDown(CONTROLLER_P1_AUTO);
+                if(k & KEY_A)
+                {
+                    db::Mount();
+                    fs::CopyDirectory(Q_DB_MOUNT_NAME ":/", Q_BASE_SD_DIR "/save_dump");
+                    db::Unmount();
+                    CONSOLE_FMT(" - Dump done.")
+                }
+                else if(k & KEY_B)
+                {
+                    db::Mount();
+                    fs::DeleteDirectory(Q_BASE_DB_DIR);
+                    fs::CreateDirectory(Q_BASE_DB_DIR);
+                    db::Commit();
+                    db::Unmount();
+                    CONSOLE_FMT(" - Cleanup done.")
+                }
+                else if(k & KEY_X)
+                {
+                    CONSOLE_FMT(" - Rebooting...")
+                    svcSleepThread(200'000'000);
+                    appletStartRebootSequence();
+                }
+                else if(k & KEY_Y)
+                {
+                    CONSOLE_FMT(" - Proceeding with launch...")
+                    svcSleepThread(500'000'000);
+                    break;
+                }
+                svcSleepThread(10'000'000);
             }
-            else if(k & KEY_B)
-            {
-                db::Mount();
-                fs::DeleteDirectory(Q_BASE_DB_DIR);
-                fs::CreateDirectory(Q_BASE_DB_DIR);
-                db::Commit();
-                db::Unmount();
-                CONSOLE_FMT(" - Cleanup done.")
-            }
-            else if(k & KEY_X)
-            {
-                CONSOLE_FMT(" - Rebooting...")
-                svcSleepThread(200'000'000);
-                appletStartRebootSequence();
-            }
-            else if(k & KEY_Y)
-            {
-                CONSOLE_FMT(" - Proceeding with launch...")
-                svcSleepThread(500'000'000);
-                break;
-            }
-            svcSleepThread(10'000'000);
-        }
 
-        consoleExit(NULL);
+            consoleExit(NULL);
+        #endif
 
         svcSleepThread(100'000'000); // Wait for proper moment
     }

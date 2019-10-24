@@ -15,4 +15,11 @@ namespace os
         psmGetChargerType(&cht);
         return (cht > ChargerType_None);
     }
+
+    std::string GetFirmwareVersion()
+    {
+        SetSysFirmwareVersion fwver;
+        setsysGetFirmwareVersion(&fwver);
+        return std::string(fwver.display_version);
+    }
 }

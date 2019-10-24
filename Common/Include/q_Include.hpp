@@ -50,9 +50,10 @@ static constexpr size_t RawRGBAScreenBufferSize = 1280 * 720 * 4;
     } \
 })
 
-#define STLITER_FINDWITHCONDITION(stl_item, var_name, cond) std::find_if(stl_item.begin(), stl_item.end(), [&](auto &var_name){ return (cond); });
-#define STLITER_ISFOUND(stl_item, find_ret) (find_ret != stl_item.end())
-#define STLITER_UNWRAP(find_ret) (*find_ret)
+#define STL_FIND_IF(stl_item, var_name, cond) std::find_if(stl_item.begin(), stl_item.end(), [&](const auto &var_name){ return (cond); });
+#define STL_FOUND(stl_item, find_ret) (find_ret != stl_item.end())
+#define STL_UNWRAP(find_ret) (*find_ret)
+#define STL_REMOVE_IF(stl_item, var_name, cond) stl_item.erase(std::remove_if(stl_item.begin(), stl_item.end(), [&](const auto &var_name){ return (cond); }), stl_item.end());
 
 template<typename ...Args>
 using ResultWith = std::tuple<Result, Args...>;

@@ -257,7 +257,10 @@ namespace cfg
             if(record.json_name.empty()) record.json_name = jsonname;
             json += "/" + jsonname;
             entry["nro_path"] = record.nro_target.nro_path;
-            if(strcmp(record.nro_target.nro_path, record.nro_target.argv) != 0) entry["nro_argv"] = record.nro_target.argv;
+            if(strlen(record.nro_target.argv))
+            {
+                if(strcmp(record.nro_target.nro_path, record.nro_target.argv) != 0) entry["nro_argv"] = record.nro_target.argv;
+            }
             if(!record.icon.empty()) entry["icon"] = record.icon;
         }
         else if((TitleType)record.title_type == TitleType::Installed)
@@ -277,6 +280,28 @@ namespace cfg
         ofs.close();
     }
 
+    void RemoveRecord(TitleRecord &record)
+    {
+        // Prepare JSON path
+        std::string basepath = Q_ENTRIES_PATH;
+        std::string json = basepath;
+        if((TitleType)record.title_type == TitleType::Homebrew)
+        {
+            auto jsonname = std::to_string(fs::GetFileSize(record.nro_target.nro_path)) + ".json";
+            if(record.json_name.empty()) record.json_name = jsonname;
+            json += "/" + jsonname;
+        }
+        else if((TitleType)record.title_type == TitleType::Installed)
+        {
+            auto strappid = util::FormatApplicationId(record.app_id);
+            auto jsonname = strappid + ".json";
+            if(record.json_name.empty()) record.json_name = jsonname;
+            json += "/" + jsonname;
+        }
+        if(!record.json_name.empty()) json = basepath + "/" + record.json_name;
+        fs::DeleteFile(json);
+    }
+
     bool MoveTitleToDirectory(TitleList &list, u64 app_id, std::string folder)
     {
         bool title_found = false;
@@ -284,11 +309,11 @@ namespace cfg
         std::string recjson;
 
         // Search in root first
-        auto find = STLITER_FINDWITHCONDITION(list.root.titles, tit, (tit.app_id == app_id));
-        if(STLITER_ISFOUND(list.root.titles, find))
+        auto find = STL_FIND_IF(list.root.titles, tit, (tit.app_id == app_id));
+        if(STL_FOUND(list.root.titles, find))
         {
             if(folder.empty()) return true;  // It is already on root...?
-            recjson = STLITER_UNWRAP(find).json_name;
+            recjson = STL_UNWRAP(find).json_name;
 
             list.root.titles.erase(find);
             title_found = true;
@@ -298,11 +323,11 @@ namespace cfg
         {
             for(auto &fld: list.folders)
             {
-                auto find = STLITER_FINDWITHCONDITION(fld.titles, entry, (entry.app_id == app_id));
-                if(STLITER_ISFOUND(fld.titles, find))
+                auto find = STL_FIND_IF(fld.titles, entry, (entry.app_id == app_id));
+                if(STL_FOUND(fld.titles, find))
                 {
                     if(fld.name == folder) return true; // It is already on that folder...?
-                    recjson = STLITER_UNWRAP(find).json_name;
+                    recjson = STL_UNWRAP(find).json_name;
 
                     fld.titles.erase(find);
                     title_found = true;
@@ -325,10 +350,10 @@ namespace cfg
             }
             else // Add it to the new folder
             {
-                auto find2 = STLITER_FINDWITHCONDITION(list.folders, fld, (fld.name == folder));
-                if(STLITER_ISFOUND(list.folders, find2))
+                auto find2 = STL_FIND_IF(list.folders, fld, (fld.name == folder));
+                if(STL_FOUND(list.folders, find2))
                 {
-                    STLITER_UNWRAP(find2).titles.push_back(title);
+                    STL_UNWRAP(find2).titles.push_back(title);
                 }
                 else
                 {
@@ -354,11 +379,11 @@ namespace cfg
         // Search in root first
         if((TitleType)record.title_type == TitleType::Installed)
         {
-            auto find = STLITER_FINDWITHCONDITION(list.root.titles, tit, (tit.title_type == record.title_type) && (tit.app_id == record.app_id));
-            if(STLITER_ISFOUND(list.root.titles, find))
+            auto find = STL_FIND_IF(list.root.titles, tit, (tit.title_type == record.title_type) && (tit.app_id == record.app_id));
+            if(STL_FOUND(list.root.titles, find))
             {
                 if(folder.empty()) return true;  // It is already on root...?
-                recjson = STLITER_UNWRAP(find).json_name;
+                recjson = STL_UNWRAP(find).json_name;
 
                 list.root.titles.erase(find);
                 title_found = true;
@@ -366,11 +391,11 @@ namespace cfg
         }
         else
         {
-            auto find = STLITER_FINDWITHCONDITION(list.root.titles, tit, (tit.title_type == record.title_type) && (strcmp(tit.nro_target.nro_path, record.nro_target.nro_path) == 0));
-            if(STLITER_ISFOUND(list.root.titles, find))
+            auto find = STL_FIND_IF(list.root.titles, tit, (tit.title_type == record.title_type) && (strcmp(tit.nro_target.nro_path, record.nro_target.nro_path) == 0));
+            if(STL_FOUND(list.root.titles, find))
             {
                 if(folder.empty()) return true;  // It is already on root...?
-                recjson = STLITER_UNWRAP(find).json_name;
+                recjson = STL_UNWRAP(find).json_name;
 
                 list.root.titles.erase(find);
                 title_found = true;
@@ -383,11 +408,11 @@ namespace cfg
             {
                 if((TitleType)record.title_type == TitleType::Installed)
                 {
-                    auto find = STLITER_FINDWITHCONDITION(fld.titles, tit, (tit.title_type == record.title_type) && (tit.app_id == record.app_id));
-                    if(STLITER_ISFOUND(fld.titles, find))
+                    auto find = STL_FIND_IF(fld.titles, tit, (tit.title_type == record.title_type) && (tit.app_id == record.app_id));
+                    if(STL_FOUND(fld.titles, find))
                     {
                         if(fld.name == folder) return true; // It is already on that folder...?
-                        recjson = STLITER_UNWRAP(find).json_name;
+                        recjson = STL_UNWRAP(find).json_name;
 
                         fld.titles.erase(find);
                         title_found = true;
@@ -396,11 +421,11 @@ namespace cfg
                 }
                 else
                 {
-                    auto find = STLITER_FINDWITHCONDITION(fld.titles, tit, (tit.title_type == record.title_type) && (strcmp(tit.nro_target.nro_path, record.nro_target.nro_path) == 0));
-                    if(STLITER_ISFOUND(fld.titles, find))
+                    auto find = STL_FIND_IF(fld.titles, tit, (tit.title_type == record.title_type) && (strcmp(tit.nro_target.nro_path, record.nro_target.nro_path) == 0));
+                    if(STL_FOUND(fld.titles, find))
                     {
                         if(fld.name == folder) return true; // It is already on that folder...?
-                        recjson = STLITER_UNWRAP(find).json_name;
+                        recjson = STL_UNWRAP(find).json_name;
 
                         fld.titles.erase(find);
                         title_found = true;
@@ -422,10 +447,10 @@ namespace cfg
             }
             else // Add it to the new folder
             {
-                auto find2 = STLITER_FINDWITHCONDITION(list.folders, fld, (fld.name == folder));
-                if(STLITER_ISFOUND(list.folders, find2))
+                auto find2 = STL_FIND_IF(list.folders, fld, (fld.name == folder));
+                if(STL_FOUND(list.folders, find2))
                 {
-                    STLITER_UNWRAP(find2).titles.push_back(title);
+                    STL_UNWRAP(find2).titles.push_back(title);
                 }
                 else
                 {
@@ -446,10 +471,10 @@ namespace cfg
     {
         if(!name.empty())
         {
-            auto f = STLITER_FINDWITHCONDITION(list.folders, fld, (fld.name == name));
-            if(STLITER_ISFOUND(list.folders, f))
+            auto f = STL_FIND_IF(list.folders, fld, (fld.name == name));
+            if(STL_FOUND(list.folders, f))
             {
-                return STLITER_UNWRAP(f);
+                return STL_UNWRAP(f);
             }
         }
         return list.root;
@@ -464,18 +489,18 @@ namespace cfg
         // Search in root first
         if((TitleType)record.title_type == TitleType::Installed)
         {
-            auto find = STLITER_FINDWITHCONDITION(list.root.titles, tit, (tit.title_type == record.title_type) && (tit.app_id == record.app_id));
-            if(STLITER_ISFOUND(list.root.titles, find))
+            auto find = STL_FIND_IF(list.root.titles, tit, (tit.title_type == record.title_type) && (tit.app_id == record.app_id));
+            if(STL_FOUND(list.root.titles, find))
             {
-                if(!STLITER_UNWRAP(find).json_name.empty()) title_found = true;
+                if(!STL_UNWRAP(find).json_name.empty()) title_found = true;
             }
         }
         else
         {
-            auto find = STLITER_FINDWITHCONDITION(list.root.titles, tit, (tit.title_type == record.title_type) && (strcmp(tit.nro_target.nro_path, record.nro_target.nro_path) == 0));
-            if(STLITER_ISFOUND(list.root.titles, find))
+            auto find = STL_FIND_IF(list.root.titles, tit, (tit.title_type == record.title_type) && (strcmp(tit.nro_target.nro_path, record.nro_target.nro_path) == 0));
+            if(STL_FOUND(list.root.titles, find))
             {
-                if(!STLITER_UNWRAP(find).json_name.empty()) title_found = true;
+                if(!STL_UNWRAP(find).json_name.empty()) title_found = true;
             }
         }
 
@@ -485,10 +510,10 @@ namespace cfg
             {
                 if((TitleType)record.title_type == TitleType::Installed)
                 {
-                    auto find = STLITER_FINDWITHCONDITION(fld.titles, tit, (tit.title_type == record.title_type) && (tit.app_id == record.app_id));
-                    if(STLITER_ISFOUND(fld.titles, find))
+                    auto find = STL_FIND_IF(fld.titles, tit, (tit.title_type == record.title_type) && (tit.app_id == record.app_id));
+                    if(STL_FOUND(fld.titles, find))
                     {
-                        if(!STLITER_UNWRAP(find).json_name.empty())
+                        if(!STL_UNWRAP(find).json_name.empty())
                         {
                             title_found = true;
                             break;
@@ -497,10 +522,10 @@ namespace cfg
                 }
                 else
                 {
-                    auto find = STLITER_FINDWITHCONDITION(fld.titles, tit, (tit.title_type == record.title_type) && (strcmp(tit.nro_target.nro_path, record.nro_target.nro_path) == 0));
-                    if(STLITER_ISFOUND(fld.titles, find))
+                    auto find = STL_FIND_IF(fld.titles, tit, (tit.title_type == record.title_type) && (strcmp(tit.nro_target.nro_path, record.nro_target.nro_path) == 0));
+                    if(STL_FOUND(fld.titles, find))
                     {
-                        if(!STLITER_UNWRAP(find).json_name.empty())
+                        if(!STL_UNWRAP(find).json_name.empty())
                         {
                             title_found = true;
                             break;
@@ -550,16 +575,16 @@ namespace cfg
                                 rec.app_id = appid;
                                 rec.title_type = (u32)TitleType::Installed;
 
-                                auto find = STLITER_FINDWITHCONDITION(list.root.titles, tit, (tit.app_id == appid));
-                                if(STLITER_ISFOUND(list.root.titles, find))
+                                auto find = STL_FIND_IF(list.root.titles, tit, (tit.app_id == appid));
+                                if(STL_FOUND(list.root.titles, find))
                                 {
                                     list.root.titles.erase(find);
                                 }
 
-                                auto find2 = STLITER_FINDWITHCONDITION(list.folders, fld, (fld.name == folder));
-                                if(STLITER_ISFOUND(list.folders, find2))
+                                auto find2 = STL_FIND_IF(list.folders, fld, (fld.name == folder));
+                                if(STL_FOUND(list.folders, find2))
                                 {
-                                    STLITER_UNWRAP(find2).titles.push_back(rec);
+                                    STL_UNWRAP(find2).titles.push_back(rec);
                                 }
                                 else
                                 {
@@ -590,8 +615,8 @@ namespace cfg
                         if(folder.empty()) list.root.titles.push_back(rec);
                         else
                         {
-                            auto find = STLITER_FINDWITHCONDITION(list.folders, fld, (fld.name == folder));
-                            if(STLITER_ISFOUND(list.folders, find)) STLITER_UNWRAP(find).titles.push_back(rec);
+                            auto find = STL_FIND_IF(list.folders, fld, (fld.name == folder));
+                            if(STL_FOUND(list.folders, find)) STL_UNWRAP(find).titles.push_back(rec);
                             else
                             {
                                 TitleFolder fld = {};

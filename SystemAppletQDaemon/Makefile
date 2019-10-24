@@ -34,6 +34,10 @@ CFLAGS	:=	-g -Wall -O2 -ffunction-sections \
 
 CFLAGS	+=	$(INCLUDE) -D__SWITCH__ -DQ_VERSION=\"$(Q_VERSION)\"
 
+ifeq ($(Q_DEV),1)
+    CFLAGS	+=	-DQ_DEV
+endif
+
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++17
 
 ASFLAGS	:=	-g $(ARCH)

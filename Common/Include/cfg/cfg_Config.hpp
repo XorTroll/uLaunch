@@ -106,6 +106,7 @@ namespace cfg
     void SaveConfig(Config &cfg);
 
     void SaveRecord(TitleRecord &record);
+    void RemoveRecord(TitleRecord &record);
     bool MoveRecordTo(TitleList &list, TitleRecord record, std::string folder);
     TitleFolder &FindFolderByName(TitleList &list, std::string name);
     bool ExistsRecord(TitleList &list, TitleRecord record);

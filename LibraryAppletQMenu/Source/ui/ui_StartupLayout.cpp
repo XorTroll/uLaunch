@@ -85,13 +85,13 @@ namespace ui
             swkbdConfigSetHeaderText(&swkbd, "Input user password");
             char inpass[0x10] = {0};
             auto rc = swkbdShow(&swkbd, inpass, 0x10);
+            swkbdClose(&swkbd);
             if(R_SUCCEEDED(rc))
             {
                 auto rc = db::TryLogUser(uid, std::string(inpass));
                 if(R_FAILED(rc)) qapp->CreateShowDialog("Login", "Invalid password. Please try again.", {"Ok"}, true);
                 else login_ok = true;
             }
-            swkbdClose(&swkbd);
         }
         else login_ok = true;
         if(login_ok)
