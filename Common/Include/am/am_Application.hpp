@@ -24,5 +24,4 @@ namespace am
     Result ApplicationSetForeground();
     Result ApplicationSend(void *data, size_t size, AppletLaunchParameterKind kind = AppletLaunchParameterKind_UserChannel);
     u64 ApplicationGetId();
-    Result ApplicationGetResult();
 }
