@@ -54,17 +54,6 @@ namespace ui
             this->usersMenu->SetVisible(false);
             this->infoText->SetText("Unable to obtain system accounts. Hold power to power off or reboot the console.");
         }
-
-        this->SetOnInput([&](u64 down, u64 up, u64 held, pu::ui::Touch pos)
-        {
-            if(down & KEY_X)
-            {
-                fs::DeleteDirectory(Q_BASE_DB_DIR "/user");
-                fs::CreateDirectory(Q_BASE_DB_DIR "/user");
-                auto rc = db::RegisterUserPassword(this->userlist[0], "xor");
-                qapp->CreateShowDialog("Re-register", "0x" + util::FormatApplicationId(rc), {"Ok"}, true);
-            }
-        });
         
         this->Add(this->usersMenu);
     }

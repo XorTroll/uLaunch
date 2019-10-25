@@ -618,8 +618,15 @@ namespace ui
 
     void MenuLayout::HandleHomebrewLaunch(cfg::TitleRecord &rec)
     {
-        int sopt = qapp->CreateShowDialog("Homebrew launch", "How would you like to launch this homebrew?\n\nNOTE: Launching as application might involve BAN RISK, so use it at your own risk!", { "Applet", "Application", "Cancel" }, true);
-        if(sopt == 0)
+        u32 launchmode = 0;
+        if(config.system_title_override_enabled)
+        {
+            auto sopt = qapp->CreateShowDialog("Homebrew launch", "How would you like to launch this homebrew?\n\nNOTE: Launching as application might involve BAN RISK, so use it at your own risk!", { "Applet", "Application", "Cancel" }, true);
+            if(sopt == 0) launchmode = 1;
+            else if(sopt == 1) launchmode = 2;
+        }
+        else launchmode = 1;
+        if(launchmode == 1)
         {
             am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchHomebrewLibApplet);
             writer.Write<hb::TargetInput>(rec.nro_target);
@@ -630,36 +637,123 @@ namespace ui
             qapp->CloseWithFadeOut();
             return;
         }
-        else if(sopt == 1)
+        else if(launchmode == 2)
         {
-            if(config.system_title_override_enabled)
-            {
-                am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchHomebrewApplication);
-                writer.Write<hb::TargetInput>(rec.nro_target);
-                writer.FinishWrite();
+            am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchHomebrewApplication);
+            writer.Write<hb::TargetInput>(rec.nro_target);
+            writer.FinishWrite();
 
-                am::QMenuCommandResultReader reader;
-                if(reader && R_SUCCEEDED(reader.GetReadResult()))
-                {
-                    pu::audio::Play(this->sfxTitleLaunch);
-                    qapp->StopPlayBGM();
-                    qapp->CloseWithFadeOut();
-                    return;
-                }
-                else
-                {
-                    auto rc = reader.GetReadResult();
-                    qapp->CreateShowDialog("Title launch", "An error ocurred attempting to launch the title:\n" + util::FormatResultDisplay(rc) + " (" + util::FormatResultHex(rc) + ")", { "Ok" }, true);
-                }
-                reader.FinishRead();
+            am::QMenuCommandResultReader reader;
+            if(reader && R_SUCCEEDED(reader.GetReadResult()))
+            {
+                pu::audio::Play(this->sfxTitleLaunch);
+                qapp->StopPlayBGM();
+                qapp->CloseWithFadeOut();
+                return;
             }
-            else qapp->CreateShowDialog("Title launch", "System title launching (via flog) is disabled.\nYou can enable it in settings.\n\nNote that this system (unlike title override) could involve ban risk!\nUse it at your own risk.", { "Ok" }, true);
+            else
+            {
+                auto rc = reader.GetReadResult();
+                qapp->CreateShowDialog("Title launch", "An error ocurred attempting to launch the title:\n" + util::FormatResultDisplay(rc) + " (" + util::FormatResultHex(rc) + ")", { "Ok" }, true);
+            }
+            reader.FinishRead();
         }
     }
 
     void MenuLayout::HandleUserMenu()
     {
-        qapp->CreateShowDialog("Users", "Users", {"Ok"}, true);
+        auto uid = qapp->GetSelectedUser();
+        auto [rc, pass] = db::AccessPassword(uid);
+        bool has_pass = R_SUCCEEDED(rc);
+
+        auto [_rc, name] = os::GetAccountName(uid);
+        auto sopt = qapp->CreateShowDialog("User settings", "Selected user: " + name + "\nWhat would you like to do with this user?", { has_pass ? "Change password" : "Register password", "Log off", "Cancel" }, true, os::GetIconCacheImagePath(uid));
+        if(sopt == 0)
+        {
+            if(has_pass)
+            {
+                auto sopt = qapp->CreateShowDialog("Change password", "What would you like to do with the password?", { "Change", "Remove", "Cancel" }, true);
+                if((sopt == 0) || (sopt == 1))
+                {
+                    SwkbdConfig swkbd;
+                    swkbdCreate(&swkbd, 0);
+                    swkbdConfigMakePresetPassword(&swkbd);
+                    swkbdConfigSetStringLenMax(&swkbd, 15);
+                    swkbdConfigSetGuideText(&swkbd, "User password");
+                    swkbdConfigSetHeaderText(&swkbd, "Input user password");
+                    char inpass[0x10] = {0};
+                    auto rc = swkbdShow(&swkbd, inpass, 0x10);
+                    swkbdClose(&swkbd);
+                    if(R_SUCCEEDED(rc))
+                    {
+                        auto rc = db::TryLogUser(qapp->GetSelectedUser(), std::string(inpass));
+                        if(R_FAILED(rc)) qapp->CreateShowDialog("Login", "An invalid password was given.", {"Ok"}, true);
+                        else
+                        {
+                            if(sopt == 0)
+                            {
+                                SwkbdConfig swkbd;
+                                swkbdCreate(&swkbd, 0);
+                                swkbdConfigMakePresetPassword(&swkbd);
+                                swkbdConfigSetStringLenMax(&swkbd, 15);
+                                swkbdConfigSetHeaderText(&swkbd, "Enter new password");
+                                char pass[0x10] = {0};
+                                auto rc = swkbdShow(&swkbd, pass, 0x10);
+                                swkbdClose(&swkbd);
+                                if(R_SUCCEEDED(rc))
+                                {
+                                    auto sopt2 = qapp->CreateShowDialog("Change password", "Would you like to change the password?", { "Yes", "Cancel" }, true);
+                                    if(sopt2 == 0)
+                                    {
+                                        auto passfile = db::GetUserPasswordFilePath(qapp->GetSelectedUser());
+                                        fs::DeleteFile(passfile);
+                                        rc = db::RegisterUserPassword(qapp->GetSelectedUser(), pass);
+                                        qapp->CreateShowDialog("Change password", R_SUCCEEDED(rc) ? "The password was successfully changed." : "An error ocurred while attempting to change the password: " + util::FormatResultDisplay(rc) + " (" + util::FormatResultHex(rc) + ")", { "Ok" }, true);
+                                    }
+                                }
+                            }
+                            else if(sopt == 1)
+                            {
+                                auto sopt2 = qapp->CreateShowDialog("Remove password", "Would you really like to remove the password?", { "Yes", "Cancel" }, true);
+                                if(sopt2 == 0)
+                                {
+                                    auto passfile = db::GetUserPasswordFilePath(qapp->GetSelectedUser());
+                                    fs::DeleteFile(passfile);
+                                    qapp->CreateShowDialog("Remove password", "The user's password was removed.", { "Ok" }, true);
+                                }
+                            }
+                        }
+                        
+                    }
+                }
+            }
+            else
+            {
+                SwkbdConfig swkbd;
+                swkbdCreate(&swkbd, 0);
+                swkbdConfigMakePresetPassword(&swkbd);
+                swkbdConfigSetStringLenMax(&swkbd, 15);
+                swkbdConfigSetHeaderText(&swkbd, "Enter password");
+                char pass[0x10] = {0};
+                auto rc = swkbdShow(&swkbd, pass, 0x10);
+                swkbdClose(&swkbd);
+                if(R_SUCCEEDED(rc))
+                {
+                    auto sopt = qapp->CreateShowDialog("Register password", "Would you like to register this password?", { "Yes", "Cancel" }, true);
+                    if(sopt == 0)
+                    {
+                        rc = db::RegisterUserPassword(qapp->GetSelectedUser(), pass);
+                        qapp->CreateShowDialog("Register password", R_SUCCEEDED(rc) ? "The password was successfully registered." : "An error ocurred while attempting to register the password: " + util::FormatResultDisplay(rc) + " (" + util::FormatResultHex(rc) + ")", { "Ok" }, true);
+                    }
+                }
+            }
+        }
+        else if(sopt == 1)
+        {
+            qapp->FadeOut();
+            qapp->LoadStartupMenu();
+            qapp->FadeIn();
+        }
     }
 
     void MenuLayout::HandleWebPageOpen()

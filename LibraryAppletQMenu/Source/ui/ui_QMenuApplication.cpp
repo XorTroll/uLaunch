@@ -74,6 +74,12 @@ namespace ui
         this->StartPlayBGM();
     }
 
+    void QMenuApplication::LoadStartupMenu()
+    {
+        this->StopPlayBGM();
+        this->LoadLayout(this->startupLayout);
+    }
+
     bool QMenuApplication::IsSuspended()
     {
         return (this->IsTitleSuspended() || this->IsHomebrewSuspended());

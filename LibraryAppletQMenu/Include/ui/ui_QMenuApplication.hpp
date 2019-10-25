@@ -16,6 +16,7 @@ namespace ui
 
             void SetStartMode(am::QMenuStartMode mode);
             void LoadMenu();
+            void LoadStartupMenu();
 
             bool IsSuspended();
             bool IsTitleSuspended();
