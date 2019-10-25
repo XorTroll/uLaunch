@@ -6,15 +6,11 @@ All the stuff to do before first release:
 
 - Settings menu -> both console ones (device name, etc) and uLaunch's ones (also TODO ^)
 
-- User menu -> log off, change password, register password, delete or create users...
-
 - Theme menu -> browse themes in the SD card and select which one to use
 
 - Document entry system (adding custom NROs with possible custom argv to main menu)
 
 - Result code system, with a custom module (currently using temp ones like 0xDEAD or 0xBABE)
-
-- Fix small UI issues (menu crashes, etc), which rarely happen
 
 - Polish UI (specially speaking of startup menu)
 
