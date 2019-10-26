@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 const char g_noticeText[] =
-    "HbTarget impl (thanks nx-hbloader)\0"
+    "uLaunch's HbTarget impl (wrapper of nx-hbloader)\0"
     "Do you mean to tell me that you're thinking seriously of building that way, when and if you are an architect?";
 
 static char g_argv[2048];

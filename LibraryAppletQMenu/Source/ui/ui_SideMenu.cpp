@@ -8,6 +8,7 @@ namespace ui
         this->suspitm = -1;
         this->suspclr = SuspendedColor;
         this->baseiconidx = 0;
+        this->scrollflag = 0;
         this->movalpha = 0;
         this->leftbicon = NULL;
         this->rightbicon = NULL;
@@ -124,6 +125,68 @@ namespace ui
             }
         }
         else (this->onselect)(Down, this->selitm);
+
+        if(Held & KEY_LEFT)
+        {
+            if(this->scrollflag == 1)
+            {
+                auto curtp = std::chrono::steady_clock::now();
+                auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(curtp - this->scrolltp).count();
+                if(diff >= 300)
+                {
+                    if(this->scrollmoveflag)
+                    {
+                        auto diff2 = std::chrono::duration_cast<std::chrono::milliseconds>(curtp - this->scrollmovetp).count();
+                        if(diff2 >= 50)
+                        {
+                            this->scrollmoveflag = false;
+                            this->HandleMoveLeft();
+                        }
+                    }
+                    else
+                    {
+                        this->scrollmovetp = std::chrono::steady_clock::now();
+                        this->scrollmoveflag = true;
+                    }
+                }
+            }
+            else
+            {
+                this->scrollflag = 1;
+                this->scrolltp = std::chrono::steady_clock::now();
+            }
+        }
+        else if(Held & KEY_RIGHT)
+        {
+            if(this->scrollflag == 2)
+            {
+                auto curtp = std::chrono::steady_clock::now();
+                auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(curtp - this->scrolltp).count();
+                if(diff >= 300)
+                {
+                    if(this->scrollmoveflag)
+                    {
+                        auto diff2 = std::chrono::duration_cast<std::chrono::milliseconds>(curtp - this->scrollmovetp).count();
+                        if(diff2 >= 50)
+                        {
+                            this->scrollmoveflag = false;
+                            this->HandleMoveRight();
+                        }
+                    }
+                    else
+                    {
+                        this->scrollmovetp = std::chrono::steady_clock::now();
+                        this->scrollmoveflag = true;
+                    }
+                }
+            }
+            else
+            {
+                this->scrollflag = 2;
+                this->scrolltp = std::chrono::steady_clock::now();
+            }
+        }
+        else this->scrollflag = 0;
     }
 
     void SideMenu::SetOnItemSelected(std::function<void(u64, u32)> Fn)

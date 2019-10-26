@@ -55,6 +55,10 @@ namespace ui
             pu::ui::render::NativeTexture cursoricon;
             pu::ui::render::NativeTexture leftbicon;
             pu::ui::render::NativeTexture rightbicon;
+            std::chrono::steady_clock::time_point scrolltp;
+            bool scrollmoveflag;
+            std::chrono::steady_clock::time_point scrollmovetp;
+            u32 scrollflag;
             bool IsLeftFirst();
             bool IsRightLast();
             void ReloadIcons(u32 Direction);
