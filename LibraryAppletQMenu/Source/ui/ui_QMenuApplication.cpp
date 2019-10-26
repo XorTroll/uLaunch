@@ -57,7 +57,7 @@ namespace ui
                 break;
             }
             default:
-                this->LoadLayout(this->startupLayout);
+                this->LoadStartupMenu();
                 break;
         }
     }
@@ -77,6 +77,7 @@ namespace ui
     void QMenuApplication::LoadStartupMenu()
     {
         this->StopPlayBGM();
+        this->startupLayout->ReloadMenu();
         this->LoadLayout(this->startupLayout);
     }
 

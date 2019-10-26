@@ -13,8 +13,9 @@ namespace ui
         public:
             StartupLayout();
             PU_SMART_CTOR(StartupLayout)
-
             void user_Click();
+            void create_Click();
+            void ReloadMenu();
         private:
             pu::ui::elm::TextBlock::Ref infoText;
             pu::ui::elm::Menu::Ref usersMenu;
