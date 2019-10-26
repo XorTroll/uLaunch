@@ -3,6 +3,7 @@
 #include <os/os_Account.hpp>
 #include <util/util_Convert.hpp>
 #include <util/util_Misc.hpp>
+#include <os/os_Misc.hpp>
 #include <ui/ui_QMenuApplication.hpp>
 #include <os/os_HomeMenu.hpp>
 #include <fs/fs_Stdio.hpp>
@@ -67,6 +68,10 @@ namespace ui
         this->themes = ClickableImage::New(950, 53, cfg::ProcessedThemeResource(theme, "ui/ThemesIcon.png"));
         this->themes->SetOnClick(std::bind(&MenuLayout::themes_Click, this));
         this->Add(this->themes);
+
+        this->fwText = pu::ui::elm::TextBlock::New(1140, 68, os::GetFirmwareVersion());
+        this->fwText->SetColor(textclr);
+        this->Add(this->fwText);
 
         this->menuToggle = ClickableImage::New(0, 200, cfg::ProcessedThemeResource(theme, "ui/ToggleClick.png"));
         this->menuToggle->SetOnClick(std::bind(&MenuLayout::menuToggle_Click, this));
@@ -192,7 +197,7 @@ namespace ui
                                     else
                                     {
                                         auto rc = reader.GetReadResult();
-                                        qapp->CreateShowDialog("Title launch", "An error ocurred attempting to launch the title:\n" + util::FormatResultDisplay(rc) + " (" + util::FormatResultHex(rc) + ")", { "Ok" }, true);
+                                        qapp->CreateShowDialog("Title launch", "An error ocurred attempting to launch the title:\n" + util::FormatResult(rc), { "Ok" }, true);
                                     }
                                     reader.FinishRead();
                                 }
@@ -654,7 +659,7 @@ namespace ui
             else
             {
                 auto rc = reader.GetReadResult();
-                qapp->CreateShowDialog("Title launch", "An error ocurred attempting to launch the title:\n" + util::FormatResultDisplay(rc) + " (" + util::FormatResultHex(rc) + ")", { "Ok" }, true);
+                qapp->CreateShowDialog("Title launch", "An error ocurred attempting to launch the title:\n" + util::FormatResult(rc), { "Ok" }, true);
             }
             reader.FinishRead();
         }
@@ -663,8 +668,15 @@ namespace ui
     void MenuLayout::HandleUserMenu()
     {
         auto uid = qapp->GetSelectedUser();
-        auto [rc, pass] = db::AccessPassword(uid);
-        bool has_pass = R_SUCCEEDED(rc);
+        
+        am::QMenuCommandWriter writer(am::QDaemonMessage::UserHasPassword);
+        writer.Write<u128>(uid);
+        writer.FinishWrite();
+
+        am::QMenuCommandResultReader res;
+        res.FinishRead();
+
+        bool has_pass = R_SUCCEEDED(res.GetReadResult());
 
         auto [_rc, name] = os::GetAccountName(uid);
         auto sopt = qapp->CreateShowDialog("User settings", "Selected user: " + name + "\nWhat would you like to do with this user?", { has_pass ? "Change password" : "Register password", "Log off", "Cancel" }, true, os::GetIconCacheImagePath(uid));
@@ -686,9 +698,9 @@ namespace ui
                     swkbdClose(&swkbd);
                     if(R_SUCCEEDED(rc))
                     {
-                        auto rc = db::TryLogUser(qapp->GetSelectedUser(), std::string(inpass));
-                        if(R_FAILED(rc)) qapp->CreateShowDialog("Login", "An invalid password was given.", {"Ok"}, true);
-                        else
+                        auto [rc2, oldpass] = db::PackPassword(uid, inpass);
+                        rc = rc2;
+                        if(R_SUCCEEDED(rc))
                         {
                             if(sopt == 0)
                             {
@@ -705,10 +717,19 @@ namespace ui
                                     auto sopt2 = qapp->CreateShowDialog("Change password", "Would you like to change the password?", { "Yes", "Cancel" }, true);
                                     if(sopt2 == 0)
                                     {
-                                        auto passfile = db::GetUserPasswordFilePath(qapp->GetSelectedUser());
-                                        fs::DeleteFile(passfile);
-                                        rc = db::RegisterUserPassword(qapp->GetSelectedUser(), pass);
-                                        qapp->CreateShowDialog("Change password", R_SUCCEEDED(rc) ? "The password was successfully changed." : "An error ocurred while attempting to change the password: " + util::FormatResultDisplay(rc) + " (" + util::FormatResultHex(rc) + ")", { "Ok" }, true);
+                                        auto [rc3, newpass] = db::PackPassword(uid, pass);
+                                        rc = rc3;
+                                        if(R_SUCCEEDED(rc))
+                                        {
+                                            am::QMenuCommandWriter writer(am::QDaemonMessage::ChangeUserPassword);
+                                            writer.Write<db::PassBlock>(oldpass);
+                                            writer.Write<db::PassBlock>(newpass);
+                                            writer.FinishWrite();
+
+                                            am::QMenuCommandResultReader reader;
+                                            rc = reader.GetReadResult();
+                                        }
+                                        qapp->CreateShowDialog("Change password", R_SUCCEEDED(rc) ? "The password was successfully changed." : "An error ocurred while attempting to change the password: " + util::FormatResult(rc), { "Ok" }, true);
                                     }
                                 }
                             }
@@ -717,13 +738,17 @@ namespace ui
                                 auto sopt2 = qapp->CreateShowDialog("Remove password", "Would you really like to remove the password?", { "Yes", "Cancel" }, true);
                                 if(sopt2 == 0)
                                 {
-                                    auto passfile = db::GetUserPasswordFilePath(qapp->GetSelectedUser());
-                                    fs::DeleteFile(passfile);
-                                    qapp->CreateShowDialog("Remove password", "The user's password was removed.", { "Ok" }, true);
+                                    am::QMenuCommandWriter writer(am::QDaemonMessage::RemoveUserPassword);
+                                    writer.Write<db::PassBlock>(oldpass);
+                                    writer.FinishWrite();
+
+                                    am::QMenuCommandResultReader reader;
+                                    rc = reader.GetReadResult();
+
+                                    qapp->CreateShowDialog("Remove password", R_SUCCEEDED(rc) ? "The password was successfully removed." : "An error ocurred while attempting to remove the password: " + util::FormatResult(rc), { "Ok" }, true);
                                 }
                             }
                         }
-                        
                     }
                 }
             }
@@ -739,12 +764,22 @@ namespace ui
                 swkbdClose(&swkbd);
                 if(R_SUCCEEDED(rc))
                 {
-                    auto sopt = qapp->CreateShowDialog("Register password", "Would you like to register this password?", { "Yes", "Cancel" }, true);
-                    if(sopt == 0)
+                    auto [rc2, newpass] = db::PackPassword(uid, pass);
+                    rc = rc2;
+                    if(R_SUCCEEDED(rc))
                     {
-                        rc = db::RegisterUserPassword(qapp->GetSelectedUser(), pass);
-                        qapp->CreateShowDialog("Register password", R_SUCCEEDED(rc) ? "The password was successfully registered." : "An error ocurred while attempting to register the password: " + util::FormatResultDisplay(rc) + " (" + util::FormatResultHex(rc) + ")", { "Ok" }, true);
+                        auto sopt = qapp->CreateShowDialog("Register password", "Would you like to register this password?", { "Yes", "Cancel" }, true);
+                        if(sopt == 0)
+                        {
+                            am::QMenuCommandWriter writer(am::QDaemonMessage::RegisterUserPassword);
+                            writer.Write<db::PassBlock>(newpass);
+                            writer.FinishWrite();
+
+                            am::QMenuCommandResultReader reader;
+                            rc = reader.GetReadResult();
+                        }
                     }
+                    qapp->CreateShowDialog("Register password", R_SUCCEEDED(rc) ? "The password was successfully registered." : "An error ocurred while attempting to register the password: " + util::FormatResult(rc), { "Ok" }, true);
                 }
             }
         }

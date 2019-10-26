@@ -4,8 +4,6 @@
 
 namespace fs
 {
-    #define FS_COMMIT_IF_DB_PATH(path) db::Commit();
-
     static bool ExistsImpl(size_t st_mode, std::string path)
     {
         struct stat st;
@@ -25,31 +23,31 @@ namespace fs
     void CreateDirectory(std::string path)
     {
         mkdir(path.c_str(), 777);
-        FS_COMMIT_IF_DB_PATH(path)
+        db::Commit();
     }
 
     void CreateFile(std::string path)
     {
         fsdevCreateFile(path.c_str(), 0, 0);
-        FS_COMMIT_IF_DB_PATH(path)
+        db::Commit();
     }
 
     void CreateConcatenationFile(std::string path)
     {
         fsdevCreateFile(path.c_str(), 0, FS_CREATE_BIG_FILE);
-        FS_COMMIT_IF_DB_PATH(path)
+        db::Commit();
     }
 
     void DeleteDirectory(std::string path)
     {
         fsdevDeleteDirectoryRecursively(path.c_str());
-        FS_COMMIT_IF_DB_PATH(path)
+        db::Commit();
     }
 
     void DeleteFile(std::string path)
     {
         remove(path.c_str());
-        FS_COMMIT_IF_DB_PATH(path)
+        db::Commit();
     }
 
     bool WriteFile(std::string path, void *data, size_t size, bool overwrite)
@@ -59,7 +57,7 @@ namespace fs
         {
             fwrite(data, 1, size, f);
             fclose(f);
-            FS_COMMIT_IF_DB_PATH(path)
+            db::Commit();
             return true;
         }
         return false;
@@ -120,8 +118,8 @@ namespace fs
     void MoveFile(std::string p1, std::string p2)
     {
         rename(p1.c_str(), p2.c_str());
-        FS_COMMIT_IF_DB_PATH(p1)
-        FS_COMMIT_IF_DB_PATH(p2)
+        db::Commit();
+        db::Commit();
     }
 
     void CopyFile(std::string p, std::string np)
@@ -147,7 +145,7 @@ namespace fs
                 }
                 delete[] tmp;
                 fclose(outf);
-                FS_COMMIT_IF_DB_PATH(np)
+                db::Commit();
             }
             fclose(inf);
         }

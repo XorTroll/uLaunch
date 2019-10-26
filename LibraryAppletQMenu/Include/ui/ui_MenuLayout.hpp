@@ -49,6 +49,7 @@ namespace ui
             pu::ui::elm::Image::Ref batteryIcon;
             ClickableImage::Ref settings;
             ClickableImage::Ref themes;
+            pu::ui::elm::TextBlock::Ref fwText;
             SideMenu::Ref itemsMenu;
             RawData::Ref bgSuspendedRaw;
             pu::ui::elm::TextBlock::Ref itemName;

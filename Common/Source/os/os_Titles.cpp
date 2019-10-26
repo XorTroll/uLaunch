@@ -25,7 +25,6 @@ namespace os
                 {
                     auto fname = cfg::GetTitleCacheIconPath(rec.app_id);
                     fs::DeleteFile(fname);
-                    db::Commit();
                     fs::WriteFile(fname, control.icon, sizeof(control.icon), true);
                 }
             }

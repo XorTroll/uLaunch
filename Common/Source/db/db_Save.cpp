@@ -27,6 +27,17 @@ namespace db
         fsdevCommitDevice(Q_DB_MOUNT_NAME);
     }
 
+    ResultWith<PassBlock> PackPassword(u128 uid, std::string pass)
+    {
+        PassBlock pb = {};
+        if((pass.length() > 15) || (pass.empty())) return MakeResultWith(RES_VALUE(Db, InvalidPasswordLength), pb);
+        memcpy(&pb.uid, &uid, sizeof(u128));
+        char passbuf[0x10] = {0};
+        strcpy(passbuf, pass.c_str());
+        sha256CalculateHash(pb.pass_sha, passbuf, 0x10);
+        return SuccessResultWith(pb);
+    }
+
     ResultWith<PassBlock> AccessPassword(u128 user_id)
     {
         PassBlock pb = {};
@@ -35,7 +46,7 @@ namespace db
         {
             if(fs::ReadFile(filename, &pb, sizeof(pb))) return SuccessResultWith(pb);
         }
-        return MakeResultWith(0xdead, pb);
+        return MakeResultWith(RES_VALUE(Db, PasswordNotFound), pb);
     }
 
     std::string GetUserPasswordFilePath(u128 user_id)
@@ -44,37 +55,32 @@ namespace db
         return Q_BASE_DB_DIR "/user/" + uidstr + ".pass";
     }
 
-    Result RegisterUserPassword(u128 user_id, std::string password)
+    Result RegisterUserPassword(PassBlock password)
     {
         std::string pwd;
-        auto filename = GetUserPasswordFilePath(user_id);
-        if(fs::ExistsFile(filename)) return 0xdead;
+        auto filename = GetUserPasswordFilePath(password.uid);
+        if(fs::ExistsFile(filename)) return RES_VALUE(Db, PasswordAlreadyExists);
 
-        if((password.length() > 15) || (password.empty())) return 0xdead1;
-        PassBlock pb = {};
-        memcpy(&pb.uid, &user_id, sizeof(u128));
-        char tmppass[0x10] = {0};
-        strcpy(tmppass, password.c_str());
-        sha256CalculateHash(pb.pass_sha, tmppass, 0x10);
-
-        if(!fs::WriteFile(filename, &pb, sizeof(pb), true)) return 0xdead2;
+        if(!fs::WriteFile(filename, &password, sizeof(password), true)) return RES_VALUE(Db, PasswordWriteFail);
         return 0;
     }
 
-    Result TryLogUser(u128 user_id, std::string password)
+    Result RemoveUserPassword(u128 uid)
     {
-        if((password.length() > 15) || (password.empty())) return 0xdead1;
-        auto [rc, pwd] = AccessPassword(user_id);
+        auto passfile = GetUserPasswordFilePath(uid);
+        if(!fs::ExistsFile(passfile)) return RES_VALUE(Db, PasswordNotFound);
+        fs::DeleteFile(passfile);
+        return 0;
+    }
+
+    Result TryLogUser(PassBlock password)
+    {
+        auto [rc, pwd] = AccessPassword(password.uid);
         if(R_SUCCEEDED(rc))
         {
-            u8 tmpsha[0x20] = {0};
-            char tmppass[0x10] = {0};
-            strcpy(tmppass, password.c_str());
-            sha256CalculateHash(tmpsha, tmppass, 0x10);
-            if(memcmp(&user_id, &pwd.uid, sizeof(u128)) != 0) return 0xdead3;
-            if(memcmp(tmpsha, pwd.pass_sha, 0x20) != 0) return 0xdead4;
+            if(memcmp(&password.uid, &pwd.uid, sizeof(u128)) != 0) return RES_VALUE(Db, PasswordUserMismatch);
+            if(memcmp(password.pass_sha, pwd.pass_sha, 0x20) != 0) return RES_VALUE(Db, PasswordMismatch);
         }
-        else return 0xdead2;
-        return 0;
+        return rc;
     }
 }

@@ -11,7 +11,7 @@ namespace util
             ret = JSON::parse(ifs);
             return SuccessResultWith(ret);
         }
-        return MakeResultWith(0xdead, ret);
+        return MakeResultWith(RES_VALUE(Misc, InvalidJSONFile), ret);
     }
 
     std::string GetCurrentTime() // Thanks Goldleaf

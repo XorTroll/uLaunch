@@ -70,7 +70,9 @@ constexpr ResultWith<Args...> SuccessResultWith(Args &&...args)
     return MakeResultWith(0, args...);
 }
 
-// Console
+#include <q_Results.hpp>
+
+// Console (debug)
 
 #include <iostream>
 

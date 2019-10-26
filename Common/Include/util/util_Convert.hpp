@@ -9,4 +9,5 @@ namespace util
     std::string FormatApplicationId(u64 app_id);
     std::string FormatResultDisplay(Result rc);
     std::string FormatResultHex(Result rc);
+    std::string FormatResult(Result rc);
 }

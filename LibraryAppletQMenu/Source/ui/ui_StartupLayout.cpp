@@ -33,8 +33,14 @@ namespace ui
                 auto [rc, name] = os::GetAccountName(user);
                 if(R_FAILED(rc)) continue;
 
-                auto [passrc, pass] = db::AccessPassword(user);
-                bool has_pass = R_SUCCEEDED(passrc);
+                am::QMenuCommandWriter writer(am::QDaemonMessage::UserHasPassword);
+                writer.Write<u128>(user);
+                writer.FinishWrite();
+
+                am::QMenuCommandResultReader res;
+                res.FinishRead();
+
+                bool has_pass = R_SUCCEEDED(res.GetReadResult());
                 if(has_pass) name += " (password)";
 
                 auto path = os::GetIconCacheImagePath(user);
@@ -77,9 +83,21 @@ namespace ui
             swkbdClose(&swkbd);
             if(R_SUCCEEDED(rc))
             {
-                auto rc = db::TryLogUser(uid, std::string(inpass));
-                if(R_FAILED(rc)) qapp->CreateShowDialog("Login", "Invalid password. Please try again.", {"Ok"}, true);
-                else login_ok = true;
+                auto [rc2, pass] = db::PackPassword(uid, inpass);
+                rc = rc2;
+                if(R_SUCCEEDED(rc))
+                {
+                    am::QMenuCommandWriter writer(am::QDaemonMessage::TryLogUser);
+                    writer.Write<db::PassBlock>(pass);
+                    writer.FinishWrite();
+
+                    am::QMenuCommandResultReader reader;
+                    rc = reader.GetReadResult();
+                    reader.FinishRead();
+
+                    if(R_FAILED(rc)) qapp->CreateShowDialog("Login", "Invalid password. Please try again.", {"Ok"}, true);
+                    else login_ok = true;
+                }
             }
         }
         else login_ok = true;

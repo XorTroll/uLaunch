@@ -10,8 +10,6 @@ All the stuff to do before first release:
 
 - Document entry system (adding custom NROs with possible custom argv to main menu)
 
-- Result code system, with a custom module (currently using temp ones like 0xDEAD or 0xBABE)
-
 - Polish UI (specially speaking of startup menu)
 
 ## Plans

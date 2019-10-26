@@ -20,8 +20,10 @@ namespace db
     void Unmount();
     void Commit();
 
+    ResultWith<PassBlock> PackPassword(u128 uid, std::string pass);
     ResultWith<PassBlock> AccessPassword(u128 user_id);
     std::string GetUserPasswordFilePath(u128 user_id);
-    Result RegisterUserPassword(u128 user_id, std::string password);
-    Result TryLogUser(u128 user_id, std::string password);
+    Result RegisterUserPassword(PassBlock password);
+    Result TryLogUser(PassBlock password);
+    Result RemoveUserPassword(u128 uid);
 }

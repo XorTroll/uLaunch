@@ -156,17 +156,17 @@ void HandleQMenuMessage()
 
                     if(am::ApplicationIsActive())
                     {
-                        am::QDaemonCommandResultWriter res(0xBABE1);
+                        am::QDaemonCommandResultWriter res(RES_VALUE(QDaemon, ApplicationActive));
                         res.FinishWrite();
                     }
                     else if(selected_uid == 0)
                     {
-                        am::QDaemonCommandResultWriter res(0xBABE2);
+                        am::QDaemonCommandResultWriter res(RES_VALUE(QDaemon, InvalidSelectedUser));
                         res.FinishWrite();
                     }
                     else if(titlelaunch_flag > 0)
                     {
-                        am::QDaemonCommandResultWriter res(0xBABE3);
+                        am::QDaemonCommandResultWriter res(RES_VALUE(QDaemon, AlreadyQueued));
                         res.FinishWrite();
                     }
                     else
@@ -183,7 +183,7 @@ void HandleQMenuMessage()
 
                     if(!am::ApplicationIsActive())
                     {
-                        am::QDaemonCommandResultWriter res(0xBABE1);
+                        am::QDaemonCommandResultWriter res(RES_VALUE(QDaemon, ApplicationNotActive));
                         res.FinishWrite();
                     }
                     else
@@ -237,17 +237,17 @@ void HandleQMenuMessage()
 
                     if(am::ApplicationIsActive())
                     {
-                        am::QDaemonCommandResultWriter res(0xBABE1);
+                        am::QDaemonCommandResultWriter res(RES_VALUE(QDaemon, ApplicationActive));
                         res.FinishWrite();
                     }
                     else if(selected_uid == 0)
                     {
-                        am::QDaemonCommandResultWriter res(0xBABE2);
+                        am::QDaemonCommandResultWriter res(RES_VALUE(QDaemon, InvalidSelectedUser));
                         res.FinishWrite();
                     }
                     else if(titlelaunch_flag > 0)
                     {
-                        am::QDaemonCommandResultWriter res(0xBABE3);
+                        am::QDaemonCommandResultWriter res(RES_VALUE(QDaemon, AlreadyQueued));
                         res.FinishWrite();
                     }
                     else
@@ -276,6 +276,75 @@ void HandleQMenuMessage()
                     
                     break;
                 }
+                case am::QDaemonMessage::UserHasPassword:
+                {
+                    auto uid = reader.Read<u128>();
+                    reader.FinishRead();
+
+                    auto [rc, pass] = db::AccessPassword(uid);
+                    
+                    am::QDaemonCommandResultWriter res(rc);
+                    res.FinishWrite();
+
+                    break;
+                }
+                case am::QDaemonMessage::TryLogUser:
+                {
+                    auto pass = reader.Read<db::PassBlock>();
+                    reader.FinishRead();
+
+                    auto rc = db::TryLogUser(pass);
+
+                    am::QDaemonCommandResultWriter res(rc);
+                    res.FinishWrite();
+
+                    break;
+                }
+                case am::QDaemonMessage::RegisterUserPassword:
+                {
+                    auto pass = reader.Read<db::PassBlock>();
+                    reader.FinishRead();
+
+                    auto rc = db::RegisterUserPassword(pass);
+
+                    am::QDaemonCommandResultWriter res(rc);
+                    res.FinishWrite();
+                    break;
+                }
+                case am::QDaemonMessage::ChangeUserPassword:
+                {
+                    auto pass = reader.Read<db::PassBlock>();
+                    auto newpass = reader.Read<db::PassBlock>();
+                    reader.FinishRead();
+
+                    auto rc = db::TryLogUser(pass);
+                    if(R_SUCCEEDED(rc))
+                    {
+                        rc = db::RemoveUserPassword(pass.uid);
+                        if(R_SUCCEEDED(rc)) rc = db::RegisterUserPassword(newpass);
+                    }
+
+                    am::QDaemonCommandResultWriter res(rc);
+                    res.FinishWrite();
+
+                    break;
+                }
+                case am::QDaemonMessage::RemoveUserPassword:
+                {
+                    auto pass = reader.Read<db::PassBlock>();
+                    reader.FinishRead();
+
+                    auto rc = db::TryLogUser(pass);
+                    if(R_SUCCEEDED(rc))
+                    {
+                        rc = db::RemoveUserPassword(pass.uid);
+                    }
+
+                    am::QDaemonCommandResultWriter res(rc);
+                    res.FinishWrite();
+
+                    break;
+                }
                 default:
                     break;
             }
@@ -288,14 +357,26 @@ namespace qdaemon
     void Initialize()
     {
         app_buf = new u8[RawRGBAScreenBufferSize]();
+        
+        db::Mount();
+        fs::CreateDirectory(Q_BASE_DB_DIR);
         fs::CreateDirectory(Q_BASE_SD_DIR);
+        fs::CreateDirectory(Q_ENTRIES_PATH);
+        fs::CreateDirectory(Q_THEMES_PATH);
+        fs::CreateDirectory(Q_BASE_DB_DIR "/user");
+        fs::CreateDirectory(Q_BASE_SD_DIR "/title");
+        fs::CreateDirectory(Q_BASE_SD_DIR "/user");
+        fs::CreateDirectory(Q_BASE_SD_DIR "/nro");
 
         #ifdef Q_DEV
             // Debug testing mode
             consoleInit(NULL);
             CONSOLE_FMT("Welcome to QDaemon's debug mode!")
             CONSOLE_FMT("")
-            CONSOLE_FMT("(A) -> Dump system save data to sd:/<q>/save_dump")
+            CONSOLE_FMT("RES_QUERY(Db, InvalidPasswordLength) -> 0x%X", RES_QUERY(Db, InvalidPasswordLength))
+            CONSOLE_OUT("RES_QUERY_DESC(Db, InvalidPasswordLength) -> '" << RES_QUERY_DESC(Db, InvalidPasswordLength) << "'")
+            CONSOLE_FMT("")
+            CONSOLE_FMT("(A) -> Dump system save data to sd:/ulaunch/save_dump")
             CONSOLE_FMT("(B) -> Delete everything in save data (except official HOME menu's content)")
             CONSOLE_FMT("(X) -> Reboot system")
             CONSOLE_FMT("(Y) -> Continue to QMenu (proceed launch)")
@@ -308,7 +389,7 @@ namespace qdaemon
                 if(k & KEY_A)
                 {
                     db::Mount();
-                    fs::CopyDirectory(Q_DB_MOUNT_NAME ":/", Q_BASE_SD_DIR "/save_dump");
+                    fs::CopyDirectory(Q_DB_MOUNT_PATH, Q_BASE_SD_DIR "/save_dump");
                     db::Unmount();
                     CONSOLE_FMT(" - Dump done.")
                 }
@@ -344,6 +425,8 @@ namespace qdaemon
 
     void Exit()
     {
+        db::Unmount();
+
         delete[] app_buf;
     }
 
@@ -356,18 +439,19 @@ namespace qdaemon
 
     void ForegroundMain(void *arg)
     {
-        u8 *demo = new (std::align_val_t(0x1000)) u8[RawRGBAScreenBufferSize]();
-
+        u8 *usbbuf = new (std::align_val_t(0x1000)) u8[RawRGBAScreenBufferSize]();
         usbCommsInitialize();
+
         while(true)
         {
             appletUpdateLastForegroundCaptureImage();
-            bool tmp;
-            appletGetLastForegroundCaptureImageEx(demo, RawRGBAScreenBufferSize, &tmp);
-            usbCommsWrite(demo, RawRGBAScreenBufferSize);
+            bool flag;
+            appletGetLastForegroundCaptureImageEx(usbbuf, RawRGBAScreenBufferSize, &flag);
+            usbCommsWrite(usbbuf, RawRGBAScreenBufferSize);
         }
+        
         usbCommsExit();
-        delete[] demo;
+        delete[] usbbuf;
     }
 
     Result LaunchDaemonServiceThread()

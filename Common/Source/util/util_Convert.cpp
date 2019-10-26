@@ -56,4 +56,11 @@ namespace util
         sprintf(res, "0x%X", rc);
         return std::string(res);
     }
+
+    std::string FormatResult(Result rc)
+    {
+        auto desc = RES_DESCRIPTION(rc);
+        if(desc.empty()) return desc;
+        return "(" + FormatResultDisplay(rc) + ") " + desc;
+    }
 }

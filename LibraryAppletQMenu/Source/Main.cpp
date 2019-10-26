@@ -33,17 +33,6 @@ namespace qmenu
         psmInitialize();
         setsysInitialize();
 
-        db::Mount();
-        fs::CreateDirectory(Q_BASE_DB_DIR);
-        fs::CreateDirectory(Q_BASE_SD_DIR);
-        fs::CreateDirectory(Q_ENTRIES_PATH);
-        fs::CreateDirectory(Q_THEMES_PATH);
-        fs::CreateDirectory(Q_BASE_DB_DIR "/user");
-        fs::CreateDirectory(Q_BASE_SD_DIR "/title");
-        fs::CreateDirectory(Q_BASE_SD_DIR "/user");
-        fs::CreateDirectory(Q_BASE_SD_DIR "/nro");
-        db::Commit();
-
         am::QMenu_InitializeDaemonService();
 
         // Cache all homebrew (is this too slow...?)
@@ -60,8 +49,6 @@ namespace qmenu
     void Exit()
     {
         am::QMenu_FinalizeDaemonService();
-
-        db::Unmount();
 
         setsysExit();
         psmExit();

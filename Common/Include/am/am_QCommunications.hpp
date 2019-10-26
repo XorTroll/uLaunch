@@ -31,7 +31,12 @@ namespace am
         LaunchHomebrewLibApplet,
         LaunchHomebrewApplication,
         OpenWebPage,
-        GetSelectedUser
+        GetSelectedUser,
+        UserHasPassword,
+        TryLogUser,
+        RegisterUserPassword,
+        ChangeUserPassword,
+        RemoveUserPassword,
     };
 
     struct QSuspendedInfo
