@@ -17,10 +17,11 @@ No, this isn't any kind of HOME menu extension, injection, patch, etc. uLaunch i
 1. [Features](#features)
 2. [Disclaimer](#disclaimer)
 3. [Project and subprojects](#project-and-subprojects)
-4. [Installing and removing](#installing-and-removing)
-5. [Compiling](#compiling)
-6. [Errors](#errors)
-7. [Credits](#credits)
+4. [Custom menu entries](#custom-menu-entries)
+5. [Installing and removing](#installing-and-removing)
+6. [Compiling](#compiling)
+7. [Errors](#errors)
+8. [Credits](#credits)
 
 ## Features
 
@@ -113,6 +114,29 @@ This is the same process but, like in normal HOME menu and Album, it runs homebr
 Unlike the other projects, this one isn't essential and uLaunch would be perfectly usable ignoring this sent data.
 
 For more technical information about uLaunch and qlaunch, check [this](HOME.md).
+
+## Custom menu entries
+
+uLaunch supports adding custom shortcuts. This means you can show entries with a custom icon, which launch a NRO with certain argv, what could be potentially used for stuff like emulator ROM shorcuts.
+
+Entries consist on JSON files (one per entry) located at `sd:/ulaunch/entries`. They are used for two main purposes:
+
+- Adding homebrew accesses (as stated above) to the main menu
+
+- Specifying that a homebrew access or a system title go inside a folder
+
+If you want to make your own access, create a JSON file in the entries folder (the name doesn't matter) like this:
+
+```json
+{
+  "type": 2,
+  "nro_path": "<path-to-nro>",
+  "nro_argv": "<custom-argv>",
+  "icon": "<custom-icon-jpeg>"
+}
+```
+
+Note that type needs to be always 2. **Only nro_argv and icon** are optional, the others **must be present**.
 
 ## Installing and removing
 

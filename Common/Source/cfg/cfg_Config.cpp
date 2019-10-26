@@ -599,7 +599,9 @@ namespace cfg
                         TitleRecord rec = {};
                         rec.json_name = name;
                         rec.title_type = (u32)type;
-                        std::string argv = entry.value("nro_argv", nropath);
+                        std::string argv = nropath;
+                        auto tmpargv = entry.value("nro_argv", "");
+                        if(!tmpargv.empty()) argv += " " + tmpargv;
                         strcpy(rec.nro_target.nro_path, nropath.c_str());
                         strcpy(rec.nro_target.argv, argv.c_str());
                         std::string folder = entry.value("folder", "");

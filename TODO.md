@@ -10,8 +10,6 @@ All the stuff to do before first release:
 
 - Theme menu -> browse themes in the SD card and select which one to use
 
-- Document entry system (adding custom NROs with possible custom argv to main menu)
-
 - Polish UI (specially speaking of startup menu)
 
 ## Plans
