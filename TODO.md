@@ -6,6 +6,8 @@ All the stuff to do before first release:
 
 - Settings menu -> both console ones (device name, etc) and uLaunch's ones (also TODO ^)
 
+- "All titles" menu
+
 - Theme menu -> browse themes in the SD card and select which one to use
 
 - Document entry system (adding custom NROs with possible custom argv to main menu)

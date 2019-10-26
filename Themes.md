@@ -1,26 +1,24 @@
 # Theme system
 
-## **IMPORTANT!** Don't use this system yet. Wait until this warning is removed (when the system is finally decided)
-
-> Current theme format version: none (unreleased yet)
+> Current theme format version: 0 (will be first release's one, unreleased yet)
 
 Themes consist on plain directories replacing RomFs content.
 
-- Themes are place in `sd:/ulaunch/themes` directory.
+- Themes are placed in `sd:/ulaunch/themes` directory.
 
 - A valid theme must, at least, contain a `/theme` subdirectory and a `/theme/Manifest.json` within it (icon or actual modifications aren't neccessary)
 
-Thus, a theme named `DemoTheme` should have its manifest JSON in `sd:/ulaunch/themes/DemoTheme/theme/Manifest.json`. Other assets (like UI) would go inside `sd:/ulaunch/themes/DemoTheme/ui`, `/sound`...
+Thus, a theme named `DemoTheme` should have its manifest JSON in `sd:/ulaunch/themes/DemoTheme/theme/Manifest.json`. Other assets, like UI, would go inside `sd:/ulaunch/themes/DemoTheme/ui`, for instance.
 
 **Important note:** any content (sound or UI) not found in the theme will be loaded from the default config, thus there is no need to provide every file (for instance, when making UI-only or sound-only changes)
 
-## Metadata
+## Manifest
 
-Metadata is stored inside `/theme` directory. It is required for the theme to be recognized as a valid one.
+A theme's manifest is stored inside `/theme` directory. It is required for the theme to be recognized as a valid one.
 
-- `theme/Manifest.json` -> JSON containing theme information
+- `theme/Manifest.json` -> JSON containing theme manifest
 
-   Demo JSON:
+   Sample manifest JSON:
 
     ```json
     {
@@ -32,11 +30,13 @@ Metadata is stored inside `/theme` directory. It is required for the theme to be
     }
     ```
 
+    Note that the name in the manifest doesn't have to match the theme's folder's one.
+
     Properties:
 
     - **name**: Theme name
 
-    - **format_version**: Theme format version (qlaunch updates might introduce changes to themes, thus a new format version would be out).
+    - **format_version**: Theme format version (new updates might introduce changes to themes, thus a new format version would be out).
 
     - **release**: Theme version string
 
@@ -52,7 +52,7 @@ Sound consists on custom *background music* and *sound effects* via files inside
 
 - `sound/BGM.json` -> JSON file with BGM settings
 
-   Demo JSON (with default values):
+   Sample sound JSON (with default values):
 
     ```json
     {
@@ -84,17 +84,28 @@ Can be customized via files in `/ui`.
 
 - `ui/UI.json` -> JSON file with UI settings
 
-   Demo JSON (with default values):
+   Sample UI JSON (with default values):
 
     ```json
     {
-        "suspended_final_alpha": 80
+        "suspended_final_alpha": 80,
+        "text_color": "#e1e1e1ff",
+        "menu_focus_color": "#5ebcffff",
+        "menu_bg_color": "#0094ffff",
     }
     ```
+
+    Note: colors are in "#RRGGBBAA" hex-RGBA format.
 
     Properties:
 
     - **suspended_final_alpha**: Final alpha the suspended title's capture will have (0 would be to fully hide it, default is 80)
+
+    - **text_color**: Color all UI's texts will use.
+
+    - **menu_focus_color**: Color menu's items will have when they're on focus.
+
+    - **menu_bg_color**: All menus' bg color.
 
 ## General
 
@@ -122,6 +133,6 @@ All the menu icons ({...}Icon.png) are 50x50 icons, except battery ones (Battery
 
 - `ui/TopMenu.png` -> Background of menu (1220x85 PNG)
 
-- Icon list (50x50): ConnectionIcon, NoConnectionIcon, SettingsIcon, ThemesIcon, USBIcon
+- Icons in top menu (50x50 PNGs): ConnectionIcon, NoConnectionIcon, SettingsIcon, ThemesIcon, WebIcon
 
 > *TODO: more menu icons*

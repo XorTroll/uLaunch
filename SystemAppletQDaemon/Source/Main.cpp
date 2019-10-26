@@ -373,9 +373,6 @@ namespace qdaemon
             consoleInit(NULL);
             CONSOLE_FMT("Welcome to QDaemon's debug mode!")
             CONSOLE_FMT("")
-            CONSOLE_FMT("RES_QUERY(Db, InvalidPasswordLength) -> 0x%X", RES_QUERY(Db, InvalidPasswordLength))
-            CONSOLE_OUT("RES_QUERY_DESC(Db, InvalidPasswordLength) -> '" << RES_QUERY_DESC(Db, InvalidPasswordLength) << "'")
-            CONSOLE_FMT("")
             CONSOLE_FMT("(A) -> Dump system save data to sd:/ulaunch/save_dump")
             CONSOLE_FMT("(B) -> Delete everything in save data (except official HOME menu's content)")
             CONSOLE_FMT("(X) -> Reboot system")
