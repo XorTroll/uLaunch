@@ -87,9 +87,8 @@ namespace cfg
     #define CFG_THEME_DEFAULT "romfs:/default"
     #define CFG_CONFIG_JSON Q_BASE_SD_DIR "/config.json"
 
-    void CacheHomebrew(std::string nro_path);
     ResultWith<TitleList> LoadTitleList(bool cache);
-    std::vector<TitleRecord> QueryAllHomebrew(bool cache, std::string base = "sdmc:/switch");
+    std::vector<TitleRecord> QueryAllHomebrew(std::string base = "sdmc:/switch");
     std::string GetRecordIconPath(TitleRecord record);
     RecordInformation GetRecordInformation(TitleRecord record);
     NacpLanguageEntry *GetRecordInformationLanguageEntry(RecordInformation &info);

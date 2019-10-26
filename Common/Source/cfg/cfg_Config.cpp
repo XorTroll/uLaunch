@@ -38,7 +38,7 @@ namespace cfg
         }
     }
 
-    std::vector<TitleRecord> QueryAllHomebrew(bool cache, std::string base)
+    std::vector<TitleRecord> QueryAllHomebrew(std::string base)
     {
         std::vector<TitleRecord> nros;
 
@@ -46,22 +46,16 @@ namespace cfg
         {
             if(util::StringEndsWith(name, ".nro"))
             {
-                auto sz = fs::GetFileSize(path);
-                if(sz > 0)
-                {
-                    if(cache) CacheHomebrew(path);
-
-                    TitleRecord rec = {};
-                    rec.title_type = (u32)TitleType::Homebrew;
-                    strcpy(rec.nro_target.nro_path, path.c_str());
-                    nros.push_back(rec);
-                }
+                TitleRecord rec = {};
+                rec.title_type = (u32)TitleType::Homebrew;
+                strcpy(rec.nro_target.nro_path, path.c_str());
+                nros.push_back(rec);
             }
         });
 
         fs::ForEachDirectoryIn(base, [&](std::string name, std::string path)
         {
-            auto hb = QueryAllHomebrew(cache, path);
+            auto hb = QueryAllHomebrew(path);
             if(!hb.empty()) nros.insert(nros.begin(), hb.begin(), hb.end());
         });
 

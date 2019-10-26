@@ -785,9 +785,30 @@ namespace ui
         }
         else if(sopt == 1)
         {
-            qapp->FadeOut();
-            qapp->LoadStartupMenu();
-            qapp->FadeIn();
+            u32 logoff = 0;
+            if(qapp->IsSuspended())
+            {
+                auto sopt = qapp->CreateShowDialog("Application suspended", "There is an application suspended.\nIf you log off, the application will be closed, losing all unsaved data.\nDo you still want to log off?", { "Yes", "Cancel" }, true);
+                if(sopt == 0) logoff = 2;
+            }
+            else logoff = 1;
+
+            if(logoff > 0)
+            {
+                if(logoff == 2)
+                {
+                    am::QMenuCommandWriter writer(am::QDaemonMessage::TerminateApplication);
+                    writer.FinishWrite();
+
+                    this->itemsMenu->UnsetSuspendedItem();
+                    qapp->NotifyEndSuspended();
+                    this->bgSuspendedRaw->SetAlphaFactor(0);
+                }
+                qapp->FadeOut();
+                this->MoveFolder("", false);
+                qapp->LoadStartupMenu();
+                qapp->FadeIn();
+            }
         }
     }
 
