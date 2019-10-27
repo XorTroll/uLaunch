@@ -36,11 +36,6 @@ namespace QForegroundViewer
         private void ResizeButton_Click(object sender, EventArgs e)
         {
             var factor = IncrementNumeric.Value;
-            if(factor == 0.0m)
-            {
-                MessageBox.Show("Try setting a value higher than 0!");
-                return;
-            }
             int w = (int)(1296 * factor);
             int h = (int)(759 * factor);
             main.Width = w;
