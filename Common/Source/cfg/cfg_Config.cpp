@@ -114,6 +114,15 @@ namespace cfg
             nsGetApplicationControlData(1, record.app_id, &cdata, sizeof(cdata), NULL);
             memcpy(&info.nacp, &cdata.nacp, sizeof(cdata.nacp));
         }
+        if(!record.name.empty())
+        {
+            for(u32 i = 0; i < 0x10; i++) strcpy(info.nacp.lang[i].name, record.name.c_str());
+        }
+        if(!record.author.empty())
+        {
+            for(u32 i = 0; i < 0x10; i++) strcpy(info.nacp.lang[i].author, record.author.c_str());
+        }
+        if(!record.version.empty()) strcpy(info.nacp.version, record.version.c_str());
         return info;
     }
 
@@ -204,6 +213,7 @@ namespace cfg
     {
         Config cfg = {};
         cfg.system_title_override_enabled = false; // Due to ban risk, have it disabled by default.
+        cfg.viewer_usb_enabled = false; // Do not enable this by default due to conflicts with USB homebrew
         SaveConfig(cfg);
         return cfg;
     }
@@ -216,6 +226,7 @@ namespace cfg
         {
             cfg.theme_name = cfgjson.value("theme_name", "");
             cfg.system_title_override_enabled = cfgjson.value("system_title_override_enabled", false);
+            cfg.viewer_usb_enabled = cfgjson.value("viewer_usb_enabled", false);
         }
         return cfg;
     }
@@ -231,8 +242,10 @@ namespace cfg
         fs::DeleteFile(CFG_CONFIG_JSON);
         JSON j = JSON::object();
         j["theme_name"] = cfg.theme_name;
+        j["system_title_override_enabled"] = cfg.system_title_override_enabled;
+        j["viewer_usb_enabled"] = cfg.viewer_usb_enabled;
         std::ofstream ofs(CFG_CONFIG_JSON);
-        ofs << j;
+        ofs << std::setw(4) << j;
         ofs.close();
     }
 
@@ -241,6 +254,10 @@ namespace cfg
         JSON entry = JSON::object();
         entry["type"] = record.title_type;
         entry["folder"] = record.sub_folder;
+
+        if(!record.name.empty()) entry["name"] = record.name;
+        if(!record.author.empty()) entry["author"] = record.author;
+        if(!record.version.empty()) entry["version"] = record.version;
 
         // Prepare JSON path
         std::string basepath = Q_ENTRIES_PATH;
@@ -268,9 +285,8 @@ namespace cfg
         if(!record.json_name.empty()) json = basepath + "/" + record.json_name;
         if(fs::ExistsFile(json)) fs::DeleteFile(json);
 
-
         std::ofstream ofs(json);
-        ofs << entry;
+        ofs << std::setw(4) << entry;
         ofs.close();
     }
 
@@ -568,6 +584,9 @@ namespace cfg
                                 rec.json_name = name;
                                 rec.app_id = appid;
                                 rec.title_type = (u32)TitleType::Installed;
+                                rec.name = entry.value("name", "");
+                                rec.author = entry.value("author", "");
+                                rec.version = entry.value("version", "");
 
                                 auto find = STL_FIND_IF(list.root.titles, tit, (tit.app_id == appid));
                                 if(STL_FOUND(list.root.titles, find))
@@ -599,6 +618,10 @@ namespace cfg
                         TitleRecord rec = {};
                         rec.json_name = name;
                         rec.title_type = (u32)type;
+                        rec.name = entry.value("name", "");
+                        rec.author = entry.value("author", "");
+                        rec.version = entry.value("version", "");
+
                         std::string argv = nropath;
                         auto tmpargv = entry.value("nro_argv", "");
                         if(!tmpargv.empty()) argv += " " + tmpargv;

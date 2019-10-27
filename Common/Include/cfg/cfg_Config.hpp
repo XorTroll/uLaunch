@@ -21,6 +21,11 @@ namespace cfg
 
         u64 app_id; // TitleType::Installed
         hb::TargetInput nro_target; // TitleType::Homebrew
+
+        // Optional NACP params
+        std::string name;
+        std::string author;
+        std::string version;
     };
 
     struct TitleFolder
@@ -79,7 +84,7 @@ namespace cfg
     {
         std::string theme_name;
         bool system_title_override_enabled;
-        
+        bool viewer_usb_enabled;
     };
 
     static constexpr u32 CurrentThemeFormatVersion = 0;

@@ -9,14 +9,15 @@
 #include <am/am_QCommunications.hpp>
 #include <util/util_Convert.hpp>
 #include <ipc/ipc_IDaemonService.hpp>
+#include <cfg/cfg_Config.hpp>
 
 extern "C"
 {
     u32 __nx_applet_type = AppletType_SystemApplet;
     #ifdef Q_DEV
-        size_t __nx_heap_size = 0x3000000; // Dev uses 3x heap (48MB, still pretty low) for debug console
+        size_t __nx_heap_size = 0x3000000; // Dev 48MB (still lower than official qlaunch) for debug console
     #else
-        size_t __nx_heap_size = 0x1000000;
+        size_t __nx_heap_size = 0x800000;// 8MB - while official qlaunch uses 56MB! That's 48 extra MB for other applets
     #endif
 }
 
@@ -472,7 +473,9 @@ int main()
 {
     qdaemon::Initialize();
     qdaemon::LaunchDaemonServiceThread();
-    qdaemon::LaunchForegroundThread();
+
+    auto config = cfg::EnsureConfig();
+    if(config.viewer_usb_enabled) qdaemon::LaunchForegroundThread();
 
     am::QDaemon_LaunchQMenu(am::QMenuStartMode::StartupScreen);
 
