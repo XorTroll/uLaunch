@@ -87,7 +87,7 @@ But, if all the functionality is handled by QMenu, why is this daemon process ne
 
 ### QMenu (LibraryAppletQMenu)
 
-> This sub-project replaces eShop applet, aka title 0100000000001002.
+> This sub-project replaces "cabinet" library applet, aka title 0100000000001002.
 
 This is the HOME menu the user will see and interact with. It contains all the UI and sounc functionality, password, themes...
 
@@ -97,13 +97,13 @@ This is the name for two related projects, whose aim is to target and launch hom
 
 #### System application (SystemApplicationQHbTarget)
 
-> This sub-project replaces flog system application, aka title 01008BB00013C000.
+> This sub-project replaces "flog" system application, aka title 01008BB00013C000.
 
 This is the process which runs instead of flog, which is used to launch homebrew as applications.
 
 #### Library applet (LibraryAppletQHbTarget)
 
-> This sub-project replaces Mii applet, aka title 0100000000001002.
+> This sub-project replaces "myPage" library applet, aka title 0100000000001013.
 
 This is the same process but, like in normal HOME menu and Album, it runs homebrew as an applet. However, exiting homebrew here will exit to HOME menu instead of exiting to hbmenu.
 
