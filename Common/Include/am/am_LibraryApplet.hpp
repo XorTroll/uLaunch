@@ -13,6 +13,6 @@ namespace am
     Result WebAppletStart(WebCommonConfig *web);
     AppletId LibraryAppletGetId();
 
-    static constexpr AppletId QHbTargetAppletId = AppletId_miiEdit;
-    static constexpr AppletId QMenuAppletId = AppletId_shop;
+    static constexpr AppletId QHbTargetAppletId = AppletId_myPage;
+    static constexpr AppletId QMenuAppletId = AppletId_cabinet;
 }

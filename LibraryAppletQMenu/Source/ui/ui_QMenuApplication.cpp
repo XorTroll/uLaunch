@@ -54,6 +54,7 @@ namespace ui
                 this->selected_user = res.Read<u128>();
                 res.FinishRead();
 
+                this->StartPlayBGM();
                 this->LoadMenu();
                 break;
             }
