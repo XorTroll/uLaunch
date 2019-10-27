@@ -13,8 +13,10 @@ namespace QForegroundViewer
 {
     public partial class ViewerMainForm : Form
     {
-        private UsbK USB;
+        private UsbK USB = null;
         private Thread USBThread;
+
+        private ToolboxForm Toolbox;
 
         public const long RawRGBAScreenBufferSize = 1280 * 720 * 4;
 
@@ -39,15 +41,13 @@ namespace QForegroundViewer
                 var lst = new LstK(0, ref pat);
                 lst.MoveNext(out var dinfo);
                 USB = new UsbK(dinfo);
-                MessageBox.Show("Connection with uLaunch was established.");
             }
             catch
             {
-                MessageBox.Show("Unable to find connection. Have you installed libusbK drivers? Are you sure uLaunch is opened?");
-                Close();
             }
 
-            new ToolboxForm(this).Show();
+            Toolbox = new ToolboxForm(this);
+            Toolbox.Show();
 
             USBThread = new Thread(new ThreadStart(USBThreadMain));
             USBThread.Start();
@@ -55,6 +55,7 @@ namespace QForegroundViewer
 
         protected override void OnClosing(CancelEventArgs e)
         {
+            Toolbox.Close();
             USBThread.Abort();
             base.OnClosing(e);
         }
@@ -66,6 +67,11 @@ namespace QForegroundViewer
 
         public bool RefreshCapture()
         {
+            if(USB == null)
+            {
+                MessageBox.Show("Unable to connect to uLaunch via USB-C cable.", "Unable to connect");
+                Environment.Exit(Environment.ExitCode);
+            }
             try
             {
                 USB.ReadPipe(0x81, CaptureBlocks[0], CaptureBlocks[0].Length, out _, IntPtr.Zero);

@@ -18,16 +18,33 @@ namespace QForegroundViewer
         {
             InitializeComponent();
             main = Main;
+            IncrementNumeric.Increment = 0.1m;
+            IncrementNumeric.Minimum = 0.1m;
         }
 
         private void AboutButton_Click(object sender, EventArgs e)
         {
-            Process.Start("https://github.com/XorTroll/uLaunch");
+            var resp = MessageBox.Show("uLaunch is a custom reimplementation of Nintendo Switch's HOME menu.\n\nWould you like to visit our GitHub page?", "About uLaunch project", MessageBoxButtons.OKCancel);
+            if(resp == DialogResult.OK) Process.Start("https://github.com/XorTroll/uLaunch");
         }
 
         private void ScreenshotButton_Click(object sender, EventArgs e)
         {
             new ScreenshotForm(main).ShowDialog();
+        }
+
+        private void ResizeButton_Click(object sender, EventArgs e)
+        {
+            var factor = IncrementNumeric.Value;
+            if(factor == 0.0m)
+            {
+                MessageBox.Show("Try setting a value higher than 0!");
+                return;
+            }
+            int w = (int)(1296 * factor);
+            int h = (int)(759 * factor);
+            main.Width = w;
+            main.Height = h;
         }
     }
 }
