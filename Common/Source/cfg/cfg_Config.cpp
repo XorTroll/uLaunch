@@ -145,6 +145,7 @@ namespace cfg
     Theme LoadTheme(std::string base_name)
     {
         Theme theme = {};
+        theme.base_name = base_name;
         auto themedir = std::string(Q_THEMES_PATH) + "/" + base_name;
         if(base_name.empty()) themedir = CFG_THEME_DEFAULT;
         theme.path = themedir;

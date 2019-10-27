@@ -8,8 +8,6 @@ All the stuff to do before first release:
 
 - "All titles" menu
 
-- Theme menu -> browse themes in the SD card and select which one to use
-
 - Polish UI (specially speaking of startup menu)
 
 ## Plans

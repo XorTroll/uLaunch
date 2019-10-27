@@ -4,7 +4,6 @@
 #include <am/am_QCommunications.hpp>
 #include <db/db_Save.hpp>
 #include <pu/Plutonium>
-#include <ui/ui_RawData.hpp>
 
 namespace ui
 {

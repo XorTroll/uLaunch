@@ -39,6 +39,7 @@ namespace ui
 
         this->startupLayout = StartupLayout::New();
         this->menuLayout = MenuLayout::New(app_buf, 80);
+        this->themeMenuLayout = ThemeMenuLayout::New();
 
         switch(this->stmode)
         {
@@ -71,7 +72,6 @@ namespace ui
     {
         this->menuLayout->SetUser(this->selected_user);
         this->LoadLayout(this->menuLayout);
-        this->StartPlayBGM();
     }
 
     void QMenuApplication::LoadStartupMenu()
@@ -79,6 +79,12 @@ namespace ui
         this->StopPlayBGM();
         this->startupLayout->ReloadMenu();
         this->LoadLayout(this->startupLayout);
+    }
+
+    void QMenuApplication::LoadThemeMenu()
+    {
+        this->themeMenuLayout->Reload();
+        this->LoadLayout(this->themeMenuLayout);
     }
 
     bool QMenuApplication::IsSuspended()

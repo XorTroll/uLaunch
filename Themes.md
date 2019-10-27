@@ -44,6 +44,8 @@ A theme's manifest is stored inside `/theme` directory. It is required for the t
 
     - **author**: Theme author name(s)
 
+- `theme/Icon.png` -> PNG theme icon (suggested size: 100x100, but it will be resized when shown in the theme menu)
+
 ## Sound
 
 Sound consists on custom *background music* and *sound effects* via files inside `/sound`.

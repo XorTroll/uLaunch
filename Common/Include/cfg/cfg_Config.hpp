@@ -63,6 +63,7 @@ namespace cfg
 
     struct Theme
     {
+        std::string base_name;
         std::string path;
         ThemeManifest manifest;
     };

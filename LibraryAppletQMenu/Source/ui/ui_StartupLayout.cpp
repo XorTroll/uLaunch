@@ -69,6 +69,7 @@ namespace ui
             qapp->FadeOut();
             qapp->SetSelectedUser(uid);
             qapp->LoadMenu();
+            qapp->StartPlayBGM();
             qapp->FadeIn();
         }
     }

@@ -132,11 +132,17 @@ If you want to make your own access, create a JSON file in the entries folder (t
   "type": 2,
   "nro_path": "<path-to-nro>",
   "nro_argv": "<custom-argv>",
-  "icon": "<custom-icon-jpeg>"
+  "icon": "<custom-icon-jpeg>",
+
+  "name": "My custom entry",
+  "author": "Second text for whatever I want",
+  "version": "Third text"
 }
 ```
 
-Note that type needs to be always 2. **Only nro_argv and icon** are optional, the others **must be present**.
+Note that type needs to be **always 2**, and that `type`, `nro_path` **must be present**. The others are all optional.
+
+Note that if `name`, `author` or `version` fields aren't set they will be loaded from the NRO, thus it would show the RetroArch core's name, etc., same with the icon.
 
 ## Installing and removing
 

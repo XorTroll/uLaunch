@@ -843,6 +843,8 @@ namespace ui
     
     void MenuLayout::HandleThemesMenu()
     {
-        qapp->CreateShowDialog("Themes", "Themes", {"Ok"}, true);
+        qapp->FadeOut();
+        qapp->LoadThemeMenu();
+        qapp->FadeIn();
     }
 }

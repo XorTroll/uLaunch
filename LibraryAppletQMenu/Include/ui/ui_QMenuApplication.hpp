@@ -2,6 +2,7 @@
 #pragma once
 #include <ui/ui_StartupLayout.hpp>
 #include <ui/ui_MenuLayout.hpp>
+#include <ui/ui_ThemeMenuLayout.hpp>
 
 namespace ui
 {
@@ -17,6 +18,7 @@ namespace ui
             void SetStartMode(am::QMenuStartMode mode);
             void LoadMenu();
             void LoadStartupMenu();
+            void LoadThemeMenu();
 
             bool IsSuspended();
             bool IsTitleSuspended();
@@ -41,6 +43,7 @@ namespace ui
             am::QMenuStartMode stmode;
             StartupLayout::Ref startupLayout;
             MenuLayout::Ref menuLayout;
+            ThemeMenuLayout::Ref themeMenuLayout;
             am::QSuspendedInfo suspinfo;
             u128 selected_user;
             JSON uijson;
