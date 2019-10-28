@@ -20,6 +20,7 @@ namespace ui
         this->infoText = pu::ui::elm::TextBlock::New(0, 100, "Welcome! Please select an account to use.");
         this->infoText->SetColor(textclr);
         this->infoText->SetHorizontalAlign(pu::ui::elm::HorizontalAlign::Center);
+        qapp->ApplyConfigForElement("startup_menu", "info_text", this->infoText);
         this->Add(this->infoText);
 
         this->usersMenu = pu::ui::elm::Menu::New(400, 160, 480, menubgclr, 100, 4);

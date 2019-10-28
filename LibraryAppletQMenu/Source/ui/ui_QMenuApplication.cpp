@@ -38,7 +38,7 @@ namespace ui
         this->bgm = pu::audio::Open(cfg::ProcessedThemeResource(theme, "sound/BGM.mp3"));
 
         this->startupLayout = StartupLayout::New();
-        this->menuLayout = MenuLayout::New(app_buf, 80);
+        this->menuLayout = MenuLayout::New(app_buf, this->uijson.value("suspended_final_alpha", 80));
         this->themeMenuLayout = ThemeMenuLayout::New();
 
         switch(this->stmode)

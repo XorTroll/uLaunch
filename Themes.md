@@ -86,7 +86,9 @@ Can be customized via files in `/ui`.
 
 - `ui/UI.json` -> JSON file with UI settings
 
-   Sample UI JSON (with default values):
+   This JSON also allows setting custom X and Y positions for several UI elements (and if they are visible or not)
+
+   Sample UI JSON (with default values and some sample elements):
 
     ```json
     {
@@ -94,6 +96,16 @@ Can be customized via files in `/ui`.
         "text_color": "#e1e1e1ff",
         "menu_focus_color": "#5ebcffff",
         "menu_bg_color": "#0094ffff",
+
+        "main_menu": {
+            "connection_icon": {
+                "x": 10,
+                "y": 10
+            },
+            "settings_icon": {
+                "visible": false
+            }
+        }
     }
     ```
 
@@ -108,6 +120,12 @@ Can be customized via files in `/ui`.
     - **menu_focus_color**: Color menu's items will have when they're on focus.
 
     - **menu_bg_color**: All menus' bg color.
+
+    Element customization: consists on menus and items within them, with customizable `visible`, `x` and `y` properties. If `visible` is false, custom X and Y will be ignored.
+
+    - `main_menu`: items are `top_menu_bg`, `logo_icon`, `connection_icon`, `user_icon`, `web_icon`, `time_text`, `battery_text`, `battery_icon`, `settings_icon`, `themes_icon`, `firmware_text`, `menu_toggle_button`, `banner_image`, `banner_name_text`, `banner_author_text` and `banner_version_text`.
+
+    - `startup_menu`: only item is `info_text`.
 
 ## General
 

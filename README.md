@@ -1,6 +1,6 @@
 # uLaunch
 
-> Custom, open-source replacement for Nintendo Switch's HOME Menu (qlaunch), extending it with amazing, homebrew-orienteed functionality!
+> Custom, open-source replacement/reimplementation for Nintendo Switch's HOME Menu (qlaunch), extending it with amazing, homebrew-orienteed functionality!
 
 uLaunch is a very ambicious project, consisting on two custom library applets, a custom system application and a custom system applet, in order to replace the console's **HOME menu** with a custom, homebrew-orienteed one.
 
@@ -35,31 +35,33 @@ This is the amount of features uLaunch contains, compared to the original HOME m
 
   - Custom basic homebrew menu
 
-  - Option to add homebrew accessors to main menu (no more need of **forwarders**!)
+  - Option to add custom NRO accessors to main menu (homebrew or custom items easily accessible, no more need of **forwarders**!)
 
-- Unique, cool extras
+- Miscellaneous extras
 
-  - Web browsing (via web-applet) directly from HOME menu!
+  - Web browsing (via web-applet) directly from the main menu!
 
-  - **Screenshot capturing** from PC itself via *QForegroundViewer*!
+  - **Foreground capturing** from PC itself (*Windows*-only) via USB-C cable and *QForegroundViewer*!
 
 - UI
 
-  - Themeable (not the same way official qlaunch themes work)
+  - **Themes** (different to official HOME menu themes/NXThemes)
 
-    - Custom icons, background...
+    - Custom icons, menu gfx, background...
 
     - Custom **background music** and **sound effects**!
+
+  - **Folders** in order to keep your main menu organized!
 
   - Option to show the suspended title in the **background** (like 3DS's HOME menu did!)
 
 - Users
 
-  - PC-like login on startup (select user and use it for everything)
+  - PC-like login on startup (select user and use it for everything, log off, register/change/remove password...)
 
-  - **Password** support! (up to 15 characters)
+  - **User password** support! (up to 15 characters)
 
-> TODO: add more later...?
+> Note: some classic HOME menu functionality (eShop, friends...) isn't implemented here. This reimplementation is mainly homebrew-orienteed, so it will lack some classic functionality.
 
 ## Disclaimer
 
@@ -77,7 +79,7 @@ uLaunch is split, as mentioned above, into several sub-projects:
 
 > This sub-project replaces qlaunch, aka title 0100000000001000.
 
-This is the technically actual qlaunch reimplementation. However, to avoid memory issues it does not use any kind of UI (except console for development debug, which is removed for releases), and thus it uses 16MB of heap, while official HOME menu uses 56MB.
+This is the technically actual qlaunch reimplementation. However, to avoid memory issues it does not use any kind of UI (except console for development debug, which is removed for releases), and thus it uses 8MB of heap, while official HOME menu uses 56MB.
 
 Instead, it uses [QMenu custom library applet](#qmenu-libraryappletqmenu) (launches and communicates with it) in order to display a proper menu UI.
 

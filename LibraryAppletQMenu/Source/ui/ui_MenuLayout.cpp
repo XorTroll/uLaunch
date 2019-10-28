@@ -34,59 +34,75 @@ namespace ui
         this->Add(this->bgSuspendedRaw);
 
         this->topMenuImage = pu::ui::elm::Image::New(40, 35, cfg::ProcessedThemeResource(theme, "ui/TopMenu.png"));
+        qapp->ApplyConfigForElement("main_menu", "top_menu_bg", this->topMenuImage);
         this->Add(this->topMenuImage);
         this->logo = ClickableImage::New(610, 13 + 35, "romfs:/Logo.png");
         this->logo->SetWidth(60);
         this->logo->SetHeight(60);
         this->logo->SetOnClick(std::bind(&MenuLayout::logo_Click, this));
+        qapp->ApplyConfigForElement("main_menu", "logo_icon", this->logo, false); // Sorry theme makers... logo must be visible, but can be moved
         this->Add(this->logo);
 
         this->connIcon = pu::ui::elm::Image::New(80, 53, cfg::ProcessedThemeResource(theme, "ui/NoConnectionIcon.png"));
+        qapp->ApplyConfigForElement("main_menu", "connection_icon", this->connIcon);
         this->Add(this->connIcon);
         this->users = ClickableImage::New(270, 53, ""); // On layout creation, no user is still selected...
         this->users->SetOnClick(std::bind(&MenuLayout::users_Click, this));
+        qapp->ApplyConfigForElement("main_menu", "user_icon", this->users);
         this->Add(this->users);
         this->web = ClickableImage::New(340, 53, cfg::ProcessedThemeResource(theme, "ui/WebIcon.png"));
         this->web->SetOnClick(std::bind(&MenuLayout::web_Click, this));
+        qapp->ApplyConfigForElement("main_menu", "web_icon", this->web);
         this->Add(this->web);
 
         auto curtime = util::GetCurrentTime();
         this->timeText = pu::ui::elm::TextBlock::New(515, 68, curtime);
         this->timeText->SetColor(textclr);
+        qapp->ApplyConfigForElement("main_menu", "time_text", this->timeText);
         this->Add(this->timeText);
         auto lvl = util::GetBatteryLevel();
         auto lvlstr = std::to_string(lvl) + "%";
         this->batteryText = pu::ui::elm::TextBlock::New(700, 55, lvlstr);
         this->batteryText->SetColor(textclr);
+        qapp->ApplyConfigForElement("main_menu", "battery_text", this->batteryText);
         this->Add(this->batteryText);
         this->batteryIcon = pu::ui::elm::Image::New(700, 80, cfg::ProcessedThemeResource(theme, "ui/BatteryNormalIcon.png"));
+        qapp->ApplyConfigForElement("main_menu", "battery_icon", this->batteryIcon);
         this->Add(this->batteryIcon);
 
         this->settings = ClickableImage::New(880, 53, cfg::ProcessedThemeResource(theme, "ui/SettingsIcon.png"));
         this->settings->SetOnClick(std::bind(&MenuLayout::settings_Click, this));
+        qapp->ApplyConfigForElement("main_menu", "settings_icon", this->settings);
         this->Add(this->settings);
         this->themes = ClickableImage::New(950, 53, cfg::ProcessedThemeResource(theme, "ui/ThemesIcon.png"));
         this->themes->SetOnClick(std::bind(&MenuLayout::themes_Click, this));
+        qapp->ApplyConfigForElement("main_menu", "themes_icon", this->themes);
         this->Add(this->themes);
 
         this->fwText = pu::ui::elm::TextBlock::New(1140, 68, os::GetFirmwareVersion());
         this->fwText->SetColor(textclr);
+        qapp->ApplyConfigForElement("main_menu", "firmware_text", this->fwText);
         this->Add(this->fwText);
 
         this->menuToggle = ClickableImage::New(0, 200, cfg::ProcessedThemeResource(theme, "ui/ToggleClick.png"));
         this->menuToggle->SetOnClick(std::bind(&MenuLayout::menuToggle_Click, this));
         this->menuToggle->SetHorizontalAlign(pu::ui::elm::HorizontalAlign::Center);
+        qapp->ApplyConfigForElement("main_menu", "menu_toggle_button", this->menuToggle);
         this->Add(this->menuToggle);
 
         this->bannerImage = pu::ui::elm::Image::New(0, 585, cfg::ProcessedThemeResource(theme, "ui/BannerInstalled.png"));
+        qapp->ApplyConfigForElement("main_menu", "banner_image", this->bannerImage);
         this->Add(this->bannerImage);
 
         this->itemName = pu::ui::elm::TextBlock::New(40, 610, "", 30);
         this->itemAuthor = pu::ui::elm::TextBlock::New(45, 650, "", 20);
         this->itemVersion = pu::ui::elm::TextBlock::New(45, 675, "", 20);
         this->itemName->SetColor(textclr);
+        qapp->ApplyConfigForElement("main_menu", "banner_name_text", this->itemName);
         this->itemAuthor->SetColor(textclr);
+        qapp->ApplyConfigForElement("main_menu", "banner_author_text", this->itemAuthor);
         this->itemVersion->SetColor(textclr);
+        qapp->ApplyConfigForElement("main_menu", "banner_version_text", this->itemVersion);
         this->Add(this->itemName);
         this->Add(this->itemAuthor);
         this->Add(this->itemVersion);
@@ -555,7 +571,7 @@ namespace ui
 
     void MenuLayout::logo_Click()
     {
-        qapp->CreateShowDialog("About uLaunch", "uLaunch v" + std::string(Q_VERSION) + "\n\n- Custom, open source, fully-featured HOME menu replacement.", { "Ok" }, true, "romfs:/Logo.png");
+        qapp->CreateShowDialog("About uLaunch", "uLaunch v" + std::string(Q_VERSION) + "\n\n - Custom, open source Nintendo Switch HOME menu reimplementation", { "Ok" }, true, "romfs:/Logo.png");
     }
 
     void MenuLayout::settings_Click()
