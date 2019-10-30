@@ -89,32 +89,6 @@ namespace fs
         return 0;
     }
 
-    static void ForEachInImpl(size_t dt_type, std::string dir, std::function<void(std::string name, std::string path)> fn)
-    {
-        DIR *dp = opendir(dir.c_str());
-        if(dp)
-        {
-            dirent *dt;
-            while(true)
-            {
-                dt = readdir(dp);
-                if(dt == NULL) break;
-                if(dt->d_type & dt_type) fn(dt->d_name, dir + "/" + dt->d_name);
-            }
-            closedir(dp);
-        }
-    }
-
-    void ForEachFileIn(std::string dir, std::function<void(std::string name, std::string path)> fn)
-    {
-        return ForEachInImpl(DT_REG, dir, fn);
-    }
-
-    void ForEachDirectoryIn(std::string dir, std::function<void(std::string name, std::string path)> fn)
-    {
-        return ForEachInImpl(DT_DIR, dir, fn);
-    }
-
     void MoveFile(std::string p1, std::string p2)
     {
         rename(p1.c_str(), p2.c_str());

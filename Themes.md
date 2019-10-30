@@ -123,9 +123,11 @@ Can be customized via files in `/ui`.
 
     Element customization: consists on menus and items within them, with customizable `visible`, `x` and `y` properties. If `visible` is false, custom X and Y will be ignored.
 
-    - `main_menu`: items are `top_menu_bg`, `logo_icon`, `connection_icon`, `user_icon`, `web_icon`, `time_text`, `battery_text`, `battery_icon`, `settings_icon`, `themes_icon`, `firmware_text`, `menu_toggle_button`, `banner_image`, `banner_name_text`, `banner_author_text` and `banner_version_text`.
+    - `main_menu`: items are `top_menu_bg`, `logo_icon`, `connection_icon`, `user_icon`, `web_icon`, `time_text`, `battery_text`, `battery_icon`, `settings_icon`, `themes_icon`, `firmware_text`, `menu_toggle_button`, `banner_image`, `banner_name_text`, `banner_author_text`, `banner_version_text` and `items_menu`.
 
     - `startup_menu`: only item is `info_text`.
+
+    Notes: `logo_icon` and `items_menu` items can't be hidden ("visible" property is ignored) and in `items_menu`'s case only Y can be customized ("x" is also ignored)
 
 ## General
 

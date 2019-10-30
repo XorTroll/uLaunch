@@ -15,11 +15,13 @@ namespace ui
         static constexpr u32 CursorSize = ItemSize + (Margin * 2);
 
         public:
-            SideMenu(pu::ui::Color SuspendedColor, std::string CursorPath);
+            SideMenu(pu::ui::Color SuspendedColor, std::string CursorPath, s32 y);
             PU_SMART_CTOR(SideMenu)
 
             s32 GetX() override;
             s32 GetY() override;
+            void SetX(s32 x); // Stubbed
+            void SetY(s32 y);
             s32 GetWidth() override;
             s32 GetHeight() override;
             void OnRender(pu::ui::render::Renderer::Ref &Drawer, s32 X, s32 Y) override;
@@ -41,7 +43,7 @@ namespace ui
             void ClearBorderIcons();
             void UpdateBorderIcons();
         private:
-            s32 x;
+            s32 y;
             u32 selitm;
             u32 preselitm;
             int suspitm;

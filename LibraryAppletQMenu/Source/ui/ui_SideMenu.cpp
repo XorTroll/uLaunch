@@ -2,7 +2,7 @@
 
 namespace ui
 {
-    SideMenu::SideMenu(pu::ui::Color SuspendedColor, std::string CursorPath)
+    SideMenu::SideMenu(pu::ui::Color SuspendedColor, std::string CursorPath, s32 y)
     {
         this->selitm = 0;
         this->suspitm = -1;
@@ -15,6 +15,7 @@ namespace ui
         this->cursoricon = pu::ui::render::LoadImage(CursorPath);
         this->onselect = [&](u32,u64){};
         this->onselch = [&](u32){};
+        this->SetY(y);
     }
 
     s32 SideMenu::GetX()
@@ -23,8 +24,18 @@ namespace ui
     }
     s32 SideMenu::GetY()
     {
-        return 294;
+        return this->y;
     }
+
+    void SideMenu::SetX(s32 x)
+    {
+    }
+
+    void SideMenu::SetY(s32 y)
+    {
+        this->y = y;
+    }
+
     s32 SideMenu::GetWidth()
     {
         return 1280;

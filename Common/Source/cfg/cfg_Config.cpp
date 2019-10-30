@@ -42,22 +42,24 @@ namespace cfg
     {
         std::vector<TitleRecord> nros;
 
-        fs::ForEachFileIn(base, [&](std::string name, std::string path)
+        FS_FOR(base, name, path,
         {
-            if(util::StringEndsWith(name, ".nro"))
+            if(dt->d_type & DT_DIR)
             {
-                TitleRecord rec = {};
-                rec.title_type = (u32)TitleType::Homebrew;
-                strcpy(rec.nro_target.nro_path, path.c_str());
-                nros.push_back(rec);
+                auto hb = QueryAllHomebrew(path);
+                if(!hb.empty()) nros.insert(nros.begin(), hb.begin(), hb.end());
             }
-        });
-
-        fs::ForEachDirectoryIn(base, [&](std::string name, std::string path)
-        {
-            auto hb = QueryAllHomebrew(path);
-            if(!hb.empty()) nros.insert(nros.begin(), hb.begin(), hb.end());
-        });
+            else
+            {
+                if(util::StringEndsWith(name, ".nro"))
+                {
+                    TitleRecord rec = {};
+                    rec.title_type = (u32)TitleType::Homebrew;
+                    strcpy(rec.nro_target.nro_path, path.c_str());
+                    nros.push_back(rec);
+                }
+            }
+        })
 
         return nros;
     }
@@ -148,7 +150,6 @@ namespace cfg
         theme.base_name = base_name;
         auto themedir = std::string(Q_THEMES_PATH) + "/" + base_name;
         if(base_name.empty()) themedir = CFG_THEME_DEFAULT;
-        theme.path = themedir;
         auto metajson = themedir + "/theme/Manifest.json";
         auto [rc, meta] = util::LoadJSONFromFile(metajson);
         if(R_SUCCEEDED(rc))
@@ -158,6 +159,7 @@ namespace cfg
             theme.manifest.release = meta.value("release", "");
             theme.manifest.description = meta.value("description", "");
             theme.manifest.author = meta.value("author", "");
+            theme.path = themedir;
         }
         return theme;
     }
@@ -166,11 +168,11 @@ namespace cfg
     {
         std::vector<Theme> themes;
 
-        fs::ForEachDirectoryIn(Q_THEMES_PATH, [&](std::string name, std::string path)
+        FS_FOR(std::string(Q_THEMES_PATH), name, path,
         {
             Theme t = LoadTheme(name);
             if(!t.path.empty()) themes.push_back(t);
-        });
+        })
 
         return themes;
     }
@@ -564,7 +566,7 @@ namespace cfg
         }
         else return MakeResultWith(rc, list);
 
-        fs::ForEachFileIn(Q_ENTRIES_PATH, [&](std::string name, std::string path)
+        FS_FOR(std::string(Q_ENTRIES_PATH), name, path,
         {
             auto [rc, entry] = util::LoadJSONFromFile(path);
             if(R_SUCCEEDED(rc))
@@ -648,7 +650,7 @@ namespace cfg
                     }
                 }
             }
-        });
+        })
 
         return SuccessResultWith(list);
     }
