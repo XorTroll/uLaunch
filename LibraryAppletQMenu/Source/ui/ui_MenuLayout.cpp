@@ -33,9 +33,16 @@ namespace ui
         this->bgSuspendedRaw = RawData::New(0, 0, raw, 1280, 720, 4);
         this->Add(this->bgSuspendedRaw);
 
+        // Load banners first
         this->topMenuImage = pu::ui::elm::Image::New(40, 35, cfg::ProcessedThemeResource(theme, "ui/TopMenu.png"));
         qapp->ApplyConfigForElement("main_menu", "top_menu_bg", this->topMenuImage);
         this->Add(this->topMenuImage);
+
+        this->bannerImage = pu::ui::elm::Image::New(0, 585, cfg::ProcessedThemeResource(theme, "ui/BannerInstalled.png"));
+        qapp->ApplyConfigForElement("main_menu", "banner_image", this->bannerImage);
+        this->Add(this->bannerImage);
+
+        // Then load buttons and other UI elements
         this->logo = ClickableImage::New(610, 13 + 35, "romfs:/Logo.png");
         this->logo->SetWidth(60);
         this->logo->SetHeight(60);
@@ -89,10 +96,6 @@ namespace ui
         this->menuToggle->SetHorizontalAlign(pu::ui::elm::HorizontalAlign::Center);
         qapp->ApplyConfigForElement("main_menu", "menu_toggle_button", this->menuToggle);
         this->Add(this->menuToggle);
-
-        this->bannerImage = pu::ui::elm::Image::New(0, 585, cfg::ProcessedThemeResource(theme, "ui/BannerInstalled.png"));
-        qapp->ApplyConfigForElement("main_menu", "banner_image", this->bannerImage);
-        this->Add(this->bannerImage);
 
         this->itemName = pu::ui::elm::TextBlock::New(40, 610, "", 30);
         this->itemAuthor = pu::ui::elm::TextBlock::New(45, 650, "", 20);
