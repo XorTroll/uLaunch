@@ -5,19 +5,6 @@ namespace am
     AppletHolder applet_holder;
     AppletId applet_lastid;
 
-    // Grabbed from libnx's source
-    static u32 WebApplet_GetLaVersion()
-    {
-        u32 ver = 0;
-        u32 hosver = hosversionGet();
-        if(hosver >= MAKEHOSVERSION(8,0,0)) ver = 0x80000;
-        else if(hosver >= MAKEHOSVERSION(6,0,0)) ver = 0x60000;
-        else if(hosver >= MAKEHOSVERSION(5,0,0)) ver = 0x50000;
-        else if(hosver >= MAKEHOSVERSION(3,0,0)) ver = 0x30000;
-        else ver = 0x20000;
-        return ver;
-    }
-
     bool LibraryAppletIsActive()
     {
         if(applet_holder.StateChangedEvent.revent == INVALID_HANDLE) return false;
@@ -64,7 +51,7 @@ namespace am
 
     Result WebAppletStart(WebCommonConfig *web)
     {
-        return LibraryAppletStart(AppletId_web, WebApplet_GetLaVersion(), &web->arg, sizeof(web->arg));
+        return LibraryAppletStart(AppletId_web, web->version, &web->arg, sizeof(web->arg));
     }
 
     AppletId LibraryAppletGetId()

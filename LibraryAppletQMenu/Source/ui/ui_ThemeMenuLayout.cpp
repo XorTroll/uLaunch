@@ -18,6 +18,10 @@ namespace ui
         pu::ui::Color menufocusclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("menu_focus_color", "#5ebcffff"));
         pu::ui::Color menubgclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("menu_bg_color", "#0094ffff"));
 
+        this->curThemeBanner = pu::ui::elm::Image::New(0, 585, cfg::ProcessedThemeResource(theme, "ui/BannerTheme.png"));
+        qapp->ApplyConfigForElement("themes_menu", "banner_image", this->curThemeBanner);
+        this->Add(this->curThemeBanner);
+
         this->noThemesText = pu::ui::elm::TextBlock::New(0, 0, "You don't seem to have any themes. Go download some!");
         this->noThemesText->SetColor(textclr);
         this->noThemesText->SetHorizontalAlign(pu::ui::elm::HorizontalAlign::Center);
@@ -26,7 +30,31 @@ namespace ui
 
         this->themesMenu = pu::ui::elm::Menu::New(200, 160, 880, menubgclr, 100, 4);
         this->themesMenu->SetOnFocusColor(menufocusclr);
+        qapp->ApplyConfigForElement("themes_menu", "themes_menu_item", this->themesMenu);
         this->Add(this->themesMenu);
+
+        this->curThemeText = pu::ui::elm::TextBlock::New(20, 540, "Current theme:", 30);
+        this->curThemeText->SetColor(textclr);
+        qapp->ApplyConfigForElement("themes_menu", "current_theme_text", this->curThemeText);
+        this->Add(this->curThemeText);
+        
+        this->curThemeName = pu::ui::elm::TextBlock::New(40, 610, "", 30);
+        this->curThemeName->SetColor(textclr);
+        qapp->ApplyConfigForElement("themes_menu", "current_theme_name_text", this->curThemeName);
+        this->Add(this->curThemeName);
+        this->curThemeAuthor = pu::ui::elm::TextBlock::New(45, 650, "", 20);
+        this->curThemeAuthor->SetColor(textclr);
+        qapp->ApplyConfigForElement("themes_menu", "current_theme_author_text", this->curThemeAuthor);
+        this->Add(this->curThemeAuthor);
+        this->curThemeVersion = pu::ui::elm::TextBlock::New(45, 675, "", 20);
+        this->curThemeVersion->SetColor(textclr);
+        qapp->ApplyConfigForElement("themes_menu", "current_theme_version_text", this->curThemeVersion);
+        this->Add(this->curThemeVersion);
+        this->curThemeIcon = pu::ui::elm::Image::New(1000, 605, "");
+        this->curThemeIcon->SetWidth(100);
+        this->curThemeIcon->SetHeight(100);
+        qapp->ApplyConfigForElement("themes_menu", "current_theme_icon", this->curThemeIcon);
+        this->Add(this->curThemeIcon);
 
         this->SetOnInput(std::bind(&ThemeMenuLayout::OnInput, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
     }
@@ -34,6 +62,31 @@ namespace ui
     void ThemeMenuLayout::Reload()
     {
         pu::ui::Color textclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
+        bool default_theme = theme.base.base_name.empty();
+        if(default_theme)
+        {
+            this->curThemeText->SetText("You don't currently have a custom theme.");
+            this->curThemeName->SetVisible(false);
+            this->curThemeAuthor->SetVisible(false);
+            this->curThemeVersion->SetVisible(false);
+            this->curThemeBanner->SetVisible(false);
+            this->curThemeIcon->SetVisible(false);
+        }
+        else
+        {
+            this->curThemeText->SetText("Current theme:");
+            this->curThemeName->SetVisible(true);
+            this->curThemeName->SetText(theme.base.manifest.name);
+            this->curThemeAuthor->SetVisible(true);
+            this->curThemeAuthor->SetText(theme.base.manifest.author);
+            this->curThemeVersion->SetVisible(true);
+            this->curThemeVersion->SetText(theme.base.manifest.release);
+            this->curThemeBanner->SetVisible(true);
+            this->curThemeIcon->SetVisible(true);
+            this->curThemeIcon->SetImage(theme.base.path + "/theme/Icon.png");
+            this->curThemeIcon->SetWidth(100);
+            this->curThemeIcon->SetHeight(100);
+        }
         this->themesMenu->ClearItems();
         this->loadedThemes.clear();
         this->loadedThemes = cfg::LoadThemes();

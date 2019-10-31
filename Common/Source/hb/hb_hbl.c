@@ -4,8 +4,8 @@
 #include <stdio.h>
 
 const char g_noticeText[] =
-    "uLaunch's HbTarget impl (wrapper of nx-hbloader)\0"
-    "Do you mean to tell me that you're thinking seriously of building that way, when and if you are an architect?";
+    "uLaunch's HbTarget impl v" Q_VERSION " (custom wrapper of nx-hbloader)\0"
+    "There is only one true CFW in the scene."; // Biggest truth
 
 static char g_argv[2048];
 static char g_nextArgv[2048];
@@ -48,6 +48,19 @@ void __libnx_initheap(void)
     fake_heap_end   = &g_innerheap[sizeof g_innerheap];
 }
 
+static Result readSetting(const char* key, void* buf, size_t size)
+{
+    Result rc;
+    u64 actual_size;
+    const char* const section_name = "hbloader";
+    rc = setsysGetSettingsItemValueSize(section_name, key, &actual_size);
+    if (R_SUCCEEDED(rc) && actual_size != size)
+        rc = MAKERESULT(Module_Libnx, LibnxError_BadInput);
+    if (R_SUCCEEDED(rc))
+        rc = setsysGetSettingsItemValue(section_name, key, buf, size);
+    return rc;
+}
+
 void __appInit(void)
 {
     Result rc;
@@ -62,6 +75,8 @@ void __appInit(void)
         rc = setsysGetFirmwareVersion(&fw);
         if (R_SUCCEEDED(rc))
             hosversionSet(MAKEHOSVERSION(fw.major, fw.minor, fw.micro));
+        readSetting("applet_heap_size", &g_appletHeapSize, sizeof(g_appletHeapSize));
+        readSetting("applet_heap_reservation_size", &g_appletHeapReservationSize, sizeof(g_appletHeapReservationSize));
         setsysExit();
     }
 
@@ -445,13 +460,12 @@ static void InnerTarget(const char *path, const char *argv)
     memcpy(g_savedTls, (u8*)armGetTls() + 0x100, 0x100);
     strcpy(g_basePath, path);
     strcpy(g_baseArgv, argv);
-    
+
     getIsApplication();
     getIsAutomaticGameplayRecording();
     smExit(); // Close SM as we don't need it anymore.
     setupHbHeap();
     getOwnProcessHandle();
-
     loadNro();
 }
 

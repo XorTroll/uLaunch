@@ -17,7 +17,7 @@ extern "C"
     #ifdef Q_DEV
         size_t __nx_heap_size = 0x3000000; // Dev 48MB (still lower than official qlaunch) for debug console
     #else
-        size_t __nx_heap_size = 0x800000;// 8MB - while official qlaunch uses 56MB! That's 48 extra MB for other applets
+        size_t __nx_heap_size = 0x800000; // 8MB - while official qlaunch uses 56MB! That's 48 extra MB for other applets
     #endif
 }
 

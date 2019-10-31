@@ -19,7 +19,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	../Common/Source ../Common/Source/am ../Common/Source/cfg ../Common/Source/db ../Common/Source/fs ../Common/Source/hb ../Common/Source/os ../Common/Source/util Source Source/ui
+SOURCES		:=	../Common/Source ../Common/Source/am ../Common/Source/hb Source
 DATA		:=	data
 INCLUDES	:=	../Common/Include Include
 EXEFS_SRC	:=	exefs_src
@@ -27,7 +27,7 @@ EXEFS_SRC	:=	exefs_src
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
-ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE -Wl,-wrap,apmInitialize -Wl,-wrap,apmSetPerformanceConfiguration -Wl,-wrap,apmExit
+ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE -Wl,-wrap,apmInitialize -Wl,-wrap,apmSetPerformanceConfiguration -Wl,-wrap,apmExit -Wl,-wrap,exit
 
 CFLAGS	:=	-g -Wall -O2 -ffunction-sections \
 			$(ARCH) $(DEFINES)

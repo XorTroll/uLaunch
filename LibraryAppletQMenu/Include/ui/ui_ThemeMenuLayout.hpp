@@ -17,6 +17,12 @@ namespace ui
         private:
             pu::ui::elm::TextBlock::Ref noThemesText;
             pu::ui::elm::Menu::Ref themesMenu;
+            pu::ui::elm::TextBlock::Ref curThemeText;
+            pu::ui::elm::TextBlock::Ref curThemeName;
+            pu::ui::elm::TextBlock::Ref curThemeAuthor;
+            pu::ui::elm::TextBlock::Ref curThemeVersion;
+            pu::ui::elm::Image::Ref curThemeIcon;
+            pu::ui::elm::Image::Ref curThemeBanner;
             std::vector<cfg::Theme> loadedThemes;
     };
 }

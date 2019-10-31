@@ -98,16 +98,16 @@ namespace ui
         this->Add(this->menuToggle);
 
         this->itemName = pu::ui::elm::TextBlock::New(40, 610, "", 30);
-        this->itemAuthor = pu::ui::elm::TextBlock::New(45, 650, "", 20);
-        this->itemVersion = pu::ui::elm::TextBlock::New(45, 675, "", 20);
         this->itemName->SetColor(textclr);
         qapp->ApplyConfigForElement("main_menu", "banner_name_text", this->itemName);
+        this->Add(this->itemName);
+        this->itemAuthor = pu::ui::elm::TextBlock::New(45, 650, "", 20);
         this->itemAuthor->SetColor(textclr);
         qapp->ApplyConfigForElement("main_menu", "banner_author_text", this->itemAuthor);
+        this->Add(this->itemAuthor);
+        this->itemVersion = pu::ui::elm::TextBlock::New(45, 675, "", 20);
         this->itemVersion->SetColor(textclr);
         qapp->ApplyConfigForElement("main_menu", "banner_version_text", this->itemVersion);
-        this->Add(this->itemName);
-        this->Add(this->itemAuthor);
         this->Add(this->itemVersion);
 
         this->itemsMenu = SideMenu::New(pu::ui::Color(0, 255, 120, 255), cfg::ProcessedThemeResource(theme, "ui/Cursor.png"), 294);
@@ -382,6 +382,11 @@ namespace ui
     void MenuLayout::MoveFolder(std::string name, bool fade)
     {
         if(fade) qapp->FadeOut();
+
+        if(this->homebrew_mode)
+        {
+            if(homebrew.empty()) homebrew = cfg::QueryAllHomebrew();
+        }
 
         auto itm_list = homebrew;
         if(!this->homebrew_mode)

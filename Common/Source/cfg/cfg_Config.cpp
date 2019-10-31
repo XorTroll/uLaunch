@@ -57,6 +57,7 @@ namespace cfg
                     rec.title_type = (u32)TitleType::Homebrew;
                     strcpy(rec.nro_target.nro_path, path.c_str());
                     nros.push_back(rec);
+                    CacheHomebrew(path); // Always cache when querying.
                 }
             }
         })
@@ -633,7 +634,7 @@ namespace cfg
                         std::string folder = entry.value("folder", "");
                         rec.sub_folder = folder;
                         rec.icon = entry.value("icon", "");
-                        if(cache) CacheHomebrew(rec.nro_target.nro_path);
+                        // Homebrew is cache'd when querying it, so no caching here.
                         if(folder.empty()) list.root.titles.push_back(rec);
                         else
                         {

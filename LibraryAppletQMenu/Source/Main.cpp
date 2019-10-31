@@ -35,9 +35,6 @@ namespace qmenu
 
         am::QMenu_InitializeDaemonService();
 
-        // Query all homebrew (is this too slow...?)
-        homebrew = cfg::QueryAllHomebrew();
-
         // Load menu config
         config = cfg::EnsureConfig();
 
