@@ -7,6 +7,7 @@
 #include <ui/ui_QMenuApplication.hpp>
 #include <os/os_HomeMenu.hpp>
 #include <fs/fs_Stdio.hpp>
+#include <net/net_Service.hpp>
 
 extern ui::QMenuApplication::Ref qapp;
 extern cfg::TitleList list;
@@ -432,11 +433,7 @@ namespace ui
 
     void MenuLayout::OnInput(u64 down, u64 up, u64 held, pu::ui::Touch pos)
     {
-        NifmInternetConnectionType type;
-        u32 str;
-        NifmInternetConnectionStatus status;
-        nifmGetInternetConnectionStatus(&type, &str, &status);
-        bool hasconn = (status == NifmInternetConnectionStatus_Connected);
+        bool hasconn = net::HasConnection();
         if(this->last_hasconn != hasconn)
         {
             if(hasconn) this->connIcon->SetImage(cfg::ProcessedThemeResource(theme, "ui/ConnectionIcon.png"));

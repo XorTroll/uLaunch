@@ -6,6 +6,7 @@
 #include <db/db_Save.hpp>
 #include <fs/fs_Stdio.hpp>
 #include <cfg/cfg_Config.hpp>
+#include <net/net_Service.hpp>
 #include <ui/ui_QMenuApplication.hpp>
 
 extern "C"
@@ -29,7 +30,7 @@ namespace qmenu
     {
         accountInitialize();
         nsInitialize();
-        nifmInitialize();
+        net::Initialize();
         psmInitialize();
         setsysInitialize();
 
@@ -49,7 +50,7 @@ namespace qmenu
 
         setsysExit();
         psmExit();
-        nifmExit();
+        net::Finalize();
         nsExit();
         accountExit();
     }

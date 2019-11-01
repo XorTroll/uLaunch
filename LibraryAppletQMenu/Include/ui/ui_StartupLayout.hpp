@@ -12,13 +12,11 @@ namespace ui
         public:
             StartupLayout();
             PU_SMART_CTOR(StartupLayout)
-            void user_Click();
+            void user_Click(u128 uid, bool has_password);
             void create_Click();
             void ReloadMenu();
         private:
             pu::ui::elm::TextBlock::Ref infoText;
             pu::ui::elm::Menu::Ref usersMenu;
-            std::vector<u128> userlist;
-            std::vector<bool> passlist;
     };
 }

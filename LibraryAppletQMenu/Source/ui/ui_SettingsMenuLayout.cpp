@@ -3,6 +3,8 @@
 #include <util/util_Convert.hpp>
 #include <ui/ui_QMenuApplication.hpp>
 #include <fs/fs_Stdio.hpp>
+#include <net/net_Service.hpp>
+#include <net/net_LibraryApplet.hpp>
 
 extern ui::QMenuApplication::Ref qapp;
 extern cfg::ProcessedTheme theme;
@@ -59,6 +61,7 @@ namespace ui
     void SettingsMenuLayout::Reload()
     {
         this->settingsMenu->ClearItems();
+        this->settingsMenu->SetSelectedIndex(0);
         char consolename[SET_MAX_NICKNAME_SIZE] = {};
         setsysGetDeviceNickname(consolename);
         this->PushSettingItem("Console nickname", EncodeForSettings<std::string>(consolename), 0);
@@ -67,6 +70,14 @@ namespace ui
         this->PushSettingItem("Console timezone location", EncodeForSettings<std::string>(loc.name), -1);
         this->PushSettingItem("PC viewer USB enabled", EncodeForSettings(config.viewer_usb_enabled), 1);
         this->PushSettingItem("Homebrew-as-application 'flog' takeover enabled", EncodeForSettings(config.system_title_override_enabled), 2);
+        std::string connectednet = "none (no connection)";
+        if(net::HasConnection())
+        {
+            net::NetworkProfileData data = {};
+            net::GetCurrentNetworkProfile(&data);
+            connectednet = data.wifi_name;
+        }
+        this->PushSettingItem("Connected network", EncodeForSettings(connectednet), 3);
     }
 
     void SettingsMenuLayout::PushSettingItem(std::string name, std::string value_display, int id)
@@ -124,6 +135,13 @@ namespace ui
                     config.system_title_override_enabled = !config.system_title_override_enabled;
                     reload_need = true;
                 }
+                break;
+            }
+            case 3:
+            {
+                auto rc = net::LaunchNetConnect();
+                // Apparently 0 is returned when user connects to/selects a different WiFi network
+                if(R_SUCCEEDED(rc)) reload_need = true;
                 break;
             }
         }

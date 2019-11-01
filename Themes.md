@@ -125,11 +125,11 @@ Can be customized via files in `/ui`.
 
     - Main menu (`main_menu`): items are `top_menu_bg`, `logo_icon`, `connection_icon`, `user_icon`, `web_icon`, `time_text`, `battery_text`, `battery_icon`, `settings_icon`, `themes_icon`, `firmware_text`, `menu_toggle_button`, `banner_image`, `banner_name_text`, `banner_author_text`, `banner_version_text` and `items_menu`.
 
-    - Startup/user selection menu (`startup_menu`): `info_text`.
+    - Startup/user selection menu (`startup_menu`): `users_menu_item`, `info_text`.
 
     - Theme menu (`themes_menu`): `banner_image`, `themes_menu_item`, `current_theme_text`, `current_theme_name_text`, `current_theme_author_text`, `current_theme_version_text` and `current_theme_icon`.
 
-    - Settings menu (`settings_menu`): `settings_menu_item`.
+    - Settings menu (`settings_menu`): `settings_menu_item`, `info_text`.
 
     Notes: `logo_icon` and `items_menu` items can't be hidden ("visible" property is ignored) and in `items_menu`'s case only Y can be customized ("x" is also ignored)
 

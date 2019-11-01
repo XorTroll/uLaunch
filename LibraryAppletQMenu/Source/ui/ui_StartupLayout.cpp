@@ -25,16 +25,14 @@ namespace ui
 
         this->usersMenu = pu::ui::elm::Menu::New(400, 160, 480, menubgclr, 100, 4);
         this->usersMenu->SetOnFocusColor(menufocusclr);
+        qapp->ApplyConfigForElement("startup_menu", "users_menu_item", this->usersMenu);
         this->Add(this->usersMenu);
     }
 
-    void StartupLayout::user_Click()
+    void StartupLayout::user_Click(u128 uid, bool has_password)
     {
-        auto usridx = this->usersMenu->GetSelectedIndex() - 1;
-        auto uid = this->userlist[usridx];
-        auto haspass = this->passlist[usridx];
         bool login_ok = false;
-        if(haspass)
+        if(has_password)
         {
             SwkbdConfig swkbd;
             swkbdCreate(&swkbd, 0);
@@ -97,16 +95,10 @@ namespace ui
 
     void StartupLayout::ReloadMenu()
     {
-        pu::ui::Color textclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
         this->usersMenu->ClearItems();
-        this->userlist.clear();
-        this->passlist.clear();
-        this->usersMenu->SetVisible(true);
+
+        pu::ui::Color textclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
         
-        auto citm = pu::ui::elm::MenuItem::New("Create new user");
-        citm->SetColor(textclr);
-        citm->AddOnClick(std::bind(&StartupLayout::create_Click, this));
-        this->usersMenu->AddItem(citm);
         auto [rc, users] = os::QuerySystemAccounts(true);
         if(R_SUCCEEDED(rc))
         {
@@ -128,19 +120,16 @@ namespace ui
                 auto path = os::GetIconCacheImagePath(user);
                 auto uitm = pu::ui::elm::MenuItem::New(name);
                 uitm->SetIcon(path);
-                uitm->AddOnClick(std::bind(&StartupLayout::user_Click, this));
+                uitm->AddOnClick(std::bind(&StartupLayout::user_Click, this, user, has_pass));
                 uitm->SetColor(textclr);
-
-                this->userlist.push_back(user);
-                this->passlist.push_back(has_pass);
 
                 this->usersMenu->AddItem(uitm);
             }
         }
-        else
-        {
-            this->usersMenu->SetVisible(false);
-            this->infoText->SetText("Unable to obtain system accounts. Hold power to power off or reboot the console.");
-        }
+
+        auto citm = pu::ui::elm::MenuItem::New("Create new user");
+        citm->SetColor(textclr);
+        citm->AddOnClick(std::bind(&StartupLayout::create_Click, this));
+        this->usersMenu->AddItem(citm);
     }
 }
