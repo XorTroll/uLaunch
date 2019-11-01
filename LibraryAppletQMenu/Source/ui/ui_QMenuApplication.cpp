@@ -40,6 +40,7 @@ namespace ui
         this->startupLayout = StartupLayout::New();
         this->menuLayout = MenuLayout::New(app_buf, this->uijson.value("suspended_final_alpha", 80));
         this->themeMenuLayout = ThemeMenuLayout::New();
+        this->settingsMenuLayout = SettingsMenuLayout::New();
 
         switch(this->stmode)
         {
@@ -86,6 +87,12 @@ namespace ui
     {
         this->themeMenuLayout->Reload();
         this->LoadLayout(this->themeMenuLayout);
+    }
+
+    void QMenuApplication::LoadSettingsMenu()
+    {
+        this->settingsMenuLayout->Reload();
+        this->LoadLayout(this->settingsMenuLayout);
     }
 
     bool QMenuApplication::IsSuspended()

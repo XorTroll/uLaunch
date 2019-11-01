@@ -862,7 +862,9 @@ namespace ui
     
     void MenuLayout::HandleSettingsMenu()
     {
-        qapp->CreateShowDialog("Settings", "Settings", {"Ok"}, true);
+        qapp->FadeOut();
+        qapp->LoadSettingsMenu();
+        qapp->FadeIn();
     }
     
     void MenuLayout::HandleThemesMenu()

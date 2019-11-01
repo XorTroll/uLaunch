@@ -3,6 +3,7 @@
 #include <ui/ui_StartupLayout.hpp>
 #include <ui/ui_MenuLayout.hpp>
 #include <ui/ui_ThemeMenuLayout.hpp>
+#include <ui/ui_SettingsMenuLayout.hpp>
 
 namespace ui
 {
@@ -19,6 +20,7 @@ namespace ui
             void LoadMenu();
             void LoadStartupMenu();
             void LoadThemeMenu();
+            void LoadSettingsMenu();
 
             bool IsSuspended();
             bool IsTitleSuspended();
@@ -78,6 +80,7 @@ namespace ui
             StartupLayout::Ref startupLayout;
             MenuLayout::Ref menuLayout;
             ThemeMenuLayout::Ref themeMenuLayout;
+            SettingsMenuLayout::Ref settingsMenuLayout;
             am::QSuspendedInfo suspinfo;
             u128 selected_user;
             JSON uijson;

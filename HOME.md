@@ -58,6 +58,14 @@ The final workaround for the reimplementation was, simply, to **separate the UI 
 
 In fact, the fact that the menu gets closed and re-opened very often is helpful in order to update records, since normal qlaunch would have to listen to an event to see if any new one was added or removed, while this way there is no need to do that.
 
+This is the list of some remarkable advantages this system has:
+
+- Application records: when new records are added (new games installed) or removed (games removed) official qlaunch needs to wait for a system event on an extra thread in order to notice when there are changes, and then re-update its display. Since just by returning HOME the menu is always re-opened, if one installed or removed a title from homebrew, just returning (thus reopening) the menu, which always gets all records on startup, would show new ones or lack the removed ones.
+
+- Communications security: while my first approach was to make the communication system use the **general channel** (storage system where other titles send requests to qlaunch: sleep, HOME press...), but that wouldn't be a good idea since that channel isn't meant for "send-receive" communications, and since the daemon-to-menu part would be handled via **library applet storages** (the system made for an applet and the one who launched it to communicate with each other) it would involve waiting, possible threading... In the end (for what it's worth) this latter system was used for both sides, since in the end it iss made for that purpose. Communications consist on 16KB byte blocks sent and received by and from both.
+
+- qlaunch's essential threading: a regular qlaunch reimplementation does need threads, since it needs to host its special event handling (the aforementioned general channel, applet messages...) appart from the UI and user input. In uLaunch's case this responsibilities (back-end and front-end functionalities) are split into both the menu and the daemon. Despite being almost invisible, since the daemon (being the system applet in this case) has its unique functionality only it can use, the communication system between the menu library applet and the daemon consists on the menu asking the daemon to perform a certain privileged task (launching titles, detecting HOME menu...) and the response from the daemon with the result and/or the asked data.
+
 ### Homebrew and forwarding
 
 A common practice to be able to easily launch homebrew, from the main menu and as application, is to take advantage of the *title override* feature most CFWs provide, or as a last resource, to install forwarder NSPs to target homebrew located at the SD card.

@@ -11,7 +11,7 @@
 extern "C"
 {
     u32 __nx_applet_type = AppletType_LibraryApplet; // Explicitly declare we're a library applet (need to do so for non-hbloader homebrew)
-    size_t __nx_heap_size = 0xd000000; // 208MB heap
+    size_t __nx_heap_size = 0xD000000; // 208MB heap
 }
 
 // Some global vars
