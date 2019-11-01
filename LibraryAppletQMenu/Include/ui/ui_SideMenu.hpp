@@ -12,11 +12,12 @@ namespace ui
         static constexpr u32 ItemCount = 4;
         static constexpr u32 FocusSize = 15;
         static constexpr u32 FocusMargin = 5;
-        static constexpr u32 CursorSize = ItemSize + (Margin * 2);
+        static constexpr u32 ExtraIconSize = ItemSize + (Margin * 2);
 
         public:
-            SideMenu(pu::ui::Color SuspendedColor, std::string CursorPath, s32 y);
+            SideMenu(pu::ui::Color SuspendedColor, std::string CursorPath, std::string SuspendedImagePath, s32 y);
             PU_SMART_CTOR(SideMenu)
+            ~SideMenu();
 
             s32 GetX() override;
             s32 GetY() override;
@@ -55,6 +56,7 @@ namespace ui
             std::function<void(u32)> onselch;
             std::vector<pu::ui::render::NativeTexture> ricons;
             pu::ui::render::NativeTexture cursoricon;
+            pu::ui::render::NativeTexture suspicon;
             pu::ui::render::NativeTexture leftbicon;
             pu::ui::render::NativeTexture rightbicon;
             std::chrono::steady_clock::time_point scrolltp;

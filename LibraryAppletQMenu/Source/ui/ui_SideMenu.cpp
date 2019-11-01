@@ -2,7 +2,7 @@
 
 namespace ui
 {
-    SideMenu::SideMenu(pu::ui::Color SuspendedColor, std::string CursorPath, s32 y)
+    SideMenu::SideMenu(pu::ui::Color SuspendedColor, std::string CursorPath, std::string SuspendedImagePath, s32 y)
     {
         this->selitm = 0;
         this->suspitm = -1;
@@ -13,15 +13,32 @@ namespace ui
         this->leftbicon = NULL;
         this->rightbicon = NULL;
         this->cursoricon = pu::ui::render::LoadImage(CursorPath);
+        this->suspicon = pu::ui::render::LoadImage(SuspendedImagePath);
         this->onselect = [&](u32,u64){};
         this->onselch = [&](u32){};
         this->SetY(y);
+    }
+
+    SideMenu::~SideMenu()
+    {
+        if(this->cursoricon != NULL)
+        {
+            pu::ui::render::DeleteTexture(this->cursoricon);
+            this->cursoricon = NULL;
+        }
+        if(this->suspicon != NULL)
+        {
+            pu::ui::render::DeleteTexture(this->suspicon);
+            this->suspicon = NULL;
+        }
+        this->ClearItems();
     }
 
     s32 SideMenu::GetX()
     {
         return 98;
     }
+
     s32 SideMenu::GetY()
     {
         return this->y;
@@ -69,18 +86,18 @@ namespace ui
             {
                 if((this->baseiconidx + i) == (u32)suspitm)
                 {
-                    Drawer->RenderRectangleFill(this->suspclr, basex, Y + ItemSize + FocusMargin, ItemSize, FocusSize);
+                    if(this->suspicon != NULL) Drawer->RenderTexture(this->suspicon, basex - Margin, Y - Margin, { -1, ExtraIconSize, ExtraIconSize, -1 });
                 }
             }
             if(this->cursoricon != NULL)
             {
                 if((this->baseiconidx + i) == selitm)
                 {
-                    Drawer->RenderTexture(this->cursoricon, basex - Margin, Y - Margin, { 255 - movalpha, CursorSize, CursorSize, -1 });
+                    Drawer->RenderTexture(this->cursoricon, basex - Margin, Y - Margin, { 255 - movalpha, ExtraIconSize, ExtraIconSize, -1 });
                 }
                 else if((this->baseiconidx + i) == preselitm)
                 {
-                    Drawer->RenderTexture(this->cursoricon, basex - Margin, Y - Margin, { movalpha, CursorSize, CursorSize, -1 });
+                    Drawer->RenderTexture(this->cursoricon, basex - Margin, Y - Margin, { movalpha, ExtraIconSize, ExtraIconSize, -1 });
                 }
             }
             basex += ItemSize + Margin;

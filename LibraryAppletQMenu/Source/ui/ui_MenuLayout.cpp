@@ -110,7 +110,7 @@ namespace ui
         qapp->ApplyConfigForElement("main_menu", "banner_version_text", this->itemVersion);
         this->Add(this->itemVersion);
 
-        this->itemsMenu = SideMenu::New(pu::ui::Color(0, 255, 120, 255), cfg::ProcessedThemeResource(theme, "ui/Cursor.png"), 294);
+        this->itemsMenu = SideMenu::New(pu::ui::Color(0, 255, 120, 255), cfg::ProcessedThemeResource(theme, "ui/Cursor.png"), cfg::ProcessedThemeResource(theme, "ui/Suspended.png"), 294);
         this->MoveFolder("", false);
         this->itemsMenu->SetOnItemSelected(std::bind(&MenuLayout::menu_Click, this, std::placeholders::_1, std::placeholders::_2));
         this->itemsMenu->SetOnSelectionChanged(std::bind(&MenuLayout::menu_OnSelected, this, std::placeholders::_1));
