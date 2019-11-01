@@ -60,6 +60,16 @@ namespace QForegroundViewer
             base.OnClosing(e);
         }
 
+        protected override void OnShown(EventArgs e)
+        {
+            if(USB == null)
+            {
+                MessageBox.Show("Unable to connect to uLaunch via USB-C cable.", "Unable to connect");
+                Environment.Exit(Environment.ExitCode);
+            }
+            base.OnShown(e);
+        }
+
         public void USBThreadMain()
         {
             while(RefreshCapture());
@@ -67,11 +77,6 @@ namespace QForegroundViewer
 
         public bool RefreshCapture()
         {
-            if(USB == null)
-            {
-                MessageBox.Show("Unable to connect to uLaunch via USB-C cable.", "Unable to connect");
-                Environment.Exit(Environment.ExitCode);
-            }
             try
             {
                 USB.ReadPipe(0x81, CaptureBlocks[0], CaptureBlocks[0].Length, out _, IntPtr.Zero);

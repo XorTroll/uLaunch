@@ -39,7 +39,7 @@
             this.CaptureBox.Location = new System.Drawing.Point(0, 0);
             this.CaptureBox.Margin = new System.Windows.Forms.Padding(0);
             this.CaptureBox.Name = "CaptureBox";
-            this.CaptureBox.Size = new System.Drawing.Size(624, 321);
+            this.CaptureBox.Size = new System.Drawing.Size(1280, 720);
             this.CaptureBox.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.CaptureBox.TabIndex = 0;
             this.CaptureBox.TabStop = false;
@@ -48,7 +48,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(624, 321);
+            this.ClientSize = new System.Drawing.Size(1280, 720);
             this.Controls.Add(this.CaptureBox);
             this.Name = "ViewerMainForm";
             this.Text = "uLaunch - Foreground display viewer";

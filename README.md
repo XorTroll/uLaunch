@@ -61,15 +61,15 @@ This is the amount of features uLaunch contains, compared to the original HOME m
 
   - **User password** support! (up to 15 characters)
 
-> Note: some classic HOME menu functionality (eShop, friends...) isn't implemented here. This reimplementation is mainly homebrew-orienteed, so it will lack some classic functionality.
+> Note: some classic HOME menu functionality (eShop, friends...) isn't (and probably won't be) implemented here. This reimplementation is mainly homebrew-orienteed, so it will lack some classic functionality which isn't specially worth it to reverse and implement.
 
 ## Disclaimer
 
-### Homebrew as applications
+### Homebrew-as-application 'flog' takeover
 
-uLaunch launches homebrew present (added) to main menu as an application, taking advantage of **flog**'s built-in application title, which was stubbed but not removed, thus it's content can be overriden via LayeredFS and launched.
+uLaunch launches homebrew present (added) to main menu as an application, taking advantage of the system's '**flog**' built-in application title, which was stubbed but not removed, thus it's content can be overriden via LayeredFS and launched.
 
-Since launching this title should be impossible, it might involve ban risk, so **use it at your own risk**. uLaunch **warns on launching titles this way**.
+Since launching this title should be impossible, it might involve ban risk. uLaunch has this option **disabled by default**, so enable and use it **use it at your own risk**.
 
 ## Project and subprojects
 
@@ -79,13 +79,7 @@ uLaunch is split, as mentioned above, into several sub-projects:
 
 > This sub-project replaces qlaunch, aka title 0100000000001000.
 
-This is the technically actual qlaunch reimplementation. However, to avoid memory issues it does not use any kind of UI (except console for development debug, which is removed for releases), and thus it uses 8MB of heap, while official HOME menu uses 56MB.
-
-Instead, it uses [QMenu custom library applet](#qmenu-libraryappletqmenu) (launches and communicates with it) in order to display a proper menu UI.
-
-But, if all the functionality is handled by QMenu, why is this daemon process necessary? Well, mainly since the system applet process has a lot of unique code it's the only one who can use, specially, related to title launching, focus managing...
-
-**TL;DR**: this is a simple daemon process which stays communicated with QMenu to perform tasks it is asked to so, specially with code it is the only one that can access.
+This is the technically actual qlaunch reimplementation. In fact, it is used as a back-end for the project, which just does what the actual menu (QMenu) tells it to do. This had to be like that, since qlaunch is the only one who can access certain essential functionality like title launching, so QMenu needs to access it, so it communicates with this back-end to execute it and to obtain its outcome.
 
 ### QMenu (LibraryAppletQMenu)
 

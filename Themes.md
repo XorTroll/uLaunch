@@ -153,6 +153,12 @@ Can be customized via files in `/ui`.
 
 - `ui/Banner{type}.png` -> Different 1280x135 PNG banners for menu item types (BannerFolder, BannerHomebrew or BannerInstalled)
 
+## Settings menu
+
+- `ui/SettingEditable.png` -> 100x100 PNG for settings which can be edited.
+
+- `ui/SettingNoEditable.png` -> 100x100 PNG for settings which cannot be edited (thus can only be seen).
+
 ### Top menu
 
 The top menu is the small bar shown at the top of the main menu, whose background and icons are customizable.
@@ -162,5 +168,3 @@ All the menu icons ({...}Icon.png) are 50x50 icons, except battery ones (Battery
 - `ui/TopMenu.png` -> Background of menu (1220x85 PNG)
 
 - Icons in top menu (50x50 PNGs): ConnectionIcon, NoConnectionIcon, SettingsIcon, ThemesIcon, WebIcon
-
-> *TODO: more menu icons*

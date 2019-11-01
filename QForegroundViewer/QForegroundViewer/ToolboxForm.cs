@@ -20,6 +20,7 @@ namespace QForegroundViewer
             main = Main;
             IncrementNumeric.Increment = 0.1m;
             IncrementNumeric.Minimum = 0.1m;
+            IncrementNumeric.Value = 1.0m;
         }
 
         private void AboutButton_Click(object sender, EventArgs e)

@@ -49,7 +49,7 @@
             this.groupBox1.Size = new System.Drawing.Size(200, 58);
             this.groupBox1.TabIndex = 1;
             this.groupBox1.TabStop = false;
-            this.groupBox1.Text = "Available screenshots";
+            this.groupBox1.Text = "Available screenshot stack";
             // 
             // ScreenshotList
             // 
@@ -83,7 +83,7 @@
             this.groupBox2.Size = new System.Drawing.Size(200, 56);
             this.groupBox2.TabIndex = 3;
             this.groupBox2.TabStop = false;
-            this.groupBox2.Text = "Image format";
+            this.groupBox2.Text = "Image save format";
             // 
             // FormatList
             // 
@@ -99,17 +99,17 @@
             // 
             // SaveButton
             // 
-            this.SaveButton.Location = new System.Drawing.Point(12, 229);
+            this.SaveButton.Location = new System.Drawing.Point(12, 270);
             this.SaveButton.Name = "SaveButton";
-            this.SaveButton.Size = new System.Drawing.Size(153, 55);
+            this.SaveButton.Size = new System.Drawing.Size(221, 44);
             this.SaveButton.TabIndex = 4;
-            this.SaveButton.Text = "Save";
+            this.SaveButton.Text = "Save as...";
             this.SaveButton.UseVisualStyleBackColor = true;
             this.SaveButton.Click += new System.EventHandler(this.SaveButton_Click);
             // 
             // RefreshButton
             // 
-            this.RefreshButton.Location = new System.Drawing.Point(12, 153);
+            this.RefreshButton.Location = new System.Drawing.Point(12, 185);
             this.RefreshButton.Name = "RefreshButton";
             this.RefreshButton.Size = new System.Drawing.Size(172, 29);
             this.RefreshButton.TabIndex = 5;
@@ -119,9 +119,9 @@
             // 
             // ClipboardButton
             // 
-            this.ClipboardButton.Location = new System.Drawing.Point(13, 189);
+            this.ClipboardButton.Location = new System.Drawing.Point(12, 220);
             this.ClipboardButton.Name = "ClipboardButton";
-            this.ClipboardButton.Size = new System.Drawing.Size(171, 29);
+            this.ClipboardButton.Size = new System.Drawing.Size(221, 44);
             this.ClipboardButton.TabIndex = 6;
             this.ClipboardButton.Text = "Copy to clipboard";
             this.ClipboardButton.UseVisualStyleBackColor = true;
@@ -131,7 +131,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 333);
+            this.ClientSize = new System.Drawing.Size(784, 331);
             this.Controls.Add(this.ClipboardButton);
             this.Controls.Add(this.RefreshButton);
             this.Controls.Add(this.SaveButton);

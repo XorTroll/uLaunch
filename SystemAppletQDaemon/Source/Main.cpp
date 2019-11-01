@@ -37,46 +37,6 @@ void CommonSleepHandle()
     appletStartSleepSequence(true);
 }
 
-void HandleGeneralChannel()
-{
-    AppletStorage sams_st;
-    auto rc = appletPopFromGeneralChannel(&sams_st);
-    if(R_SUCCEEDED(rc))
-    {
-        os::SystemAppletMessage sams = {};
-        rc = appletStorageRead(&sams_st, 0, &sams, sizeof(os::SystemAppletMessage));
-        appletStorageClose(&sams_st);
-        if(R_SUCCEEDED(rc))
-        {
-            if(sams.magic == os::SAMSMagic)
-            {
-                os::GeneralChannelMessage msg = (os::GeneralChannelMessage)sams.message;
-                switch(msg)
-                {
-                    case os::GeneralChannelMessage::Shutdown:
-                    {
-                        appletStartShutdownSequence();
-                        break;
-                    }
-                    case os::GeneralChannelMessage::Reboot:
-                    {
-                        appletStartRebootSequence();
-                        break;
-                    }
-                    case os::GeneralChannelMessage::Sleep:
-                    {
-                        appletStartSleepSequence(true);
-                        break;
-                    }
-                    default:
-                        break;
-                }
-            }
-        }
-    }
-    svcSleepThread(100000000L);
-}
-
 void HandleHomeButton()
 {
     bool used_to_reopen_menu = false;
@@ -100,6 +60,51 @@ void HandleHomeButton()
         std::scoped_lock lock(latestqlock);
         latestqmenumsg = am::QMenuMessage::HomeRequest;
     }
+}
+
+void HandleGeneralChannel()
+{
+    AppletStorage sams_st;
+    auto rc = appletPopFromGeneralChannel(&sams_st);
+    if(R_SUCCEEDED(rc))
+    {
+        os::SystemAppletMessage sams = {};
+        rc = appletStorageRead(&sams_st, 0, &sams, sizeof(os::SystemAppletMessage));
+        appletStorageClose(&sams_st);
+        if(R_SUCCEEDED(rc))
+        {
+            if(sams.magic == os::SAMSMagic)
+            {
+                os::GeneralChannelMessage msg = (os::GeneralChannelMessage)sams.message;
+                switch(msg)
+                {
+                    case os::GeneralChannelMessage::HomeButton: // Usually this doesn't happen, HOME is detected by applet messages...?
+                    {
+                        HandleHomeButton();
+                        break;
+                    }
+                    case os::GeneralChannelMessage::Shutdown:
+                    {
+                        appletStartShutdownSequence();
+                        break;
+                    }
+                    case os::GeneralChannelMessage::Reboot:
+                    {
+                        appletStartRebootSequence();
+                        break;
+                    }
+                    case os::GeneralChannelMessage::Sleep:
+                    {
+                        appletStartSleepSequence(true);
+                        break;
+                    }
+                    default: // We don't have anything special to do for the rest
+                        break;
+                }
+            }
+        }
+    }
+    svcSleepThread(100000000L);
 }
 
 void HandleAppletMessage()
@@ -359,7 +364,7 @@ namespace qdaemon
     {
         app_buf = new u8[RawRGBAScreenBufferSize]();
         
-        db::Mount();
+        db::Mount(); // Keep qlaunch's savedata always mounted to avoid others to access it.
         fs::CreateDirectory(Q_BASE_DB_DIR);
         fs::CreateDirectory(Q_BASE_SD_DIR);
         fs::CreateDirectory(Q_ENTRIES_PATH);
@@ -430,6 +435,8 @@ namespace qdaemon
 
     void DaemonServiceMain(void *arg)
     {
+        // TODO: restrict service access to QMenu?
+
         static auto server = WaitableManager(2);
         server.AddWaitable(new ServiceServer<ipc::IDaemonService>(AM_QDAEMON_SERVICE_NAME, 0x10));
         server.Process();
@@ -469,6 +476,7 @@ namespace qdaemon
     }
 }
 
+// QDaemon handles basic qlaunch functionality and serves as a back-end for uLaunch, communicating with QMenu front-end when neccessary.
 int main()
 {
     qdaemon::Initialize();

@@ -38,8 +38,15 @@ namespace ui
     {
         this->SetBackgroundImage(cfg::ProcessedThemeResource(theme, "ui/Background.png"));
 
+        pu::ui::Color textclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
         pu::ui::Color menufocusclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("menu_focus_color", "#5ebcffff"));
         pu::ui::Color menubgclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("menu_bg_color", "#0094ffff"));
+
+        this->infoText = pu::ui::elm::TextBlock::New(0, 100, "Browse and/or edit settings here.");
+        this->infoText->SetColor(textclr);
+        this->infoText->SetHorizontalAlign(pu::ui::elm::HorizontalAlign::Center);
+        qapp->ApplyConfigForElement("settings_menu", "info_text", this->infoText);
+        this->Add(this->infoText);
 
         this->settingsMenu = pu::ui::elm::Menu::New(200, 160, 880, menubgclr, 100, 4);
         this->settingsMenu->SetOnFocusColor(menufocusclr);
@@ -55,15 +62,19 @@ namespace ui
         char consolename[SET_MAX_NICKNAME_SIZE] = {};
         setsysGetDeviceNickname(consolename);
         this->PushSettingItem("Console nickname", EncodeForSettings<std::string>(consolename), 0);
+        TimeLocationName loc = {};
+        timeGetDeviceLocationName(&loc);
+        this->PushSettingItem("Console timezone location", EncodeForSettings<std::string>(loc.name), -1);
         this->PushSettingItem("PC viewer USB enabled", EncodeForSettings(config.viewer_usb_enabled), 1);
         this->PushSettingItem("Homebrew-as-application 'flog' takeover enabled", EncodeForSettings(config.system_title_override_enabled), 2);
     }
 
-    void SettingsMenuLayout::PushSettingItem(std::string name, std::string value_display, u32 id)
+    void SettingsMenuLayout::PushSettingItem(std::string name, std::string value_display, int id)
     {
         pu::ui::Color textclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
         auto itm = pu::ui::elm::MenuItem::New(name + ": " + value_display);
         itm->AddOnClick(std::bind(&SettingsMenuLayout::setting_Click, this, id));
+        itm->SetIcon(cfg::ProcessedThemeResource(theme, "ui/Setting" + std::string((id < 0) ? "No" : "") + "Editable.png"));
         itm->SetColor(textclr);
         this->settingsMenu->AddItem(itm);
     }
