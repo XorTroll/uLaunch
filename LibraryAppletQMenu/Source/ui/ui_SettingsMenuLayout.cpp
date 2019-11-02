@@ -4,7 +4,7 @@
 #include <ui/ui_QMenuApplication.hpp>
 #include <fs/fs_Stdio.hpp>
 #include <net/net_Service.hpp>
-#include <net/net_LibraryApplet.hpp>
+#include <am/am_LibraryApplet.hpp>
 
 extern ui::QMenuApplication::Ref qapp;
 extern cfg::ProcessedTheme theme;
@@ -139,7 +139,16 @@ namespace ui
             }
             case 3:
             {
-                auto rc = net::LaunchNetConnect();
+                u8 in[28] = {0};
+                *(u32*)in = 1; // 0 = normal, 1 = qlaunch, 2 = starter?
+                u8 out[8] = {0};
+
+                am::LibraryAppletQMenuLaunchAnd(AppletId_netConnect, 0, in, sizeof(in), out, sizeof(out), [&]() -> bool
+                {
+                    return !am::QMenuIsHomePressed();
+                });
+                auto rc = *(u32*)in;
+
                 // Apparently 0 is returned when user connects to/selects a different WiFi network
                 if(R_SUCCEEDED(rc)) reload_need = true;
                 break;
@@ -150,18 +159,7 @@ namespace ui
 
     void SettingsMenuLayout::OnInput(u64 down, u64 up, u64 held, pu::ui::Touch pos)
     {
-        bool ret = false;
-        auto [rc, msg] = am::QMenu_GetLatestQMenuMessage();
-        switch(msg)
-        {
-            case am::QMenuMessage::HomeRequest:
-            {
-                ret = true;
-                break;
-            }
-            default:
-                break;
-        }
+        bool ret = am::QMenuIsHomePressed();
         if(down & KEY_B) ret = true;
         if(ret)
         {

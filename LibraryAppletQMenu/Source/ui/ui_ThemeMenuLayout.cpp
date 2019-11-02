@@ -108,18 +108,7 @@ namespace ui
 
     void ThemeMenuLayout::OnInput(u64 down, u64 up, u64 held, pu::ui::Touch pos)
     {
-        bool ret = false;
-        auto [rc, msg] = am::QMenu_GetLatestQMenuMessage();
-        switch(msg)
-        {
-            case am::QMenuMessage::HomeRequest:
-            {
-                ret = true;
-                break;
-            }
-            default:
-                break;
-        }
+        bool ret = am::QMenuIsHomePressed();
         if(down & KEY_B) ret = true;
         if(ret)
         {

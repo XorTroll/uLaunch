@@ -61,8 +61,6 @@ This is the amount of features uLaunch contains, compared to the original HOME m
 
   - **User password** support! (up to 15 characters)
 
-> Note: some classic HOME menu functionality (eShop, friends...) isn't (and probably won't be) implemented here. This reimplementation is mainly homebrew-orienteed, so it will lack some classic functionality which isn't specially worth it to reverse and implement.
-
 ## Disclaimer
 
 ### Homebrew-as-application 'flog' takeover
@@ -99,7 +97,7 @@ This is the process which runs instead of flog, which is used to launch homebrew
 
 #### Library applet (LibraryAppletQHbTarget)
 
-> This sub-project replaces "myPage" library applet, aka title 0100000000001013.
+> This sub-project replaces "dataErase" library applet, aka title 0100000000001004.
 
 This is the same process but, like in normal HOME menu and Album, it runs homebrew as an applet. However, exiting homebrew here will exit to HOME menu instead of exiting to hbmenu.
 
@@ -146,11 +144,11 @@ In order to check uLaunch's installation, you will need to pay attention to the 
 
 ### How do I know whether it is installed?
 
-Check if folders `0100000000001000`, `0100000000001002`, `0100000000001013` and `01008BB00013C000` exist. (and that they aren't empty, or at least contain a `exefs.nsp` file)
+Check if folders `0100000000001000`, `0100000000001002`, `0100000000001004` and `01008BB00013C000` exist. (and that they aren't empty, or at least contain a `exefs.nsp` file)
 
 ### How do I remove it?
 
-1 - Delete the following folders: `0100000000001002`, `0100000000001013` and `01008BB00013C000`.
+1 - Delete the following folders: `0100000000001002`, `0100000000001004` and `01008BB00013C000`.
 
 2 - Delete **only `exefs.nsp` file** from `0100000000001000` directory (if there is a `romfs` folder present it could be a normal HOME menu theme)
 
@@ -164,7 +162,7 @@ Clone (**recursively!**) this repo (uses libstratosphere and Plutonium submodule
 
 If you get a crash using uLaunch, please check:
 
-- If the crash's title is `0100000000001000`, `0100000000001002`, `0100000000001013` or `01008BB00013C000` and **you know for sure you have this project in your SD**, then it is very likely related to this project.
+- If the crash's title is `0100000000001000`, `0100000000001002`, `0100000000001004` or `01008BB00013C000` and **you know for sure you have this project in your SD**, then it is very likely related to this project.
 
 ## Credits
 

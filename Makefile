@@ -12,7 +12,7 @@ all:
 	@mkdir -p $(CURDIR)/SdOut/titles
 	@cp -r $(CURDIR)/SystemAppletQDaemon/Out $(CURDIR)/SdOut/titles/0100000000001000
 	@cp -r $(CURDIR)/LibraryAppletQMenu/Out $(CURDIR)/SdOut/titles/0100000000001002
-	@cp -r $(CURDIR)/LibraryAppletQHbTarget/Out $(CURDIR)/SdOut/titles/0100000000001013
+	@cp -r $(CURDIR)/LibraryAppletQHbTarget/Out $(CURDIR)/SdOut/titles/0100000000001004
 	@cp -r $(CURDIR)/SystemApplicationQHbTarget/Out $(CURDIR)/SdOut/titles/01008BB00013C000
 
 setdev:

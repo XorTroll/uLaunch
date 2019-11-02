@@ -106,6 +106,13 @@ namespace am
         return MakeResultWith(rc, msg);
     }
 
+    bool QMenuIsHomePressed()
+    {
+        auto [rc, msg] = QMenu_GetLatestQMenuMessage();
+        if(R_FAILED(rc)) return false;
+        return (msg == QMenuMessage::HomeRequest);
+    }
+
     void QMenu_FinalizeDaemonService()
     {
         serviceClose(&daemon_srv);

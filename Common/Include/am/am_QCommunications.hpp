@@ -56,6 +56,7 @@ namespace am
 
     Result QMenu_InitializeDaemonService();
     ResultWith<QMenuMessage> QMenu_GetLatestQMenuMessage();
+    bool QMenuIsHomePressed();
     void QMenu_FinalizeDaemonService();
 
     Result QDaemon_QMenuWriteImpl(void *data, size_t size, bool wait);

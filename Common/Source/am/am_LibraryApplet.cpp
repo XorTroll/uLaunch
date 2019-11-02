@@ -54,6 +54,34 @@ namespace am
         return LibraryAppletStart(AppletId_web, web->version, &web->arg, sizeof(web->arg));
     }
 
+    Result LibraryAppletQMenuLaunchAnd(AppletId id, u32 la_version, void *in_data, size_t in_size, void *out_data, size_t out_size, std::function<bool()> on_wait)
+    {
+        if(LibraryAppletIsActive()) LibraryAppletTerminate();
+        appletHolderClose(&applet_holder);
+        LibAppletArgs largs;
+        libappletArgsCreate(&largs, la_version);
+        R_TRY(appletCreateLibraryApplet(&applet_holder, id, LibAppletMode_AllForeground));
+        R_TRY(libappletArgsPush(&largs, &applet_holder));
+        if(in_size > 0)
+        {
+            R_TRY(LibraryAppletSend(in_data, in_size));
+        }
+        R_TRY(appletHolderStart(&applet_holder));
+        while(true)
+        {
+            if(!LibraryAppletIsActive()) break;
+            if(!on_wait())
+            {
+                LibraryAppletTerminate();
+                break;
+            }
+            svcSleepThread(10'000'000);
+        }
+        if(out_size > 0) libappletPopOutData(&applet_holder, out_data, out_size, NULL);
+        appletHolderClose(&applet_holder);
+        return 0;
+    }
+
     AppletId LibraryAppletGetId()
     {
         auto idcopy = applet_lastid;

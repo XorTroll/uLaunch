@@ -4,6 +4,7 @@
 #include <util/util_Convert.hpp>
 #include <util/util_Misc.hpp>
 #include <os/os_Misc.hpp>
+#include <am/am_LibraryApplet.hpp>
 #include <ui/ui_QMenuApplication.hpp>
 #include <os/os_HomeMenu.hpp>
 #include <fs/fs_Stdio.hpp>
@@ -469,20 +470,13 @@ namespace ui
             }
         }
 
-        auto [rc, msg] = am::QMenu_GetLatestQMenuMessage();
-        switch(msg)
+        if(am::QMenuIsHomePressed())
         {
-            case am::QMenuMessage::HomeRequest:
+            if(qapp->IsSuspended())
             {
-                if(qapp->IsSuspended())
-                {
-                    if(this->mode == 1) this->mode = 2;
-                }
-                else while(this->itemsMenu->GetSelectedItem() > 0) this->itemsMenu->HandleMoveLeft();
-                break;
+                if(this->mode == 1) this->mode = 2;
             }
-            default:
-                break;
+            else while(this->itemsMenu->GetSelectedItem() > 0) this->itemsMenu->HandleMoveLeft();
         }
 
         if(this->susptr != NULL)
@@ -700,7 +694,7 @@ namespace ui
         bool has_pass = R_SUCCEEDED(res.GetReadResult());
 
         auto [_rc, name] = os::GetAccountName(uid);
-        auto sopt = qapp->CreateShowDialog("User settings", "Selected user: " + name + "\nWhat would you like to do with this user?", { has_pass ? "Change password" : "Register password", "Log off", "Cancel" }, true, os::GetIconCacheImagePath(uid));
+        auto sopt = qapp->CreateShowDialog("User settings", "Selected user: " + name + "\nWhat would you like to do with this user?", { has_pass ? "Change password" : "Register password", "View user", "Log off", "Cancel" }, true, os::GetIconCacheImagePath(uid));
         if(sopt == 0)
         {
             if(has_pass)
@@ -805,6 +799,18 @@ namespace ui
             }
         }
         else if(sopt == 1)
+        {
+            // Show myPage applet for user config
+            u8 in[0xb0] = {0};
+            *(u32*)in = 7; // Type -> ShowMyProfile
+            memcpy((u128*)(in + 0x8), &uid, sizeof(uid));
+
+            am::LibraryAppletQMenuLaunchAnd(AppletId_myPage, 1, in, sizeof(in), NULL, 0, [&]() -> bool
+            {
+                return !am::QMenuIsHomePressed();
+            });
+        }
+        else if(sopt == 2)
         {
             u32 logoff = 0;
             if(qapp->IsSuspended())
