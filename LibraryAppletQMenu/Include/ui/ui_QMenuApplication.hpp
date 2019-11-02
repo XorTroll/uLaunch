@@ -29,7 +29,8 @@ namespace ui
             u64 GetSuspendedApplicationId();
             void NotifyEndSuspended();
             bool LaunchFailed();
-            void ShowNotification(std::string text);
+            void ShowNotification(std::string text, u64 timeout = 1500);
+            bool IsFadeReady();
 
             template<typename T>
             T GetUIConfigValue(std::string name, T def)

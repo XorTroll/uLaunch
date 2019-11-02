@@ -134,26 +134,25 @@ namespace ui
 
     void MenuLayout::menu_Click(u64 down, u32 index)
     {
+        if(!qapp->IsFadeReady()) return;
+
         if((down & KEY_A) || (down & KEY_X) || (down & KEY_Y))
         {
-            if(index == 0)
+            if((index == 0) && this->homebrew_mode)
             {
                 if(down & KEY_A)
                 {
-                    if(this->homebrew_mode)
-                    {
-                        am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchHomebrewLibApplet);
-                        hb::TargetInput ipt = {};
-                        strcpy(ipt.nro_path, "sdmc:/hbmenu.nro"); // Launch normal hbmenu
-                        strcpy(ipt.argv, "sdmc:/hbmenu.nro");
-                        writer.Write<hb::TargetInput>(ipt);
-                        writer.FinishWrite();
+                    am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchHomebrewLibApplet);
+                    hb::TargetInput ipt = {};
+                    strcpy(ipt.nro_path, "sdmc:/hbmenu.nro"); // Launch normal hbmenu
+                    strcpy(ipt.argv, "sdmc:/hbmenu.nro");
+                    writer.Write<hb::TargetInput>(ipt);
+                    writer.FinishWrite();
 
-                        pu::audio::Play(this->sfxTitleLaunch);
-                        qapp->StopPlayBGM();
-                        qapp->CloseWithFadeOut();
-                        return;
-                    }
+                    pu::audio::Play(this->sfxTitleLaunch);
+                    qapp->StopPlayBGM();
+                    qapp->CloseWithFadeOut();
+                    return;
                 }
             }
             else
@@ -189,9 +188,26 @@ namespace ui
                 else
                 {
                     auto &folder = cfg::FindFolderByName(list, this->curfolder);
-                    if(realidx < folder.titles.size())
+                    s32 titleidx = realidx;
+                    if(this->curfolder.empty())
                     {
-                        auto title = folder.titles[realidx];
+                        if(realidx >= list.folders.size())
+                        {
+                            titleidx -= list.folders.size();
+                        }
+                        else
+                        {
+                            auto foldr = list.folders[realidx];
+                            if(down & KEY_A)
+                            {
+                                this->MoveFolder(foldr.name, true);
+                            }
+                            titleidx = -1;
+                        }
+                    }
+                    if(titleidx >= 0)
+                    {
+                        auto title = folder.titles[titleidx];
                         if(down & KEY_A)
                         {
                             if(!qapp->IsSuspended())
@@ -284,14 +300,6 @@ namespace ui
                             }
                         }
                     }
-                    else
-                    {
-                        auto foldr = list.folders[realidx - folder.titles.size()];
-                        if(down & KEY_A)
-                        {
-                            this->MoveFolder(foldr.name, true);
-                        }
-                    }
                 }
             }
         }
@@ -335,9 +343,28 @@ namespace ui
         else
         {
             auto &folder = cfg::FindFolderByName(list, this->curfolder);
-            if(realidx < folder.titles.size())
+            s32 titleidx = realidx;
+            if(this->curfolder.empty())
             {
-                auto title = folder.titles[realidx];
+                if(realidx >= list.folders.size())
+                {
+                    titleidx -= list.folders.size();
+                }
+                else
+                {
+                    auto foldr = list.folders[realidx];
+                    this->bannerImage->SetImage(cfg::ProcessedThemeResource(theme, "ui/BannerFolder.png"));
+                    auto sz = foldr.titles.size();
+                    this->itemAuthor->SetText(std::to_string(sz) + " " + ((sz == 1) ? "entry" : "entries"));
+                    this->itemVersion->SetVisible(false);
+                    this->itemName->SetText(foldr.name);
+                    titleidx = -1;
+                }
+                
+            }
+            if(titleidx >= 0)
+            {
+                auto title = folder.titles[titleidx];
                 auto info = cfg::GetRecordInformation(title);
                 auto lent = cfg::GetRecordInformationLanguageEntry(info);
                 if(lent != NULL)
@@ -354,14 +381,6 @@ namespace ui
                 else this->itemVersion->SetText("0");
                 if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew) this->bannerImage->SetImage(cfg::ProcessedThemeResource(theme, "ui/BannerHomebrew.png"));
                 else this->bannerImage->SetImage(cfg::ProcessedThemeResource(theme, "ui/BannerInstalled.png"));
-            }
-            else
-            {
-                auto foldr = list.folders[realidx - folder.titles.size()];
-                this->bannerImage->SetImage(cfg::ProcessedThemeResource(theme, "ui/BannerFolder.png"));
-                this->itemAuthor->SetText(std::to_string(foldr.titles.size()) + " entries");
-                this->itemVersion->SetVisible(false);
-                this->itemName->SetText(foldr.name);
             }
         }
         if(!this->curfolder.empty()) this->bannerImage->SetImage(cfg::ProcessedThemeResource(theme, "ui/BannerFolder.png")); // This way user always knows he's inside a folder
@@ -385,6 +404,14 @@ namespace ui
 
         this->itemsMenu->ClearItems();
         if(this->homebrew_mode) this->itemsMenu->AddItem(cfg::ProcessedThemeResource(theme, "ui/Hbmenu.png"));
+        else
+        {
+            if(name.empty())
+            {
+                STL_REMOVE_IF(list.folders, fldr, (fldr.titles.empty())) // Remove empty folders
+                for(auto folder: list.folders) this->itemsMenu->AddItem(cfg::ProcessedThemeResource(theme, "ui/Folder.png"));
+            }
+        }
 
         u32 tmpidx = 0;
         for(auto itm: itm_list)
@@ -403,18 +430,10 @@ namespace ui
             {
                 u32 suspidx = tmpidx;
                 if(this->homebrew_mode) suspidx++; // Skip initial item if homebrew mode
+                else if(name.empty()) suspidx += list.folders.size(); // Ignore front folders from main menu
                 this->itemsMenu->SetSuspendedItem(suspidx);
             }
             tmpidx++;
-        }
-
-        if(!this->homebrew_mode) // Only normal menu has folders
-        {
-            if(name.empty())
-            {
-                STL_REMOVE_IF(list.folders, fldr, (fldr.titles.empty())) // Remove empty folders
-                for(auto folder: list.folders) this->itemsMenu->AddItem(cfg::ProcessedThemeResource(theme, "ui/Folder.png"));
-            }
         }
 
         this->itemsMenu->UpdateBorderIcons();
@@ -612,6 +631,13 @@ namespace ui
             }
         }
 
+        auto &curfld = cfg::FindFolderByName(list, this->curfolder);
+        if(curfld.titles.empty())
+        {
+            this->MoveFolder("", true);
+            return false;
+        }
+
         return changedone;
     }
 
@@ -667,7 +693,7 @@ namespace ui
             else
             {
                 auto rc = reader.GetReadResult();
-                qapp->ShowNotification("An error ocurred attempting to launch the title:\n" + util::FormatResult(rc));
+                qapp->ShowNotification("An error ocurred attempting to launch the title: " + util::FormatResult(rc));
             }
             reader.FinishRead();
         }

@@ -134,11 +134,16 @@ namespace ui
         return (this->stmode == am::QMenuStartMode::MenuLaunchFailure);
     }
 
-    void QMenuApplication::ShowNotification(std::string text)
+    void QMenuApplication::ShowNotification(std::string text, u64 timeout)
     {
         this->EndOverlay();
         this->notifToast->SetText(text);
-        this->StartOverlayWithTimeout(this->notifToast, 1500);
+        this->StartOverlayWithTimeout(this->notifToast, timeout);
+    }
+
+    bool QMenuApplication::IsFadeReady()
+    {
+        return (this->fadea == 255);
     }
 
     void QMenuApplication::StartPlayBGM()
