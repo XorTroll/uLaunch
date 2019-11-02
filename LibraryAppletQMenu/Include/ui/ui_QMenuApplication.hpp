@@ -29,6 +29,7 @@ namespace ui
             u64 GetSuspendedApplicationId();
             void NotifyEndSuspended();
             bool LaunchFailed();
+            void ShowNotification(std::string text);
 
             template<typename T>
             T GetUIConfigValue(std::string name, T def)
@@ -81,6 +82,7 @@ namespace ui
             MenuLayout::Ref menuLayout;
             ThemeMenuLayout::Ref themeMenuLayout;
             SettingsMenuLayout::Ref settingsMenuLayout;
+            pu::ui::extras::Toast::Ref notifToast;
             am::QSuspendedInfo suspinfo;
             u128 selected_user;
             JSON uijson;

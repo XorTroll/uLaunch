@@ -180,12 +180,12 @@ namespace ui
                         auto sopt = qapp->CreateShowDialog("Add to menu", "Would you like to add this homebrew to the main menu?", { "Yes", "Cancel" }, true);
                         if(sopt == 0)
                         {
-                            if(cfg::ExistsRecord(list, hb)) qapp->CreateShowDialog("Add to menu", "The homebrew is already in the main menu.\nNothing was added nor removed.\n\nYou can remove it from main menu itself.", { "Ok" }, true);
+                            if(cfg::ExistsRecord(list, hb)) qapp->ShowNotification("The homebrew is already in the main menu. Nothing was added nor removed.");
                             else
                             {
                                 cfg::SaveRecord(hb);
                                 list.root.titles.push_back(hb);
-                                qapp->CreateShowDialog("Add to menu", "The homebrew was successfully added to the main menu.", { "Ok" }, true);
+                                qapp->ShowNotification("The homebrew was successfully added to the main menu.");
                             }
                         }
                     }
@@ -218,7 +218,7 @@ namespace ui
                                     else
                                     {
                                         auto rc = reader.GetReadResult();
-                                        qapp->CreateShowDialog("Title launch", "An error ocurred attempting to launch the title:\n" + util::FormatResult(rc), { "Ok" }, true);
+                                        qapp->ShowNotification("An error ocurred attempting to launch the title: " + util::FormatResult(rc));
                                     }
                                     reader.FinishRead();
                                 }
@@ -274,7 +274,7 @@ namespace ui
                                     {
                                         cfg::RemoveRecord(title);
                                         folder.titles.erase(folder.titles.begin() + realidx);
-                                        qapp->CreateShowDialog("Remove entry", "The entry was successfully removed.", { "Ok" }, true);
+                                        qapp->ShowNotification("The entry was successfully removed.");
                                         this->MoveFolder(this->curfolder, true);
                                     }
                                 }
@@ -570,7 +570,7 @@ namespace ui
 
     void MenuLayout::logo_Click()
     {
-        qapp->CreateShowDialog("About uLaunch", "uLaunch v" + std::string(Q_VERSION) + "\n\n - Custom, open source Nintendo Switch HOME menu reimplementation", { "Ok" }, true, "romfs:/Logo.png");
+        qapp->CreateShowDialog("About uLaunch", "uLaunch v" + std::string(Q_VERSION) + "\n\n - Custom, open source Nintendo Switch HOME menu reimplementation", { "Ok" }, true, "romfs:/LogoLarge.png");
     }
 
     void MenuLayout::settings_Click()
@@ -674,7 +674,7 @@ namespace ui
             else
             {
                 auto rc = reader.GetReadResult();
-                qapp->CreateShowDialog("Title launch", "An error ocurred attempting to launch the title:\n" + util::FormatResult(rc), { "Ok" }, true);
+                qapp->ShowNotification("An error ocurred attempting to launch the title:\n" + util::FormatResult(rc));
             }
             reader.FinishRead();
         }
@@ -744,7 +744,7 @@ namespace ui
                                             am::QMenuCommandResultReader reader;
                                             rc = reader.GetReadResult();
                                         }
-                                        qapp->CreateShowDialog("Change password", R_SUCCEEDED(rc) ? "The password was successfully changed." : "An error ocurred while attempting to change the password: " + util::FormatResult(rc), { "Ok" }, true);
+                                        qapp->ShowNotification(R_SUCCEEDED(rc) ? "The password was successfully changed." : "An error ocurred while attempting to change the password: " + util::FormatResult(rc));
                                     }
                                 }
                             }
@@ -760,7 +760,7 @@ namespace ui
                                     am::QMenuCommandResultReader reader;
                                     rc = reader.GetReadResult();
 
-                                    qapp->CreateShowDialog("Remove password", R_SUCCEEDED(rc) ? "The password was successfully removed." : "An error ocurred while attempting to remove the password: " + util::FormatResult(rc), { "Ok" }, true);
+                                    qapp->ShowNotification(R_SUCCEEDED(rc) ? "The password was successfully removed." : "An error ocurred while attempting to remove the password: " + util::FormatResult(rc));
                                 }
                             }
                         }
@@ -794,7 +794,7 @@ namespace ui
                             rc = reader.GetReadResult();
                         }
                     }
-                    qapp->CreateShowDialog("Register password", R_SUCCEEDED(rc) ? "The password was successfully registered." : "An error ocurred while attempting to register the password: " + util::FormatResult(rc), { "Ok" }, true);
+                    qapp->ShowNotification(R_SUCCEEDED(rc) ? "The password was successfully registered." : "An error ocurred while attempting to register the password: " + util::FormatResult(rc));
                 }
             }
         }

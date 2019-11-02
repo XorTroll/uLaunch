@@ -1,4 +1,4 @@
-# uLaunch
+<img width="200" src="LibraryAppletQMenu/RomFs/LogoLarge.png">
 
 > Custom, open-source replacement/reimplementation for Nintendo Switch's HOME Menu (qlaunch), extending it with amazing, homebrew-orienteed functionality!
 

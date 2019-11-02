@@ -80,7 +80,7 @@ namespace ui
             this->curThemeAuthor->SetVisible(true);
             this->curThemeAuthor->SetText(theme.base.manifest.author);
             this->curThemeVersion->SetVisible(true);
-            this->curThemeVersion->SetText(theme.base.manifest.release);
+            this->curThemeVersion->SetText("v" + theme.base.manifest.release);
             this->curThemeBanner->SetVisible(true);
             this->curThemeIcon->SetVisible(true);
             this->curThemeIcon->SetImage(theme.base.path + "/theme/Icon.png");
@@ -122,12 +122,16 @@ namespace ui
     {
         auto seltheme = this->loadedThemes[this->themesMenu->GetSelectedIndex()];
         auto iconpath = seltheme.path + "/theme/Icon.png";
-        auto sopt = qapp->CreateShowDialog("Set theme", "Would you like to set '" + seltheme.manifest.name + "' theme as uLaunch's theme?\nNote: changes require a reboot.", { "Yes", "Cancel" }, true, iconpath);
-        if(sopt == 0)
+        if(seltheme.base_name == theme.base.base_name) qapp->ShowNotification("This is theme is the currently active one.");
+        else
         {
-            config.theme_name = seltheme.base_name;
-            cfg::SaveConfig(config);
-            qapp->CreateShowDialog("Set theme", "uLaunch's theme was updated.", { "Ok" }, true);
+            auto sopt = qapp->CreateShowDialog("Set theme", "Would you like to set '" + seltheme.manifest.name + "' theme as uLaunch's theme?", { "Yes", "Cancel" }, true, iconpath);
+            if(sopt == 0)
+            {
+                config.theme_name = seltheme.base_name;
+                cfg::SaveConfig(config);
+                qapp->ShowNotification("uLaunch's theme was updated. Reboot in order to see changes.");
+            }
         }
     }
 }

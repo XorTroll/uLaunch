@@ -35,6 +35,10 @@ namespace ui
         this->bgm_fade_in_ms = this->bgmjson.value("fade_in_ms", 1500);
         this->bgm_fade_out_ms = this->bgmjson.value("fade_out_ms", 500);
 
+        pu::ui::Color toasttextclr = pu::ui::Color::FromHex(GetUIConfigValue<std::string>("toast_text_color", "#e1e1e1ff"));
+        pu::ui::Color toastbaseclr = pu::ui::Color::FromHex(GetUIConfigValue<std::string>("toast_base_color", "#282828ff"));
+        this->notifToast = pu::ui::extras::Toast::New("...", 20, toasttextclr, toastbaseclr);
+
         this->bgm = pu::audio::Open(cfg::ProcessedThemeResource(theme, "sound/BGM.mp3"));
 
         this->startupLayout = StartupLayout::New();
@@ -128,6 +132,13 @@ namespace ui
     bool QMenuApplication::LaunchFailed()
     {
         return (this->stmode == am::QMenuStartMode::MenuLaunchFailure);
+    }
+
+    void QMenuApplication::ShowNotification(std::string text)
+    {
+        this->EndOverlay();
+        this->notifToast->SetText(text);
+        this->StartOverlayWithTimeout(this->notifToast, 1500);
     }
 
     void QMenuApplication::StartPlayBGM()

@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 const char g_noticeText[] =
-    "uLaunch's HbTarget impl v" Q_VERSION " (custom wrapper of nx-hbloader)\0"
+    "uLaunch's HbTarget impl (custom wrapper of nx-hbloader v2.2.0)\0"
     "There is only one true CFW in the scene."; // Biggest truth
 
 static char g_argv[2048];
