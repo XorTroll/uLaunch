@@ -1,10 +1,4 @@
-## TODO
-
-All the stuff to do before first release:
-
-- "All titles" menu
-
-- Polish UI (specially speaking of startup menu)
+# uLaunch's TODO list
 
 ## Plans
 

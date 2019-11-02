@@ -16,6 +16,8 @@ namespace ui
         this->suspicon = pu::ui::render::LoadImage(SuspendedImagePath);
         this->onselect = [&](u32,u64){};
         this->onselch = [&](u32){};
+        this->scrolltpvalue = 50;
+        this->scrollcount = 0;
         this->SetY(y);
     }
 
@@ -195,10 +197,16 @@ namespace ui
                     if(this->scrollmoveflag)
                     {
                         auto diff2 = std::chrono::duration_cast<std::chrono::milliseconds>(curtp - this->scrollmovetp).count();
-                        if(diff2 >= 50)
+                        if(diff2 >= this->scrolltpvalue)
                         {
+                            if(this->scrollcount >= 5)
+                            {
+                                this->scrollcount = 0;
+                                this->scrolltpvalue /= 2;
+                            }
                             this->scrollmoveflag = false;
                             this->HandleMoveRight();
+                            this->scrollcount++;
                         }
                     }
                     else
@@ -214,7 +222,12 @@ namespace ui
                 this->scrolltp = std::chrono::steady_clock::now();
             }
         }
-        else this->scrollflag = 0;
+        else
+        {
+            this->scrollflag = 0;
+            this->scrollcount = 0;
+            this->scrolltpvalue = 50;
+        }
     }
 
     void SideMenu::SetOnItemSelected(std::function<void(u64, u32)> Fn)

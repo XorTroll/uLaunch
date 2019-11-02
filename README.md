@@ -172,4 +172,6 @@ If you get a crash using uLaunch, please check:
 
 - Switchbrew team for libnx and [hbloader](https://github.com/switchbrew/nx-hbloader), the base of *QHbTarget projects (they're some useful wrappers of hbloader in the end)
 
+- C4Phoenix for the amazing design of this project's logo.
+
 - [Icons8](https://icons8.com/) website for a big part of the icons used by the default style.

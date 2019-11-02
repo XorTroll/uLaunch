@@ -63,6 +63,8 @@ namespace ui
             bool scrollmoveflag;
             std::chrono::steady_clock::time_point scrollmovetp;
             u32 scrollflag;
+            u32 scrolltpvalue;
+            u32 scrollcount;
             bool IsLeftFirst();
             bool IsRightLast();
             void ReloadIcons(u32 Direction);

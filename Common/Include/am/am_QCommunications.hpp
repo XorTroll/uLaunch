@@ -17,7 +17,7 @@ namespace am
     enum class QMenuMessage
     {
         Invalid,
-        HomeRequest,
+        HomeRequest
     };
 
     enum class QDaemonMessage
@@ -36,7 +36,7 @@ namespace am
         TryLogUser,
         RegisterUserPassword,
         ChangeUserPassword,
-        RemoveUserPassword,
+        RemoveUserPassword
     };
 
     struct QSuspendedInfo

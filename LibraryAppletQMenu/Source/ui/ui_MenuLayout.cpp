@@ -93,9 +93,8 @@ namespace ui
         qapp->ApplyConfigForElement("main_menu", "firmware_text", this->fwText);
         this->Add(this->fwText);
 
-        this->menuToggle = ClickableImage::New(0, 200, cfg::ProcessedThemeResource(theme, "ui/ToggleClick.png"));
+        this->menuToggle = ClickableImage::New(520, 200, cfg::ProcessedThemeResource(theme, "ui/ToggleClick.png"));
         this->menuToggle->SetOnClick(std::bind(&MenuLayout::menuToggle_Click, this));
-        this->menuToggle->SetHorizontalAlign(pu::ui::elm::HorizontalAlign::Center);
         qapp->ApplyConfigForElement("main_menu", "menu_toggle_button", this->menuToggle);
         this->Add(this->menuToggle);
 
@@ -155,15 +154,12 @@ namespace ui
                         qapp->CloseWithFadeOut();
                         return;
                     }
-                    else
-                    {
-                        qapp->CreateShowDialog("All", "All titles...", {"Ok"}, true);
-                    }
                 }
             }
             else
             {
-                u32 realidx = index - 1;
+                u32 realidx = index;
+                if(this->homebrew_mode) realidx--;
                 if(this->homebrew_mode)
                 {
                     auto hb = homebrew[realidx];
@@ -305,11 +301,19 @@ namespace ui
     {
         this->itemAuthor->SetVisible(true);
         this->itemVersion->SetVisible(true);
-        if(index > 0)
+        u32 realidx = index;
+        if(this->homebrew_mode)
         {
-            u32 realidx = index - 1;
-            if(this->homebrew_mode)
+            if(index == 0)
             {
+                this->itemAuthor->SetVisible(false);
+                this->itemVersion->SetVisible(false);
+                this->bannerImage->SetImage(cfg::ProcessedThemeResource(theme, "ui/BannerHomebrew.png"));
+                this->itemName->SetText("Launch hbmenu");
+            }
+            else
+            {
+                realidx--;
                 auto hb = homebrew[realidx];
                 auto info = cfg::GetRecordInformation(hb);
                 auto lent = cfg::GetRecordInformationLanguageEntry(info);
@@ -327,55 +331,37 @@ namespace ui
                 else this->itemVersion->SetText("0");
                 this->bannerImage->SetImage(cfg::ProcessedThemeResource(theme, "ui/BannerHomebrew.png"));
             }
-            else
-            {
-                auto &folder = cfg::FindFolderByName(list, this->curfolder);
-                if(realidx < folder.titles.size())
-                {
-                    auto title = folder.titles[realidx];
-                    auto info = cfg::GetRecordInformation(title);
-                    auto lent = cfg::GetRecordInformationLanguageEntry(info);
-                    if(lent != NULL)
-                    {
-                        this->itemName->SetText(lent->name);
-                        this->itemAuthor->SetText(lent->author);
-                    }
-                    else
-                    {
-                        this->itemName->SetText("Unknown");
-                        this->itemAuthor->SetText("Unknown");
-                    }
-                    if(strlen(info.nacp.version)) this->itemVersion->SetText(info.nacp.version);
-                    else this->itemVersion->SetText("0");
-                    if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew) this->bannerImage->SetImage(cfg::ProcessedThemeResource(theme, "ui/BannerHomebrew.png"));
-                    else this->bannerImage->SetImage(cfg::ProcessedThemeResource(theme, "ui/BannerInstalled.png"));
-                }
-                else
-                {
-                    auto foldr = list.folders[realidx - folder.titles.size()];
-                    this->bannerImage->SetImage(cfg::ProcessedThemeResource(theme, "ui/BannerFolder.png"));
-                    this->itemAuthor->SetText(std::to_string(foldr.titles.size()) + " entries");
-                    this->itemVersion->SetVisible(false);
-                    this->itemName->SetText(foldr.name);
-                }
-            }
         }
         else
         {
-            this->itemAuthor->SetVisible(false);
-            this->itemVersion->SetVisible(false);
-            
-            if(this->homebrew_mode)
+            auto &folder = cfg::FindFolderByName(list, this->curfolder);
+            if(realidx < folder.titles.size())
             {
-                // Since it will launch hbmenu...
-                this->bannerImage->SetImage(cfg::ProcessedThemeResource(theme, "ui/BannerHomebrew.png"));
-                this->itemName->SetText("Launch hbmenu");
+                auto title = folder.titles[realidx];
+                auto info = cfg::GetRecordInformation(title);
+                auto lent = cfg::GetRecordInformationLanguageEntry(info);
+                if(lent != NULL)
+                {
+                    this->itemName->SetText(lent->name);
+                    this->itemAuthor->SetText(lent->author);
+                }
+                else
+                {
+                    this->itemName->SetText("Unknown");
+                    this->itemAuthor->SetText("Unknown");
+                }
+                if(strlen(info.nacp.version)) this->itemVersion->SetText(info.nacp.version);
+                else this->itemVersion->SetText("0");
+                if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew) this->bannerImage->SetImage(cfg::ProcessedThemeResource(theme, "ui/BannerHomebrew.png"));
+                else this->bannerImage->SetImage(cfg::ProcessedThemeResource(theme, "ui/BannerInstalled.png"));
             }
             else
             {
-                // Since it will show "all titles"...
-                this->bannerImage->SetImage(cfg::ProcessedThemeResource(theme, "ui/BannerInstalled.png"));
-                this->itemName->SetText("Show all titles");
+                auto foldr = list.folders[realidx - folder.titles.size()];
+                this->bannerImage->SetImage(cfg::ProcessedThemeResource(theme, "ui/BannerFolder.png"));
+                this->itemAuthor->SetText(std::to_string(foldr.titles.size()) + " entries");
+                this->itemVersion->SetVisible(false);
+                this->itemName->SetText(foldr.name);
             }
         }
         if(!this->curfolder.empty()) this->bannerImage->SetImage(cfg::ProcessedThemeResource(theme, "ui/BannerFolder.png")); // This way user always knows he's inside a folder
@@ -398,22 +384,27 @@ namespace ui
         }
 
         this->itemsMenu->ClearItems();
-        auto initial_itm = cfg::ProcessedThemeResource(theme, "ui/AllTitles.png");
-        if(this->homebrew_mode) initial_itm = cfg::ProcessedThemeResource(theme, "ui/Hbmenu.png");
-        this->itemsMenu->AddItem(initial_itm);
+        if(this->homebrew_mode) this->itemsMenu->AddItem(cfg::ProcessedThemeResource(theme, "ui/Hbmenu.png"));
 
         u32 tmpidx = 0;
         for(auto itm: itm_list)
         {
+            bool set_susp = false;
             if((cfg::TitleType)itm.title_type == cfg::TitleType::Installed)
             {
-                if(qapp->IsTitleSuspended()) if(qapp->GetSuspendedApplicationId() == itm.app_id) this->itemsMenu->SetSuspendedItem(tmpidx + 1); // Skip initial item
+                if(qapp->IsTitleSuspended()) if(qapp->GetSuspendedApplicationId() == itm.app_id) set_susp = true;
             }
             else
             {
-                if(qapp->IsHomebrewSuspended()) if(qapp->GetSuspendedHomebrewPath() == std::string(itm.nro_target.nro_path)) this->itemsMenu->SetSuspendedItem(tmpidx + 1); // Skip initial item
+                if(qapp->IsHomebrewSuspended()) if(qapp->GetSuspendedHomebrewPath() == std::string(itm.nro_target.nro_path)) set_susp = true;
             }
             this->itemsMenu->AddItem(cfg::GetRecordIconPath(itm));
+            if(set_susp)
+            {
+                u32 suspidx = tmpidx;
+                if(this->homebrew_mode) suspidx++; // Skip initial item if homebrew mode
+                this->itemsMenu->SetSuspendedItem(suspidx);
+            }
             tmpidx++;
         }
 
@@ -547,7 +538,8 @@ namespace ui
         {
             if(!this->curfolder.empty()) this->MoveFolder("", true);
         }
-        else if(down & KEY_UP) this->menuToggle_Click();
+        else if(down & KEY_PLUS) this->logo_Click();
+        else if(down & KEY_MINUS) this->menuToggle_Click();
         else if(down & KEY_ZL) this->HandleUserMenu();
         else if(down & KEY_L) this->HandleWebPageOpen();
         else if(down & KEY_R) this->HandleSettingsMenu();
@@ -570,7 +562,8 @@ namespace ui
 
     void MenuLayout::logo_Click()
     {
-        qapp->CreateShowDialog("About uLaunch", "uLaunch v" + std::string(Q_VERSION) + "\n\n - Custom, open source Nintendo Switch HOME menu reimplementation", { "Ok" }, true, "romfs:/LogoLarge.png");
+        qapp->CreateShowDialog("About uLaunch", "uLaunch v" + std::string(Q_VERSION) + "\n\nuLaunch is a custom, open source Nintendo Switch HOME menu reimplementation.\nIt's the rewrite and evolution of eQlipse project.\n\nIn order to contribute, suggest ideas or report issues, check uLaunch's GitHub repository:\nhttps://github.com/XorTroll/uLaunch", { "Ok" }, true, "romfs:/LogoLarge.png");
+        qapp->ShowNotification("(-) -> Swap the menu  |  (X) -> Close suspended item | (Y) -> Move the selected item | (L), (R), (ZL), (ZR) -> Open top menus");
     }
 
     void MenuLayout::settings_Click()
