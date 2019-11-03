@@ -160,7 +160,25 @@ namespace ui
                 if(this->homebrew_mode)
                 {
                     auto hb = homebrew[realidx];
-                    if(down & KEY_A) this->HandleHomebrewLaunch(hb);
+                    if(down & KEY_A)
+                    {
+                        bool hblaunch = true;
+                        if(qapp->IsHomebrewSuspended())
+                        {
+                            if(std::string(hb.nro_target.nro_path) == qapp->GetSuspendedHomebrewPath())
+                            {
+                                if(this->mode == 1) this->mode = 2;
+                                hblaunch = false;
+                            }
+                            else
+                            {
+                                hblaunch = false;
+                                this->HandleCloseSuspended();
+                                hblaunch = !qapp->IsHomebrewSuspended();
+                            }
+                        }
+                        if(hblaunch) this->HandleHomebrewLaunch(hb);
+                    }
                     else if(down & KEY_X)
                     {
                         if(qapp->IsSuspended())
@@ -208,7 +226,34 @@ namespace ui
                         auto title = folder.titles[titleidx];
                         if(down & KEY_A)
                         {
-                            if(!qapp->IsSuspended())
+                            bool titlelaunch = true;
+
+                            if(qapp->IsSuspended())
+                            {
+                                if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew)
+                                {
+                                    if(std::string(title.nro_target.nro_path) == qapp->GetSuspendedHomebrewPath())
+                                    {
+                                        if(this->mode == 1) this->mode = 2;
+                                        titlelaunch = false;
+                                    }
+                                }
+                                else if((cfg::TitleType)title.title_type == cfg::TitleType::Installed)
+                                {
+                                    if(title.app_id == qapp->GetSuspendedApplicationId())
+                                    {
+                                        if(this->mode == 1) this->mode = 2;
+                                        titlelaunch = false;
+                                    }
+                                }
+                                if(titlelaunch)
+                                {
+                                    titlelaunch = false;
+                                    this->HandleCloseSuspended();
+                                    titlelaunch = !qapp->IsSuspended();
+                                }
+                            }
+                            if(titlelaunch)
                             {
                                 if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew) this->HandleHomebrewLaunch(title);
                                 else
@@ -231,23 +276,6 @@ namespace ui
                                         qapp->ShowNotification("An error ocurred attempting to launch the title: " + util::FormatResult(rc));
                                     }
                                     reader.FinishRead();
-                                }
-                            }
-                            else
-                            {
-                                if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew)
-                                {
-                                    if(std::string(title.nro_target.nro_path) == qapp->GetSuspendedHomebrewPath())
-                                    {
-                                        if(this->mode == 1) this->mode = 2;
-                                    }
-                                }
-                                else
-                                {
-                                    if(title.app_id == qapp->GetSuspendedApplicationId())
-                                    {
-                                        if(this->mode == 1) this->mode = 2;
-                                    }
                                 }
                             }
                         }
@@ -676,24 +704,34 @@ namespace ui
         }
         else if(launchmode == 2)
         {
-            am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchHomebrewApplication);
-            writer.Write<hb::TargetInput>(rec.nro_target);
-            writer.FinishWrite();
+            bool launch = true;
+            if(qapp->IsSuspended())
+            {
+                launch = false;
+                this->HandleCloseSuspended();
+                if(!qapp->IsSuspended()) launch = true;
+            }
+            if(launch)
+            {
+                am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchHomebrewApplication);
+                writer.Write<hb::TargetInput>(rec.nro_target);
+                writer.FinishWrite();
 
-            am::QMenuCommandResultReader reader;
-            if(reader && R_SUCCEEDED(reader.GetReadResult()))
-            {
-                pu::audio::Play(this->sfxTitleLaunch);
-                qapp->StopPlayBGM();
-                qapp->CloseWithFadeOut();
-                return;
+                am::QMenuCommandResultReader reader;
+                if(reader && R_SUCCEEDED(reader.GetReadResult()))
+                {
+                    pu::audio::Play(this->sfxTitleLaunch);
+                    qapp->StopPlayBGM();
+                    qapp->CloseWithFadeOut();
+                    return;
+                }
+                else
+                {
+                    auto rc = reader.GetReadResult();
+                    qapp->ShowNotification("An error ocurred attempting to launch the title: " + util::FormatResult(rc));
+                }
+                reader.FinishRead();
             }
-            else
-            {
-                auto rc = reader.GetReadResult();
-                qapp->ShowNotification("An error ocurred attempting to launch the title: " + util::FormatResult(rc));
-            }
-            reader.FinishRead();
         }
     }
 
