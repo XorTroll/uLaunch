@@ -22,12 +22,6 @@ namespace ui
         qapp->ApplyConfigForElement("themes_menu", "banner_image", this->curThemeBanner);
         this->Add(this->curThemeBanner);
 
-        this->noThemesText = pu::ui::elm::TextBlock::New(0, 0, "You don't seem to have any themes. Go download some!");
-        this->noThemesText->SetColor(textclr);
-        this->noThemesText->SetHorizontalAlign(pu::ui::elm::HorizontalAlign::Center);
-        this->noThemesText->SetVerticalAlign(pu::ui::elm::VerticalAlign::Center);
-        this->Add(this->noThemesText);
-
         this->themesMenu = pu::ui::elm::Menu::New(200, 60, 880, menubgclr, 100, 5);
         this->themesMenu->SetOnFocusColor(menufocusclr);
         qapp->ApplyConfigForElement("themes_menu", "themes_menu_item", this->themesMenu);
@@ -92,19 +86,21 @@ namespace ui
 
         this->loadedThemes.clear();
         this->loadedThemes = cfg::LoadThemes();
-        this->noThemesText->SetVisible(this->loadedThemes.empty());
-        this->themesMenu->SetVisible(!this->loadedThemes.empty());
-        if(this->themesMenu->IsVisible())
+
+        auto ditm = pu::ui::elm::MenuItem::New("Reset themes (default theme)");
+        ditm->AddOnClick(std::bind(&ThemeMenuLayout::theme_Click, this));
+        ditm->SetColor(textclr);
+        ditm->SetIcon("romfs:/Logo.png");
+        this->themesMenu->AddItem(ditm);
+        
+        for(auto &ltheme: this->loadedThemes)
         {
-            for(auto &ltheme: this->loadedThemes)
-            {
-                auto itm = pu::ui::elm::MenuItem::New(ltheme.manifest.name + " (v" + ltheme.manifest.release + ", by " + ltheme.manifest.author + ")");
-                itm->AddOnClick(std::bind(&ThemeMenuLayout::theme_Click, this));
-                itm->SetColor(textclr);
-                auto iconpath = ltheme.path + "/theme/Icon.png";
-                itm->SetIcon(iconpath);
-                this->themesMenu->AddItem(itm);
-            }
+            auto itm = pu::ui::elm::MenuItem::New(ltheme.manifest.name + " (v" + ltheme.manifest.release + ", by " + ltheme.manifest.author + ")");
+            itm->AddOnClick(std::bind(&ThemeMenuLayout::theme_Click, this));
+            itm->SetColor(textclr);
+            auto iconpath = ltheme.path + "/theme/Icon.png";
+            itm->SetIcon(iconpath);
+            this->themesMenu->AddItem(itm);
         }
     }
 
@@ -122,17 +118,36 @@ namespace ui
 
     void ThemeMenuLayout::theme_Click()
     {
-        auto seltheme = this->loadedThemes[this->themesMenu->GetSelectedIndex()];
-        auto iconpath = seltheme.path + "/theme/Icon.png";
-        if(seltheme.base_name == theme.base.base_name) qapp->ShowNotification("This is theme is the currently active one.");
+        auto idx = this->themesMenu->GetSelectedIndex();
+        if(idx == 0)
+        {
+            if(theme.base.base_name.empty()) qapp->ShowNotification("You don't have any active theme.");
+            else
+            {
+                auto sopt = qapp->CreateShowDialog("Set theme", "Would you like to reset and return to uLaunch's default theme?", { "Yes", "Cancel" }, true);
+                if(sopt == 0)
+                {
+                    config.theme_name = "";
+                    cfg::SaveConfig(config);
+                    qapp->ShowNotification("uLaunch's theme was resetted. Reboot in order to see changes.");
+                }
+            }
+        }
         else
         {
-            auto sopt = qapp->CreateShowDialog("Set theme", "Would you like to set '" + seltheme.manifest.name + "' theme as uLaunch's theme?", { "Yes", "Cancel" }, true, iconpath);
-            if(sopt == 0)
+            idx--;
+            auto seltheme = this->loadedThemes[idx];
+            auto iconpath = seltheme.path + "/theme/Icon.png";
+            if(seltheme.base_name == theme.base.base_name) qapp->ShowNotification("This is theme is the currently active one.");
+            else
             {
-                config.theme_name = seltheme.base_name;
-                cfg::SaveConfig(config);
-                qapp->ShowNotification("uLaunch's theme was updated. Reboot in order to see changes.");
+                auto sopt = qapp->CreateShowDialog("Set theme", "Would you like to set '" + seltheme.manifest.name + "' theme as uLaunch's theme?", { "Yes", "Cancel" }, true, iconpath);
+                if(sopt == 0)
+                {
+                    config.theme_name = seltheme.base_name;
+                    cfg::SaveConfig(config);
+                    qapp->ShowNotification("uLaunch's theme was updated. Reboot in order to see changes.");
+                }
             }
         }
     }

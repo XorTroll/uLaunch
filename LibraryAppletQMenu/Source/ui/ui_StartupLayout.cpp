@@ -18,7 +18,7 @@ namespace ui
         pu::ui::Color menufocusclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("menu_focus_color", "#5ebcffff"));
         pu::ui::Color menubgclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("menu_bg_color", "#0094ffff"));
 
-        this->infoText = pu::ui::elm::TextBlock::New(25, 645, "Welcome! Please select an account to use.\nPress (+) anytime (in main menu) for input/controls' information.");
+        this->infoText = pu::ui::elm::TextBlock::New(35, 635, "Welcome! Please select an account to use.\nPress (+) anytime (in main menu) for input/controls' information.");
         this->infoText->SetColor(textclr);
         qapp->ApplyConfigForElement("startup_menu", "info_text", this->infoText);
         this->Add(this->infoText);

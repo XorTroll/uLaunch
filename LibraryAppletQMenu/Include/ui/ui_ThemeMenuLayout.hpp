@@ -15,7 +15,6 @@ namespace ui
             void Reload();
             void theme_Click();
         private:
-            pu::ui::elm::TextBlock::Ref noThemesText;
             pu::ui::elm::Menu::Ref themesMenu;
             pu::ui::elm::TextBlock::Ref curThemeText;
             pu::ui::elm::TextBlock::Ref curThemeName;
