@@ -100,7 +100,7 @@ namespace ui
             {
                 SwkbdConfig swkbd;
                 swkbdCreate(&swkbd, 0);
-                swkbdConfigSetHeaderText(&swkbd, "Enter new console nickname");
+                swkbdConfigSetGuideText(&swkbd, "Enter new console nickname");
                 char consolename[SET_MAX_NICKNAME_SIZE] = {};
                 setsysGetDeviceNickname(consolename);
                 swkbdConfigSetInitialText(&swkbd, consolename);

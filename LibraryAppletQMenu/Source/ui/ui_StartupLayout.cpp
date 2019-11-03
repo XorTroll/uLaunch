@@ -52,8 +52,7 @@ namespace ui
             swkbdCreate(&swkbd, 0);
             swkbdConfigMakePresetPassword(&swkbd);
             swkbdConfigSetStringLenMax(&swkbd, 15);
-            swkbdConfigSetGuideText(&swkbd, "User password");
-            swkbdConfigSetHeaderText(&swkbd, "Input user password");
+            swkbdConfigSetGuideText(&swkbd, "Enter user password");
             char inpass[0x10] = {0};
             auto rc = swkbdShow(&swkbd, inpass, 0x10);
             swkbdClose(&swkbd);

@@ -639,7 +639,7 @@ namespace ui
         {
             SwkbdConfig swkbd;
             swkbdCreate(&swkbd, 0);
-            swkbdConfigSetHeaderText(&swkbd, "Enter directory name");
+            swkbdConfigSetGuideText(&swkbd, "Enter directory name");
             char dir[500] = {0};
             auto rc = swkbdShow(&swkbd, dir, 500);
             swkbdClose(&swkbd);
@@ -693,8 +693,13 @@ namespace ui
         else launchmode = 1;
         if(launchmode == 1)
         {
+            hb::TargetInput ipt = {};
+            strcpy(ipt.nro_path, rec.nro_target.nro_path);
+            strcpy(ipt.argv, rec.nro_target.nro_path);
+            if(strlen(rec.nro_target.argv)) sprintf(ipt.argv, "%s %s", rec.nro_target.nro_path, rec.nro_target.argv);
+
             am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchHomebrewLibApplet);
-            writer.Write<hb::TargetInput>(rec.nro_target);
+            writer.Write<hb::TargetInput>(ipt);
             writer.FinishWrite();
 
             pu::audio::Play(this->sfxTitleLaunch);
@@ -713,8 +718,13 @@ namespace ui
             }
             if(launch)
             {
+                hb::TargetInput ipt = {};
+                strcpy(ipt.nro_path, rec.nro_target.nro_path);
+                strcpy(ipt.argv, rec.nro_target.nro_path);
+                if(strlen(rec.nro_target.argv)) sprintf(ipt.argv, "%s %s", rec.nro_target.nro_path, rec.nro_target.argv);
+
                 am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchHomebrewApplication);
-                writer.Write<hb::TargetInput>(rec.nro_target);
+                writer.Write<hb::TargetInput>(ipt);
                 writer.FinishWrite();
 
                 am::QMenuCommandResultReader reader;
@@ -761,8 +771,7 @@ namespace ui
                     swkbdCreate(&swkbd, 0);
                     swkbdConfigMakePresetPassword(&swkbd);
                     swkbdConfigSetStringLenMax(&swkbd, 15);
-                    swkbdConfigSetGuideText(&swkbd, "User password");
-                    swkbdConfigSetHeaderText(&swkbd, "Input user password");
+                    swkbdConfigSetGuideText(&swkbd, "Enter user password");
                     char inpass[0x10] = {0};
                     auto rc = swkbdShow(&swkbd, inpass, 0x10);
                     swkbdClose(&swkbd);
@@ -778,7 +787,7 @@ namespace ui
                                 swkbdCreate(&swkbd, 0);
                                 swkbdConfigMakePresetPassword(&swkbd);
                                 swkbdConfigSetStringLenMax(&swkbd, 15);
-                                swkbdConfigSetHeaderText(&swkbd, "Enter new password");
+                                swkbdConfigSetGuideText(&swkbd, "Enter new password");
                                 char pass[0x10] = {0};
                                 auto rc = swkbdShow(&swkbd, pass, 0x10);
                                 swkbdClose(&swkbd);
@@ -828,7 +837,7 @@ namespace ui
                 swkbdCreate(&swkbd, 0);
                 swkbdConfigMakePresetPassword(&swkbd);
                 swkbdConfigSetStringLenMax(&swkbd, 15);
-                swkbdConfigSetHeaderText(&swkbd, "Enter password");
+                swkbdConfigSetGuideText(&swkbd, "Enter password");
                 char pass[0x10] = {0};
                 auto rc = swkbdShow(&swkbd, pass, 0x10);
                 swkbdClose(&swkbd);
@@ -898,7 +907,7 @@ namespace ui
     {
         SwkbdConfig swkbd;
         swkbdCreate(&swkbd, 0);
-        swkbdConfigSetHeaderText(&swkbd, "Enter web page URL");
+        swkbdConfigSetGuideText(&swkbd, "Enter web page URL");
         char url[500] = {0};
         auto rc = swkbdShow(&swkbd, url, 500);
         swkbdClose(&swkbd);

@@ -16,19 +16,20 @@ namespace cfg
         {
             fseek(f, sizeof(NroStart), SEEK_SET);
             NroHeader hdr = {};
-            if(fread(&hdr, 1, sizeof(NroHeader), f) == sizeof(NroHeader))
+            if(fread(&hdr, sizeof(NroHeader), 1, f) == 1)
             {
                 fseek(f, hdr.size, SEEK_SET);
                 NroAssetHeader ahdr = {};
-                if(fread(&ahdr, 1, sizeof(NroAssetHeader), f) == sizeof(NroAssetHeader))
+                if(fread(&ahdr, sizeof(NroAssetHeader), 1, f) == 1)
                 {
                     if(ahdr.magic == NROASSETHEADER_MAGIC)
                     {
-                        if(ahdr.icon.size > 0)
+                        if((ahdr.icon.offset > 0) && (ahdr.icon.size > 0))
                         {
                             u8 *iconbuf = new u8[ahdr.icon.size]();
                             fseek(f, hdr.size + ahdr.icon.offset, SEEK_SET);
-                            if(fread(iconbuf, 1, ahdr.icon.size, f) == ahdr.icon.size) fs::WriteFile(nroimg, iconbuf, ahdr.icon.size, true);
+                            fread(iconbuf, ahdr.icon.size, 1, f);
+                            fs::WriteFile(nroimg, iconbuf, ahdr.icon.size, true);
                             delete[] iconbuf;
                         }
                     }
@@ -626,11 +627,9 @@ namespace cfg
                         rec.author = entry.value("author", "");
                         rec.version = entry.value("version", "");
 
-                        std::string argv = nropath;
-                        auto tmpargv = entry.value("nro_argv", "");
-                        if(!tmpargv.empty()) argv += " " + tmpargv;
+                        std::string argv = entry.value("nro_argv", "");
                         strcpy(rec.nro_target.nro_path, nropath.c_str());
-                        strcpy(rec.nro_target.argv, argv.c_str());
+                        if(!argv.empty()) strcpy(rec.nro_target.argv, argv.c_str());
                         std::string folder = entry.value("folder", "");
                         rec.sub_folder = folder;
                         rec.icon = entry.value("icon", "");
@@ -664,7 +663,15 @@ namespace cfg
 
     std::string GetNROCacheIconPath(std::string path)
     {
-        auto fsz = fs::GetFileSize(path);
-        return Q_BASE_SD_DIR "/nro/" + std::to_string(fsz) + ".jpg";
+        char pathcopy[FS_MAX_PATH] = {0};
+        strcpy(pathcopy, path.c_str());
+        char hash[0x20] = {0};
+        sha256CalculateHash(hash, pathcopy, FS_MAX_PATH);
+        std::string out = Q_BASE_SD_DIR "/nro/";
+        std::stringstream strm;
+        strm << out;
+        for(u32 i = 0; i < 0x10; i++) strm << std::setw(2) << std::setfill('0') << std::hex << std::nouppercase << (int)hash[i];
+        strm << ".jpg";
+        return strm.str();
     }
 }
