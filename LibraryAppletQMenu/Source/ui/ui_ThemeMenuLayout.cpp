@@ -28,7 +28,7 @@ namespace ui
         this->noThemesText->SetVerticalAlign(pu::ui::elm::VerticalAlign::Center);
         this->Add(this->noThemesText);
 
-        this->themesMenu = pu::ui::elm::Menu::New(200, 160, 880, menubgclr, 100, 4);
+        this->themesMenu = pu::ui::elm::Menu::New(200, 60, 880, menubgclr, 100, 5);
         this->themesMenu->SetOnFocusColor(menufocusclr);
         qapp->ApplyConfigForElement("themes_menu", "themes_menu_item", this->themesMenu);
         this->Add(this->themesMenu);
@@ -88,6 +88,8 @@ namespace ui
             this->curThemeIcon->SetHeight(100);
         }
         this->themesMenu->ClearItems();
+        this->themesMenu->SetSelectedIndex(0);
+
         this->loadedThemes.clear();
         this->loadedThemes = cfg::LoadThemes();
         this->noThemesText->SetVisible(this->loadedThemes.empty());

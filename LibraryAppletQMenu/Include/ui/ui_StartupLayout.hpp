@@ -12,10 +12,12 @@ namespace ui
         public:
             StartupLayout();
             PU_SMART_CTOR(StartupLayout)
+            void OnInput(u64 down, u64 up, u64 held, pu::ui::Touch pos);
             void user_Click(u128 uid, bool has_password);
             void create_Click();
             void ReloadMenu();
         private:
+            bool loadmenu;
             pu::ui::elm::TextBlock::Ref infoText;
             pu::ui::elm::Menu::Ref usersMenu;
     };

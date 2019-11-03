@@ -139,8 +139,6 @@ Can be customized via files in `/ui`.
 
 ## Main menu
 
-- `ui/AllTitles.png` -> 256x256 PNG for the "all titles" entry in the main menu.
-
 - `ui/Folder.png` -> 256x256 PNG for folders in the main menu.
 
 - `ui/Cursor.png` -> 296x296 PNG for the cursor pointing at items in the main menu.

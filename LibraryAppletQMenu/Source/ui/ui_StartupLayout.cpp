@@ -12,21 +12,35 @@ namespace ui
     StartupLayout::StartupLayout()
     {
         this->SetBackgroundImage(cfg::ProcessedThemeResource(theme, "ui/Background.png"));
+        this->loadmenu = false;
 
         pu::ui::Color textclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
         pu::ui::Color menufocusclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("menu_focus_color", "#5ebcffff"));
         pu::ui::Color menubgclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("menu_bg_color", "#0094ffff"));
 
-        this->infoText = pu::ui::elm::TextBlock::New(0, 100, "Welcome! Please select an account to use.");
+        this->infoText = pu::ui::elm::TextBlock::New(25, 645, "Welcome! Please select an account to use.\nPress (+) anytime (in main menu) for input/controls' information.");
         this->infoText->SetColor(textclr);
-        this->infoText->SetHorizontalAlign(pu::ui::elm::HorizontalAlign::Center);
         qapp->ApplyConfigForElement("startup_menu", "info_text", this->infoText);
         this->Add(this->infoText);
 
-        this->usersMenu = pu::ui::elm::Menu::New(400, 160, 480, menubgclr, 100, 4);
+        this->usersMenu = pu::ui::elm::Menu::New(200, 60, 880, menubgclr, 100, 5);
         this->usersMenu->SetOnFocusColor(menufocusclr);
         qapp->ApplyConfigForElement("startup_menu", "users_menu_item", this->usersMenu);
         this->Add(this->usersMenu);
+
+        this->SetOnInput(std::bind(&StartupLayout::OnInput, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+    }
+
+    void StartupLayout::OnInput(u64 down, u64 up, u64 held, pu::ui::Touch pos)
+    {
+        if(this->loadmenu)
+        {
+            this->loadmenu = false;
+            qapp->StartPlayBGM();
+            qapp->FadeOut();
+            qapp->LoadMenu();
+            qapp->FadeIn();
+        }
     }
 
     void StartupLayout::user_Click(u128 uid, bool has_password)
@@ -63,14 +77,8 @@ namespace ui
             }
         }
         else login_ok = true;
-        if(login_ok)
-        {
-            qapp->FadeOut();
-            qapp->SetSelectedUser(uid);
-            qapp->LoadMenu();
-            qapp->StartPlayBGM();
-            qapp->FadeIn();
-        }
+        this->loadmenu = login_ok;
+        if(login_ok) qapp->SetSelectedUser(uid);
     }
 
     void StartupLayout::create_Click()
@@ -96,6 +104,7 @@ namespace ui
     void StartupLayout::ReloadMenu()
     {
         this->usersMenu->ClearItems();
+        this->usersMenu->SetSelectedIndex(0);
 
         pu::ui::Color textclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
         

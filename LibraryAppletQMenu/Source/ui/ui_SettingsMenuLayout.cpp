@@ -62,6 +62,7 @@ namespace ui
     {
         this->settingsMenu->ClearItems();
         this->settingsMenu->SetSelectedIndex(0);
+        
         char consolename[SET_MAX_NICKNAME_SIZE] = {};
         setsysGetDeviceNickname(consolename);
         this->PushSettingItem("Console nickname", EncodeForSettings<std::string>(consolename), 0);

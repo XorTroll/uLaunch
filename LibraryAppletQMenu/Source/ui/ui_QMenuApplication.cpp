@@ -141,11 +141,6 @@ namespace ui
         this->StartOverlayWithTimeout(this->notifToast, timeout);
     }
 
-    bool QMenuApplication::IsFadeReady()
-    {
-        return (this->fadea == 255);
-    }
-
     void QMenuApplication::StartPlayBGM()
     {
         if(this->bgm != NULL)

@@ -617,7 +617,7 @@ namespace cfg
                 else if(type == TitleType::Homebrew)
                 {
                     std::string nropath = entry.value("nro_path", "");
-                    if(!nropath.empty())
+                    if(!nropath.empty() && fs::ExistsFile(nropath))
                     {
                         TitleRecord rec = {};
                         rec.json_name = name;

@@ -134,8 +134,6 @@ namespace ui
 
     void MenuLayout::menu_Click(u64 down, u32 index)
     {
-        if(!qapp->IsFadeReady()) return;
-
         if((down & KEY_A) || (down & KEY_X) || (down & KEY_Y))
         {
             if((index == 0) && this->homebrew_mode)
@@ -582,7 +580,7 @@ namespace ui
     void MenuLayout::logo_Click()
     {
         qapp->CreateShowDialog("About uLaunch", "uLaunch v" + std::string(Q_VERSION) + "\n\nuLaunch is a custom, open source Nintendo Switch HOME menu reimplementation.\nIt's the rewrite and evolution of eQlipse project.\n\nIn order to contribute, suggest ideas or report issues, check uLaunch's GitHub repository:\nhttps://github.com/XorTroll/uLaunch", { "Ok" }, true, "romfs:/LogoLarge.png");
-        qapp->ShowNotification("(-) -> Swap the menu  |  (X) -> Close suspended item | (Y) -> Move the selected item | (L), (R), (ZL), (ZR) -> Open top menus");
+        qapp->ShowNotification("(-) -> Swap the menu  |  (X) -> Close suspended item | (Y) -> Move the selected item | (L), (R), (ZL), (ZR) -> Open top menus", 3500);
     }
 
     void MenuLayout::settings_Click()
@@ -713,7 +711,7 @@ namespace ui
         bool has_pass = R_SUCCEEDED(res.GetReadResult());
 
         auto [_rc, name] = os::GetAccountName(uid);
-        auto sopt = qapp->CreateShowDialog("User settings", "Selected user: " + name + "\nWhat would you like to do with this user?", { has_pass ? "Change password" : "Register password", "View user", "Log off", "Cancel" }, true, os::GetIconCacheImagePath(uid));
+        auto sopt = qapp->CreateShowDialog("User settings", "Selected user: " + name + "\nWhat would you like to do with this user?", { has_pass ? "Change password" : "Register password", "View user page", "Log off", "Cancel" }, true, os::GetIconCacheImagePath(uid));
         if(sopt == 0)
         {
             if(has_pass)
