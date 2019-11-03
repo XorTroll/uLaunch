@@ -155,7 +155,11 @@ namespace ui
                 break;
             }
         }
-        if(reload_need) this->Reload();
+        if(reload_need)
+        {
+            cfg::SaveConfig(config);
+            this->Reload();
+        }
     }
 
     void SettingsMenuLayout::OnInput(u64 down, u64 up, u64 held, pu::ui::Touch pos)

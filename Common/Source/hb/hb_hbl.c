@@ -87,12 +87,6 @@ void __appInit(void)
     fsdevMountSdmc();
 }
 
-void __wrap_exit(void)
-{
-    // exit() effectively never gets called, so let's stub it out.
-    fatalSimple(MAKERESULT(Module_HomebrewLoader, 39));
-}
-
 static void*  g_heapAddr;
 static size_t g_heapSize;
 

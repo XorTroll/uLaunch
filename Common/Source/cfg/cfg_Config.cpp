@@ -559,14 +559,6 @@ namespace cfg
         
         // Installed titles first
         auto [rc, titles] = os::QueryInstalledTitles(cache);
-        if(R_SUCCEEDED(rc))
-        {
-            for(auto &title: titles)
-            {
-                list.root.titles.push_back(title);
-            }
-        }
-        else return MakeResultWith(rc, list);
 
         FS_FOR(std::string(Q_ENTRIES_PATH), name, path,
         {
@@ -593,10 +585,10 @@ namespace cfg
                                 rec.author = entry.value("author", "");
                                 rec.version = entry.value("version", "");
 
-                                auto find = STL_FIND_IF(list.root.titles, tit, (tit.app_id == appid));
-                                if(STL_FOUND(list.root.titles, find))
+                                auto find = STL_FIND_IF(titles, tit, (tit.app_id == appid));
+                                if(STL_FOUND(titles, find))
                                 {
-                                    list.root.titles.erase(find);
+                                    titles.erase(find);
                                 }
 
                                 auto find2 = STL_FIND_IF(list.folders, fld, (fld.name == folder));
@@ -627,6 +619,7 @@ namespace cfg
                         rec.author = entry.value("author", "");
                         rec.version = entry.value("version", "");
 
+                        CacheHomebrew(nropath);
                         std::string argv = entry.value("nro_argv", "");
                         strcpy(rec.nro_target.nro_path, nropath.c_str());
                         if(!argv.empty()) strcpy(rec.nro_target.argv, argv.c_str());
@@ -651,6 +644,11 @@ namespace cfg
                 }
             }
         })
+
+        for(auto &title: titles)
+        {
+            list.root.titles.push_back(title);
+        }
 
         return SuccessResultWith(list);
     }
