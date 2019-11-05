@@ -1,5 +1,13 @@
-<img width="200" src="LibraryAppletQMenu/RomFs/LogoLarge.png">
-
+<p align="center">
+ <img src="https://github.com/XorTroll/uLaunch/blob/master/logo.png"><br>
+  <a href="https://github.com/XorTroll/uLaunch/LICENSE">
+   <img src="https://img.shields.io/github/license/XorTroll/ulaunch?style=for-the-badge">
+  </a>
+  </a>
+  <a href="https://discord.gg">
+   <img src="https://img.shields.io/discord/467832276512800768?style=for-the-badge">
+  </a>
+</p>
 > Custom, open-source replacement/reimplementation for Nintendo Switch's HOME Menu (qlaunch), extending it with amazing, homebrew-orienteed functionality!
 
 uLaunch is a very ambicious project, consisting on two custom library applets, a custom system application and a custom system applet, in order to replace the console's **HOME menu** with a custom, homebrew-orienteed one.
