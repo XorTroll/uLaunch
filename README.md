@@ -1,27 +1,26 @@
-<img width="200" src="LibraryAppletQMenu/RomFs/LogoLarge.png">
+<p align="center"><img width="200" src="LibraryAppletQMenu/RomFs/LogoLarge.png">
+<h4 align="center">Made with :heart: by XorTroll</h4>
 
-> Custom, open-source replacement/reimplementation for Nintendo Switch's HOME Menu (qlaunch), extending it with amazing, homebrew-orienteed functionality!
+<span style="padding-left: 5px;">
+  <a href="https://discord.gg/3KpFyaH">
+   <img src="https://img.shields.io/badge/Discord-Server-blue.svg?style=for-the-badge" height="30">
+  </a>
+  <img src="https://img.shields.io/github/downloads/XorTroll/uLaunch/total?style=for-the-badge" height="30"
+ </span>
+  <img src="https://img.shields.io/badge/license-GPL--2.0-green?style=for-the-badge" height="30"
+   <img src="https://img.shields.io/scrutinizer/quality/g/XorTroll/uLaunch/master?style=for-the-badge" height="30"
+  </p>
 
-uLaunch is a very ambicious project, consisting on two custom library applets, a custom system application and a custom system applet, in order to replace the console's **HOME menu** with a custom, homebrew-orienteed one.
+## What is it?
 
-No, this isn't any kind of HOME menu extension, injection, patch, etc. uLaunch is a **complete** reimplementation, 100% open-source, which also takes over eShop and Mii applets and flog system title, for its extended functionality.
+uLaunch is a custom FOSS Nintendo Switch Home Menu (qlaunch) reimplementation, consisting of two custom library applets, one system appliction, and a system applet, working cohesively to give the user a simple, yet functional homebrew oriented Home Menu.
 
-## **NOTE:** the project is still a work-in-progress. Check what's left to do before release [here](TODO.md)!
+## What are future project plans?
 
-- The project is licensed as **GPLv2**.
+Look at the [todo list](TODO.md) to see all the planned future addons!
 
-- For those who are interested in how the UI was done, this project is, like [Goldleaf](https://github.com/XorTroll/Goldleaf), a good example of how powerful [Plutonium libraries](https://github.com/XorTroll/Plutonium) can be in order to make beautiful UIs.
-
-## Are you looking for help with themes? Check [this document](Themes.md) for more info!
-
-1. [Features](#features)
-2. [Disclaimer](#disclaimer)
-3. [Project and subprojects](#project-and-subprojects)
-4. [Custom menu entries](#custom-menu-entries)
-5. [Installing and removing](#installing-and-removing)
-6. [Compiling](#compiling)
-7. [Errors](#errors)
-8. [Credits](#credits)
+## What about themes?
+Check out [this document](Themes.md) for more info!
 
 ## Features
 
@@ -47,7 +46,7 @@ This is the amount of features uLaunch contains, compared to the original HOME m
 
   - **Themes** (different to official HOME menu themes/NXThemes)
 
-    - Custom icons, menu gfx, background...
+    - Custom icons, menu graphics, background...
 
     - Custom **background music** and **sound effects**!
 
@@ -62,6 +61,8 @@ This is the amount of features uLaunch contains, compared to the original HOME m
   - **User password** support! (up to 15 characters)
 
 ## Disclaimer
+
+uLaunch is FOSS and therefore is not liable for any damages caused by misuse or error in the software.
 
 ### Homebrew-as-application 'flog' takeover
 
@@ -175,3 +176,5 @@ If you get a crash using uLaunch, please check:
 - C4Phoenix for the amazing design of this project's logo.
 
 - [Icons8](https://icons8.com/) website for a big part of the icons used by the default style.
+
+- Multimegamander touching up the README
