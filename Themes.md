@@ -145,6 +145,8 @@ Can be customized via files in `/ui`.
 
 - `ui/Suspended.png` -> 296x296 PNG for the image shown above the suspended title in the main menu.
 
+- `ui/Multiselect.png` -> 296x296 PNG for selected items in multi-select mode in the main menu.
+
 - `ui/Background.png` -> 1280x720 PNG for the main menu's background.
 
 - `ui/Hbmenu.png` -> 256x256 PNG for the option (in homebrew menu) to directly launch normal hbmenu NRO.
