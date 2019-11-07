@@ -27,7 +27,6 @@ namespace ui
             void MoveFolder(std::string name, bool fade);
             void OnInput(u64 down, u64 up, u64 held, pu::ui::Touch pos);
             void SetUser(u128 user);
-            bool HandleFolderChange(cfg::TitleRecord &rec);
             void HandleCloseSuspended();
             void HandleHomebrewLaunch(cfg::TitleRecord &rec);
             void HandleUserMenu();
@@ -61,6 +60,7 @@ namespace ui
             std::chrono::steady_clock::time_point tp;
             bool warnshown;
             bool homebrew_mode;
+            bool select_on;
             u8 minalpha;
             u32 mode;
             s32 rawalpha;

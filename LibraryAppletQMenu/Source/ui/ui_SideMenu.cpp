@@ -2,7 +2,7 @@
 
 namespace ui
 {
-    SideMenu::SideMenu(pu::ui::Color SuspendedColor, std::string CursorPath, std::string SuspendedImagePath, s32 y)
+    SideMenu::SideMenu(pu::ui::Color SuspendedColor, std::string CursorPath, std::string SuspendedImagePath, std::string MultiselectImagePath, s32 y)
     {
         this->selitm = 0;
         this->suspitm = -1;
@@ -14,6 +14,7 @@ namespace ui
         this->rightbicon = NULL;
         this->cursoricon = pu::ui::render::LoadImage(CursorPath);
         this->suspicon = pu::ui::render::LoadImage(SuspendedImagePath);
+        this->mselicon = pu::ui::render::LoadImage(MultiselectImagePath);
         this->onselect = [&](u32,u64){};
         this->onselch = [&](u32){};
         this->scrolltpvalue = 50;
@@ -84,6 +85,7 @@ namespace ui
         {
             auto ricon = this->ricons[i];
             Drawer->RenderTexture(ricon, basex, Y, { -1, ItemSize, ItemSize, -1 });
+            if(this->IsItemMultiselected(this->baseiconidx + i)) Drawer->RenderTexture(this->mselicon, basex - Margin, Y - Margin, { -1, ExtraIconSize, ExtraIconSize, -1 });
             if(this->suspitm >= 0)
             {
                 if((this->baseiconidx + i) == (u32)suspitm)
@@ -243,6 +245,7 @@ namespace ui
     void SideMenu::ClearItems()
     {
         this->icons.clear();
+        this->icons_mselected.clear();
         for(auto ricon: this->ricons)
         {
             if(ricon != NULL) pu::ui::render::DeleteTexture(ricon);
@@ -257,6 +260,7 @@ namespace ui
     void SideMenu::AddItem(std::string Icon)
     {
         this->icons.push_back(Icon);
+        this->icons_mselected.push_back(false);
     }
 
     void SideMenu::SetSuspendedItem(u32 Index)
@@ -403,5 +407,25 @@ namespace ui
         {
             rightbicon = pu::ui::render::LoadImage(icons[baseiconidx + 4]);
         }
+    }
+
+    void SideMenu::ResetMultiselections()
+    {
+        this->icons_mselected.clear();
+        for(auto &itm: this->icons) this->icons_mselected.push_back(false);
+    }
+
+    void SideMenu::SetItemMultiselected(u32 index, bool selected)
+    {
+        if(index < this->icons_mselected.size())
+        {
+            this->icons_mselected[index] = selected;
+        }
+    }
+
+    bool SideMenu::IsItemMultiselected(u32 index)
+    {
+        if(index < this->icons_mselected.size()) return this->icons_mselected[index];
+        return false;
     }
 }

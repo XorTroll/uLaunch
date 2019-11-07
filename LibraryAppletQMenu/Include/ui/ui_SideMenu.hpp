@@ -15,7 +15,7 @@ namespace ui
         static constexpr u32 ExtraIconSize = ItemSize + (Margin * 2);
 
         public:
-            SideMenu(pu::ui::Color SuspendedColor, std::string CursorPath, std::string SuspendedImagePath, s32 y);
+            SideMenu(pu::ui::Color SuspendedColor, std::string CursorPath, std::string SuspendedImagePath, std::string MultiselectImagePath, s32 y);
             PU_SMART_CTOR(SideMenu)
             ~SideMenu();
 
@@ -43,6 +43,9 @@ namespace ui
             void SetBasePositions(u32 SelectedIdx, u32 BaseIdx);
             void ClearBorderIcons();
             void UpdateBorderIcons();
+            void ResetMultiselections();
+            void SetItemMultiselected(u32 index, bool selected);
+            bool IsItemMultiselected(u32 index);
         private:
             s32 y;
             u32 selitm;
@@ -52,6 +55,7 @@ namespace ui
             u8 movalpha;
             pu::ui::Color suspclr;
             std::vector<std::string> icons;
+            std::vector<bool> icons_mselected;
             std::function<void(u64, u32)> onselect;
             std::function<void(u32)> onselch;
             std::vector<pu::ui::render::NativeTexture> ricons;
@@ -59,6 +63,7 @@ namespace ui
             pu::ui::render::NativeTexture suspicon;
             pu::ui::render::NativeTexture leftbicon;
             pu::ui::render::NativeTexture rightbicon;
+            pu::ui::render::NativeTexture mselicon;
             std::chrono::steady_clock::time_point scrolltp;
             bool scrollmoveflag;
             std::chrono::steady_clock::time_point scrollmovetp;
