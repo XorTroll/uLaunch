@@ -4,7 +4,7 @@
 
 <img src="Screenshots/s1.png" alt="drawing" width="400"/> <img src="Screenshots/s2.png" alt="drawing" width="400"/>
 
-<img src="Screenshots/s2.png" alt="drawing" width="400"/> <img src="Screenshots/s4.png" alt="drawing" width="400"/>
+<img src="Screenshots/s3.png" alt="drawing" width="400"/> <img src="Screenshots/s4.png" alt="drawing" width="400"/>
 
 <img src="Screenshots/s5.png" alt="drawing" width="400"/> <img src="Screenshots/s6.png" alt="drawing" width="400"/>
 
