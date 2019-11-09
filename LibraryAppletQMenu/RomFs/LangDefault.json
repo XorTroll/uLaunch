@@ -9,6 +9,8 @@
     "menu_move_to_folder": "Would you like to move all selected entries inside a new folder or an already existing one?",
     "menu_move_new_folder": "New folder",
     "menu_move_existing_folder": "Existing folder",
+    "menu_move_select_folder": "Select a folder to move the selected content to.",
+    "menu_move_select_folder_cancel": "Folder selection cancelled.",
     "menu_move_existing_folder_conf": "Would you like to move all selected entries into this folder?",
     "swkbd_new_folder_guide": "Enter folder name",
     "menu_move_from_folder": "Would you like to move all selected entries back to main menu?",

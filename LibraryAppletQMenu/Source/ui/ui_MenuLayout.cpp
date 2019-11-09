@@ -155,18 +155,15 @@ namespace ui
                         {
                             auto &folder = list.folders[index];
                             auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "multiselect"), cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_move_existing_folder_conf"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "no"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
-                            if(sopt == 0)
-                            {
-                                this->HandleMultiselectMoveToFolder(folder.name);
-                                this->select_dir = false;
-                            }
-                            else if(sopt == 1)
-                            {
-                                this->select_dir = false;
-                                this->StopMultiselect();
-                            }
+                            if(sopt == 0) this->HandleMultiselectMoveToFolder(folder.name);
+                            else if(sopt == 1) this->StopMultiselect();
                         }
                     }
+                }
+                else if(down & KEY_B)
+                {
+                    this->select_dir = false;
+                    qapp->ShowNotification(cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_move_select_folder_cancel"));
                 }
             }
             else
@@ -235,7 +232,11 @@ namespace ui
                             swkbdClose(&swkbd);
                             if(R_SUCCEEDED(rc)) this->HandleMultiselectMoveToFolder(dir);
                         }
-                        else if(sopt == 1) this->select_dir = true;
+                        else if(sopt == 1)
+                        {
+                            this->select_dir = true;
+                            qapp->ShowNotification(cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_move_select_folder"));
+                        }
                         else if(sopt == 2) this->StopMultiselect();
                     }
                     else
