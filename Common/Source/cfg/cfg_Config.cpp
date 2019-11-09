@@ -214,17 +214,6 @@ namespace cfg
         return processed;
     }
 
-    static JSON _RawJSONLoad(std::string file)
-    {
-        auto sz = fs::GetFileSize(file);
-        char *buf = new char[sz]();
-        fs::ReadFile(file, buf, sz);
-        std::string sjson(buf);
-        delete[] buf;
-
-        return JSON::parse(sjson);
-    }
-
     std::string GetLanguageJSONPath(std::string lang)
     {
         return Q_BASE_SD_DIR "/lang/" + lang + ".json";

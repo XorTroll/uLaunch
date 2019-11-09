@@ -48,23 +48,23 @@ namespace os
 
     static std::vector<std::string> LanguageNames =
     {
-        "日本語",
+        "Japanese",
         "American English",
         "Français",
         "Deutsch",
         "Italiano",
         "Español",
-        "中文",
-        "한국어",
+        "Chinese",
+        "Korean",
         "Nederlands",
         "Português",
         "Русский",
-        "中文",
+        "Taiwanese",
         "British English",
         "Français canadien",
         "Español latino",
-        "中文",
-        "中文"
+        "Chinese (simplified)",
+        "Chinese (traditional)"
     };
 
     u32 GetBatteryLevel();
