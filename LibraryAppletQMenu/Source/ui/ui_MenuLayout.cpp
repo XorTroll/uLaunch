@@ -164,7 +164,7 @@ namespace ui
             {
                 if(this->homebrew_mode)
                 {
-                    auto sopt = qapp->CreateShowDialog("Multiselect", "Would you like to add all selected entries to the main menu?", { "Yes", "No", "Cancel" }, true);
+                    auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "multiselect"), cfg::GetLanguageString(config.main_lang, config.default_lang, "hb_mode_entries_add"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "no"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
                     if(sopt == 0)
                     {
                         // Get the idx of the last homebrew element.
@@ -191,7 +191,7 @@ namespace ui
                                 }
                             }
                         }
-                        if(any) qapp->ShowNotification("New entries were added to main menu.");
+                        if(any) qapp->ShowNotification(cfg::GetLanguageString(config.main_lang, config.default_lang, "hb_mode_entries_added"));
                         this->select_on = false;
                         this->itemsMenu->ResetMultiselections();
                     }
@@ -203,12 +203,12 @@ namespace ui
                 }
                 else if(this->curfolder.empty())
                 {
-                    auto sopt = qapp->CreateShowDialog("Multiselect", "Would you move all the selected entries inside a folder?", { "Yes", "No", "Cancel" }, true);
+                    auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "multiselect"), cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_move_to_folder"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "no"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
                     if(sopt == 0)
                     {
                         SwkbdConfig swkbd;
                         swkbdCreate(&swkbd, 0);
-                        swkbdConfigSetGuideText(&swkbd, "Enter folder name");
+                        swkbdConfigSetGuideText(&swkbd, cfg::GetLanguageString(config.main_lang, config.default_lang, "swkbd_new_folder_guide").c_str());
                         char dir[500] = {0};
                         auto rc = swkbdShow(&swkbd, dir, 500);
                         swkbdClose(&swkbd);
@@ -244,7 +244,7 @@ namespace ui
                 }
                 else
                 {
-                    auto sopt = qapp->CreateShowDialog("Multiselect", "Would you move all the selected entries back to the main menu?", { "Yes", "No", "Cancel" }, true);
+                    auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "multiselect"), cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_move_from_folder"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "no"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
                     if(sopt == 0)
                     {
                         u32 rmvd = 0;
@@ -405,7 +405,7 @@ namespace ui
                                         else
                                         {
                                             auto rc = reader.GetReadResult();
-                                            qapp->ShowNotification("An error ocurred attempting to launch the title: " + util::FormatResult(rc));
+                                            qapp->ShowNotification(cfg::GetLanguageString(config.main_lang, config.default_lang, "app_launch_error") + ": " + util::FormatResult(rc));
                                         }
                                         reader.FinishRead();
                                     }
@@ -429,7 +429,7 @@ namespace ui
                             {
                                 if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew)
                                 {
-                                    auto sopt = qapp->CreateShowDialog("Entry options", "What would you like to do with the selected entry?", { "Move to/from folder", "Remove", "Cancel" }, true);
+                                    auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "entry_options"), cfg::GetLanguageString(config.main_lang, config.default_lang, "entry_action"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "entry_move"), cfg::GetLanguageString(config.main_lang, config.default_lang, "entry_remove"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
                                     if(sopt == 0)
                                     {
                                         if(!this->select_on) this->select_on = true;
@@ -437,12 +437,12 @@ namespace ui
                                     }
                                     else if(sopt == 1)
                                     {
-                                        auto sopt2 = qapp->CreateShowDialog("Remove entry", "Would you like to remove this entry from main menu?\nThis homebrew will still be launchable from the homebrew menu.", { "Yes", "No" }, true);
+                                        auto sopt2 = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "entry_remove"), cfg::GetLanguageString(config.main_lang, config.default_lang, "entry_remove_conf"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "no") }, true);
                                         if(sopt2 == 0)
                                         {
                                             cfg::RemoveRecord(title);
                                             folder.titles.erase(folder.titles.begin() + titleidx);
-                                            qapp->ShowNotification("The entry was successfully removed.");
+                                            qapp->ShowNotification(cfg::GetLanguageString(config.main_lang, config.default_lang, "entry_remove_ok"));
                                             this->MoveFolder(this->curfolder, true);
                                         }
                                     }
@@ -472,7 +472,7 @@ namespace ui
                 this->itemAuthor->SetVisible(false);
                 this->itemVersion->SetVisible(false);
                 this->bannerImage->SetImage(cfg::ProcessedThemeResource(theme, "ui/BannerHomebrew.png"));
-                this->itemName->SetText("Launch hbmenu");
+                this->itemName->SetText(cfg::GetLanguageString(config.main_lang, config.default_lang, "hbmenu_launch"));
             }
             else
             {
@@ -487,8 +487,8 @@ namespace ui
                 }
                 else
                 {
-                    this->itemName->SetText("Unknown");
-                    this->itemAuthor->SetText("Unknown");
+                    this->itemName->SetText(cfg::GetLanguageString(config.main_lang, config.default_lang, "unknown"));
+                    this->itemAuthor->SetText(cfg::GetLanguageString(config.main_lang, config.default_lang, "unknown"));
                 }
                 if(strlen(info.nacp.version)) this->itemVersion->SetText(info.nacp.version);
                 else this->itemVersion->SetText("0");
@@ -510,7 +510,7 @@ namespace ui
                     auto foldr = list.folders[realidx];
                     this->bannerImage->SetImage(cfg::ProcessedThemeResource(theme, "ui/BannerFolder.png"));
                     auto sz = foldr.titles.size();
-                    this->itemAuthor->SetText(std::to_string(sz) + " " + ((sz == 1) ? "entry" : "entries"));
+                    this->itemAuthor->SetText(std::to_string(sz) + " " + ((sz == 1) ? cfg::GetLanguageString(config.main_lang, config.default_lang, "folder_entry_single") : cfg::GetLanguageString(config.main_lang, config.default_lang, "folder_entry_mult")));
                     this->itemVersion->SetVisible(false);
                     this->itemName->SetText(foldr.name);
                     titleidx = -1;
@@ -529,8 +529,8 @@ namespace ui
                 }
                 else
                 {
-                    this->itemName->SetText("Unknown");
-                    this->itemAuthor->SetText("Unknown");
+                    this->itemName->SetText(cfg::GetLanguageString(config.main_lang, config.default_lang, "unknown"));
+                    this->itemAuthor->SetText(cfg::GetLanguageString(config.main_lang, config.default_lang, "unknown"));
                 }
                 if(strlen(info.nacp.version)) this->itemVersion->SetText(info.nacp.version);
                 else this->itemVersion->SetText("0");
@@ -630,7 +630,7 @@ namespace ui
         {
             if(qapp->LaunchFailed() && !this->warnshown)
             {
-                qapp->CreateShowDialog("Title launch", "The title failed to start.\nAre you sure it can be launched? (it isn't deleted, gamecard is inserted...)", {"Ok"}, true);
+                qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "app_launch"), cfg::GetLanguageString(config.main_lang, config.default_lang, "app_launch_post_error"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "ok") }, true);
                 this->warnshown = true;
             }
         }
@@ -741,8 +741,8 @@ namespace ui
 
     void MenuLayout::logo_Click()
     {
-        qapp->CreateShowDialog("About uLaunch", "uLaunch v" + std::string(Q_VERSION) + "\n\nuLaunch is a custom, open source Nintendo Switch HOME menu reimplementation.\nIt's the rewrite and evolution of eQlipse project.\n\nIn order to contribute, suggest ideas or report issues, check uLaunch's GitHub repository:\nhttps://github.com/XorTroll/uLaunch", { "Ok" }, true, "romfs:/LogoLarge.png");
-        qapp->ShowNotification("(-) -> Swap the menu  |  (X) -> Close suspended item | (Y) -> Move the selected item | (L), (R), (ZL), (ZR) -> Open top menus", 3500);
+        qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "ulaunch_about"), "uLaunch v" + std::string(Q_VERSION) + "\n\n" + cfg::GetLanguageString(config.main_lang, config.default_lang, "ulaunch_about") + "\n\n" + cfg::GetLanguageString(config.main_lang, config.default_lang, "ulaunch_contribute") + ":\nhttps://github.com/XorTroll/uLaunch", { cfg::GetLanguageString(config.main_lang, config.default_lang, "ok") }, true, "romfs:/LogoLarge.png");
+        qapp->ShowNotification("(-) -> " + cfg::GetLanguageString(config.main_lang, config.default_lang, "control_minus") + "  |  (X) -> " + cfg::GetLanguageString(config.main_lang, config.default_lang, "control_x") + " | (Y) -> " + cfg::GetLanguageString(config.main_lang, config.default_lang, "control_y") + " | (L), (R), (ZL), (ZR) -> " + cfg::GetLanguageString(config.main_lang, config.default_lang, "control_zlr"), 3500);
     }
 
     void MenuLayout::settings_Click()
@@ -767,7 +767,7 @@ namespace ui
 
     void MenuLayout::HandleCloseSuspended()
     {
-        auto sopt = qapp->CreateShowDialog("Suspended title", "Would you like to close this title?\nAll unsaved data will be lost.", { "Yes", "Cancel" }, true);
+        auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "suspended_app"), cfg::GetLanguageString(config.main_lang, config.default_lang, "suspended_close"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "no") }, true);
         if(sopt == 0)
         {
             am::QMenuCommandWriter writer(am::QDaemonMessage::TerminateApplication);
@@ -784,7 +784,7 @@ namespace ui
         u32 launchmode = 0;
         if(config.system_title_override_enabled)
         {
-            auto sopt = qapp->CreateShowDialog("Homebrew launch", "How would you like to launch this homebrew?\n\nNOTE: Launching as application might involve BAN RISK, so use it at your own risk!", { "Applet", "Application", "Cancel" }, true);
+            auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "hb_launch"), cfg::GetLanguageString(config.main_lang, config.default_lang, "hb_launch_conf"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "hb_applet"), cfg::GetLanguageString(config.main_lang, config.default_lang, "hb_app"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
             if(sopt == 0) launchmode = 1;
             else if(sopt == 1) launchmode = 2;
         }
@@ -836,7 +836,7 @@ namespace ui
                 else
                 {
                     auto rc = reader.GetReadResult();
-                    qapp->ShowNotification("An error ocurred attempting to launch the title: " + util::FormatResult(rc));
+                    qapp->ShowNotification(cfg::GetLanguageString(config.main_lang, config.default_lang, "app_launch_error") + ": " + util::FormatResult(rc));
                 }
                 reader.FinishRead();
             }
@@ -857,19 +857,19 @@ namespace ui
         bool has_pass = R_SUCCEEDED(res.GetReadResult());
 
         auto [_rc, name] = os::GetAccountName(uid);
-        auto sopt = qapp->CreateShowDialog("User settings", "Selected user: " + name + "\nWhat would you like to do with this user?", { has_pass ? "Change password" : "Register password", "View user page", "Log off", "Cancel" }, true, os::GetIconCacheImagePath(uid));
+        auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "user_settings"), cfg::GetLanguageString(config.main_lang, config.default_lang, "user_selected") + ": " + name + "\n" + cfg::GetLanguageString(config.main_lang, config.default_lang, "user_option"), { has_pass ? cfg::GetLanguageString(config.main_lang, config.default_lang, "user_pass_ch") : cfg::GetLanguageString(config.main_lang, config.default_lang, "user_pass_reg"), cfg::GetLanguageString(config.main_lang, config.default_lang, "user_view_page"), cfg::GetLanguageString(config.main_lang, config.default_lang, "user_logoff"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true, os::GetIconCacheImagePath(uid));
         if(sopt == 0)
         {
             if(has_pass)
             {
-                auto sopt = qapp->CreateShowDialog("Change password", "What would you like to do with the password?", { "Change", "Remove", "Cancel" }, true);
+                auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "user_pass_ch"), cfg::GetLanguageString(config.main_lang, config.default_lang, "user_pass_ch_option"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "user_pass_change"), cfg::GetLanguageString(config.main_lang, config.default_lang, "user_pass_remove"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
                 if((sopt == 0) || (sopt == 1))
                 {
                     SwkbdConfig swkbd;
                     swkbdCreate(&swkbd, 0);
                     swkbdConfigMakePresetPassword(&swkbd);
                     swkbdConfigSetStringLenMax(&swkbd, 15);
-                    swkbdConfigSetGuideText(&swkbd, "Enter user password");
+                    swkbdConfigSetGuideText(&swkbd, cfg::GetLanguageString(config.main_lang, config.default_lang, "swkbd_user_pass_guide").c_str());
                     char inpass[0x10] = {0};
                     auto rc = swkbdShow(&swkbd, inpass, 0x10);
                     swkbdClose(&swkbd);
@@ -885,13 +885,13 @@ namespace ui
                                 swkbdCreate(&swkbd, 0);
                                 swkbdConfigMakePresetPassword(&swkbd);
                                 swkbdConfigSetStringLenMax(&swkbd, 15);
-                                swkbdConfigSetGuideText(&swkbd, "Enter new password");
+                                swkbdConfigSetGuideText(&swkbd, cfg::GetLanguageString(config.main_lang, config.default_lang, "swkbd_user_new_pass_guide").c_str());
                                 char pass[0x10] = {0};
                                 auto rc = swkbdShow(&swkbd, pass, 0x10);
                                 swkbdClose(&swkbd);
                                 if(R_SUCCEEDED(rc))
                                 {
-                                    auto sopt2 = qapp->CreateShowDialog("Change password", "Would you like to change the password?", { "Yes", "Cancel" }, true);
+                                    auto sopt2 = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "user_pass_ch"), cfg::GetLanguageString(config.main_lang, config.default_lang, "user_pass_change_conf"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
                                     if(sopt2 == 0)
                                     {
                                         auto [rc3, newpass] = db::PackPassword(uid, pass);
@@ -906,13 +906,13 @@ namespace ui
                                             am::QMenuCommandResultReader reader;
                                             rc = reader.GetReadResult();
                                         }
-                                        qapp->ShowNotification(R_SUCCEEDED(rc) ? "The password was successfully changed." : "An error ocurred while attempting to change the password: " + util::FormatResult(rc));
+                                        qapp->ShowNotification(R_SUCCEEDED(rc) ? cfg::GetLanguageString(config.main_lang, config.default_lang, "user_pass_change_ok") : cfg::GetLanguageString(config.main_lang, config.default_lang, "user_pass_change_error") + ": " + util::FormatResult(rc));
                                     }
                                 }
                             }
                             else if(sopt == 1)
                             {
-                                auto sopt2 = qapp->CreateShowDialog("Remove password", "Would you really like to remove the password?", { "Yes", "Cancel" }, true);
+                                auto sopt2 = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "user_pass_remove_full"), cfg::GetLanguageString(config.main_lang, config.default_lang, "user_pass_remove_conf"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
                                 if(sopt2 == 0)
                                 {
                                     am::QMenuCommandWriter writer(am::QDaemonMessage::RemoveUserPassword);
@@ -922,7 +922,7 @@ namespace ui
                                     am::QMenuCommandResultReader reader;
                                     rc = reader.GetReadResult();
 
-                                    qapp->ShowNotification(R_SUCCEEDED(rc) ? "The password was successfully removed." : "An error ocurred while attempting to remove the password: " + util::FormatResult(rc));
+                                    qapp->ShowNotification(R_SUCCEEDED(rc) ? cfg::GetLanguageString(config.main_lang, config.default_lang, "user_pass_remove_ok") : cfg::GetLanguageString(config.main_lang, config.default_lang, "user_pass_remove_error") + ": " + util::FormatResult(rc));
                                 }
                             }
                         }
@@ -935,7 +935,7 @@ namespace ui
                 swkbdCreate(&swkbd, 0);
                 swkbdConfigMakePresetPassword(&swkbd);
                 swkbdConfigSetStringLenMax(&swkbd, 15);
-                swkbdConfigSetGuideText(&swkbd, "Enter password");
+                swkbdConfigSetGuideText(&swkbd, cfg::GetLanguageString(config.main_lang, config.default_lang, "swkbd_user_pass_guide").c_str());
                 char pass[0x10] = {0};
                 auto rc = swkbdShow(&swkbd, pass, 0x10);
                 swkbdClose(&swkbd);
@@ -945,7 +945,7 @@ namespace ui
                     rc = rc2;
                     if(R_SUCCEEDED(rc))
                     {
-                        auto sopt = qapp->CreateShowDialog("Register password", "Would you like to register this password?", { "Yes", "Cancel" }, true);
+                        auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "user_pass_reg"), cfg::GetLanguageString(config.main_lang, config.default_lang, "user_pass_reg_conf"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
                         if(sopt == 0)
                         {
                             am::QMenuCommandWriter writer(am::QDaemonMessage::RegisterUserPassword);
@@ -956,7 +956,7 @@ namespace ui
                             rc = reader.GetReadResult();
                         }
                     }
-                    qapp->ShowNotification(R_SUCCEEDED(rc) ? "The password was successfully registered." : "An error ocurred while attempting to register the password: " + util::FormatResult(rc));
+                    qapp->ShowNotification(R_SUCCEEDED(rc) ? cfg::GetLanguageString(config.main_lang, config.default_lang, "user_pass_reg_ok") : cfg::GetLanguageString(config.main_lang, config.default_lang, "user_pass_reg_error") + ": " + util::FormatResult(rc));
                 }
             }
         }
@@ -977,7 +977,7 @@ namespace ui
             u32 logoff = 0;
             if(qapp->IsSuspended())
             {
-                auto sopt = qapp->CreateShowDialog("Application suspended", "There is an application suspended.\nIf you log off, the application will be closed, losing all unsaved data.\nDo you still want to log off?", { "Yes", "Cancel" }, true);
+                auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "suspended_app"), cfg::GetLanguageString(config.main_lang, config.default_lang, "user_logoff_app_suspended"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
                 if(sopt == 0) logoff = 2;
             }
             else logoff = 1;
@@ -1005,7 +1005,7 @@ namespace ui
     {
         SwkbdConfig swkbd;
         swkbdCreate(&swkbd, 0);
-        swkbdConfigSetGuideText(&swkbd, "Enter web page URL");
+        swkbdConfigSetGuideText(&swkbd, cfg::GetLanguageString(config.main_lang, config.default_lang, "swkbd_webpage_guide").c_str());
         char url[500] = {0};
         auto rc = swkbdShow(&swkbd, url, 500);
         swkbdClose(&swkbd);

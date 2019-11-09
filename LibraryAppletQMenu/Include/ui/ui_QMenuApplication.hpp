@@ -4,6 +4,7 @@
 #include <ui/ui_MenuLayout.hpp>
 #include <ui/ui_ThemeMenuLayout.hpp>
 #include <ui/ui_SettingsMenuLayout.hpp>
+#include <ui/ui_LanguagesMenuLayout.hpp>
 
 namespace ui
 {
@@ -21,6 +22,7 @@ namespace ui
             void LoadStartupMenu();
             void LoadThemeMenu();
             void LoadSettingsMenu();
+            void LoadSettingsLanguagesMenu();
 
             bool IsSuspended();
             bool IsTitleSuspended();
@@ -82,6 +84,7 @@ namespace ui
             MenuLayout::Ref menuLayout;
             ThemeMenuLayout::Ref themeMenuLayout;
             SettingsMenuLayout::Ref settingsMenuLayout;
+            LanguagesMenuLayout::Ref languagesMenuLayout;
             pu::ui::extras::Toast::Ref notifToast;
             am::QSuspendedInfo suspinfo;
             u128 selected_user;

@@ -1,13 +1,14 @@
 #include <util/util_Misc.hpp>
+#include <fs/fs_Stdio.hpp>
 
 namespace util
 {
     ResultWith<JSON> LoadJSONFromFile(std::string path)
     {
         JSON ret = JSON::object();
-        std::ifstream ifs(path);
-        if(ifs.good())
+        if(fs::ExistsFile(path))
         {
+            std::ifstream ifs(path);
             ret = JSON::parse(ifs);
             return SuccessResultWith(ret);
         }

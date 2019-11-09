@@ -1,5 +1,6 @@
 #include <ui/ui_SettingsMenuLayout.hpp>
 #include <os/os_Account.hpp>
+#include <os/os_Misc.hpp>
 #include <util/util_Convert.hpp>
 #include <ui/ui_QMenuApplication.hpp>
 #include <fs/fs_Stdio.hpp>
@@ -15,7 +16,7 @@ namespace ui
     template<typename T>
     std::string EncodeForSettings(T t)
     {
-        return "<unknown>";
+        return cfg::GetLanguageString(config.main_lang, config.default_lang, "set_unknown_value");
     }
 
     template<>
@@ -33,7 +34,7 @@ namespace ui
     template<>
     std::string EncodeForSettings<bool>(bool t)
     {
-        return t ? "True" : "False";
+        return t ? cfg::GetLanguageString(config.main_lang, config.default_lang, "set_true_value") : cfg::GetLanguageString(config.main_lang, config.default_lang, "set_false_value");
     }
 
     SettingsMenuLayout::SettingsMenuLayout()
@@ -44,7 +45,7 @@ namespace ui
         pu::ui::Color menufocusclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("menu_focus_color", "#5ebcffff"));
         pu::ui::Color menubgclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("menu_bg_color", "#0094ffff"));
 
-        this->infoText = pu::ui::elm::TextBlock::New(0, 100, "Browse and/or edit settings here.");
+        this->infoText = pu::ui::elm::TextBlock::New(0, 100, cfg::GetLanguageString(config.main_lang, config.default_lang, "set_info_text"));
         this->infoText->SetColor(textclr);
         this->infoText->SetHorizontalAlign(pu::ui::elm::HorizontalAlign::Center);
         qapp->ApplyConfigForElement("settings_menu", "info_text", this->infoText);
@@ -65,20 +66,26 @@ namespace ui
         
         char consolename[SET_MAX_NICKNAME_SIZE] = {};
         setsysGetDeviceNickname(consolename);
-        this->PushSettingItem("Console nickname", EncodeForSettings<std::string>(consolename), 0);
+        this->PushSettingItem(cfg::GetLanguageString(config.main_lang, config.default_lang, "set_console_nickname"), EncodeForSettings<std::string>(consolename), 0);
         TimeLocationName loc = {};
         timeGetDeviceLocationName(&loc);
-        this->PushSettingItem("Console timezone location", EncodeForSettings<std::string>(loc.name), -1);
-        this->PushSettingItem("PC viewer USB enabled", EncodeForSettings(config.viewer_usb_enabled), 1);
-        this->PushSettingItem("Homebrew-as-application 'flog' takeover enabled", EncodeForSettings(config.system_title_override_enabled), 2);
-        std::string connectednet = "none (no connection)";
+        this->PushSettingItem(cfg::GetLanguageString(config.main_lang, config.default_lang, "set_console_timezone"), EncodeForSettings<std::string>(loc.name), -1);
+        this->PushSettingItem(cfg::GetLanguageString(config.main_lang, config.default_lang, "set_viewer_enabled"), EncodeForSettings(config.viewer_usb_enabled), 1);
+        this->PushSettingItem(cfg::GetLanguageString(config.main_lang, config.default_lang, "set_flog_enabled"), EncodeForSettings(config.system_title_override_enabled), 2);
+        std::string connectednet = cfg::GetLanguageString(config.main_lang, config.default_lang, "set_wifi_none");
         if(net::HasConnection())
         {
             net::NetworkProfileData data = {};
             net::GetCurrentNetworkProfile(&data);
             connectednet = data.wifi_name;
         }
-        this->PushSettingItem("Connected network", EncodeForSettings(connectednet), 3);
+        this->PushSettingItem(cfg::GetLanguageString(config.main_lang, config.default_lang, "set_wifi_name"), EncodeForSettings(connectednet), 3);
+
+        u64 lcode = 0;
+        s32 ilang = 0;
+        setGetLanguageCode(&lcode);
+        setMakeLanguage(lcode, &ilang);
+        this->PushSettingItem(cfg::GetLanguageString(config.main_lang, config.default_lang, "set_console_lang"), EncodeForSettings(os::LanguageNames[ilang]), 4);
     }
 
     void SettingsMenuLayout::PushSettingItem(std::string name, std::string value_display, int id)
@@ -100,7 +107,7 @@ namespace ui
             {
                 SwkbdConfig swkbd;
                 swkbdCreate(&swkbd, 0);
-                swkbdConfigSetGuideText(&swkbd, "Enter new console nickname");
+                swkbdConfigSetGuideText(&swkbd, cfg::GetLanguageString(config.main_lang, config.default_lang, "swkbd_console_nick_guide").c_str());
                 char consolename[SET_MAX_NICKNAME_SIZE] = {};
                 setsysGetDeviceNickname(consolename);
                 swkbdConfigSetInitialText(&swkbd, consolename);
@@ -117,20 +124,18 @@ namespace ui
             }
             case 1:
             {
-                std::string info = "uLaunch must have this option enabled to be able to stream the console's screen to QForegroundViewer PC tool.\nIf you won't use it, you can keep it disabled.\nNote that if it's enabled USB homebrew like Goldleaf might fail.\n\nWould you really like to " + std::string(config.viewer_usb_enabled ? "disable" : "enable") + " it?";
-                auto sopt = qapp->CreateShowDialog("PC viewer USB", info, { "Yes", "Cancel" }, true);
+                auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "set_viewer_enabled"), cfg::GetLanguageString(config.main_lang, config.default_lang, "set_viewer_info") + "\n" + (config.viewer_usb_enabled ? cfg::GetLanguageString(config.main_lang, config.default_lang, "set_disable_conf") : cfg::GetLanguageString(config.main_lang, config.default_lang, "set_enable_conf")), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
                 if(sopt == 0)
                 {
                     config.viewer_usb_enabled = !config.viewer_usb_enabled;
                     reload_need = true;
-                    qapp->CreateShowDialog("PC viewer USB", "Done. Note that you need to reboot to apply the changes.", { "Ok" }, true);
+                    qapp->ShowNotification(cfg::GetLanguageString(config.main_lang, config.default_lang, "set_changed_reboot"));
                 }
                 break;
             }
             case 2:
             {
-                std::string info = "uLaunch will allow you to launch homebrew directly as applications this way.\nNote that this option might involve ban risk, so it is disabled by default.\n\nWould you really like to " + std::string(config.system_title_override_enabled ? "disable" : "enable") + " it?";
-                auto sopt = qapp->CreateShowDialog("Homebrew 'flog' takeover", info, { "Yes", "Cancel" }, true);
+                auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "set_flog_enabled"), cfg::GetLanguageString(config.main_lang, config.default_lang, "set_flog_info") + "\n" + (config.viewer_usb_enabled ? cfg::GetLanguageString(config.main_lang, config.default_lang, "set_disable_conf") : cfg::GetLanguageString(config.main_lang, config.default_lang, "set_enable_conf")), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
                 if(sopt == 0)
                 {
                     config.system_title_override_enabled = !config.system_title_override_enabled;
@@ -152,6 +157,14 @@ namespace ui
 
                 // Apparently 0 is returned when user connects to/selects a different WiFi network
                 if(R_SUCCEEDED(rc)) reload_need = true;
+                break;
+            }
+            case 4:
+            {
+                qapp->FadeOut();
+                qapp->LoadSettingsLanguagesMenu();
+                qapp->FadeIn();
+
                 break;
             }
         }

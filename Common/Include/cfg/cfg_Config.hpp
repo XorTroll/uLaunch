@@ -86,11 +86,15 @@ namespace cfg
         std::string theme_name;
         bool system_title_override_enabled;
         bool viewer_usb_enabled;
+
+        JSON main_lang;
+        JSON default_lang;
     };
 
     static constexpr u32 CurrentThemeFormatVersion = 0;
 
     #define CFG_THEME_DEFAULT "romfs:/default"
+    #define CFG_LANG_DEFAULT "romfs:/LangDefault.json"
     #define CFG_CONFIG_JSON Q_BASE_SD_DIR "/config.json"
 
     ResultWith<TitleList> LoadTitleList(bool cache);
@@ -104,6 +108,9 @@ namespace cfg
     std::string ThemeResource(Theme &base, std::string resource_base);
     std::string ProcessedThemeResource(ProcessedTheme &base, std::string resource_base);
     ProcessedTheme ProcessTheme(Theme &base);
+
+    std::string GetLanguageJSONPath(std::string lang);
+    std::string GetLanguageString(JSON &lang, JSON &def, std::string name);
 
     Config CreateNewAndLoadConfig();
     Config LoadConfig();

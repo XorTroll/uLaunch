@@ -7,6 +7,7 @@
 #include <fs/fs_Stdio.hpp>
 #include <cfg/cfg_Config.hpp>
 #include <net/net_Service.hpp>
+#include <util/util_Misc.hpp>
 #include <ui/ui_QMenuApplication.hpp>
 
 extern "C"
@@ -33,6 +34,7 @@ namespace qmenu
         net::Initialize();
         psmInitialize();
         setsysInitialize();
+        setInitialize();
 
         am::QMenu_InitializeDaemonService();
 
@@ -48,6 +50,7 @@ namespace qmenu
     {
         am::QMenu_FinalizeDaemonService();
 
+        setExit();
         setsysExit();
         psmExit();
         net::Finalize();
@@ -70,6 +73,21 @@ int main()
         {
             auto renderer = pu::ui::render::Renderer::New(SDL_INIT_EVERYTHING, pu::ui::render::RendererInitOptions::RendererEverything, pu::ui::render::RendererHardwareFlags);
             qapp = ui::QMenuApplication::New(renderer);
+
+            // Get system language and load translations (default one if not present)
+            u64 lcode = 0;
+            setGetLanguageCode(&lcode);
+            std::string syslang = (char*)&lcode;
+            auto lpath = cfg::GetLanguageJSONPath(syslang);
+            auto [_rc, defjson1] = util::LoadJSONFromFile(CFG_LANG_DEFAULT);
+            config.default_lang = defjson1;
+            auto [_rc2, defjson2] = util::LoadJSONFromFile(CFG_LANG_DEFAULT);
+            config.main_lang = defjson2;
+            if(fs::ExistsFile(lpath))
+            {
+                auto [_rc3, ljson] = util::LoadJSONFromFile(lpath);
+                config.main_lang = ljson;
+            }
 
             qapp->SetStartMode(smode);
             qapp->Prepare();

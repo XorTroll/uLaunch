@@ -131,6 +131,8 @@ Can be customized via files in `/ui`.
 
     - Settings menu (`settings_menu`): `settings_menu_item`, `info_text`.
 
+    - Language settings menu (`languages_menu`): `languages_menu_item`, `info_text`.
+
     Notes: `logo_icon` and `items_menu` items can't be hidden ("visible" property is ignored) and in `items_menu`'s case only Y can be customized ("x" is also ignored)
 
 ## General

@@ -27,7 +27,7 @@ namespace ui
         qapp->ApplyConfigForElement("themes_menu", "themes_menu_item", this->themesMenu);
         this->Add(this->themesMenu);
 
-        this->curThemeText = pu::ui::elm::TextBlock::New(20, 540, "Current theme:", 30);
+        this->curThemeText = pu::ui::elm::TextBlock::New(20, 540, cfg::GetLanguageString(config.main_lang, config.default_lang, "theme_current") + ":", 30);
         this->curThemeText->SetColor(textclr);
         qapp->ApplyConfigForElement("themes_menu", "current_theme_text", this->curThemeText);
         this->Add(this->curThemeText);
@@ -59,7 +59,7 @@ namespace ui
         bool default_theme = theme.base.base_name.empty();
         if(default_theme)
         {
-            this->curThemeText->SetText("You don't currently have a custom theme.");
+            this->curThemeText->SetText(cfg::GetLanguageString(config.main_lang, config.default_lang, "theme_no_custom"));
             this->curThemeName->SetVisible(false);
             this->curThemeAuthor->SetVisible(false);
             this->curThemeVersion->SetVisible(false);
@@ -68,7 +68,7 @@ namespace ui
         }
         else
         {
-            this->curThemeText->SetText("Current theme:");
+            this->curThemeText->SetText(cfg::GetLanguageString(config.main_lang, config.default_lang, "theme_current") + ":");
             this->curThemeName->SetVisible(true);
             this->curThemeName->SetText(theme.base.manifest.name);
             this->curThemeAuthor->SetVisible(true);
@@ -87,7 +87,7 @@ namespace ui
         this->loadedThemes.clear();
         this->loadedThemes = cfg::LoadThemes();
 
-        auto ditm = pu::ui::elm::MenuItem::New("Reset themes (default theme)");
+        auto ditm = pu::ui::elm::MenuItem::New(cfg::GetLanguageString(config.main_lang, config.default_lang, "theme_reset"));
         ditm->AddOnClick(std::bind(&ThemeMenuLayout::theme_Click, this));
         ditm->SetColor(textclr);
         ditm->SetIcon("romfs:/Logo.png");
@@ -95,7 +95,7 @@ namespace ui
         
         for(auto &ltheme: this->loadedThemes)
         {
-            auto itm = pu::ui::elm::MenuItem::New(ltheme.manifest.name + " (v" + ltheme.manifest.release + ", by " + ltheme.manifest.author + ")");
+            auto itm = pu::ui::elm::MenuItem::New(ltheme.manifest.name + " (v" + ltheme.manifest.release + ", " + cfg::GetLanguageString(config.main_lang, config.default_lang, "theme_by") + " " + ltheme.manifest.author + ")");
             itm->AddOnClick(std::bind(&ThemeMenuLayout::theme_Click, this));
             itm->SetColor(textclr);
             auto iconpath = ltheme.path + "/theme/Icon.png";
@@ -121,15 +121,15 @@ namespace ui
         auto idx = this->themesMenu->GetSelectedIndex();
         if(idx == 0)
         {
-            if(theme.base.base_name.empty()) qapp->ShowNotification("You don't have any active theme.");
+            if(theme.base.base_name.empty()) qapp->ShowNotification(cfg::GetLanguageString(config.main_lang, config.default_lang, "theme_no_custom"));
             else
             {
-                auto sopt = qapp->CreateShowDialog("Set theme", "Would you like to reset and return to uLaunch's default theme?", { "Yes", "Cancel" }, true);
+                auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "theme_reset"), cfg::GetLanguageString(config.main_lang, config.default_lang, "theme_reset_conf"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
                 if(sopt == 0)
                 {
                     config.theme_name = "";
                     cfg::SaveConfig(config);
-                    qapp->ShowNotification("uLaunch's theme was resetted. Reboot in order to see changes.");
+                    qapp->ShowNotification(cfg::GetLanguageString(config.main_lang, config.default_lang, "theme_changed"));
                 }
             }
         }
@@ -138,15 +138,15 @@ namespace ui
             idx--;
             auto seltheme = this->loadedThemes[idx];
             auto iconpath = seltheme.path + "/theme/Icon.png";
-            if(seltheme.base_name == theme.base.base_name) qapp->ShowNotification("This is theme is the currently active one.");
+            if(seltheme.base_name == theme.base.base_name) qapp->ShowNotification(cfg::GetLanguageString(config.main_lang, config.default_lang, "theme_active_this"));
             else
             {
-                auto sopt = qapp->CreateShowDialog("Set theme", "Would you like to set '" + seltheme.manifest.name + "' theme as uLaunch's theme?", { "Yes", "Cancel" }, true, iconpath);
+                auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "theme_set"), cfg::GetLanguageString(config.main_lang, config.default_lang, "theme_set_conf"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true, iconpath);
                 if(sopt == 0)
                 {
                     config.theme_name = seltheme.base_name;
                     cfg::SaveConfig(config);
-                    qapp->ShowNotification("uLaunch's theme was updated. Reboot in order to see changes.");
+                    qapp->ShowNotification(cfg::GetLanguageString(config.main_lang, config.default_lang, "theme_changed"));
                 }
             }
         }

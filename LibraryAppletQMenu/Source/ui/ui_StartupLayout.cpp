@@ -6,6 +6,7 @@
 
 extern ui::QMenuApplication::Ref qapp;
 extern cfg::ProcessedTheme theme;
+extern cfg::Config config;
 
 namespace ui
 {
@@ -18,7 +19,7 @@ namespace ui
         pu::ui::Color menufocusclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("menu_focus_color", "#5ebcffff"));
         pu::ui::Color menubgclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("menu_bg_color", "#0094ffff"));
 
-        this->infoText = pu::ui::elm::TextBlock::New(35, 635, "Welcome! Please select an account to use.\nPress (+) anytime (in main menu) for input/controls' information.");
+        this->infoText = pu::ui::elm::TextBlock::New(35, 635, cfg::GetLanguageString(config.main_lang, config.default_lang, "startup_welcome_info"));
         this->infoText->SetColor(textclr);
         qapp->ApplyConfigForElement("startup_menu", "info_text", this->infoText);
         this->Add(this->infoText);
@@ -52,7 +53,7 @@ namespace ui
             swkbdCreate(&swkbd, 0);
             swkbdConfigMakePresetPassword(&swkbd);
             swkbdConfigSetStringLenMax(&swkbd, 15);
-            swkbdConfigSetGuideText(&swkbd, "Enter user password");
+            swkbdConfigSetGuideText(&swkbd, cfg::GetLanguageString(config.main_lang, config.default_lang, "swkbd_user_pass_guide").c_str());
             char inpass[0x10] = {0};
             auto rc = swkbdShow(&swkbd, inpass, 0x10);
             swkbdClose(&swkbd);
@@ -70,7 +71,7 @@ namespace ui
                     rc = reader.GetReadResult();
                     reader.FinishRead();
 
-                    if(R_FAILED(rc)) qapp->CreateShowDialog("Login", "Invalid password. Please try again.", {"Ok"}, true);
+                    if(R_FAILED(rc)) qapp->ShowNotification(cfg::GetLanguageString(config.main_lang, config.default_lang, "startup_login_error"));
                     else login_ok = true;
                 }
             }
@@ -123,7 +124,7 @@ namespace ui
                 res.FinishRead();
 
                 bool has_pass = R_SUCCEEDED(res.GetReadResult());
-                if(has_pass) name += " (password)";
+                if(has_pass) name += " " + cfg::GetLanguageString(config.main_lang, config.default_lang, "startup_password");
 
                 auto path = os::GetIconCacheImagePath(user);
                 auto uitm = pu::ui::elm::MenuItem::New(name);
@@ -135,7 +136,7 @@ namespace ui
             }
         }
 
-        auto citm = pu::ui::elm::MenuItem::New("Create new user");
+        auto citm = pu::ui::elm::MenuItem::New(cfg::GetLanguageString(config.main_lang, config.default_lang, "startup_new_user"));
         citm->SetColor(textclr);
         citm->AddOnClick(std::bind(&StartupLayout::create_Click, this));
         this->usersMenu->AddItem(citm);

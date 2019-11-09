@@ -45,6 +45,7 @@ namespace ui
         this->menuLayout = MenuLayout::New(app_buf, this->uijson.value("suspended_final_alpha", 80));
         this->themeMenuLayout = ThemeMenuLayout::New();
         this->settingsMenuLayout = SettingsMenuLayout::New();
+        this->languagesMenuLayout = LanguagesMenuLayout::New();
 
         switch(this->stmode)
         {
@@ -97,6 +98,12 @@ namespace ui
     {
         this->settingsMenuLayout->Reload();
         this->LoadLayout(this->settingsMenuLayout);
+    }
+
+    void QMenuApplication::LoadSettingsLanguagesMenu()
+    {
+        this->languagesMenuLayout->Reload();
+        this->LoadLayout(this->languagesMenuLayout);
     }
 
     bool QMenuApplication::IsSuspended()

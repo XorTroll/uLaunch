@@ -373,6 +373,7 @@ namespace qdaemon
         fs::CreateDirectory(Q_BASE_SD_DIR "/title");
         fs::CreateDirectory(Q_BASE_SD_DIR "/user");
         fs::CreateDirectory(Q_BASE_SD_DIR "/nro");
+        fs::CreateDirectory(Q_BASE_SD_DIR "/lang");
 
         #ifdef Q_DEV
             // Debug testing mode

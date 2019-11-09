@@ -18,10 +18,11 @@ No, this isn't any kind of HOME menu extension, injection, patch, etc. uLaunch i
 2. [Disclaimer](#disclaimer)
 3. [Project and subprojects](#project-and-subprojects)
 4. [Custom menu entries](#custom-menu-entries)
-5. [Installing and removing](#installing-and-removing)
-6. [Compiling](#compiling)
-7. [Errors](#errors)
-8. [Credits](#credits)
+5. [Translations](#translations)
+6. [Installing and removing](#installing-and-removing)
+7. [Compiling](#compiling)
+8. [Errors](#errors)
+9. [Credits](#credits)
 
 ## Features
 
@@ -137,6 +138,10 @@ If you want to make your own access, create a JSON file in the entries folder (t
 Note that type needs to be **always 2**, and that `type`, `nro_path` **must be present**. The others are all optional.
 
 Note that if `name`, `author` or `version` fields aren't set they will be loaded from the NRO, thus it would show the RetroArch core's name, etc., same with the icon.
+
+## Translations
+
+uLaunch is in English by default. However, you can make translations by editing the [LangDefault.json](https://github.com/XorTroll/uLaunch/blob/master/LibraryAppletQMenu/RomFs/LangDefault.json) translation file's strings and placing it into `sd:/ulaunch/langs` named as the language's code ("en-US" for American English, "es" for Spanish, "fr" for French... proper list [here](https://switchbrew.org/wiki/Settings_services#LanguageCode) - example: `sd:/ulaunch/lang/es.json` for custom strings when the console's language is Spanish)
 
 ## Installing and removing
 
