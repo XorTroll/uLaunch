@@ -2,7 +2,7 @@
 
 namespace ui
 {
-    SideMenu::SideMenu(pu::ui::Color SuspendedColor, std::string CursorPath, std::string SuspendedImagePath, std::string MultiselectImagePath, s32 y)
+    SideMenu::SideMenu(pu::ui::Color SuspendedColor, std::string CursorPath, std::string SuspendedImagePath, std::string MultiselectImagePath, u32 TextX, u32 TextY, u32 TextSize, pu::ui::Color TextColor, s32 y)
     {
         this->selitm = 0;
         this->suspitm = -1;
@@ -15,6 +15,10 @@ namespace ui
         this->cursoricon = pu::ui::render::LoadImage(CursorPath);
         this->suspicon = pu::ui::render::LoadImage(SuspendedImagePath);
         this->mselicon = pu::ui::render::LoadImage(MultiselectImagePath);
+        this->textfont = pu::ui::render::LoadDefaultFont(TextSize);
+        this->textx = TextX;
+        this->texty = TextY;
+        this->textclr = TextColor;
         this->onselect = [&](u32,u64){};
         this->onselch = [&](u32){};
         this->scrolltpvalue = 50;
@@ -34,6 +38,7 @@ namespace ui
             pu::ui::render::DeleteTexture(this->suspicon);
             this->suspicon = NULL;
         }
+        pu::ui::render::DeleteFont(this->textfont);
         this->ClearItems();
     }
 
@@ -73,7 +78,11 @@ namespace ui
             for(u32 i = 0; i < std::min((size_t)4, (this->icons.size() - this->baseiconidx)); i++)
             {
                 auto icon = pu::ui::render::LoadImage(this->icons[this->baseiconidx + i]);
+                auto text = this->icons_texts[this->baseiconidx + i];
                 this->ricons.push_back(icon);
+                pu::ui::render::NativeTexture ntext = NULL;
+                if(!text.empty()) ntext = pu::ui::render::RenderText(this->textfont, text, this->textclr);
+                this->ricons_texts.push_back(ntext);
             }
             this->UpdateBorderIcons();
             (this->onselch)(this->selitm);
@@ -85,6 +94,8 @@ namespace ui
         {
             auto ricon = this->ricons[i];
             Drawer->RenderTexture(ricon, basex, Y, { -1, ItemSize, ItemSize, -1 });
+            auto ntext = this->ricons_texts[i];
+            if(ntext != NULL) Drawer->RenderTexture(ntext, basex + this->textx, Y + this->texty);
             if(this->IsItemMultiselected(this->baseiconidx + i)) Drawer->RenderTexture(this->mselicon, basex - Margin, Y - Margin, { -1, ExtraIconSize, ExtraIconSize, -1 });
             if(this->suspitm >= 0)
             {
@@ -245,21 +256,28 @@ namespace ui
     void SideMenu::ClearItems()
     {
         this->icons.clear();
+        this->icons_texts.clear();
         this->icons_mselected.clear();
         for(auto ricon: this->ricons)
         {
             if(ricon != NULL) pu::ui::render::DeleteTexture(ricon);
         }
         this->ricons.clear();
+        for(auto rtext: this->ricons_texts)
+        {
+            if(rtext != NULL) pu::ui::render::DeleteTexture(rtext);
+        }
+        this->ricons_texts.clear();
         this->selitm = 0;
         this->baseiconidx = 0;
         this->suspitm = -1;
         this->ClearBorderIcons();
     }
 
-    void SideMenu::AddItem(std::string Icon)
+    void SideMenu::AddItem(std::string Icon, std::string Text)
     {
         this->icons.push_back(Icon);
+        this->icons_texts.push_back(Text);
         this->icons_mselected.push_back(false);
     }
 
@@ -343,25 +361,37 @@ namespace ui
         {
             case 1: // Left
             {
-                auto icon = pu::ui::render::LoadImage(icons[selitm]);
+                auto icon = pu::ui::render::LoadImage(this->icons[this->selitm]);
                 this->ricons.insert(this->ricons.begin(), icon);
-                baseiconidx--;
+                auto text = this->icons_texts[this->selitm];
+                pu::ui::render::NativeTexture ntext = NULL;
+                if(!text.empty()) ntext = pu::ui::render::RenderText(this->textfont, text, this->textclr);
+                this->ricons_texts.insert(this->ricons_texts.begin(), ntext);
+                this->baseiconidx--;
                 if(this->ricons.size() == 5)
                 {
                     pu::ui::render::DeleteTexture(this->ricons.back());
                     this->ricons.pop_back();
+                    auto ntext = this->ricons_texts.back();
+                    if(ntext != NULL) pu::ui::render::DeleteTexture(ntext);
+                    this->ricons_texts.pop_back();
                 }
                 break;
             }
             case 2: // Right
             {
-                auto icon = pu::ui::render::LoadImage(icons[selitm]);
+                auto icon = pu::ui::render::LoadImage(this->icons[this->selitm]);
                 this->ricons.push_back(icon);
+                auto ntext = pu::ui::render::RenderText(this->textfont, this->icons_texts[this->selitm], this->textclr);
+                this->ricons_texts.push_back(ntext);
                 if(this->ricons.size() == 5)
                 {
                     pu::ui::render::DeleteTexture(this->ricons.front());
                     this->ricons.erase(this->ricons.begin());
-                    baseiconidx++;
+                    auto ntext = this->ricons_texts.front();
+                    if(ntext != NULL) pu::ui::render::DeleteTexture(ntext);
+                    this->ricons_texts.erase(this->ricons_texts.begin());
+                    this->baseiconidx++;
                 }
                 break;
             }

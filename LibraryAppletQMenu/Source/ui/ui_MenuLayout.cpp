@@ -32,6 +32,9 @@ namespace ui
         this->select_on = false;
 
         pu::ui::Color textclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
+        u32 menutextx = qapp->GetUIConfigValue<u32>("menu_folder_text_x", 15);
+        u32 menutexty = qapp->GetUIConfigValue<u32>("menu_folder_text_y", 15);
+        u32 menutextsz = qapp->GetUIConfigValue<u32>("menu_folder_text_size", 25);
 
         this->bgSuspendedRaw = RawData::New(0, 0, raw, 1280, 720, 4);
         this->Add(this->bgSuspendedRaw);
@@ -112,7 +115,7 @@ namespace ui
         qapp->ApplyConfigForElement("main_menu", "banner_version_text", this->itemVersion);
         this->Add(this->itemVersion);
 
-        this->itemsMenu = SideMenu::New(pu::ui::Color(0, 255, 120, 255), cfg::ProcessedThemeResource(theme, "ui/Cursor.png"), cfg::ProcessedThemeResource(theme, "ui/Suspended.png"), cfg::ProcessedThemeResource(theme, "ui/Multiselect.png"), 294);
+        this->itemsMenu = SideMenu::New(pu::ui::Color(0, 255, 120, 255), cfg::ProcessedThemeResource(theme, "ui/Cursor.png"), cfg::ProcessedThemeResource(theme, "ui/Suspended.png"), cfg::ProcessedThemeResource(theme, "ui/Multiselect.png"), menutextx, menutexty, menutextsz, textclr, 294);
         this->MoveFolder("", false);
         this->itemsMenu->SetOnItemSelected(std::bind(&MenuLayout::menu_Click, this, std::placeholders::_1, std::placeholders::_2));
         this->itemsMenu->SetOnSelectionChanged(std::bind(&MenuLayout::menu_OnSelected, this, std::placeholders::_1));
@@ -542,7 +545,7 @@ namespace ui
             if(name.empty())
             {
                 STL_REMOVE_IF(list.folders, fldr, (fldr.titles.empty())) // Remove empty folders
-                for(auto folder: list.folders) this->itemsMenu->AddItem(cfg::ProcessedThemeResource(theme, "ui/Folder.png"));
+                for(auto folder: list.folders) this->itemsMenu->AddItem(cfg::ProcessedThemeResource(theme, "ui/Folder.png"), folder.name);
             }
         }
 

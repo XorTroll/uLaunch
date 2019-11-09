@@ -97,6 +97,10 @@ Can be customized via files in `/ui`.
         "menu_focus_color": "#5ebcffff",
         "menu_bg_color": "#0094ffff",
 
+        "menu_folder_text_x": 15,
+        "menu_folder_text_y": 15,
+        "menu_folder_text_size": 25,
+
         "main_menu": {
             "connection_icon": {
                 "x": 10,
@@ -120,6 +124,8 @@ Can be customized via files in `/ui`.
     - **menu_focus_color**: Color menu's items will have when they're on focus.
 
     - **menu_bg_color**: All menus' bg color.
+
+    - **menu_folder_text_x**, **menu_folder_text_y**, **menu_folder_text_size**: X, Y and text size for the small text shown over folder icons in the main menu.
 
     Element customization: consists on menus and items within them, with customizable `visible`, `x` and `y` properties. If `visible` is false, custom X and Y will be ignored.
 
