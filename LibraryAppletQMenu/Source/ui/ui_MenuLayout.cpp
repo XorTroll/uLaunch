@@ -611,7 +611,7 @@ namespace ui
         {
             if(qapp->LaunchFailed() && !this->warnshown)
             {
-                qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "app_launch"), cfg::GetLanguageString(config.main_lang, config.default_lang, "app_launch_post_error"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "ok") }, true);
+                qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "app_launch"), cfg::GetLanguageString(config.main_lang, config.default_lang, "app_unexpected_error"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "ok") }, true);
                 this->warnshown = true;
             }
         }

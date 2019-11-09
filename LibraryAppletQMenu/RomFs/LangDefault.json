@@ -21,7 +21,7 @@
     "folder_entry_single": "entry",
     "folder_entry_mult": "entries",
     "app_launch": "Title launch",
-    "app_launch_post_error": "The title failed to start. Are you sure it can be launched? (it isn't deleted, gamecard is inserted...)",
+    "app_unexpected_error": "A title failed to start, crashed or unexpectedly terminated. (Could it be corrupted? If it is a gamecard title, do you have it inserted?)",
     "ulaunch_about": "About uLaunch",
     "ulaunch_desc": "uLaunch is a custom, FOSS, fully featured and homebrew-oriented HOME menu reimplementation for Nintendo Switch.",
     "ulaunch_contribute": "If you would like to contribute, check uLaunch's GitHub repository",

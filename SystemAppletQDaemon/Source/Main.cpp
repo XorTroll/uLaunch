@@ -378,10 +378,10 @@ namespace qdaemon
         #ifdef Q_DEV
             // Debug testing mode
             consoleInit(NULL);
-            CONSOLE_FMT("Welcome to QDaemon's debug mode!")
+            CONSOLE_FMT("Welcome to QDaemon -> debug mode menu")
             CONSOLE_FMT("")
             CONSOLE_FMT("(A) -> Dump system save data to sd:/ulaunch/save_dump")
-            CONSOLE_FMT("(B) -> Delete everything in save data (except official HOME menu's content)")
+            CONSOLE_FMT("(B) -> Delete uLaunch's saved content in save data (official HOME menu's content won't be touched)")
             CONSOLE_FMT("(X) -> Reboot system")
             CONSOLE_FMT("(Y) -> Continue to QMenu (proceed launch)")
             CONSOLE_FMT("")
@@ -420,8 +420,6 @@ namespace qdaemon
                 }
                 svcSleepThread(10'000'000);
             }
-
-            consoleExit(NULL);
         #endif
 
         svcSleepThread(100'000'000); // Wait for proper moment
@@ -494,6 +492,7 @@ int main()
         HandleAppletMessage();
         HandleQMenuMessage();
 
+        bool sth_done = false;
         if(webapplet_flag.version > 0) // A valid version in this config is always >= 0x20000
         {
             if(!am::LibraryAppletIsActive())
@@ -505,6 +504,7 @@ int main()
                     // Web applet failed to launch...
                     am::QDaemon_LaunchQMenu(am::QMenuStartMode::MenuLaunchFailure);
                 }
+                sth_done = true;
                 memset(&webapplet_flag, 0, sizeof(webapplet_flag));
             }
         }
@@ -513,12 +513,7 @@ int main()
             if(!am::LibraryAppletIsActive())
             {
                 am::ApplicationStart(titlelaunch_flag, false, selected_uid);
-                svcSleepThread(500'000'000);
-                if(!am::ApplicationIsActive())
-                {
-                    // Title failed to launch, so we re-launch QMenu this way...
-                    am::QDaemon_LaunchQMenu(am::QMenuStartMode::MenuLaunchFailure);
-                }
+                sth_done = true;
                 titlelaunch_flag = 0;
             }
         }
@@ -527,12 +522,7 @@ int main()
             if(!am::LibraryAppletIsActive())
             {
                 am::ApplicationStart(OS_FLOG_APP_ID, true, selected_uid, &hbapplaunch_flag, sizeof(hbapplaunch_flag));
-                svcSleepThread(500'000'000);
-                if(!am::ApplicationIsActive())
-                {
-                    // Title failed to launch, so we re-launch QMenu this way...
-                    am::QDaemon_LaunchQMenu(am::QMenuStartMode::MenuLaunchFailure);
-                }
+                sth_done = true;
                 hbapplaunch_flag.nro_path[0] = '\0';
             }
         }
@@ -541,12 +531,7 @@ int main()
             if(!am::LibraryAppletIsActive())
             {
                 am::QDaemon_LaunchQHbTarget(hblaunch_flag);
-                svcSleepThread(500'000'000);
-                if(!am::LibraryAppletIsActive())
-                {
-                    // QHbTarget libapplet failed to launch...
-                    am::QDaemon_LaunchQMenu(am::QMenuStartMode::MenuLaunchFailure);
-                }
+                sth_done = true;
                 hblaunch_flag.nro_path[0] = '\0';
             }
         }
@@ -557,9 +542,19 @@ int main()
                 case am::QHbTargetAppletId:
                 case AppletId_web:
                     am::QDaemon_LaunchQMenu(am::QMenuStartMode::Menu);
+                    sth_done = true;
                     break;
                 default:
                     break;
+            }
+        }
+        if(!sth_done)
+        {
+            // If nothing was done, but nothing is active... An application or applet might have crashed, terminated, failed to launch...
+            // No matter what is it, we reopen QMenu in launch-error mode.
+            if(!am::ApplicationIsActive() && !am::LibraryAppletIsActive())
+            {
+                am::QDaemon_LaunchQMenu(am::QMenuStartMode::MenuLaunchFailure);
             }
         }
         svcSleepThread(10'000'000);
