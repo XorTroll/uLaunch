@@ -154,7 +154,7 @@ namespace ui
                         if(index < list.folders.size())
                         {
                             auto &folder = list.folders[index];
-                            auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "multiselect"), cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_move_existing_folder_conf"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "no"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
+                            auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_multiselect"), cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_move_existing_folder_conf"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "no"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
                             if(sopt == 0) this->HandleMultiselectMoveToFolder(folder.name);
                             else if(sopt == 1) this->StopMultiselect();
                         }
@@ -168,7 +168,11 @@ namespace ui
             }
             else
             {
-                if(down & KEY_B) this->StopMultiselect();
+                if(down & KEY_B)
+                {
+                    qapp->ShowNotification(cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_multiselect_cancel"));
+                    this->StopMultiselect();
+                }
                 else if(down & KEY_Y)
                 {
                     bool selectable = false;
@@ -187,7 +191,7 @@ namespace ui
                 {
                     if(this->homebrew_mode)
                     {
-                        auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "multiselect"), cfg::GetLanguageString(config.main_lang, config.default_lang, "hb_mode_entries_add"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "no"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
+                        auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_multiselect"), cfg::GetLanguageString(config.main_lang, config.default_lang, "hb_mode_entries_add"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "no"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
                         if(sopt == 0)
                         {
                             // Get the idx of the last homebrew element.
@@ -221,7 +225,7 @@ namespace ui
                     }
                     else if(this->curfolder.empty())
                     {
-                        auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "multiselect"), cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_move_to_folder"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_move_new_folder"), cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_move_existing_folder"), cfg::GetLanguageString(config.main_lang, config.default_lang, "no"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
+                        auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_multiselect"), cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_move_to_folder"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_move_new_folder"), cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_move_existing_folder"), cfg::GetLanguageString(config.main_lang, config.default_lang, "no"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
                         if(sopt == 0)
                         {
                             SwkbdConfig swkbd;
@@ -241,7 +245,7 @@ namespace ui
                     }
                     else
                     {
-                        auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "multiselect"), cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_move_from_folder"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "no"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
+                        auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_multiselect"), cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_move_from_folder"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "no"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
                         if(sopt == 0)
                         {
                             u32 rmvd = 0;
@@ -724,13 +728,17 @@ namespace ui
     {
         pu::audio::Play(this->sfxMenuToggle);
         this->homebrew_mode = !this->homebrew_mode;
-        if(this->select_on) this->StopMultiselect();
+        if(this->select_on)
+        {
+            qapp->ShowNotification(cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_multiselect_cancel"));
+            this->StopMultiselect();
+        }
         this->MoveFolder("", true);
     }
 
     void MenuLayout::logo_Click()
     {
-        qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "ulaunch_about"), "uLaunch v" + std::string(Q_VERSION) + "\n\n" + cfg::GetLanguageString(config.main_lang, config.default_lang, "ulaunch_about") + "\n\n" + cfg::GetLanguageString(config.main_lang, config.default_lang, "ulaunch_contribute") + ":\nhttps://github.com/XorTroll/uLaunch", { cfg::GetLanguageString(config.main_lang, config.default_lang, "ok") }, true, "romfs:/LogoLarge.png");
+        qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "ulaunch_about"), "uLaunch v" + std::string(Q_VERSION) + "\n\n" + cfg::GetLanguageString(config.main_lang, config.default_lang, "ulaunch_desc") + "\n\n" + cfg::GetLanguageString(config.main_lang, config.default_lang, "ulaunch_contribute") + ":\nhttps://github.com/XorTroll/uLaunch", { cfg::GetLanguageString(config.main_lang, config.default_lang, "ok") }, true, "romfs:/LogoLarge.png");
         qapp->ShowNotification("(-) -> " + cfg::GetLanguageString(config.main_lang, config.default_lang, "control_minus") + "  |  (X) -> " + cfg::GetLanguageString(config.main_lang, config.default_lang, "control_x") + " | (Y) -> " + cfg::GetLanguageString(config.main_lang, config.default_lang, "control_y") + " | (L), (R), (ZL), (ZR) -> " + cfg::GetLanguageString(config.main_lang, config.default_lang, "control_zlr"), 3500);
     }
 

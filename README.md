@@ -112,6 +112,8 @@ This is the same process but, like in normal HOME menu and Album, it runs homebr
 
 *QDaemon* daemon process, appart from usual (and special) HOME menu functions, it also sends the console's foreground display via USB as a raw RGBA8 1280x720 ~3MB buffer. **QForegroundViewer** is the PC tool (WinForms) which intercepts those sent buffers and renders them. It is a bit laggy, but can be *very* useful for taking quick screenshots!
 
+This tool was used to take the screenshots shown above, all in full 1280x720 quality.
+
 Unlike the other projects, this one isn't essential and uLaunch would be perfectly usable ignoring this sent data.
 
 For more technical information about uLaunch and qlaunch, check [this](HOME.md).
