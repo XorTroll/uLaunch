@@ -33,6 +33,7 @@ namespace ui
             void HandleWebPageOpen();
             void HandleSettingsMenu();
             void HandleThemesMenu();
+            void HandleMultiselectMoveToFolder(std::string folder);
             void StopMultiselect();
         private:
             void *susptr;
@@ -62,6 +63,7 @@ namespace ui
             bool warnshown;
             bool homebrew_mode;
             bool select_on;
+            bool select_dir;
             u8 minalpha;
             u32 mode;
             s32 rawalpha;

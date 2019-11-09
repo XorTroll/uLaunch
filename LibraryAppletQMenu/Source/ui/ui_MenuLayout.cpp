@@ -30,6 +30,7 @@ namespace ui
         this->minalpha = min_alpha;
         this->homebrew_mode = false;
         this->select_on = false;
+        this->select_dir = false;
 
         pu::ui::Color textclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
         u32 menutextx = qapp->GetUIConfigValue<u32>("menu_folder_text_x", 30);
@@ -144,113 +145,123 @@ namespace ui
         }
         if(this->select_on)
         {
-            if(down & KEY_B) this->StopMultiselect();
-            else if(down & KEY_Y)
+            if(select_dir)
             {
-                bool selectable = false;
-                if(this->homebrew_mode) selectable = true;
-                else
+                if((down & KEY_A) || (down & KEY_Y))
                 {
-                    if(this->curfolder.empty()) selectable = (index >= list.folders.size());
-                    else selectable = true;
-                }
-                if(selectable)
-                {
-                    this->itemsMenu->SetItemMultiselected(index, !this->itemsMenu->IsItemMultiselected(index));
-                }
-            }
-            else if(down & KEY_A)
-            {
-                if(this->homebrew_mode)
-                {
-                    auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "multiselect"), cfg::GetLanguageString(config.main_lang, config.default_lang, "hb_mode_entries_add"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "no"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
-                    if(sopt == 0)
+                    if((!this->homebrew_mode) && this->curfolder.empty())
                     {
-                        // Get the idx of the last homebrew element.
-                        s32 hbidx = 0;
-                        for(auto &entry: list.root.titles)
+                        if(index < list.folders.size())
                         {
-                            if((cfg::TitleType)entry.title_type == cfg::TitleType::Installed) break;
-                            hbidx++;
-                        }
-                        if(hbidx < 0) hbidx = 0;
-                        bool any = false;
-                        for(u32 i = 0; i < homebrew.size(); i++)
-                        {
-                            auto &hb = homebrew[i];
-                            u32 idx = i + 1;
-                            if(this->itemsMenu->IsItemMultiselected(idx))
+                            auto &folder = list.folders[index];
+                            auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "multiselect"), cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_move_existing_folder_conf"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "no"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
+                            if(sopt == 0)
                             {
-                                if(!cfg::ExistsRecord(list, hb))
-                                {
-                                    cfg::SaveRecord(hb);
-                                    list.root.titles.insert(list.root.titles.begin() + hbidx, hb);
-                                    any = true;
-                                    hbidx++;
-                                }
+                                this->HandleMultiselectMoveToFolder(folder.name);
+                                this->select_dir = false;
+                            }
+                            else if(sopt == 1)
+                            {
+                                this->select_dir = false;
+                                this->StopMultiselect();
                             }
                         }
-                        if(any) qapp->ShowNotification(cfg::GetLanguageString(config.main_lang, config.default_lang, "hb_mode_entries_added"));
-                        this->StopMultiselect();
                     }
-                    else if(sopt == 1) this->StopMultiselect();
                 }
-                else if(this->curfolder.empty())
+            }
+            else
+            {
+                if(down & KEY_B) this->StopMultiselect();
+                else if(down & KEY_Y)
                 {
-                    auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "multiselect"), cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_move_to_folder"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "no"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
-                    if(sopt == 0)
+                    bool selectable = false;
+                    if(this->homebrew_mode) selectable = true;
+                    else
                     {
-                        SwkbdConfig swkbd;
-                        swkbdCreate(&swkbd, 0);
-                        swkbdConfigSetGuideText(&swkbd, cfg::GetLanguageString(config.main_lang, config.default_lang, "swkbd_new_folder_guide").c_str());
-                        char dir[500] = {0};
-                        auto rc = swkbdShow(&swkbd, dir, 500);
-                        swkbdClose(&swkbd);
-                        if(R_SUCCEEDED(rc))
+                        if(this->curfolder.empty()) selectable = (index >= list.folders.size());
+                        else selectable = true;
+                    }
+                    if(selectable)
+                    {
+                        this->itemsMenu->SetItemMultiselected(index, !this->itemsMenu->IsItemMultiselected(index));
+                    }
+                }
+                else if(down & KEY_A)
+                {
+                    if(this->homebrew_mode)
+                    {
+                        auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "multiselect"), cfg::GetLanguageString(config.main_lang, config.default_lang, "hb_mode_entries_add"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "no"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
+                        if(sopt == 0)
+                        {
+                            // Get the idx of the last homebrew element.
+                            s32 hbidx = 0;
+                            for(auto &entry: list.root.titles)
+                            {
+                                if((cfg::TitleType)entry.title_type == cfg::TitleType::Installed) break;
+                                hbidx++;
+                            }
+                            if(hbidx < 0) hbidx = 0;
+                            bool any = false;
+                            for(u32 i = 0; i < homebrew.size(); i++)
+                            {
+                                auto &hb = homebrew[i];
+                                u32 idx = i + 1;
+                                if(this->itemsMenu->IsItemMultiselected(idx))
+                                {
+                                    if(!cfg::ExistsRecord(list, hb))
+                                    {
+                                        cfg::SaveRecord(hb);
+                                        list.root.titles.insert(list.root.titles.begin() + hbidx, hb);
+                                        any = true;
+                                        hbidx++;
+                                    }
+                                }
+                            }
+                            if(any) qapp->ShowNotification(cfg::GetLanguageString(config.main_lang, config.default_lang, "hb_mode_entries_added"));
+                            this->StopMultiselect();
+                        }
+                        else if(sopt == 1) this->StopMultiselect();
+                    }
+                    else if(this->curfolder.empty())
+                    {
+                        auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "multiselect"), cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_move_to_folder"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_move_new_folder"), cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_move_existing_folder"), cfg::GetLanguageString(config.main_lang, config.default_lang, "no"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
+                        if(sopt == 0)
+                        {
+                            SwkbdConfig swkbd;
+                            swkbdCreate(&swkbd, 0);
+                            swkbdConfigSetGuideText(&swkbd, cfg::GetLanguageString(config.main_lang, config.default_lang, "swkbd_new_folder_guide").c_str());
+                            char dir[500] = {0};
+                            auto rc = swkbdShow(&swkbd, dir, 500);
+                            swkbdClose(&swkbd);
+                            if(R_SUCCEEDED(rc)) this->HandleMultiselectMoveToFolder(dir);
+                        }
+                        else if(sopt == 1) this->select_dir = true;
+                        else if(sopt == 2) this->StopMultiselect();
+                    }
+                    else
+                    {
+                        auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "multiselect"), cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_move_from_folder"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "no"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
+                        if(sopt == 0)
                         {
                             u32 rmvd = 0;
-                            auto basesz = list.root.titles.size();
-                            auto basefsz = list.folders.size();
+                            auto &folder = cfg::FindFolderByName(list, this->curfolder);
+                            auto basesz = folder.titles.size();
                             for(u32 i = 0; i < basesz; i++)
                             {
-                                auto &title = list.root.titles[i - rmvd];
-                                if(this->itemsMenu->IsItemMultiselected(basefsz + i))
+                                auto &title = folder.titles[i - rmvd];
+                                if(this->itemsMenu->IsItemMultiselected(i))
                                 {
-                                    if(cfg::MoveRecordTo(list, title, dir))
+                                    if(cfg::MoveRecordTo(list, title, ""))
                                     {
                                         rmvd++;
                                     }
                                 }
                             }
+                            this->StopMultiselect();
+                            this->MoveFolder(folder.titles.empty() ? "" : this->curfolder, true);
                         }
-                        this->StopMultiselect();
-                        this->MoveFolder(this->curfolder, true);
+                        else if(sopt == 1) this->StopMultiselect();
                     }
-                    else if(sopt == 1) this->StopMultiselect();
-                }
-                else
-                {
-                    auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "multiselect"), cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_move_from_folder"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "no"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
-                    if(sopt == 0)
-                    {
-                        u32 rmvd = 0;
-                        auto &folder = cfg::FindFolderByName(list, this->curfolder);
-                        auto basesz = folder.titles.size();
-                        for(u32 i = 0; i < basesz; i++)
-                        {
-                            auto &title = folder.titles[i - rmvd];
-                            if(this->itemsMenu->IsItemMultiselected(i))
-                            {
-                                if(cfg::MoveRecordTo(list, title, ""))
-                                {
-                                    rmvd++;
-                                }
-                            }
-                        }
-                        this->StopMultiselect();
-                        this->MoveFolder(folder.titles.empty() ? "" : this->curfolder, true);
-                    }
-                    else if(sopt == 1) this->StopMultiselect();
                 }
             }
         }
@@ -1016,9 +1027,33 @@ namespace ui
         qapp->FadeIn();
     }
 
+    void MenuLayout::HandleMultiselectMoveToFolder(std::string folder)
+    {
+        if(this->select_on)
+        {
+            u32 rmvd = 0;
+            auto basesz = list.root.titles.size();
+            auto basefsz = list.folders.size();
+            for(u32 i = 0; i < basesz; i++)
+            {
+                auto &title = list.root.titles[i - rmvd];
+                if(this->itemsMenu->IsItemMultiselected(basefsz + i))
+                {
+                    if(cfg::MoveRecordTo(list, title, folder))
+                    {
+                        rmvd++;
+                    }
+                }
+            }
+            this->StopMultiselect();
+            this->MoveFolder(this->curfolder, true);
+        }
+    }
+
     void MenuLayout::StopMultiselect()
     {
         this->select_on = false;
+        this->select_dir = false;
         this->itemsMenu->ResetMultiselections();
     }
 }

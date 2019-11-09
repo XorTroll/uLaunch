@@ -14,6 +14,6 @@ namespace am
     Result LibraryAppletQMenuLaunchAnd(AppletId id, u32 la_version, void *in_data, size_t in_size, void *out_data, size_t out_size, std::function<bool()> on_wait);
     AppletId LibraryAppletGetId();
 
-    static constexpr AppletId QHbTargetAppletId = AppletId_dataErase;
-    static constexpr AppletId QMenuAppletId = AppletId_cabinet;
+    static constexpr AppletId QMenuAppletId = AppletId_shop;
+    static constexpr AppletId QHbTargetAppletId = AppletId_auth;
 }
