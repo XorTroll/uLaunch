@@ -79,13 +79,12 @@ int main()
             setGetLanguageCode(&lcode);
             std::string syslang = (char*)&lcode;
             auto lpath = cfg::GetLanguageJSONPath(syslang);
-            auto [_rc, defjson1] = util::LoadJSONFromFile(CFG_LANG_DEFAULT);
-            config.default_lang = defjson1;
-            auto [_rc2, defjson2] = util::LoadJSONFromFile(CFG_LANG_DEFAULT);
-            config.main_lang = defjson2;
+            auto [_rc, defjson] = util::LoadJSONFromFile(CFG_LANG_DEFAULT);
+            config.default_lang = defjson;
+            config.main_lang = defjson;
             if(fs::ExistsFile(lpath))
             {
-                auto [_rc3, ljson] = util::LoadJSONFromFile(lpath);
+                auto [_rc2, ljson] = util::LoadJSONFromFile(lpath);
                 config.main_lang = ljson;
             }
 

@@ -19,7 +19,7 @@ namespace ui
         pu::ui::Color menufocusclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("menu_focus_color", "#5ebcffff"));
         pu::ui::Color menubgclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("menu_bg_color", "#0094ffff"));
 
-        this->infoText = pu::ui::elm::TextBlock::New(35, 635, cfg::GetLanguageString(config.main_lang, config.default_lang, "startup_welcome_info"));
+        this->infoText = pu::ui::elm::TextBlock::New(35, 635, cfg::GetLanguageString(config.main_lang, config.default_lang, "startup_welcome_info") + "\n" + cfg::GetLanguageString(config.main_lang, config.default_lang, "startup_control_info"));
         this->infoText->SetColor(textclr);
         qapp->ApplyConfigForElement("startup_menu", "info_text", this->infoText);
         this->Add(this->infoText);

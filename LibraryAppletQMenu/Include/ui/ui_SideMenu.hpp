@@ -46,6 +46,7 @@ namespace ui
             void ResetMultiselections();
             void SetItemMultiselected(u32 index, bool selected);
             bool IsItemMultiselected(u32 index);
+            bool IsAnyMultiselected();
         private:
             s32 y;
             u32 selitm;

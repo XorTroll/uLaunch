@@ -51,7 +51,7 @@ namespace ui
         {
             auto name = lang;
             if((u32)ilang == idx) name += " " + cfg::GetLanguageString(config.main_lang, config.default_lang, "lang_selected");
-            auto litm = pu::ui::elm::MenuItem::New(lang);
+            auto litm = pu::ui::elm::MenuItem::New(name);
             litm->SetColor(textclr);
             litm->AddOnClick(std::bind(&LanguagesMenuLayout::lang_Click, this, idx));
             this->langsMenu->AddItem(litm);

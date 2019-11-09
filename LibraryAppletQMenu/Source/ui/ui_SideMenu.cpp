@@ -412,7 +412,7 @@ namespace ui
     void SideMenu::ResetMultiselections()
     {
         this->icons_mselected.clear();
-        for(auto &itm: this->icons) this->icons_mselected.push_back(false);
+        for(u32 i = 0; i < this->icons.size(); i++) this->icons_mselected.push_back(false);
     }
 
     void SideMenu::SetItemMultiselected(u32 index, bool selected)
@@ -427,5 +427,19 @@ namespace ui
     {
         if(index < this->icons_mselected.size()) return this->icons_mselected[index];
         return false;
+    }
+
+    bool SideMenu::IsAnyMultiselected()
+    {
+        bool any = false;
+        for(auto msel: this->icons_mselected)
+        {
+            if(msel)
+            {
+                any = true;
+                break;
+            }
+        }
+        return any;
     }
 }

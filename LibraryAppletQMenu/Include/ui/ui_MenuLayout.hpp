@@ -33,6 +33,7 @@ namespace ui
             void HandleWebPageOpen();
             void HandleSettingsMenu();
             void HandleThemesMenu();
+            void StopMultiselect();
         private:
             void *susptr;
             bool last_hasconn;

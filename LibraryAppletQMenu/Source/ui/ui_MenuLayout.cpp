@@ -135,24 +135,20 @@ namespace ui
 
     void MenuLayout::menu_Click(u64 down, u32 index)
     {
+        if((this->select_on) && (down & KEY_A))
+        {
+            if(!this->itemsMenu->IsAnyMultiselected()) this->StopMultiselect();
+        }
         if(this->select_on)
         {
-            if(down & KEY_B)
-            {
-                this->select_on = false;
-                this->itemsMenu->ResetMultiselections();
-            }
+            if(down & KEY_B) this->StopMultiselect();
             else if(down & KEY_Y)
             {
                 bool selectable = false;
                 if(this->homebrew_mode) selectable = true;
                 else
                 {
-                    if(this->curfolder.empty())
-                    {
-                        bool is_dir = (index < list.folders.size());
-                        if(!is_dir) selectable = true;
-                    }
+                    if(this->curfolder.empty()) selectable = (index >= list.folders.size());
                     else selectable = true;
                 }
                 if(selectable)
@@ -192,14 +188,9 @@ namespace ui
                             }
                         }
                         if(any) qapp->ShowNotification(cfg::GetLanguageString(config.main_lang, config.default_lang, "hb_mode_entries_added"));
-                        this->select_on = false;
-                        this->itemsMenu->ResetMultiselections();
+                        this->StopMultiselect();
                     }
-                    else if(sopt == 1)
-                    {
-                        this->select_on = false;
-                        this->itemsMenu->ResetMultiselections();
-                    }
+                    else if(sopt == 1) this->StopMultiselect();
                 }
                 else if(this->curfolder.empty())
                 {
@@ -212,35 +203,27 @@ namespace ui
                         char dir[500] = {0};
                         auto rc = swkbdShow(&swkbd, dir, 500);
                         swkbdClose(&swkbd);
-                        bool chd = false;
                         if(R_SUCCEEDED(rc))
                         {
-                            for(u32 i = 0; i < list.root.titles.size(); i++)
+                            u32 rmvd = 0;
+                            auto basesz = list.root.titles.size();
+                            auto basefsz = list.folders.size();
+                            for(u32 i = 0; i < basesz; i++)
                             {
-                                if(i >= list.root.titles.size()) break;
-                                auto &title = list.root.titles[i];
-                                u32 idx = list.folders.size() + i;
-                                if(this->itemsMenu->IsItemMultiselected(idx))
+                                auto &title = list.root.titles[i - rmvd];
+                                if(this->itemsMenu->IsItemMultiselected(basefsz + i))
                                 {
-                                    auto nextmsel = this->itemsMenu->IsItemMultiselected(idx + 1);
-                                    bool ok = cfg::MoveRecordTo(list, title, dir);
-                                    if(ok)
+                                    if(cfg::MoveRecordTo(list, title, dir))
                                     {
-                                        if(nextmsel) i--;
-                                        chd = true;
+                                        rmvd++;
                                     }
                                 }
                             }
                         }
-                        this->select_on = false;
-                        this->itemsMenu->ResetMultiselections();
-                        if(chd) this->MoveFolder(this->curfolder, true);
+                        this->StopMultiselect();
+                        this->MoveFolder(this->curfolder, true);
                     }
-                    else if(sopt == 1)
-                    {
-                        this->select_on = false;
-                        this->itemsMenu->ResetMultiselections();
-                    }
+                    else if(sopt == 1) this->StopMultiselect();
                 }
                 else
                 {
@@ -261,15 +244,10 @@ namespace ui
                                 }
                             }
                         }
-                        this->select_on = false;
-                        this->itemsMenu->ResetMultiselections();
+                        this->StopMultiselect();
                         this->MoveFolder(folder.titles.empty() ? "" : this->curfolder, true);
                     }
-                    else if(sopt == 1)
-                    {
-                        this->select_on = false;
-                        this->itemsMenu->ResetMultiselections();
-                    }
+                    else if(sopt == 1) this->StopMultiselect();
                 }
             }
         }
@@ -731,11 +709,7 @@ namespace ui
     {
         pu::audio::Play(this->sfxMenuToggle);
         this->homebrew_mode = !this->homebrew_mode;
-        if(this->select_on)
-        {
-            this->select_on = false;
-            this->itemsMenu->ResetMultiselections();
-        }
+        if(this->select_on) this->StopMultiselect();
         this->MoveFolder("", true);
     }
 
@@ -1037,5 +1011,11 @@ namespace ui
         qapp->FadeOut();
         qapp->LoadThemeMenu();
         qapp->FadeIn();
+    }
+
+    void MenuLayout::StopMultiselect()
+    {
+        this->select_on = false;
+        this->itemsMenu->ResetMultiselections();
     }
 }
