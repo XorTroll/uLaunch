@@ -97,8 +97,8 @@ Can be customized via files in `/ui`.
         "menu_focus_color": "#5ebcffff",
         "menu_bg_color": "#0094ffff",
 
-        "menu_folder_text_x": 15,
-        "menu_folder_text_y": 15,
+        "menu_folder_text_x": 30,
+        "menu_folder_text_y": 200,
         "menu_folder_text_size": 25,
 
         "main_menu": {

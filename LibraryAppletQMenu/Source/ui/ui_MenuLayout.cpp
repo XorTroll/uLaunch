@@ -32,8 +32,8 @@ namespace ui
         this->select_on = false;
 
         pu::ui::Color textclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
-        u32 menutextx = qapp->GetUIConfigValue<u32>("menu_folder_text_x", 15);
-        u32 menutexty = qapp->GetUIConfigValue<u32>("menu_folder_text_y", 15);
+        u32 menutextx = qapp->GetUIConfigValue<u32>("menu_folder_text_x", 30);
+        u32 menutexty = qapp->GetUIConfigValue<u32>("menu_folder_text_y", 200);
         u32 menutextsz = qapp->GetUIConfigValue<u32>("menu_folder_text_size", 25);
 
         this->bgSuspendedRaw = RawData::New(0, 0, raw, 1280, 720, 4);
