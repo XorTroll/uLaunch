@@ -180,10 +180,16 @@ namespace ui
                     if(this->scrollmoveflag)
                     {
                         auto diff2 = std::chrono::duration_cast<std::chrono::milliseconds>(curtp - this->scrollmovetp).count();
-                        if(diff2 >= 50)
+                        if(diff2 >= this->scrolltpvalue)
                         {
+                            if(this->scrollcount >= 5)
+                            {
+                                this->scrollcount = 0;
+                                this->scrolltpvalue /= 2;
+                            }
                             this->scrollmoveflag = false;
                             this->HandleMoveLeft();
+                            this->scrollcount++;
                         }
                     }
                     else
