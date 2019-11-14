@@ -1,5 +1,5 @@
 
-name: Build Ulaunch
+name: Build uLaunch
 
 on: [push]
 jobs:
@@ -19,7 +19,7 @@ jobs:
         sudo dpkg -i devkitpro-pacman.deb
         sudo dkp-pacman -S $(dkp-pacman -Ssq switch-*) --noconfirm
         
-    - name: Building Ulaunch
+    - name: Building uLaunch
       run: |
         echo ##########################
         echo #     SETTING PATH       #
@@ -33,5 +33,5 @@ jobs:
         
     - uses: actions/upload-artifact@master
       with:
-        name: Build
+        name: uLaunch
         path: SdOut/
