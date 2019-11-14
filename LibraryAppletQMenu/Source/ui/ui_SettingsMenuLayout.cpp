@@ -86,6 +86,24 @@ namespace ui
         setGetLanguageCode(&lcode);
         setMakeLanguage(lcode, &ilang);
         this->PushSettingItem(cfg::GetLanguageString(config.main_lang, config.default_lang, "set_console_lang"), EncodeForSettings(os::LanguageNames[ilang]), 4);
+        bool console_info_upload = false;
+        setsysGetFlag(SetSysFlag_ConsoleInformationUpload, &console_info_upload);
+        this->PushSettingItem(cfg::GetLanguageString(config.main_lang, config.default_lang, "set_console_info_upload"), EncodeForSettings(console_info_upload), 5);
+        bool auto_titles_dl = false;
+        setsysGetFlag(SetSysFlag_AutomaticApplicationDownload, &auto_titles_dl);
+        this->PushSettingItem(cfg::GetLanguageString(config.main_lang, config.default_lang, "set_auto_titles_dl"), EncodeForSettings(auto_titles_dl), 6);
+        bool auto_update = false;
+        setsysGetFlag(SetSysFlag_AutoUpdateEnable, &auto_update);
+        this->PushSettingItem(cfg::GetLanguageString(config.main_lang, config.default_lang, "set_auto_update"), EncodeForSettings(auto_update), 7);
+        bool wireless_lan = false;
+        setsysGetFlag(SetSysFlag_WirelessLanEnable, &wireless_lan);
+        this->PushSettingItem(cfg::GetLanguageString(config.main_lang, config.default_lang, "set_wireless_lan"), EncodeForSettings(wireless_lan), 8);
+        bool bluetooth = false;
+        setsysGetFlag(SetSysFlag_BluetoothEnable, &bluetooth);
+        this->PushSettingItem(cfg::GetLanguageString(config.main_lang, config.default_lang, "set_bluetooth"), EncodeForSettings(bluetooth), 9);
+        bool usb_30 = false;
+        setsysGetFlag(SetSysFlag_Usb30Enable, &usb_30);
+        this->PushSettingItem(cfg::GetLanguageString(config.main_lang, config.default_lang, "set_usb_30"), EncodeForSettings(usb_30), 10);
     }
 
     void SettingsMenuLayout::PushSettingItem(std::string name, std::string value_display, int id)
@@ -165,6 +183,60 @@ namespace ui
                 qapp->LoadSettingsLanguagesMenu();
                 qapp->FadeIn();
 
+                break;
+            }
+            case 5:
+            {
+                bool console_info_upload = false;
+                setsysGetFlag(SetSysFlag_ConsoleInformationUpload, &console_info_upload);
+                setsysSetFlag(SetSysFlag_ConsoleInformationUpload, !console_info_upload);
+
+                reload_need = true;
+                break;
+            }
+            case 6:
+            {
+                bool auto_titles_dl = false;
+                setsysGetFlag(SetSysFlag_AutomaticApplicationDownload, &auto_titles_dl);
+                setsysSetFlag(SetSysFlag_AutomaticApplicationDownload, !auto_titles_dl);
+
+                reload_need = true;
+                break;
+            }
+            case 7:
+            {
+                bool auto_update = false;
+                setsysGetFlag(SetSysFlag_AutoUpdateEnable, &auto_update);
+                setsysSetFlag(SetSysFlag_AutoUpdateEnable, !auto_update);
+
+                reload_need = true;
+                break;
+            }
+            case 8:
+            {
+                bool wireless_lan = false;
+                setsysGetFlag(SetSysFlag_WirelessLanEnable, &wireless_lan);
+                setsysSetFlag(SetSysFlag_WirelessLanEnable, !wireless_lan);
+
+                reload_need = true;
+                break;
+            }
+            case 9:
+            {
+                bool bluetooth = false;
+                setsysGetFlag(SetSysFlag_BluetoothEnable, &bluetooth);
+                setsysSetFlag(SetSysFlag_BluetoothEnable, !bluetooth);
+
+                reload_need = true;
+                break;
+            }
+            case 10:
+            {
+                bool usb_30 = false;
+                setsysGetFlag(SetSysFlag_Usb30Enable, &usb_30);
+                setsysSetFlag(SetSysFlag_Usb30Enable, !usb_30);
+
+                reload_need = true;
                 break;
             }
         }
