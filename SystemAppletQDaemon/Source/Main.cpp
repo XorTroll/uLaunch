@@ -40,6 +40,8 @@ void CommonSleepHandle()
 am::QDaemonStatus CreateStatus()
 {
     am::QDaemonStatus status = {};
+    memcpy(&status.selected_user, &selected_uid, sizeof(selected_uid));
+
     cfg::TitleType tmptype = cfg::TitleType::Invalid;
     if(am::ApplicationIsActive())
     {
@@ -49,8 +51,6 @@ am::QDaemonStatus CreateStatus()
 
     if(tmptype == cfg::TitleType::Installed) status.app_id = am::ApplicationGetId();
     else if(tmptype == cfg::TitleType::Homebrew) memcpy(&status.input, &hbapplaunch_copy, sizeof(hbapplaunch_copy));
-
-    status.selected_user = selected_uid;
 
     return status;
 }
