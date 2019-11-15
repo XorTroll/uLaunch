@@ -82,6 +82,8 @@
     "set_wireless_lan": "Wireless LAN enabled",
     "set_bluetooth": "Bluetooth enabled",
     "set_usb_30": "USB 3.0 enabled",
+    "set_nfc": "NFC enabled (amiibo)",
+    "set_serial_no": "Console serial number",
     "swkbd_console_nick_guide": "Enter new console nickname",
     "set_enable_conf": "Do you want to enable it?",
     "set_disable_conf": "Do you want to disable it?",

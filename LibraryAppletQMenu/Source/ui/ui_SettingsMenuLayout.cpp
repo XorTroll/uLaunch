@@ -104,6 +104,12 @@ namespace ui
         bool usb_30 = false;
         setsysGetFlag(SetSysFlag_Usb30Enable, &usb_30);
         this->PushSettingItem(cfg::GetLanguageString(config.main_lang, config.default_lang, "set_usb_30"), EncodeForSettings(usb_30), 10);
+        bool nfc = false;
+        setsysGetFlag(SetSysFlag_NfcEnable, &nfc);
+        this->PushSettingItem(cfg::GetLanguageString(config.main_lang, config.default_lang, "set_nfc"), EncodeForSettings(nfc), 11);
+        char serial[0x20] = {0};
+        setsysGetSerialNumber(serial);
+        this->PushSettingItem(cfg::GetLanguageString(config.main_lang, config.default_lang, "set_serial_no"), EncodeForSettings<std::string>(serial), -1);
     }
 
     void SettingsMenuLayout::PushSettingItem(std::string name, std::string value_display, int id)
@@ -235,6 +241,15 @@ namespace ui
                 bool usb_30 = false;
                 setsysGetFlag(SetSysFlag_Usb30Enable, &usb_30);
                 setsysSetFlag(SetSysFlag_Usb30Enable, !usb_30);
+
+                reload_need = true;
+                break;
+            }
+            case 11:
+            {
+                bool nfc = false;
+                setsysGetFlag(SetSysFlag_NfcEnable, &nfc);
+                setsysSetFlag(SetSysFlag_NfcEnable, !nfc);
 
                 reload_need = true;
                 break;

@@ -596,6 +596,7 @@ namespace cfg
                                 rec.name = entry.value("name", "");
                                 rec.author = entry.value("author", "");
                                 rec.version = entry.value("version", "");
+                                rec.icon = entry.value("icon", "");
 
                                 auto find = STL_FIND_IF(titles, tit, (tit.app_id == appid));
                                 if(STL_FOUND(titles, find))
