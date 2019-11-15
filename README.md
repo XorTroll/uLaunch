@@ -198,9 +198,11 @@ Note that:
 
 ## Translations
 
-uLaunch is in English by default. However, you can make translations by editing the [LangDefault.json](https://github.com/XorTroll/uLaunch/blob/master/LibraryAppletQMenu/RomFs/LangDefault.json) translation file's strings and placing it into `sd:/ulaunch/langs` named as the language's code ("en-US" for American English, "es" for Spanish, "fr" for French... proper list [here](https://switchbrew.org/wiki/Settings_services#LanguageCode)
+uLaunch is in English by default. However, you can make translations by editing the [LangDefault.json](https://github.com/XorTroll/uLaunch/blob/master/LibraryAppletQMenu/RomFs/LangDefault.json) translation file's strings and placing it into `sd:/ulaunch/lang` named as the language's code ("en-US" for American English, "es" for Spanish, "fr" for French... proper list [here](https://switchbrew.org/wiki/Settings_services#LanguageCode)
 
 Example: `sd:/ulaunch/lang/es.json` for custom strings (which would be displayed if  the console's language is Spanish)
+
+Note that translation JSONs aren't provided by uLaunch, and that you will need to find or make your own. No PRs with translations will be accepted here.
 
 ## Installing and removing
 

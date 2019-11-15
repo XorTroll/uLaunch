@@ -163,7 +163,7 @@ namespace net
         std::string str;
         auto sstrm = strm.str();
         for(u32 i = 1; i < 7; i++)
-        {// AABBCCDDEEFF
+        {
             str += sstrm.substr((6 - i) * 2, 2);
             if(i < 6) str += ":";
         }
