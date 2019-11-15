@@ -9,4 +9,7 @@ namespace net
     Result GetInternetConnectionStatus(NifmInternetConnectionStatus* status);
     bool HasConnection();
     Result GetCurrentNetworkProfile(NetworkProfileData *data);
+    Result GetMACAddress(u64 *out);
+
+    std::string FormatMACAddress(u64 addr);
 }

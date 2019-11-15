@@ -110,6 +110,10 @@ namespace ui
         char serial[0x20] = {0};
         setsysGetSerialNumber(serial);
         this->PushSettingItem(cfg::GetLanguageString(config.main_lang, config.default_lang, "set_serial_no"), EncodeForSettings<std::string>(serial), -1);
+        u64 mac = 0;
+        net::GetMACAddress(&mac);
+        auto strmac = net::FormatMACAddress(mac);
+        this->PushSettingItem(cfg::GetLanguageString(config.main_lang, config.default_lang, "set_mac_addr"), EncodeForSettings(strmac), -1);
     }
 
     void SettingsMenuLayout::PushSettingItem(std::string name, std::string value_display, int id)
