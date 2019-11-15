@@ -44,9 +44,9 @@ namespace net
                         serviceCreate(&nifmgeneralsrv, r.Handles[0]);
                     }
                 }
-            }
-            return rc;   
+            } 
         }
+        return rc;
     }
 
     void Finalize()
@@ -162,10 +162,10 @@ namespace net
         strm << std::hex << std::uppercase << addr;
         std::string str;
         auto sstrm = strm.str();
-        for(u32 i = 0; i < 6; i++)
+        for(u32 i = 1; i < 7; i++)
         {// AABBCCDDEEFF
-            str += sstrm.substr(i * 2, 2);
-            if(i < 5) str += ":";
+            str += sstrm.substr((6 - i) * 2, 2);
+            if(i < 6) str += ":";
         }
         return str;
     }
