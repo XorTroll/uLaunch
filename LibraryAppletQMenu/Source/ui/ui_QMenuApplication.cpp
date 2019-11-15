@@ -15,12 +15,6 @@ namespace ui
     {
         pu::ui::render::SetDefaultFont(cfg::ProcessedThemeResource(theme, "ui/Font.ttf"));
 
-        am::QMenuCommandWriter writer(am::QDaemonMessage::GetSuspendedInfo);
-        writer.FinishWrite();
-        am::QMenuCommandResultReader reader;
-        if(reader) this->suspinfo = reader.Read<am::QSuspendedInfo>();
-        reader.FinishRead();
-
         if(this->IsSuspended())
         {
             bool flag;
@@ -53,13 +47,7 @@ namespace ui
             case am::QMenuStartMode::MenuApplicationSuspended:
             case am::QMenuStartMode::MenuLaunchFailure:
             {
-                // Returned from applet/title, QDaemon has the user but we don't, so...
-                am::QMenuCommandWriter writer(am::QDaemonMessage::GetSelectedUser);
-                writer.FinishWrite();
-                am::QMenuCommandResultReader res;
-                this->selected_user = res.Read<u128>();
-                res.FinishRead();
-
+                // Returned from applet/title
                 this->StartPlayBGM();
                 this->LoadMenu();
                 break;
@@ -70,14 +58,15 @@ namespace ui
         }
     }
 
-    void QMenuApplication::SetStartMode(am::QMenuStartMode mode)
+    void QMenuApplication::SetInformation(am::QMenuStartMode mode, am::QDaemonStatus status)
     {
         this->stmode = mode;
+        memcpy(&this->status, &status, sizeof(status));
     }
 
     void QMenuApplication::LoadMenu()
     {
-        this->menuLayout->SetUser(this->selected_user);
+        this->menuLayout->SetUser(this->status.selected_user);
         this->LoadLayout(this->menuLayout);
     }
 
@@ -113,27 +102,27 @@ namespace ui
 
     bool QMenuApplication::IsTitleSuspended()
     {
-        return (this->suspinfo.app_id != 0);
+        return (this->status.app_id > 0);
     }
 
     bool QMenuApplication::IsHomebrewSuspended()
     {
-        return strlen(this->suspinfo.input.nro_path);
+        return strlen(this->status.input.nro_path);
     }
 
-    std::string QMenuApplication::GetSuspendedHomebrewPath()
+    bool QMenuApplication::EqualsSuspendedHomebrewPath(std::string path)
     {
-        return this->suspinfo.input.nro_path;
+        return (strcasecmp(this->status.input.nro_path, path.c_str()) == 0);
     }
 
     u64 QMenuApplication::GetSuspendedApplicationId()
     {
-        return this->suspinfo.app_id;
+        return this->status.app_id;
     }
 
     void QMenuApplication::NotifyEndSuspended()
     {
-        this->suspinfo = {};
+        this->status = {};
     }
 
     bool QMenuApplication::LaunchFailed()
@@ -170,11 +159,11 @@ namespace ui
         writer.Write<u128>(user_id);
         writer.FinishWrite();
 
-        this->selected_user = user_id;
+        this->status.selected_user = user_id;
     }
 
     u128 QMenuApplication::GetSelectedUser()
     {
-        return this->selected_user;
+        return this->status.selected_user;
     }
 }

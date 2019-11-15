@@ -27,7 +27,6 @@ namespace am
         LaunchApplication,
         ResumeApplication,
         TerminateApplication,
-        GetSuspendedInfo,
         LaunchHomebrewLibApplet,
         LaunchHomebrewApplication,
         OpenWebPage,
@@ -39,15 +38,16 @@ namespace am
         RemoveUserPassword
     };
 
-    struct QSuspendedInfo
+    struct QDaemonStatus
     {
+        u128 selected_user;
         hb::TargetInput input; // Set if homebrew (via flog takeover) is suspended
         u64 app_id; // Set if any title (other than flog) is suspended
     };
 
     #define AM_QDAEMON_SERVICE_NAME "qdmnsrv"
 
-    Result QDaemon_LaunchQMenu(QMenuStartMode mode);
+    Result QDaemon_LaunchQMenu(QMenuStartMode mode, QDaemonStatus status);
     Result QDaemon_LaunchQHbTarget(hb::TargetInput input);
 
     Result QLibraryAppletReadStorage(void *data, size_t size);

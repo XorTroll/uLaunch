@@ -97,7 +97,7 @@ namespace cfg
     #define CFG_LANG_DEFAULT "romfs:/LangDefault.json"
     #define CFG_CONFIG_JSON Q_BASE_SD_DIR "/config.json"
 
-    ResultWith<TitleList> LoadTitleList(bool cache);
+    TitleList LoadTitleList(bool cache);
     std::vector<TitleRecord> QueryAllHomebrew(std::string base = "sdmc:/switch");
     std::string GetRecordIconPath(TitleRecord record);
     RecordInformation GetRecordInformation(TitleRecord record);

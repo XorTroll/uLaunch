@@ -14,9 +14,43 @@ namespace fs
     void DeleteDirectory(std::string path);
     void DeleteFile(std::string path);
 
-    bool WriteFile(std::string path, void *data, size_t size, bool overwrite);
-    bool ReadFile(std::string path, void *data, size_t size);
-    size_t GetFileSize(std::string path);
+    inline bool WriteFile(std::string path, void *data, size_t size, bool overwrite)
+    {
+        FILE *f = fopen(path.c_str(), overwrite ? "wb" : "ab+");
+        if(f)
+        {
+            fwrite(data, 1, size, f);
+            fclose(f);
+            return true;
+        }
+        return false;
+    }
+
+    inline bool ReadFile(std::string path, void *data, size_t size)
+    {
+        FILE *f = fopen(path.c_str(), "rb");
+        if(f)
+        {
+            fread(data, 1, size, f);
+            fclose(f);
+            return true;
+        }
+        return false;
+    }
+
+    inline size_t GetFileSize(std::string path)
+    {
+        FILE *f = fopen(path.c_str(), "rb");
+        if(f)
+        {
+            fseek(f, 0, SEEK_END);
+            size_t fsz = ftell(f);
+            rewind(f);
+            fclose(f);
+            return fsz;
+        }
+        return 0;
+    }
 
     void MoveFile(std::string p1, std::string p2);
     void CopyFile(std::string p, std::string np);

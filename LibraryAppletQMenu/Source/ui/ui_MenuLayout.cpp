@@ -303,7 +303,7 @@ namespace ui
                             bool hblaunch = true;
                             if(qapp->IsHomebrewSuspended())
                             {
-                                if(std::string(hb.nro_target.nro_path) == qapp->GetSuspendedHomebrewPath())
+                                if(qapp->EqualsSuspendedHomebrewPath(hb.nro_target.nro_path))
                                 {
                                     if(this->mode == 1) this->mode = 2;
                                     hblaunch = false;
@@ -321,7 +321,7 @@ namespace ui
                         {
                             if(qapp->IsSuspended())
                             {
-                                if(std::string(hb.nro_target.nro_path) == qapp->GetSuspendedHomebrewPath()) this->HandleCloseSuspended();
+                                if(qapp->EqualsSuspendedHomebrewPath(hb.nro_target.nro_path)) this->HandleCloseSuspended();
                             }
                         }
                         else if(down & KEY_Y)
@@ -361,7 +361,7 @@ namespace ui
                                 {
                                     if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew)
                                     {
-                                        if(std::string(title.nro_target.nro_path) == qapp->GetSuspendedHomebrewPath())
+                                        if(qapp->EqualsSuspendedHomebrewPath(title.nro_target.nro_path))
                                         {
                                             if(this->mode == 1) this->mode = 2;
                                             titlelaunch = false;
@@ -414,7 +414,7 @@ namespace ui
                                 {
                                     if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew)
                                     {
-                                        if(std::string(title.nro_target.nro_path) == qapp->GetSuspendedHomebrewPath()) this->HandleCloseSuspended();
+                                        if(qapp->EqualsSuspendedHomebrewPath(title.nro_target.nro_path)) this->HandleCloseSuspended();
                                     }
                                     else
                                     {
@@ -575,7 +575,7 @@ namespace ui
             }
             else
             {
-                if(qapp->IsHomebrewSuspended()) if(qapp->GetSuspendedHomebrewPath() == std::string(itm.nro_target.nro_path)) set_susp = true;
+                if(qapp->IsHomebrewSuspended()) if(qapp->EqualsSuspendedHomebrewPath(itm.nro_target.nro_path)) set_susp = true;
             }
             this->itemsMenu->AddItem(cfg::GetRecordIconPath(itm));
             if(set_susp)
@@ -964,7 +964,7 @@ namespace ui
             *(u32*)in = 7; // Type -> ShowMyProfile
             memcpy((u128*)(in + 0x8), &uid, sizeof(uid));
 
-            am::LibraryAppletQMenuLaunchAnd(AppletId_myPage, 1, in, sizeof(in), NULL, 0, [&]() -> bool
+            am::LibraryAppletQMenuLaunchWithSimple(AppletId_myPage, 1, in, sizeof(in), NULL, 0, [&]() -> bool
             {
                 return !am::QMenuIsHomePressed();
             });

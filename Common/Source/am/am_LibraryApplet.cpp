@@ -57,7 +57,7 @@ namespace am
         return LibraryAppletStart(AppletId_web, web->version, &web->arg, sizeof(web->arg));
     }
 
-    Result LibraryAppletQMenuLaunchAnd(AppletId id, u32 la_version, void *in_data, size_t in_size, void *out_data, size_t out_size, std::function<bool()> on_wait)
+    Result LibraryAppletQMenuLaunchWith(AppletId id, u32 la_version, std::function<void(AppletHolder*)> on_prepare, std::function<void(AppletHolder*)> on_finish, std::function<bool()> on_wait)
     {
         if(LibraryAppletIsActive()) LibraryAppletTerminate();
         appletHolderClose(&applet_holder);
@@ -65,10 +65,7 @@ namespace am
         libappletArgsCreate(&largs, la_version);
         R_TRY(appletCreateLibraryApplet(&applet_holder, id, LibAppletMode_AllForeground));
         R_TRY(libappletArgsPush(&largs, &applet_holder));
-        if(in_size > 0)
-        {
-            R_TRY(LibraryAppletSend(in_data, in_size));
-        }
+        on_prepare(&applet_holder);
         R_TRY(appletHolderStart(&applet_holder));
         while(true)
         {
@@ -80,7 +77,7 @@ namespace am
             }
             svcSleepThread(10'000'000);
         }
-        if(out_size > 0) libappletPopOutData(&applet_holder, out_data, out_size, NULL);
+        on_finish(&applet_holder);
         appletHolderClose(&applet_holder);
         return 0;
     }

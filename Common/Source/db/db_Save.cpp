@@ -62,6 +62,7 @@ namespace db
         if(fs::ExistsFile(filename)) return RES_VALUE(Db, PasswordAlreadyExists);
 
         if(!fs::WriteFile(filename, &password, sizeof(password), true)) return RES_VALUE(Db, PasswordWriteFail);
+        db::Commit();
         return 0;
     }
 

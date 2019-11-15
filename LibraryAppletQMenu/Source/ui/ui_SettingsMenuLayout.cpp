@@ -177,7 +177,7 @@ namespace ui
                 *(u32*)in = 1; // 0 = normal, 1 = qlaunch, 2 = starter?
                 u8 out[8] = {0};
 
-                am::LibraryAppletQMenuLaunchAnd(AppletId_netConnect, 0, in, sizeof(in), out, sizeof(out), [&]() -> bool
+                am::LibraryAppletQMenuLaunchWithSimple(AppletId_netConnect, 0, in, sizeof(in), out, sizeof(out), [&]() -> bool
                 {
                     return !am::QMenuIsHomePressed();
                 });

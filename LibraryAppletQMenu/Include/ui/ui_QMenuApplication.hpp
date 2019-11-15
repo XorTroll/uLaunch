@@ -17,7 +17,7 @@ namespace ui
 
             void OnLoad() override;
 
-            void SetStartMode(am::QMenuStartMode mode);
+            void SetInformation(am::QMenuStartMode mode, am::QDaemonStatus status);
             void LoadMenu();
             void LoadStartupMenu();
             void LoadThemeMenu();
@@ -27,7 +27,7 @@ namespace ui
             bool IsSuspended();
             bool IsTitleSuspended();
             bool IsHomebrewSuspended();
-            std::string GetSuspendedHomebrewPath();
+            bool EqualsSuspendedHomebrewPath(std::string path);
             u64 GetSuspendedApplicationId();
             void NotifyEndSuspended();
             bool LaunchFailed();
@@ -86,8 +86,7 @@ namespace ui
             SettingsMenuLayout::Ref settingsMenuLayout;
             LanguagesMenuLayout::Ref languagesMenuLayout;
             pu::ui::extras::Toast::Ref notifToast;
-            am::QSuspendedInfo suspinfo;
-            u128 selected_user;
+            am::QDaemonStatus status;
             JSON uijson;
             JSON bgmjson;
             bool bgm_loop;
