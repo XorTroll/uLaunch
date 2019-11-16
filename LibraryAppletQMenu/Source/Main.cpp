@@ -65,6 +65,7 @@ int main()
     if(R_SUCCEEDED(rc))
     {
         am::QDaemonStatus status = {};
+        
         // Information block sent as an extra storage to QMenu.
         am::QLibraryAppletReadStorage(&status, sizeof(status));
 

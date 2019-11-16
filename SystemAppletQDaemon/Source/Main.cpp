@@ -449,9 +449,9 @@ namespace qdaemon
 
         while(true)
         {
-            appletUpdateLastForegroundCaptureImage();
             bool flag;
             appletGetLastForegroundCaptureImageEx(usbbuf, RawRGBAScreenBufferSize, &flag);
+            appletUpdateLastForegroundCaptureImage();
             usbCommsWrite(usbbuf, RawRGBAScreenBufferSize);
         }
         

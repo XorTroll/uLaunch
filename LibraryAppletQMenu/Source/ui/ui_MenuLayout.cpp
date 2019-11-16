@@ -122,6 +122,17 @@ namespace ui
         this->itemsMenu->SetOnSelectionChanged(std::bind(&MenuLayout::menu_OnSelected, this, std::placeholders::_1));
         qapp->ApplyConfigForElement("main_menu", "items_menu", this->itemsMenu, false); // Main menu must be visible, and only Y is customizable here
         this->Add(this->itemsMenu);
+
+        this->quickMenu = QuickMenu::New(cfg::ProcessedThemeResource(theme, "ui/QuickMenuMain.png"));
+
+        this->quickMenu->SetEntry(QuickMenuDirection::Down, cfg::ProcessedThemeResource(theme, "ui/QuickMenuSettingsItem.png"), std::bind(&MenuLayout::settings_Click, this));
+        this->quickMenu->SetEntry(QuickMenuDirection::Left, cfg::ProcessedThemeResource(theme, "ui/QuickMenuWebItem.png"), std::bind(&MenuLayout::web_Click, this));
+        this->quickMenu->SetEntry(QuickMenuDirection::Right, cfg::ProcessedThemeResource(theme, "ui/QuickMenuThemesItem.png"), std::bind(&MenuLayout::themes_Click, this));
+        this->quickMenu->SetEntry(QuickMenuDirection::UpLeft, cfg::ProcessedThemeResource(theme, "ui/QuickMenuControllerItem.png"), std::bind(&MenuLayout::HandleControllerAppletOpen, this));
+        this->quickMenu->SetEntry(QuickMenuDirection::DownRight, cfg::ProcessedThemeResource(theme, "ui/QuickMenuHelpItem.png"), std::bind(&MenuLayout::HandleShowHelp, this));
+
+        this->Add(this->quickMenu);
+
         this->tp = std::chrono::steady_clock::now();
 
         this->sfxTitleLaunch = pu::audio::Load(cfg::ProcessedThemeResource(theme, "sound/TitleLaunch.wav"));
@@ -711,15 +722,13 @@ namespace ui
         }
         else if(down & KEY_PLUS) this->logo_Click();
         else if(down & KEY_MINUS) this->menuToggle_Click();
-        else if(down & KEY_ZL) this->HandleUserMenu();
-        else if(down & KEY_L) this->HandleWebPageOpen();
-        else if(down & KEY_R) this->HandleSettingsMenu();
-        else if(down & KEY_ZR) this->HandleThemesMenu();
     }
 
     void MenuLayout::SetUser(u128 user)
     {
-        this->users->SetImage(os::GetIconCacheImagePath(user));
+        auto path = os::GetIconCacheImagePath(user);
+        this->users->SetImage(path);
+        this->quickMenu->SetEntry(QuickMenuDirection::Up, path, std::bind(&MenuLayout::users_Click, this));
         this->users->SetWidth(50);
         this->users->SetHeight(50);
     }
@@ -739,7 +748,7 @@ namespace ui
     void MenuLayout::logo_Click()
     {
         qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "ulaunch_about"), "uLaunch v" + std::string(Q_VERSION) + "\n\n" + cfg::GetLanguageString(config.main_lang, config.default_lang, "ulaunch_desc") + "\n\n" + cfg::GetLanguageString(config.main_lang, config.default_lang, "ulaunch_contribute") + ":\nhttps://github.com/XorTroll/uLaunch", { cfg::GetLanguageString(config.main_lang, config.default_lang, "ok") }, true, "romfs:/LogoLarge.png");
-        qapp->ShowNotification("(-) -> " + cfg::GetLanguageString(config.main_lang, config.default_lang, "control_minus") + "  |  (X) -> " + cfg::GetLanguageString(config.main_lang, config.default_lang, "control_x") + " | (Y) -> " + cfg::GetLanguageString(config.main_lang, config.default_lang, "control_y") + " | (L), (R), (ZL), (ZR) -> " + cfg::GetLanguageString(config.main_lang, config.default_lang, "control_zlr"), 3500);
+        // qapp->ShowNotification("(-) -> " + cfg::GetLanguageString(config.main_lang, config.default_lang, "control_minus") + "  |  (X) -> " + cfg::GetLanguageString(config.main_lang, config.default_lang, "control_x") + " | (Y) -> " + cfg::GetLanguageString(config.main_lang, config.default_lang, "control_y") + " | (L), (R), (ZL), (ZR) -> " + cfg::GetLanguageString(config.main_lang, config.default_lang, "control_zlr"), 3500);
     }
 
     void MenuLayout::settings_Click()
@@ -1034,6 +1043,42 @@ namespace ui
         qapp->FadeOut();
         qapp->LoadThemeMenu();
         qapp->FadeIn();
+    }
+
+    void MenuLayout::HandleControllerAppletOpen()
+    {
+        am::controller::InitialArg arg1 = {};
+        HidControllerType type;
+        hidGetSupportedNpadStyleSet(&type);
+        arg1.controller_type = (u64)type;
+        arg1.this_size = sizeof(arg1);
+        arg1.unk2 = true;
+        arg1.unk3 = true;
+
+        am::controller::MainArg arg2 = {};
+        arg2.min_player_count = 0;
+        arg2.max_player_count = 4;
+        arg2.take_over_connection = true;
+        arg2.left_justify = true;
+
+        am::LibraryAppletQMenuLaunchWith(AppletId_controller, 0,
+        [&](AppletHolder *h)
+        {
+            libappletPushInData(h, &arg1, sizeof(arg1));
+            libappletPushInData(h, &arg2, sizeof(arg2));
+        },
+        [&](AppletHolder *h)
+        {
+        },
+        [&]() -> bool
+        {
+            return !am::QMenuIsHomePressed();
+        });
+    }
+
+    void MenuLayout::HandleShowHelp()
+    {
+        
     }
 
     void MenuLayout::HandleMultiselectMoveToFolder(std::string folder)

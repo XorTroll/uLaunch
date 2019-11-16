@@ -43,17 +43,12 @@ namespace ui
 
         switch(this->stmode)
         {
-            case am::QMenuStartMode::Menu:
-            case am::QMenuStartMode::MenuApplicationSuspended:
-            case am::QMenuStartMode::MenuLaunchFailure:
-            {
-                // Returned from applet/title
+            case am::QMenuStartMode::StartupScreen:
+                this->LoadStartupMenu();
+                break;
+            default:
                 this->StartPlayBGM();
                 this->LoadMenu();
-                break;
-            }
-            default:
-                this->LoadStartupMenu();
                 break;
         }
     }
@@ -159,7 +154,7 @@ namespace ui
         writer.Write<u128>(user_id);
         writer.FinishWrite();
 
-        this->status.selected_user = user_id;
+        memcpy(&this->status.selected_user, &user_id, sizeof(user_id));
     }
 
     u128 QMenuApplication::GetSelectedUser()
