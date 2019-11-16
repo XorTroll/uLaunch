@@ -47,6 +47,7 @@ namespace ui
             void SetItemMultiselected(u32 index, bool selected);
             bool IsItemMultiselected(u32 index);
             bool IsAnyMultiselected();
+            void SetEnabled(bool enabled);
         private:
             s32 y;
             u32 selitm;
@@ -56,6 +57,7 @@ namespace ui
             u8 movalpha;
             u32 textx;
             u32 texty;
+            bool enabled;
             pu::ui::Color suspclr;
             pu::ui::Color textclr;
             std::vector<std::string> icons;

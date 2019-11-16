@@ -607,6 +607,10 @@ namespace ui
 
     void MenuLayout::OnInput(u64 down, u64 up, u64 held, pu::ui::Touch pos)
     {
+        auto quickon = this->quickMenu->IsOn();
+        this->itemsMenu->SetEnabled(!quickon);
+        if(quickon) return;
+
         bool hasconn = net::HasConnection();
         if(this->last_hasconn != hasconn)
         {

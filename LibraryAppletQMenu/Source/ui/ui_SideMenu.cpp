@@ -23,6 +23,7 @@ namespace ui
         this->onselch = [&](u32){};
         this->scrolltpvalue = 50;
         this->scrollcount = 0;
+        this->enabled = true;
         this->SetY(y);
     }
 
@@ -139,6 +140,7 @@ namespace ui
     void SideMenu::OnInput(u64 Down, u64 Up, u64 Held, pu::ui::Touch Touch)
     {
         if(this->ricons.empty()) return;
+        if(!this->enabled) return;
 
         if(Down & KEY_LEFT) HandleMoveLeft();
         else if(Down & KEY_RIGHT) HandleMoveRight();
@@ -477,5 +479,10 @@ namespace ui
             }
         }
         return any;
+    }
+
+    void SideMenu::SetEnabled(bool enabled)
+    {
+        this->enabled = enabled;
     }
 }
