@@ -164,6 +164,7 @@ namespace cfg
             theme.manifest.author = meta.value("author", "");
             theme.path = themedir;
         }
+        else return LoadTheme("");
         return theme;
     }
 
