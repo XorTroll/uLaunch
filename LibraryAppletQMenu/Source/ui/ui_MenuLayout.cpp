@@ -1099,7 +1099,21 @@ namespace ui
 
     void MenuLayout::HandlePowerDialog()
     {
-        // ...
+        auto msg = os::GeneralChannelMessage::Invalid;
+
+        auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "power_dialog"), cfg::GetLanguageString(config.main_lang, config.default_lang, "power_dialog_info"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "power_sleep"), cfg::GetLanguageString(config.main_lang, config.default_lang, "power_power_off"), cfg::GetLanguageString(config.main_lang, config.default_lang, "power_reboot"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
+        if(sopt == 0) msg = os::GeneralChannelMessage::Sleep;
+        else if(sopt == 1) msg = os::GeneralChannelMessage::Shutdown;
+        else if(sopt == 2) msg = os::GeneralChannelMessage::Reboot;
+
+        if(msg != os::GeneralChannelMessage::Invalid)
+        {
+            os::SystemAppletMessage smsg = {};
+            smsg.magic = os::SAMSMagic;
+            smsg.message = (u32)msg;
+
+            os::PushSystemAppletMessage(smsg);
+        }
     }
 
     void MenuLayout::HandleMultiselectMoveToFolder(std::string folder)

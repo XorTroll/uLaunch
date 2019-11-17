@@ -87,7 +87,7 @@ namespace ui
             }
         }
 
-        Drawer->RenderRectangleFill({ 50, 50, 50, bgalpha }, 0, 0, 1280, 720);
+        Drawer->RenderRectangleFill({ 50, 50, 50, (u8)bgalpha }, 0, 0, 1280, 720);
 
         auto dir = this->GetCurrentDirection();
         Drawer->RenderTexture(this->nmain, MainItemX, MainItemY, { fgalpha, MainItemSize, MainItemSize, -1 });
@@ -218,6 +218,8 @@ namespace ui
             case QuickMenuDirection::DownRight:
                 x += (MainItemSize - CommonAreaSize);
                 y += (MainItemSize - CommonAreaSize);
+                break;
+            default:
                 break;
         }
         return std::make_tuple(x, y);

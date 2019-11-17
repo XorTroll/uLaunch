@@ -23,11 +23,12 @@ namespace os
         u32 magic; // "SAMS" -> System Applet message...?
         u32 unk;
         u32 message;
+        u8 data[0x400 - (sizeof(u32) * 3)];
     } PACKED;
 
     static constexpr u32 SAMSMagic = 0x534D4153;
 
-    static_assert(sizeof(SystemAppletMessage) == (sizeof(u32) * 3), "System applet message must be 0x400!");
+    static_assert(sizeof(SystemAppletMessage) == 0x400, "System applet message must be 0x400!");
 
     enum class AppletMessage : u32
     {
@@ -41,4 +42,6 @@ namespace os
         ChangePerformanceMode = 0x1F,
         SdCardOut = 33,
     };
+
+    Result PushSystemAppletMessage(SystemAppletMessage msg);
 }
