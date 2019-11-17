@@ -66,15 +66,18 @@ int main()
         // Information block sent as an extra storage to QMenu.
         am::QLibraryAppletReadStorage(&status, sizeof(status));
 
-        app_buf = new u8[RawRGBAScreenBufferSize]();
-        qmenu::Initialize();
-        
-        list = cfg::LoadTitleList(true);
+        // First read sent storages, then init the renderer (UI, which also inits RomFs), then init everything else
 
         if(smode != am::QMenuStartMode::Invalid)
         {
             auto renderer = pu::ui::render::Renderer::New(SDL_INIT_EVERYTHING, pu::ui::render::RendererInitOptions::RendererEverything, pu::ui::render::RendererHardwareFlags);
             qapp = ui::QMenuApplication::New(renderer);
+
+            // Renderer initializes RomFs, so we start initializing the rest of stuff here!
+            app_buf = new u8[RawRGBAScreenBufferSize]();
+            qmenu::Initialize();
+            
+            list = cfg::LoadTitleList(true);
 
             // Get system language and load translations (default one if not present)
             u64 lcode = 0;

@@ -125,11 +125,14 @@ namespace ui
 
         this->quickMenu = QuickMenu::New(cfg::GetAssetByTheme(theme, "ui/QuickMenuMain.png"));
 
-        this->quickMenu->SetEntry(QuickMenuDirection::Down, cfg::GetAssetByTheme(theme, "ui/QuickMenuSettingsItem.png"), std::bind(&MenuLayout::settings_Click, this));
-        this->quickMenu->SetEntry(QuickMenuDirection::Left, cfg::GetAssetByTheme(theme, "ui/QuickMenuWebItem.png"), std::bind(&MenuLayout::web_Click, this));
-        this->quickMenu->SetEntry(QuickMenuDirection::Right, cfg::GetAssetByTheme(theme, "ui/QuickMenuThemesItem.png"), std::bind(&MenuLayout::themes_Click, this));
-        this->quickMenu->SetEntry(QuickMenuDirection::UpLeft, cfg::GetAssetByTheme(theme, "ui/QuickMenuControllerItem.png"), std::bind(&MenuLayout::HandleControllerAppletOpen, this));
-        this->quickMenu->SetEntry(QuickMenuDirection::DownRight, cfg::GetAssetByTheme(theme, "ui/QuickMenuHelpItem.png"), std::bind(&MenuLayout::HandleShowHelp, this));
+        this->quickMenu->SetEntry(QuickMenuDirection::Up, cfg::GetAssetByTheme(theme, "ui/UserIcon.png"), std::bind(&MenuLayout::users_Click, this));
+        this->quickMenu->SetEntry(QuickMenuDirection::Down, cfg::GetAssetByTheme(theme, "ui/SettingsIcon.png"), std::bind(&MenuLayout::settings_Click, this));
+        this->quickMenu->SetEntry(QuickMenuDirection::Left, cfg::GetAssetByTheme(theme, "ui/WebIcon.png"), std::bind(&MenuLayout::web_Click, this));
+        this->quickMenu->SetEntry(QuickMenuDirection::Right, cfg::GetAssetByTheme(theme, "ui/ThemesIcon.png"), std::bind(&MenuLayout::themes_Click, this));
+        this->quickMenu->SetEntry(QuickMenuDirection::UpLeft, cfg::GetAssetByTheme(theme, "ui/ControllerIcon.png"), std::bind(&MenuLayout::HandleControllerAppletOpen, this));
+        this->quickMenu->SetEntry(QuickMenuDirection::UpRight, cfg::GetAssetByTheme(theme, "ui/AlbumIcon.png"), std::bind(&MenuLayout::HandleOpenAlbum, this));
+        this->quickMenu->SetEntry(QuickMenuDirection::DownLeft, cfg::GetAssetByTheme(theme, "ui/PowerIcon.png"), std::bind(&MenuLayout::HandlePowerDialog, this));
+        this->quickMenu->SetEntry(QuickMenuDirection::DownRight, cfg::GetAssetByTheme(theme, "ui/HelpIcon.png"), std::bind(&MenuLayout::HandleShowHelp, this));
 
         this->Add(this->quickMenu);
 
@@ -732,7 +735,6 @@ namespace ui
     {
         auto path = os::GetIconCacheImagePath(user);
         this->users->SetImage(path);
-        this->quickMenu->SetEntry(QuickMenuDirection::Up, path, std::bind(&MenuLayout::users_Click, this));
         this->users->SetWidth(50);
         this->users->SetHeight(50);
     }
@@ -1082,12 +1084,22 @@ namespace ui
 
     void MenuLayout::HandleShowHelp()
     {
+        // ...
+    }
+
+    void MenuLayout::HandleOpenAlbum()
+    {
         am::QMenuCommandWriter writer(am::QDaemonMessage::OpenAlbum);
         writer.FinishWrite();
 
         qapp->StopPlayBGM();
         qapp->CloseWithFadeOut();
         return;
+    }
+
+    void MenuLayout::HandlePowerDialog()
+    {
+        // ...
     }
 
     void MenuLayout::HandleMultiselectMoveToFolder(std::string folder)

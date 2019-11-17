@@ -151,19 +151,19 @@ namespace cfg
         Theme theme = {};
         theme.base_name = base_name;
         auto themedir = std::string(Q_THEMES_PATH) + "/" + base_name;
-        if(base_name.empty() || !fs::ExistsDirectory(themedir)) themedir = CFG_THEME_DEFAULT;
         auto metajson = themedir + "/theme/Manifest.json";
+        if(base_name.empty() || !fs::ExistsFile(metajson)) themedir = CFG_THEME_DEFAULT;
+        metajson = themedir + "/theme/Manifest.json";
         auto [rc, meta] = util::LoadJSONFromFile(metajson);
         if(R_SUCCEEDED(rc))
         {
             theme.manifest.name = meta.value("name", "'" + base_name + "'");
-            theme.manifest.format_version = meta.value("format_version", CurrentThemeFormatVersion);
+            theme.manifest.format_version = meta.value("format_version", 0);
             theme.manifest.release = meta.value("release", "");
             theme.manifest.description = meta.value("description", "");
             theme.manifest.author = meta.value("author", "");
             theme.path = themedir;
         }
-        else return LoadTheme("");
         return theme;
     }
 

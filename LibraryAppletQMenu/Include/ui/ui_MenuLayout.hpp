@@ -36,6 +36,8 @@ namespace ui
             void HandleThemesMenu();
             void HandleControllerAppletOpen();
             void HandleShowHelp();
+            void HandleOpenAlbum();
+            void HandlePowerDialog();
             void HandleMultiselectMoveToFolder(std::string folder);
             void StopMultiselect();
         private:
