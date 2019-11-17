@@ -68,17 +68,13 @@ namespace cfg
 
     std::string GetRecordIconPath(TitleRecord record)
     {
-        std::string icon;
-        if((TitleType)record.title_type == TitleType::Homebrew)
+        std::string icon = record.icon;
+        if(icon.empty())
         {
-            if(!record.icon.empty()) icon = record.icon;
-            else icon = GetNROCacheIconPath(record.nro_target.nro_path);
+            if((TitleType)record.title_type == TitleType::Homebrew) icon = GetNROCacheIconPath(record.nro_target.nro_path);
+            else if((TitleType)record.title_type == TitleType::Installed) icon = GetTitleCacheIconPath(record.app_id);
         }
-        else
-        {
-            if(!record.icon.empty()) icon = record.icon;
-            else icon = GetTitleCacheIconPath(record.app_id);
-        }
+        
         return icon;
     }
 
