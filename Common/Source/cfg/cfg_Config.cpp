@@ -253,6 +253,7 @@ namespace cfg
         if(!record.name.empty()) entry["name"] = record.name;
         if(!record.author.empty()) entry["author"] = record.author;
         if(!record.version.empty()) entry["version"] = record.version;
+        if(!record.icon.empty()) entry["icon"] = record.icon;
 
         // Prepare JSON path
         std::string basepath = Q_ENTRIES_PATH;
@@ -267,7 +268,6 @@ namespace cfg
             {
                 if(strcmp(record.nro_target.nro_path, record.nro_target.argv) != 0) entry["nro_argv"] = record.nro_target.argv;
             }
-            if(!record.icon.empty()) entry["icon"] = record.icon;
         }
         else if((TitleType)record.title_type == TitleType::Installed)
         {
