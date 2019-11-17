@@ -35,7 +35,8 @@ namespace am
         TryLogUser,
         RegisterUserPassword,
         ChangeUserPassword,
-        RemoveUserPassword
+        RemoveUserPassword,
+        OpenAlbum,
     };
 
     struct QDaemonStatus

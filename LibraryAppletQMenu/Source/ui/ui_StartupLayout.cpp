@@ -5,14 +5,14 @@
 #include <fs/fs_Stdio.hpp>
 
 extern ui::QMenuApplication::Ref qapp;
-extern cfg::ProcessedTheme theme;
+extern cfg::Theme theme;
 extern cfg::Config config;
 
 namespace ui
 {
     StartupLayout::StartupLayout()
     {
-        this->SetBackgroundImage(cfg::ProcessedThemeResource(theme, "ui/Background.png"));
+        this->SetBackgroundImage(cfg::GetAssetByTheme(theme, "ui/Background.png"));
         this->loadmenu = false;
 
         pu::ui::Color textclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));

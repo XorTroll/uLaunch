@@ -151,7 +151,7 @@ namespace cfg
         Theme theme = {};
         theme.base_name = base_name;
         auto themedir = std::string(Q_THEMES_PATH) + "/" + base_name;
-        if(base_name.empty()) themedir = CFG_THEME_DEFAULT;
+        if(base_name.empty() || !fs::ExistsDirectory(themedir)) themedir = CFG_THEME_DEFAULT;
         auto metajson = themedir + "/theme/Manifest.json";
         auto [rc, meta] = util::LoadJSONFromFile(metajson);
         if(R_SUCCEEDED(rc))
@@ -163,6 +163,7 @@ namespace cfg
             theme.manifest.author = meta.value("author", "");
             theme.path = themedir;
         }
+        else return LoadTheme("");
         return theme;
     }
 
@@ -179,39 +180,13 @@ namespace cfg
         return themes;
     }
 
-    std::string ThemeResource(Theme &base, std::string resource_base)
+    std::string GetAssetByTheme(Theme &base, std::string resource_base)
     {
         auto base_res = base.path + "/" + resource_base;
         if(fs::ExistsFile(base_res)) return base_res;
         base_res = std::string(CFG_THEME_DEFAULT) + "/" + resource_base;
         if(fs::ExistsFile(base_res)) return base_res;
         return "";
-    }
-
-    std::string ProcessedThemeResource(ProcessedTheme &base, std::string resource_base)
-    {
-        return ThemeResource(base.base, resource_base);
-    }
-
-    ProcessedTheme ProcessTheme(Theme &base)
-    {
-        ProcessedTheme processed;
-        processed.base = base;
-        auto uijson = ThemeResource(base, "ui/UI.json");
-        auto [rc, ui] = util::LoadJSONFromFile(uijson);
-        if(R_SUCCEEDED(rc))
-        {
-            processed.ui.suspended_final_alpha = ui.value("suspended_final_alpha", 80);
-            auto bgmjson = ThemeResource(base, "sound/BGM.json");
-            auto [rc, bgm] = util::LoadJSONFromFile(bgmjson);
-            if(R_SUCCEEDED(rc))
-            {
-                processed.sound.loop = bgm.value("loop", true);
-                processed.sound.fade_in = bgm.value("fade_in", true);
-                processed.sound.fade_out = bgm.value("fade_in", true);
-            }
-        }
-        return processed;
     }
 
     std::string GetLanguageJSONPath(std::string lang)
@@ -231,6 +206,7 @@ namespace cfg
         Config cfg = {};
         cfg.system_title_override_enabled = false; // Due to ban risk, have it disabled by default.
         cfg.viewer_usb_enabled = false; // Do not enable this by default due to conflicts with USB homebrew
+        cfg.theme_name = ""; // Default theme (none)
         SaveConfig(cfg);
         return cfg;
     }
@@ -244,6 +220,11 @@ namespace cfg
             cfg.theme_name = cfgjson.value("theme_name", "");
             cfg.system_title_override_enabled = cfgjson.value("system_title_override_enabled", false);
             cfg.viewer_usb_enabled = cfgjson.value("viewer_usb_enabled", false);
+        }
+        else
+        {
+            fs::DeleteFile(CFG_CONFIG_JSON);
+            return CreateNewAndLoadConfig();
         }
         return cfg;
     }

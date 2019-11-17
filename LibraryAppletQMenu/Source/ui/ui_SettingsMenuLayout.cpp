@@ -8,7 +8,7 @@
 #include <am/am_LibraryApplet.hpp>
 
 extern ui::QMenuApplication::Ref qapp;
-extern cfg::ProcessedTheme theme;
+extern cfg::Theme theme;
 extern cfg::Config config;
 
 namespace ui
@@ -39,7 +39,7 @@ namespace ui
 
     SettingsMenuLayout::SettingsMenuLayout()
     {
-        this->SetBackgroundImage(cfg::ProcessedThemeResource(theme, "ui/Background.png"));
+        this->SetBackgroundImage(cfg::GetAssetByTheme(theme, "ui/Background.png"));
 
         pu::ui::Color textclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
         pu::ui::Color menufocusclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("menu_focus_color", "#5ebcffff"));
@@ -121,7 +121,7 @@ namespace ui
         pu::ui::Color textclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
         auto itm = pu::ui::elm::MenuItem::New(name + ": " + value_display);
         itm->AddOnClick(std::bind(&SettingsMenuLayout::setting_Click, this, id));
-        itm->SetIcon(cfg::ProcessedThemeResource(theme, "ui/Setting" + std::string((id < 0) ? "No" : "") + "Editable.png"));
+        itm->SetIcon(cfg::GetAssetByTheme(theme, "ui/Setting" + std::string((id < 0) ? "No" : "") + "Editable.png"));
         itm->SetColor(textclr);
         this->settingsMenu->AddItem(itm);
     }

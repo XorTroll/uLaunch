@@ -2,6 +2,7 @@
 #include <os/os_Titles.hpp>
 #include <os/os_HomeMenu.hpp>
 #include <os/os_Account.hpp>
+#include <os/os_Misc.hpp>
 #include <fs/fs_Stdio.hpp>
 #include <am/am_Application.hpp>
 #include <am/am_LibraryApplet.hpp>
@@ -28,6 +29,7 @@ hb::TargetInput hbapplaunch_copy = {};
 hb::TargetInput hbapplaunch_flag = {};
 u64 titlelaunch_flag = 0;
 WebCommonConfig webapplet_flag = {};
+bool album_flag = false;
 
 HosMutex latestqlock;
 am::QMenuMessage latestqmenumsg = am::QMenuMessage::Invalid;
@@ -46,7 +48,7 @@ am::QDaemonStatus CreateStatus()
     if(am::ApplicationIsActive())
     {
         tmptype = cfg::TitleType::Installed;
-        if(am::ApplicationGetId() == OS_FLOG_APP_ID) tmptype = cfg::TitleType::Homebrew;
+        if(os::IsFlogTitle(am::ApplicationGetId())) tmptype = cfg::TitleType::Homebrew;
     }
 
     if(tmptype == cfg::TitleType::Installed) status.app_id = am::ApplicationGetId();
@@ -350,6 +352,13 @@ void HandleQMenuMessage()
 
                     break;
                 }
+                case am::QDaemonMessage::OpenAlbum:
+                {
+                    reader.FinishRead();
+                    album_flag = true;
+
+                    break;
+                }
                 default:
                     break;
             }
@@ -500,6 +509,8 @@ int main()
             if(!am::LibraryAppletIsActive())
             {
                 am::WebAppletStart(&webapplet_flag);
+                
+                /*
                 svcSleepThread(500'000'000);
                 if(!am::LibraryAppletIsActive())
                 {
@@ -507,8 +518,31 @@ int main()
                     auto status = CreateStatus();
                     am::QDaemon_LaunchQMenu(am::QMenuStartMode::MenuLaunchFailure, status);
                 }
+                */
+
                 sth_done = true;
                 memset(&webapplet_flag, 0, sizeof(webapplet_flag));
+            }
+        }
+        if(album_flag)
+        {
+            if(!am::LibraryAppletIsActive())
+            {
+                u8 albumflag = 2;
+                am::LibraryAppletStart(AppletId_photoViewer, 0x10000, &albumflag, sizeof(albumflag));
+
+                /*
+                svcSleepThread(500'000'000);
+                if(!am::LibraryAppletIsActive())
+                {
+                    // Web applet failed to launch...
+                    auto status = CreateStatus();
+                    am::QDaemon_LaunchQMenu(am::QMenuStartMode::MenuLaunchFailure, status);
+                }
+                */
+
+                sth_done = true;
+                album_flag = false;
             }
         }
         if(titlelaunch_flag > 0)
@@ -544,6 +578,7 @@ int main()
             {
                 case am::QHbTargetAppletId:
                 case AppletId_web:
+                case AppletId_photoViewer:
                 {
                     auto status = CreateStatus();
                     am::QDaemon_LaunchQMenu(am::QMenuStartMode::Menu, status);

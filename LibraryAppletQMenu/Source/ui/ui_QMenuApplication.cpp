@@ -2,7 +2,7 @@
 #include <util/util_Misc.hpp>
 
 extern u8 *app_buf;
-extern cfg::ProcessedTheme theme;
+extern cfg::Theme theme;
 
 namespace ui
 {
@@ -13,7 +13,7 @@ namespace ui
 
     void QMenuApplication::OnLoad()
     {
-        pu::ui::render::SetDefaultFont(cfg::ProcessedThemeResource(theme, "ui/Font.ttf"));
+        pu::ui::render::SetDefaultFont(cfg::GetAssetByTheme(theme, "ui/Font.ttf"));
 
         if(this->IsSuspended())
         {
@@ -21,9 +21,9 @@ namespace ui
             appletGetLastApplicationCaptureImageEx(app_buf, RawRGBAScreenBufferSize, &flag);
         }
 
-        auto [_rc, jui] = util::LoadJSONFromFile(cfg::ProcessedThemeResource(theme, "ui/UI.json"));
+        auto [_rc, jui] = util::LoadJSONFromFile(cfg::GetAssetByTheme(theme, "ui/UI.json"));
         this->uijson = jui;
-        auto [_rc2, jbgm] = util::LoadJSONFromFile(cfg::ProcessedThemeResource(theme, "sound/BGM.json"));
+        auto [_rc2, jbgm] = util::LoadJSONFromFile(cfg::GetAssetByTheme(theme, "sound/BGM.json"));
         this->bgmjson = jbgm;
         this->bgm_loop = this->bgmjson.value("loop", true);
         this->bgm_fade_in_ms = this->bgmjson.value("fade_in_ms", 1500);
@@ -33,7 +33,7 @@ namespace ui
         pu::ui::Color toastbaseclr = pu::ui::Color::FromHex(GetUIConfigValue<std::string>("toast_base_color", "#282828ff"));
         this->notifToast = pu::ui::extras::Toast::New("...", 20, toasttextclr, toastbaseclr);
 
-        this->bgm = pu::audio::Open(cfg::ProcessedThemeResource(theme, "sound/BGM.mp3"));
+        this->bgm = pu::audio::Open(cfg::GetAssetByTheme(theme, "sound/BGM.mp3"));
 
         this->startupLayout = StartupLayout::New();
         this->menuLayout = MenuLayout::New(app_buf, this->uijson.value("suspended_final_alpha", 80));

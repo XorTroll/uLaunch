@@ -49,30 +49,11 @@ namespace cfg
         std::string author;
     };
 
-    struct UIConfig
-    {
-        u8 suspended_final_alpha;
-    };
-
-    struct SoundConfig
-    {
-        bool loop;
-        bool fade_in;
-        bool fade_out;
-    };
-
     struct Theme
     {
         std::string base_name;
         std::string path;
         ThemeManifest manifest;
-    };
-
-    struct ProcessedTheme
-    {
-        Theme base;
-        UIConfig ui;
-        SoundConfig sound;
     };
 
     struct RecordInformation
@@ -91,7 +72,7 @@ namespace cfg
         JSON default_lang;
     };
 
-    static constexpr u32 CurrentThemeFormatVersion = 0;
+    static constexpr u32 CurrentThemeFormatVersion = 1;
 
     #define CFG_THEME_DEFAULT "romfs:/default"
     #define CFG_LANG_DEFAULT "romfs:/LangDefault.json"
@@ -105,9 +86,12 @@ namespace cfg
 
     Theme LoadTheme(std::string base_name);
     std::vector<Theme> LoadThemes();
-    std::string ThemeResource(Theme &base, std::string resource_base);
-    std::string ProcessedThemeResource(ProcessedTheme &base, std::string resource_base);
-    ProcessedTheme ProcessTheme(Theme &base);
+    std::string GetAssetByTheme(Theme &base, std::string resource_base);
+
+    inline bool ThemeIsDefault(Theme &base)
+    {
+        return base.base_name.empty();
+    }
 
     std::string GetLanguageJSONPath(std::string lang);
     std::string GetLanguageString(JSON &lang, JSON &def, std::string name);

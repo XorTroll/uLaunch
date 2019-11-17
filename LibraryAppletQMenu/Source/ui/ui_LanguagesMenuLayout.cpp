@@ -8,14 +8,14 @@
 #include <am/am_LibraryApplet.hpp>
 
 extern ui::QMenuApplication::Ref qapp;
-extern cfg::ProcessedTheme theme;
+extern cfg::Theme theme;
 extern cfg::Config config;
 
 namespace ui
 {
     LanguagesMenuLayout::LanguagesMenuLayout()
     {
-        this->SetBackgroundImage(cfg::ProcessedThemeResource(theme, "ui/Background.png"));
+        this->SetBackgroundImage(cfg::GetAssetByTheme(theme, "ui/Background.png"));
 
         pu::ui::Color textclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
         pu::ui::Color menufocusclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("menu_focus_color", "#5ebcffff"));

@@ -22,7 +22,7 @@ ui::QMenuApplication::Ref qapp;
 cfg::TitleList list;
 std::vector<cfg::TitleRecord> homebrew;
 cfg::Config config;
-cfg::ProcessedTheme theme;
+cfg::Theme theme;
 u8 *app_buf;
 
 namespace qmenu
@@ -38,12 +38,9 @@ namespace qmenu
 
         am::QMenu_InitializeDaemonService();
 
-        // Load menu config
+        // Load menu config and theme
         config = cfg::EnsureConfig();
-
-        // Load theme
-        auto th = cfg::LoadTheme(config.theme_name);
-        theme = cfg::ProcessTheme(th);
+        theme = cfg::LoadTheme(config.theme_name);
     }
 
     void Exit()
@@ -84,13 +81,16 @@ int main()
             setGetLanguageCode(&lcode);
             std::string syslang = (char*)&lcode;
             auto lpath = cfg::GetLanguageJSONPath(syslang);
-            auto [_rc, defjson] = util::LoadJSONFromFile(CFG_LANG_DEFAULT);
-            config.default_lang = defjson;
-            config.main_lang = defjson;
-            if(fs::ExistsFile(lpath))
+            auto [rc1, defjson] = util::LoadJSONFromFile(CFG_LANG_DEFAULT);
+            if(R_SUCCEEDED(rc1))
             {
-                auto [_rc2, ljson] = util::LoadJSONFromFile(lpath);
-                config.main_lang = ljson;
+                config.default_lang = defjson;
+                config.main_lang = defjson;
+                if(fs::ExistsFile(lpath))
+                {
+                    auto [rc2, ljson] = util::LoadJSONFromFile(lpath);
+                    if(R_SUCCEEDED(rc2)) config.main_lang = ljson;
+                }
             }
 
             qapp->SetInformation(smode, status);

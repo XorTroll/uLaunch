@@ -8,9 +8,15 @@ namespace util
         JSON ret = JSON::object();
         if(fs::ExistsFile(path))
         {
-            std::ifstream ifs(path);
-            ret = JSON::parse(ifs);
-            return SuccessResultWith(ret);
+            try
+            {
+                std::ifstream ifs(path);
+                ret = JSON::parse(ifs);
+                return SuccessResultWith(ret);
+            }
+            catch(std::exception&)
+            {
+            }
         }
         return MakeResultWith(RES_VALUE(Misc, InvalidJSONFile), ret);
     }

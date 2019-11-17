@@ -14,7 +14,7 @@ extern ui::QMenuApplication::Ref qapp;
 extern cfg::TitleList list;
 extern std::vector<cfg::TitleRecord> homebrew;
 extern cfg::Config config;
-extern cfg::ProcessedTheme theme;
+extern cfg::Theme theme;
 
 namespace ui
 {
@@ -41,11 +41,11 @@ namespace ui
         this->Add(this->bgSuspendedRaw);
 
         // Load banners first
-        this->topMenuImage = pu::ui::elm::Image::New(40, 35, cfg::ProcessedThemeResource(theme, "ui/TopMenu.png"));
+        this->topMenuImage = pu::ui::elm::Image::New(40, 35, cfg::GetAssetByTheme(theme, "ui/TopMenu.png"));
         qapp->ApplyConfigForElement("main_menu", "top_menu_bg", this->topMenuImage);
         this->Add(this->topMenuImage);
 
-        this->bannerImage = pu::ui::elm::Image::New(0, 585, cfg::ProcessedThemeResource(theme, "ui/BannerInstalled.png"));
+        this->bannerImage = pu::ui::elm::Image::New(0, 585, cfg::GetAssetByTheme(theme, "ui/BannerInstalled.png"));
         qapp->ApplyConfigForElement("main_menu", "banner_image", this->bannerImage);
         this->Add(this->bannerImage);
 
@@ -57,14 +57,14 @@ namespace ui
         qapp->ApplyConfigForElement("main_menu", "logo_icon", this->logo, false); // Sorry theme makers... logo must be visible, but can be moved
         this->Add(this->logo);
 
-        this->connIcon = pu::ui::elm::Image::New(80, 53, cfg::ProcessedThemeResource(theme, "ui/NoConnectionIcon.png"));
+        this->connIcon = pu::ui::elm::Image::New(80, 53, cfg::GetAssetByTheme(theme, "ui/NoConnectionIcon.png"));
         qapp->ApplyConfigForElement("main_menu", "connection_icon", this->connIcon);
         this->Add(this->connIcon);
         this->users = ClickableImage::New(270, 53, ""); // On layout creation, no user is still selected...
         this->users->SetOnClick(std::bind(&MenuLayout::users_Click, this));
         qapp->ApplyConfigForElement("main_menu", "user_icon", this->users);
         this->Add(this->users);
-        this->web = ClickableImage::New(340, 53, cfg::ProcessedThemeResource(theme, "ui/WebIcon.png"));
+        this->web = ClickableImage::New(340, 53, cfg::GetAssetByTheme(theme, "ui/WebIcon.png"));
         this->web->SetOnClick(std::bind(&MenuLayout::web_Click, this));
         qapp->ApplyConfigForElement("main_menu", "web_icon", this->web);
         this->Add(this->web);
@@ -80,15 +80,15 @@ namespace ui
         this->batteryText->SetColor(textclr);
         qapp->ApplyConfigForElement("main_menu", "battery_text", this->batteryText);
         this->Add(this->batteryText);
-        this->batteryIcon = pu::ui::elm::Image::New(700, 80, cfg::ProcessedThemeResource(theme, "ui/BatteryNormalIcon.png"));
+        this->batteryIcon = pu::ui::elm::Image::New(700, 80, cfg::GetAssetByTheme(theme, "ui/BatteryNormalIcon.png"));
         qapp->ApplyConfigForElement("main_menu", "battery_icon", this->batteryIcon);
         this->Add(this->batteryIcon);
 
-        this->settings = ClickableImage::New(880, 53, cfg::ProcessedThemeResource(theme, "ui/SettingsIcon.png"));
+        this->settings = ClickableImage::New(880, 53, cfg::GetAssetByTheme(theme, "ui/SettingsIcon.png"));
         this->settings->SetOnClick(std::bind(&MenuLayout::settings_Click, this));
         qapp->ApplyConfigForElement("main_menu", "settings_icon", this->settings);
         this->Add(this->settings);
-        this->themes = ClickableImage::New(950, 53, cfg::ProcessedThemeResource(theme, "ui/ThemesIcon.png"));
+        this->themes = ClickableImage::New(950, 53, cfg::GetAssetByTheme(theme, "ui/ThemesIcon.png"));
         this->themes->SetOnClick(std::bind(&MenuLayout::themes_Click, this));
         qapp->ApplyConfigForElement("main_menu", "themes_icon", this->themes);
         this->Add(this->themes);
@@ -98,7 +98,7 @@ namespace ui
         qapp->ApplyConfigForElement("main_menu", "firmware_text", this->fwText);
         this->Add(this->fwText);
 
-        this->menuToggle = ClickableImage::New(520, 200, cfg::ProcessedThemeResource(theme, "ui/ToggleClick.png"));
+        this->menuToggle = ClickableImage::New(520, 200, cfg::GetAssetByTheme(theme, "ui/ToggleClick.png"));
         this->menuToggle->SetOnClick(std::bind(&MenuLayout::menuToggle_Click, this));
         qapp->ApplyConfigForElement("main_menu", "menu_toggle_button", this->menuToggle);
         this->Add(this->menuToggle);
@@ -116,29 +116,29 @@ namespace ui
         qapp->ApplyConfigForElement("main_menu", "banner_version_text", this->itemVersion);
         this->Add(this->itemVersion);
 
-        this->itemsMenu = SideMenu::New(pu::ui::Color(0, 255, 120, 255), cfg::ProcessedThemeResource(theme, "ui/Cursor.png"), cfg::ProcessedThemeResource(theme, "ui/Suspended.png"), cfg::ProcessedThemeResource(theme, "ui/Multiselect.png"), menutextx, menutexty, menutextsz, textclr, 294);
+        this->itemsMenu = SideMenu::New(pu::ui::Color(0, 255, 120, 255), cfg::GetAssetByTheme(theme, "ui/Cursor.png"), cfg::GetAssetByTheme(theme, "ui/Suspended.png"), cfg::GetAssetByTheme(theme, "ui/Multiselect.png"), menutextx, menutexty, menutextsz, textclr, 294);
         this->MoveFolder("", false);
         this->itemsMenu->SetOnItemSelected(std::bind(&MenuLayout::menu_Click, this, std::placeholders::_1, std::placeholders::_2));
         this->itemsMenu->SetOnSelectionChanged(std::bind(&MenuLayout::menu_OnSelected, this, std::placeholders::_1));
         qapp->ApplyConfigForElement("main_menu", "items_menu", this->itemsMenu, false); // Main menu must be visible, and only Y is customizable here
         this->Add(this->itemsMenu);
 
-        this->quickMenu = QuickMenu::New(cfg::ProcessedThemeResource(theme, "ui/QuickMenuMain.png"));
+        this->quickMenu = QuickMenu::New(cfg::GetAssetByTheme(theme, "ui/QuickMenuMain.png"));
 
-        this->quickMenu->SetEntry(QuickMenuDirection::Down, cfg::ProcessedThemeResource(theme, "ui/QuickMenuSettingsItem.png"), std::bind(&MenuLayout::settings_Click, this));
-        this->quickMenu->SetEntry(QuickMenuDirection::Left, cfg::ProcessedThemeResource(theme, "ui/QuickMenuWebItem.png"), std::bind(&MenuLayout::web_Click, this));
-        this->quickMenu->SetEntry(QuickMenuDirection::Right, cfg::ProcessedThemeResource(theme, "ui/QuickMenuThemesItem.png"), std::bind(&MenuLayout::themes_Click, this));
-        this->quickMenu->SetEntry(QuickMenuDirection::UpLeft, cfg::ProcessedThemeResource(theme, "ui/QuickMenuControllerItem.png"), std::bind(&MenuLayout::HandleControllerAppletOpen, this));
-        this->quickMenu->SetEntry(QuickMenuDirection::DownRight, cfg::ProcessedThemeResource(theme, "ui/QuickMenuHelpItem.png"), std::bind(&MenuLayout::HandleShowHelp, this));
+        this->quickMenu->SetEntry(QuickMenuDirection::Down, cfg::GetAssetByTheme(theme, "ui/QuickMenuSettingsItem.png"), std::bind(&MenuLayout::settings_Click, this));
+        this->quickMenu->SetEntry(QuickMenuDirection::Left, cfg::GetAssetByTheme(theme, "ui/QuickMenuWebItem.png"), std::bind(&MenuLayout::web_Click, this));
+        this->quickMenu->SetEntry(QuickMenuDirection::Right, cfg::GetAssetByTheme(theme, "ui/QuickMenuThemesItem.png"), std::bind(&MenuLayout::themes_Click, this));
+        this->quickMenu->SetEntry(QuickMenuDirection::UpLeft, cfg::GetAssetByTheme(theme, "ui/QuickMenuControllerItem.png"), std::bind(&MenuLayout::HandleControllerAppletOpen, this));
+        this->quickMenu->SetEntry(QuickMenuDirection::DownRight, cfg::GetAssetByTheme(theme, "ui/QuickMenuHelpItem.png"), std::bind(&MenuLayout::HandleShowHelp, this));
 
         this->Add(this->quickMenu);
 
         this->tp = std::chrono::steady_clock::now();
 
-        this->sfxTitleLaunch = pu::audio::Load(cfg::ProcessedThemeResource(theme, "sound/TitleLaunch.wav"));
-        this->sfxMenuToggle = pu::audio::Load(cfg::ProcessedThemeResource(theme, "sound/MenuToggle.wav"));
+        this->sfxTitleLaunch = pu::audio::Load(cfg::GetAssetByTheme(theme, "sound/TitleLaunch.wav"));
+        this->sfxMenuToggle = pu::audio::Load(cfg::GetAssetByTheme(theme, "sound/MenuToggle.wav"));
 
-        this->SetBackgroundImage(cfg::ProcessedThemeResource(theme, "ui/Background.png"));
+        this->SetBackgroundImage(cfg::GetAssetByTheme(theme, "ui/Background.png"));
         this->SetOnInput(std::bind(&MenuLayout::OnInput, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
     }
 
@@ -479,7 +479,7 @@ namespace ui
             {
                 this->itemAuthor->SetVisible(false);
                 this->itemVersion->SetVisible(false);
-                this->bannerImage->SetImage(cfg::ProcessedThemeResource(theme, "ui/BannerHomebrew.png"));
+                this->bannerImage->SetImage(cfg::GetAssetByTheme(theme, "ui/BannerHomebrew.png"));
                 this->itemName->SetText(cfg::GetLanguageString(config.main_lang, config.default_lang, "hbmenu_launch"));
             }
             else
@@ -500,7 +500,7 @@ namespace ui
                 }
                 if(strlen(info.nacp.version)) this->itemVersion->SetText(info.nacp.version);
                 else this->itemVersion->SetText("0");
-                this->bannerImage->SetImage(cfg::ProcessedThemeResource(theme, "ui/BannerHomebrew.png"));
+                this->bannerImage->SetImage(cfg::GetAssetByTheme(theme, "ui/BannerHomebrew.png"));
             }
         }
         else
@@ -516,7 +516,7 @@ namespace ui
                 else
                 {
                     auto foldr = list.folders[realidx];
-                    this->bannerImage->SetImage(cfg::ProcessedThemeResource(theme, "ui/BannerFolder.png"));
+                    this->bannerImage->SetImage(cfg::GetAssetByTheme(theme, "ui/BannerFolder.png"));
                     auto sz = foldr.titles.size();
                     this->itemAuthor->SetText(std::to_string(sz) + " " + ((sz == 1) ? cfg::GetLanguageString(config.main_lang, config.default_lang, "folder_entry_single") : cfg::GetLanguageString(config.main_lang, config.default_lang, "folder_entry_mult")));
                     this->itemVersion->SetVisible(false);
@@ -542,11 +542,11 @@ namespace ui
                 }
                 if(strlen(info.nacp.version)) this->itemVersion->SetText(info.nacp.version);
                 else this->itemVersion->SetText("0");
-                if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew) this->bannerImage->SetImage(cfg::ProcessedThemeResource(theme, "ui/BannerHomebrew.png"));
-                else this->bannerImage->SetImage(cfg::ProcessedThemeResource(theme, "ui/BannerInstalled.png"));
+                if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew) this->bannerImage->SetImage(cfg::GetAssetByTheme(theme, "ui/BannerHomebrew.png"));
+                else this->bannerImage->SetImage(cfg::GetAssetByTheme(theme, "ui/BannerInstalled.png"));
             }
         }
-        if(!this->curfolder.empty()) this->bannerImage->SetImage(cfg::ProcessedThemeResource(theme, "ui/BannerFolder.png")); // This way user always knows he's inside a folder
+        if(!this->curfolder.empty()) this->bannerImage->SetImage(cfg::GetAssetByTheme(theme, "ui/BannerFolder.png")); // This way user always knows he's inside a folder
     }
 
     void MenuLayout::MoveFolder(std::string name, bool fade)
@@ -566,13 +566,13 @@ namespace ui
         }
 
         this->itemsMenu->ClearItems();
-        if(this->homebrew_mode) this->itemsMenu->AddItem(cfg::ProcessedThemeResource(theme, "ui/Hbmenu.png"));
+        if(this->homebrew_mode) this->itemsMenu->AddItem(cfg::GetAssetByTheme(theme, "ui/Hbmenu.png"));
         else
         {
             if(name.empty())
             {
                 STL_REMOVE_IF(list.folders, fldr, (fldr.titles.empty())) // Remove empty folders
-                for(auto folder: list.folders) this->itemsMenu->AddItem(cfg::ProcessedThemeResource(theme, "ui/Folder.png"), folder.name);
+                for(auto folder: list.folders) this->itemsMenu->AddItem(cfg::GetAssetByTheme(theme, "ui/Folder.png"), folder.name);
             }
         }
 
@@ -614,8 +614,8 @@ namespace ui
         bool hasconn = net::HasConnection();
         if(this->last_hasconn != hasconn)
         {
-            if(hasconn) this->connIcon->SetImage(cfg::ProcessedThemeResource(theme, "ui/ConnectionIcon.png"));
-            else this->connIcon->SetImage(cfg::ProcessedThemeResource(theme, "ui/NoConnectionIcon.png"));
+            if(hasconn) this->connIcon->SetImage(cfg::GetAssetByTheme(theme, "ui/ConnectionIcon.png"));
+            else this->connIcon->SetImage(cfg::GetAssetByTheme(theme, "ui/NoConnectionIcon.png"));
             this->last_hasconn = hasconn;
         }
 
@@ -633,8 +633,8 @@ namespace ui
         if(this->last_charge != ch)
         {
             this->last_charge = ch;
-            if(ch) this->batteryIcon->SetImage(cfg::ProcessedThemeResource(theme, "ui/BatteryChargingIcon.png"));
-            else this->batteryIcon->SetImage(cfg::ProcessedThemeResource(theme, "ui/BatteryNormalIcon.png"));
+            if(ch) this->batteryIcon->SetImage(cfg::GetAssetByTheme(theme, "ui/BatteryChargingIcon.png"));
+            else this->batteryIcon->SetImage(cfg::GetAssetByTheme(theme, "ui/BatteryNormalIcon.png"));
         }
 
         auto ctp = std::chrono::steady_clock::now();
@@ -1082,7 +1082,12 @@ namespace ui
 
     void MenuLayout::HandleShowHelp()
     {
-        
+        am::QMenuCommandWriter writer(am::QDaemonMessage::OpenAlbum);
+        writer.FinishWrite();
+
+        qapp->StopPlayBGM();
+        qapp->CloseWithFadeOut();
+        return;
     }
 
     void MenuLayout::HandleMultiselectMoveToFolder(std::string folder)

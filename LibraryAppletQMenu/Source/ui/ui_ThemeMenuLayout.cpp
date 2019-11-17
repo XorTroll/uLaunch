@@ -5,20 +5,20 @@
 #include <fs/fs_Stdio.hpp>
 
 extern ui::QMenuApplication::Ref qapp;
-extern cfg::ProcessedTheme theme;
+extern cfg::Theme theme;
 extern cfg::Config config;
 
 namespace ui
 {
     ThemeMenuLayout::ThemeMenuLayout()
     {
-        this->SetBackgroundImage(cfg::ProcessedThemeResource(theme, "ui/Background.png"));
+        this->SetBackgroundImage(cfg::GetAssetByTheme(theme, "ui/Background.png"));
 
         pu::ui::Color textclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
         pu::ui::Color menufocusclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("menu_focus_color", "#5ebcffff"));
         pu::ui::Color menubgclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("menu_bg_color", "#0094ffff"));
 
-        this->curThemeBanner = pu::ui::elm::Image::New(0, 585, cfg::ProcessedThemeResource(theme, "ui/BannerTheme.png"));
+        this->curThemeBanner = pu::ui::elm::Image::New(0, 585, cfg::GetAssetByTheme(theme, "ui/BannerTheme.png"));
         qapp->ApplyConfigForElement("themes_menu", "banner_image", this->curThemeBanner);
         this->Add(this->curThemeBanner);
 
@@ -56,8 +56,7 @@ namespace ui
     void ThemeMenuLayout::Reload()
     {
         pu::ui::Color textclr = pu::ui::Color::FromHex(qapp->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
-        bool default_theme = theme.base.base_name.empty();
-        if(default_theme)
+        if(cfg::ThemeIsDefault(theme))
         {
             this->curThemeText->SetText(cfg::GetLanguageString(config.main_lang, config.default_lang, "theme_no_custom"));
             this->curThemeName->SetVisible(false);
@@ -70,14 +69,14 @@ namespace ui
         {
             this->curThemeText->SetText(cfg::GetLanguageString(config.main_lang, config.default_lang, "theme_current") + ":");
             this->curThemeName->SetVisible(true);
-            this->curThemeName->SetText(theme.base.manifest.name);
+            this->curThemeName->SetText(theme.manifest.name);
             this->curThemeAuthor->SetVisible(true);
-            this->curThemeAuthor->SetText(theme.base.manifest.author);
+            this->curThemeAuthor->SetText(theme.manifest.author);
             this->curThemeVersion->SetVisible(true);
-            this->curThemeVersion->SetText("v" + theme.base.manifest.release);
+            this->curThemeVersion->SetText("v" + theme.manifest.release);
             this->curThemeBanner->SetVisible(true);
             this->curThemeIcon->SetVisible(true);
-            this->curThemeIcon->SetImage(theme.base.path + "/theme/Icon.png");
+            this->curThemeIcon->SetImage(theme.path + "/theme/Icon.png");
             this->curThemeIcon->SetWidth(100);
             this->curThemeIcon->SetHeight(100);
         }
@@ -121,7 +120,7 @@ namespace ui
         auto idx = this->themesMenu->GetSelectedIndex();
         if(idx == 0)
         {
-            if(theme.base.base_name.empty()) qapp->ShowNotification(cfg::GetLanguageString(config.main_lang, config.default_lang, "theme_no_custom"));
+            if(cfg::ThemeIsDefault(theme)) qapp->ShowNotification(cfg::GetLanguageString(config.main_lang, config.default_lang, "theme_no_custom"));
             else
             {
                 auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "theme_reset"), cfg::GetLanguageString(config.main_lang, config.default_lang, "theme_reset_conf"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
@@ -138,7 +137,7 @@ namespace ui
             idx--;
             auto seltheme = this->loadedThemes[idx];
             auto iconpath = seltheme.path + "/theme/Icon.png";
-            if(seltheme.base_name == theme.base.base_name) qapp->ShowNotification(cfg::GetLanguageString(config.main_lang, config.default_lang, "theme_active_this"));
+            if(seltheme.base_name == theme.base_name) qapp->ShowNotification(cfg::GetLanguageString(config.main_lang, config.default_lang, "theme_active_this"));
             else
             {
                 auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "theme_set"), cfg::GetLanguageString(config.main_lang, config.default_lang, "theme_set_conf"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true, iconpath);
