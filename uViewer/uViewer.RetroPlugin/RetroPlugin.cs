@@ -95,7 +95,18 @@ namespace uViewer.RetroPlugin
                 if(ofd.ShowDialog() == DialogResult.OK)
                 {
                     var tmpfile = ofd.FileName;
-                    if(!tmpfile.StartsWith(sd_root)) MessageBox.Show("Please, select a ROM file from the SD card.");
+                    if(!tmpfile.StartsWith(sd_root))
+                    {
+                        var rc = MessageBox.Show("The ROM will be copied to the SD card with a random name (ulaunch/uviewer_meta/retro/). Continue?", "uViewer (retro) - Selecting non-SD ROM file", MessageBoxButtons.YesNo);
+                        if(rc != DialogResult.Yes) return;
+
+                        Random r = new Random();
+                        Directory.CreateDirectory(Path.Combine(sd_root, "ulaunch", "uviewer_meta", "retro"));
+                        var newfile = Path.Combine(sd_root, "ulaunch", "uviewer_meta", "retro", r.Next().ToString() + Path.GetExtension(tmpfile));
+                        File.Copy(tmpfile, newfile);
+                        selected_rom = newfile.Replace(sd_root, "sdmc:/").Replace('\\', '/');
+                        MessageBox.Show("Copied ROM: \"" + selected_rom + "\"");
+                    }
                     else
                     {
                         selected_rom = tmpfile.Replace(sd_root, "sdmc:/").Replace('\\', '/');

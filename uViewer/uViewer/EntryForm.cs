@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -14,6 +14,7 @@ namespace uViewer
     public partial class EntryForm : Form
     {
         public Plugins.PluginContext Plugin;
+        public string LoadedIcon = null;
 
         public EntryForm(Plugins.PluginContext plugin)
         {
@@ -131,6 +132,22 @@ namespace uViewer
             if(!string.IsNullOrEmpty(author)) dynjson.author = author;
             if(!string.IsNullOrEmpty(version)) dynjson.version = version;
 
+            if(!string.IsNullOrEmpty(LoadedIcon))
+            {
+                if(!LoadedIcon.StartsWith(Utils.SDDrivePath))
+                {
+                    var rc = MessageBox.Show("Since the selected icon isn't in the SD card, a copy will be made in 'uviewer_meta' directory to be used by uLaunch. Continue with the creation?", "uViewer - Entry creation", MessageBoxButtons.YesNo);
+                    if(rc != DialogResult.Yes) return;
+
+                    Random r = new Random();
+                    Directory.CreateDirectory(Path.Combine(Utils.SDDrivePath, "ulaunch", "uviewer_meta"));
+                    var newfile = Path.Combine(Utils.SDDrivePath, "ulaunch", "uviewer_meta", r.Next().ToString() + Path.GetExtension(LoadedIcon));
+                    IconPicture.Image.Save(newfile);
+                    dynjson.icon = newfile.Replace(Utils.SDDrivePath, "sdmc:/").Replace('\\', '/');
+                }
+                else dynjson.icon = LoadedIcon.Replace(Utils.SDDrivePath, "sdmc:/").Replace('\\', '/');
+            }
+
             string json = dynjson.ToString();
 
             SHA256 cd = SHA256.Create();
@@ -141,6 +158,22 @@ namespace uViewer
             File.WriteAllText(entry, json);
 
             MessageBox.Show("The entry was saved in uLaunch's entry directory as '" + fname + "'.");
+        }
+
+        private void IconButton_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog ofd = new OpenFileDialog
+            {
+                Title = "Select entry icon",
+                Filter = "Image (*.png, *.jpg, *.bmp)|*.png;*.jpg;*.bmp",
+                Multiselect = false
+            };
+            if(ofd.ShowDialog() == DialogResult.OK)
+            {
+                var bmp = new Bitmap(ofd.FileName);
+                IconPicture.Image = bmp;
+                LoadedIcon = ofd.FileName;
+            }
         }
     }
 }

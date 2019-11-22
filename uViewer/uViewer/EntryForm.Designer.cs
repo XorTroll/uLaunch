@@ -42,11 +42,12 @@
             this.NameText = new System.Windows.Forms.TextBox();
             this.NameLabel = new System.Windows.Forms.Label();
             this.IconGroup = new System.Windows.Forms.GroupBox();
-            this.pictureBox1 = new System.Windows.Forms.PictureBox();
+            this.IconPicture = new System.Windows.Forms.PictureBox();
             this.MakeButton = new System.Windows.Forms.Button();
+            this.IconButton = new System.Windows.Forms.Button();
             this.MainGroup.SuspendLayout();
             this.IconGroup.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.IconPicture)).BeginInit();
             this.SuspendLayout();
             // 
             // InformationLabel
@@ -159,37 +160,49 @@
             // 
             // IconGroup
             // 
-            this.IconGroup.Controls.Add(this.pictureBox1);
+            this.IconGroup.Controls.Add(this.IconButton);
+            this.IconGroup.Controls.Add(this.IconPicture);
             this.IconGroup.Location = new System.Drawing.Point(368, 56);
             this.IconGroup.Name = "IconGroup";
-            this.IconGroup.Size = new System.Drawing.Size(269, 293);
+            this.IconGroup.Size = new System.Drawing.Size(269, 321);
             this.IconGroup.TabIndex = 2;
             this.IconGroup.TabStop = false;
             this.IconGroup.Text = "Entry icon";
             // 
-            // pictureBox1
+            // IconPicture
             // 
-            this.pictureBox1.Location = new System.Drawing.Point(6, 19);
-            this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(256, 256);
-            this.pictureBox1.TabIndex = 0;
-            this.pictureBox1.TabStop = false;
+            this.IconPicture.Location = new System.Drawing.Point(6, 19);
+            this.IconPicture.Name = "IconPicture";
+            this.IconPicture.Size = new System.Drawing.Size(256, 256);
+            this.IconPicture.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.IconPicture.TabIndex = 0;
+            this.IconPicture.TabStop = false;
             // 
             // MakeButton
             // 
-            this.MakeButton.Location = new System.Drawing.Point(368, 364);
+            this.MakeButton.Location = new System.Drawing.Point(158, 393);
             this.MakeButton.Name = "MakeButton";
-            this.MakeButton.Size = new System.Drawing.Size(269, 39);
+            this.MakeButton.Size = new System.Drawing.Size(479, 32);
             this.MakeButton.TabIndex = 3;
             this.MakeButton.Text = "Create";
             this.MakeButton.UseVisualStyleBackColor = true;
             this.MakeButton.Click += new System.EventHandler(this.MakeButton_Click);
             // 
+            // IconButton
+            // 
+            this.IconButton.Location = new System.Drawing.Point(6, 281);
+            this.IconButton.Name = "IconButton";
+            this.IconButton.Size = new System.Drawing.Size(165, 23);
+            this.IconButton.TabIndex = 4;
+            this.IconButton.Text = "Select icon (256x256)";
+            this.IconButton.UseVisualStyleBackColor = true;
+            this.IconButton.Click += new System.EventHandler(this.IconButton_Click);
+            // 
             // EntryForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(653, 422);
+            this.ClientSize = new System.Drawing.Size(653, 444);
             this.Controls.Add(this.MakeButton);
             this.Controls.Add(this.IconGroup);
             this.Controls.Add(this.MainGroup);
@@ -200,7 +213,7 @@
             this.MainGroup.ResumeLayout(false);
             this.MainGroup.PerformLayout();
             this.IconGroup.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.IconPicture)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -221,7 +234,8 @@
         private System.Windows.Forms.Label ArgvLabel;
         private System.Windows.Forms.TextBox NroText;
         private System.Windows.Forms.Label NroLabel;
-        private System.Windows.Forms.PictureBox pictureBox1;
+        private System.Windows.Forms.PictureBox IconPicture;
         private System.Windows.Forms.Button MakeButton;
+        private System.Windows.Forms.Button IconButton;
     }
 }
