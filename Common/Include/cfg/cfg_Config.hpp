@@ -56,9 +56,16 @@ namespace cfg
         ThemeManifest manifest;
     };
 
+    struct RecordStrings
+    {
+        std::string name;
+        std::string author;
+        std::string version;
+    };
+
     struct RecordInformation
     {
-        NacpStruct nacp;
+        RecordStrings strings;
         std::string icon_path;
     };
 
@@ -82,7 +89,6 @@ namespace cfg
     std::vector<TitleRecord> QueryAllHomebrew(std::string base = "sdmc:/switch");
     std::string GetRecordIconPath(TitleRecord record);
     RecordInformation GetRecordInformation(TitleRecord record);
-    NacpLanguageEntry *GetRecordInformationLanguageEntry(RecordInformation &info);
 
     Theme LoadTheme(std::string base_name);
     std::vector<Theme> LoadThemes();

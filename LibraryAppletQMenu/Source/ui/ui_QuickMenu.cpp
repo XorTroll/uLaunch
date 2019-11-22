@@ -101,7 +101,7 @@ namespace ui
             x += (SubItemsSize - texw) / 2;
             y += (SubItemsSize - texh) / 2;
 
-            if(direction == dir) SDL_SetTextureColorMod(tex, 200, 200, 255);
+            if(direction == dir) SDL_SetTextureColorMod(tex, 150, 150, 200);
             else SDL_SetTextureColorMod(tex, 255, 255, 255);
 
             Drawer->RenderTexture(tex, x, y, { fgalpha, texw, texh, -1 });

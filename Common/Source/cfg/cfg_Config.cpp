@@ -78,6 +78,27 @@ namespace cfg
         return icon;
     }
 
+    static void ProcessStringsFromNACP(RecordStrings &strs, NacpStruct *nacp)
+    {
+        NacpLanguageEntry *lent = NULL;
+        nacpGetLanguageEntry(nacp, &lent);
+        if(lent == NULL)
+        {
+            for(u32 i = 0; i < 16; i++)
+            {
+                lent = &nacp->lang[i];
+                if(strlen(lent->name) && strlen(lent->author)) break;
+                lent = NULL;
+            }
+        }
+        if(lent != NULL)
+        {
+            strs.name = lent->name;
+            strs.author = lent->author;
+            strs.version = nacp->version;
+        }
+    }
+
     RecordInformation GetRecordInformation(TitleRecord record)
     {
         RecordInformation info = {};
@@ -99,8 +120,12 @@ namespace cfg
                         {
                             if(ahdr.nacp.size > 0)
                             {
+                                NacpStruct nacp = {};
+
                                 fseek(f, hdr.size + ahdr.nacp.offset, SEEK_SET);
-                                fread(&info.nacp, 1, ahdr.nacp.size, f);
+                                fread(&nacp, 1, ahdr.nacp.size, f);
+
+                                ProcessStringsFromNACP(info.strings, &nacp);
                             }
                         }
                     }
@@ -112,34 +137,12 @@ namespace cfg
         {
             NsApplicationControlData cdata = {};
             nsGetApplicationControlData(1, record.app_id, &cdata, sizeof(cdata), NULL);
-            memcpy(&info.nacp, &cdata.nacp, sizeof(cdata.nacp));
+            ProcessStringsFromNACP(info.strings, &cdata.nacp);
         }
-        if(!record.name.empty())
-        {
-            for(u32 i = 0; i < 0x10; i++) strcpy(info.nacp.lang[i].name, record.name.c_str());
-        }
-        if(!record.author.empty())
-        {
-            for(u32 i = 0; i < 0x10; i++) strcpy(info.nacp.lang[i].author, record.author.c_str());
-        }
-        if(!record.version.empty()) strcpy(info.nacp.version, record.version.c_str());
+        if(!record.name.empty()) info.strings.name = record.name;
+        if(!record.author.empty()) info.strings.author = record.author;
+        if(!record.version.empty()) info.strings.version = record.version;
         return info;
-    }
-
-    NacpLanguageEntry *GetRecordInformationLanguageEntry(RecordInformation &info)
-    {
-        NacpLanguageEntry *lent = NULL;
-        nacpGetLanguageEntry(&info.nacp, &lent);
-        if(lent == NULL)
-        {
-            for(u32 i = 0; i < 16; i++)
-            {
-                lent = &info.nacp.lang[i];
-                if(strlen(lent->name) && strlen(lent->author)) break;
-                lent = NULL;
-            }
-        }
-        return lent;
     }
 
     Theme LoadTheme(std::string base_name)

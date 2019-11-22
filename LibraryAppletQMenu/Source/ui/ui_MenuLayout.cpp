@@ -490,19 +490,16 @@ namespace ui
                 realidx--;
                 auto hb = homebrew[realidx];
                 auto info = cfg::GetRecordInformation(hb);
-                auto lent = cfg::GetRecordInformationLanguageEntry(info);
-                if(lent != NULL)
-                {
-                    this->itemName->SetText(lent->name);
-                    this->itemAuthor->SetText(lent->author);
-                }
-                else
-                {
-                    this->itemName->SetText(cfg::GetLanguageString(config.main_lang, config.default_lang, "unknown"));
-                    this->itemAuthor->SetText(cfg::GetLanguageString(config.main_lang, config.default_lang, "unknown"));
-                }
-                if(strlen(info.nacp.version)) this->itemVersion->SetText(info.nacp.version);
-                else this->itemVersion->SetText("0");
+
+                if(info.strings.name.empty()) this->itemName->SetText(cfg::GetLanguageString(config.main_lang, config.default_lang, "unknown"));
+                else this->itemName->SetText(info.strings.name);
+
+                if(info.strings.author.empty()) this->itemAuthor->SetText(cfg::GetLanguageString(config.main_lang, config.default_lang, "unknown"));
+                else this->itemAuthor->SetText(info.strings.author);
+
+                if(info.strings.version.empty()) this->itemVersion->SetText("0");
+                else this->itemVersion->SetText(info.strings.version);
+
                 this->bannerImage->SetImage(cfg::GetAssetByTheme(theme, "ui/BannerHomebrew.png"));
             }
         }
@@ -532,19 +529,16 @@ namespace ui
             {
                 auto title = folder.titles[titleidx];
                 auto info = cfg::GetRecordInformation(title);
-                auto lent = cfg::GetRecordInformationLanguageEntry(info);
-                if(lent != NULL)
-                {
-                    this->itemName->SetText(lent->name);
-                    this->itemAuthor->SetText(lent->author);
-                }
-                else
-                {
-                    this->itemName->SetText(cfg::GetLanguageString(config.main_lang, config.default_lang, "unknown"));
-                    this->itemAuthor->SetText(cfg::GetLanguageString(config.main_lang, config.default_lang, "unknown"));
-                }
-                if(strlen(info.nacp.version)) this->itemVersion->SetText(info.nacp.version);
-                else this->itemVersion->SetText("0");
+
+                if(info.strings.name.empty()) this->itemName->SetText(cfg::GetLanguageString(config.main_lang, config.default_lang, "unknown"));
+                else this->itemName->SetText(info.strings.name);
+
+                if(info.strings.author.empty()) this->itemAuthor->SetText(cfg::GetLanguageString(config.main_lang, config.default_lang, "unknown"));
+                else this->itemAuthor->SetText(info.strings.author);
+
+                if(info.strings.version.empty()) this->itemVersion->SetText("0");
+                else this->itemVersion->SetText(info.strings.version);
+
                 if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew) this->bannerImage->SetImage(cfg::GetAssetByTheme(theme, "ui/BannerHomebrew.png"));
                 else this->bannerImage->SetImage(cfg::GetAssetByTheme(theme, "ui/BannerInstalled.png"));
             }

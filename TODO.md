@@ -6,6 +6,4 @@
 
   - Get whether a title/homebrew is opened
 
-- RE controller applet, allow managing controllers same way normal qlaunch does
-
-- Get album working (for some reason album applet won't work...?)
+- (check suggestions and bugs in issues for user-submitted TODOs)
