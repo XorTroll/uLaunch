@@ -747,8 +747,7 @@ namespace ui
 
     void MenuLayout::logo_Click()
     {
-        qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "ulaunch_about"), "uLaunch v" + std::string(Q_VERSION) + "\n\n" + cfg::GetLanguageString(config.main_lang, config.default_lang, "ulaunch_desc") + "\n\n" + cfg::GetLanguageString(config.main_lang, config.default_lang, "ulaunch_contribute") + ":\nhttps://github.com/XorTroll/uLaunch", { cfg::GetLanguageString(config.main_lang, config.default_lang, "ok") }, true, "romfs:/LogoLarge.png");
-        // qapp->ShowNotification("(-) -> " + cfg::GetLanguageString(config.main_lang, config.default_lang, "control_minus") + "  |  (X) -> " + cfg::GetLanguageString(config.main_lang, config.default_lang, "control_x") + " | (Y) -> " + cfg::GetLanguageString(config.main_lang, config.default_lang, "control_y") + " | (L), (R), (ZL), (ZR) -> " + cfg::GetLanguageString(config.main_lang, config.default_lang, "control_zlr"), 3500);
+        qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "ulaunch_about"), "uLaunch v" + std::string(Q_VERSION) + "\n\n" + cfg::GetLanguageString(config.main_lang, config.default_lang, "ulaunch_desc") + ":\nhttps://github.com/XorTroll/uLaunch", { cfg::GetLanguageString(config.main_lang, config.default_lang, "ok") }, true, "romfs:/LogoLarge.png");
     }
 
     void MenuLayout::settings_Click()
@@ -1078,7 +1077,16 @@ namespace ui
 
     void MenuLayout::HandleShowHelp()
     {
-        // ...
+        std::string msg;
+        msg += " - " + cfg::GetLanguageString(config.main_lang, config.default_lang, "help_launch") + "\n";
+        msg += " - " + cfg::GetLanguageString(config.main_lang, config.default_lang, "help_close") + "\n";
+        msg += " - " + cfg::GetLanguageString(config.main_lang, config.default_lang, "help_quick") + "\n";
+        msg += " - " + cfg::GetLanguageString(config.main_lang, config.default_lang, "help_multiselect") + "\n";
+        msg += " - " + cfg::GetLanguageString(config.main_lang, config.default_lang, "help_back") + "\n";
+        msg += " - " + cfg::GetLanguageString(config.main_lang, config.default_lang, "help_minus") + "\n";
+        msg += " - " + cfg::GetLanguageString(config.main_lang, config.default_lang, "help_plus") + "\n";
+
+        qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "help_title"), msg, { cfg::GetLanguageString(config.main_lang, config.default_lang, "ok") }, true);
     }
 
     void MenuLayout::HandleOpenAlbum()

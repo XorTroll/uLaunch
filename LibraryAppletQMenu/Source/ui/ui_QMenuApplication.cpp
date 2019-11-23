@@ -117,7 +117,9 @@ namespace ui
 
     void QMenuApplication::NotifyEndSuspended()
     {
-        this->status = {};
+        // Blanking the whole status would also blank the selected user...
+        this->status.input = {};
+        this->status.app_id = 0;
     }
 
     bool QMenuApplication::LaunchFailed()

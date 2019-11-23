@@ -41,6 +41,7 @@ namespace ui
             qapp->FadeOut();
             qapp->LoadMenu();
             qapp->FadeIn();
+            qapp->ShowNotification(cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_quick_info"), 3000); // Show for 3s
         }
     }
 
