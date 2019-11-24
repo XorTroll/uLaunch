@@ -10,9 +10,11 @@ namespace am
         u32 magic;
         u8 one;
         u8 pad[3];
-        u128 uid;
-        u8 unk2[0x70];
-    } PACKED;
+        u8 uid[0x10];
+        u8 unk2[0x400 - 0x18];
+    };
+
+    static_assert(sizeof(ApplicationSelectedUserArgument) == 0x400, "ApplicationSelectedUserArgument must be 0x400!");
 
     static constexpr u32 SelectedUserMagic = 0xC79497CA;
     static constexpr u64 QHbTargetSystemApplicationId = OS_FLOG_APP_ID;
@@ -24,4 +26,6 @@ namespace am
     Result ApplicationSetForeground();
     Result ApplicationSend(void *data, size_t size, AppletLaunchParameterKind kind = AppletLaunchParameterKind_UserChannel);
     u64 ApplicationGetId();
+
+    bool ApplicationNeedsUser(u64 app_id);
 }

@@ -30,7 +30,7 @@ namespace am
             ApplicationSelectedUserArgument arg = {};
             arg.magic = SelectedUserMagic;
             arg.one = 1;
-            arg.uid = user_id;
+            memcpy(arg.uid, &user_id, sizeof(user_id));
             ApplicationSend(&arg, sizeof(arg), AppletLaunchParameterKind_PreselectedUser);
         }
 
@@ -73,5 +73,12 @@ namespace am
     u64 ApplicationGetId()
     {
         return latest_appid;
+    }
+
+    bool ApplicationNeedsUser(u64 app_id)
+    {
+        NsApplicationControlData ctdata = {};
+        nsGetApplicationControlData(1, app_id, &ctdata, sizeof(ctdata), NULL);
+        return (ctdata.nacp.startupUserAccount > 0);
     }
 }

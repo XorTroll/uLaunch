@@ -370,6 +370,9 @@ namespace qdaemon
 {
     void Initialize()
     {
+        nsInitialize();
+        appletLoadAndApplyIdlePolicySettings();
+
         app_buf = new u8[RawRGBAScreenBufferSize]();
         
         db::Mount(); // Keep qlaunch's savedata always mounted to avoid others to access it.
@@ -437,6 +440,7 @@ namespace qdaemon
 
     void Exit()
     {
+        nsExit();
         db::Unmount();
 
         delete[] app_buf;
@@ -509,16 +513,6 @@ int main()
             if(!am::LibraryAppletIsActive())
             {
                 am::WebAppletStart(&webapplet_flag);
-                
-                /*
-                svcSleepThread(500'000'000);
-                if(!am::LibraryAppletIsActive())
-                {
-                    // Web applet failed to launch...
-                    auto status = CreateStatus();
-                    am::QDaemon_LaunchQMenu(am::QMenuStartMode::MenuLaunchFailure, status);
-                }
-                */
 
                 sth_done = true;
                 memset(&webapplet_flag, 0, sizeof(webapplet_flag));
@@ -531,16 +525,6 @@ int main()
                 u8 albumflag = 2;
                 am::LibraryAppletStart(AppletId_photoViewer, 0x10000, &albumflag, sizeof(albumflag));
 
-                /*
-                svcSleepThread(500'000'000);
-                if(!am::LibraryAppletIsActive())
-                {
-                    // Web applet failed to launch...
-                    auto status = CreateStatus();
-                    am::QDaemon_LaunchQMenu(am::QMenuStartMode::MenuLaunchFailure, status);
-                }
-                */
-
                 sth_done = true;
                 album_flag = false;
             }
@@ -549,7 +533,8 @@ int main()
         {
             if(!am::LibraryAppletIsActive())
             {
-                am::ApplicationStart(titlelaunch_flag, false, selected_uid);
+                bool needuser = am::ApplicationNeedsUser(titlelaunch_flag);
+                am::ApplicationStart(titlelaunch_flag, false, needuser ? selected_uid : 0);
                 sth_done = true;
                 titlelaunch_flag = 0;
             }
