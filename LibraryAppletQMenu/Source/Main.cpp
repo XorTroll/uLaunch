@@ -101,10 +101,10 @@ int main()
             
             if(smode == am::QMenuStartMode::MenuApplicationSuspended) qapp->Show();
             else qapp->ShowWithFadeIn();
-        }
 
-        delete[] app_buf;
-        qmenu::Exit();
+            delete[] app_buf;
+            qmenu::Exit();
+        }
     }
 
     return 0;

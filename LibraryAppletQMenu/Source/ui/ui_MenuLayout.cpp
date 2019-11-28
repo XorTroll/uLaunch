@@ -292,6 +292,7 @@ namespace ui
                 {
                     if(down & KEY_A)
                     {
+                        pu::audio::Play(this->sfxTitleLaunch);
                         am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchHomebrewLibApplet);
                         hb::TargetInput ipt = {};
                         strcpy(ipt.nro_path, "sdmc:/hbmenu.nro"); // Launch normal hbmenu
@@ -299,7 +300,6 @@ namespace ui
                         writer.Write<hb::TargetInput>(ipt);
                         writer.FinishWrite();
 
-                        pu::audio::Play(this->sfxTitleLaunch);
                         qapp->StopPlayBGM();
                         qapp->CloseWithFadeOut();
                         return;
@@ -401,6 +401,7 @@ namespace ui
                                     if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew) this->HandleHomebrewLaunch(title);
                                     else
                                     {
+                                        pu::audio::Play(this->sfxTitleLaunch);
                                         am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchApplication);
                                         writer.Write<u64>(title.app_id);
                                         writer.FinishWrite();
@@ -408,7 +409,6 @@ namespace ui
                                         am::QMenuCommandResultReader reader;
                                         if(reader && R_SUCCEEDED(reader.GetReadResult()))
                                         {
-                                            pu::audio::Play(this->sfxTitleLaunch);
                                             qapp->StopPlayBGM();
                                             qapp->CloseWithFadeOut();
                                             return;
@@ -542,8 +542,8 @@ namespace ui
                 if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew) this->bannerImage->SetImage(cfg::GetAssetByTheme(theme, "ui/BannerHomebrew.png"));
                 else this->bannerImage->SetImage(cfg::GetAssetByTheme(theme, "ui/BannerInstalled.png"));
             }
+            if(!this->curfolder.empty()) this->bannerImage->SetImage(cfg::GetAssetByTheme(theme, "ui/BannerFolder.png")); // This way user always knows he's inside a folder
         }
-        if(!this->curfolder.empty()) this->bannerImage->SetImage(cfg::GetAssetByTheme(theme, "ui/BannerFolder.png")); // This way user always knows he's inside a folder
     }
 
     void MenuLayout::MoveFolder(std::string name, bool fade)
@@ -719,7 +719,7 @@ namespace ui
 
         if(down & KEY_B)
         {
-            if(!this->curfolder.empty()) this->MoveFolder("", true);
+            if(!this->curfolder.empty() && !this->homebrew_mode) this->MoveFolder("", true);
         }
         else if(down & KEY_PLUS) this->logo_Click();
         else if(down & KEY_MINUS) this->menuToggle_Click();
@@ -796,6 +796,7 @@ namespace ui
         else launchmode = 1;
         if(launchmode == 1)
         {
+            pu::audio::Play(this->sfxTitleLaunch);
             hb::TargetInput ipt = {};
             strcpy(ipt.nro_path, rec.nro_target.nro_path);
             strcpy(ipt.argv, rec.nro_target.nro_path);
@@ -805,7 +806,6 @@ namespace ui
             writer.Write<hb::TargetInput>(ipt);
             writer.FinishWrite();
 
-            pu::audio::Play(this->sfxTitleLaunch);
             qapp->StopPlayBGM();
             qapp->CloseWithFadeOut();
             return;
@@ -821,6 +821,7 @@ namespace ui
             }
             if(launch)
             {
+                pu::audio::Play(this->sfxTitleLaunch);
                 hb::TargetInput ipt = {};
                 strcpy(ipt.nro_path, rec.nro_target.nro_path);
                 strcpy(ipt.argv, rec.nro_target.nro_path);
@@ -833,7 +834,6 @@ namespace ui
                 am::QMenuCommandResultReader reader;
                 if(reader && R_SUCCEEDED(reader.GetReadResult()))
                 {
-                    pu::audio::Play(this->sfxTitleLaunch);
                     qapp->StopPlayBGM();
                     qapp->CloseWithFadeOut();
                     return;
