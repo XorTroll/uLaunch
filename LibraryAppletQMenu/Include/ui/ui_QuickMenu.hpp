@@ -46,6 +46,7 @@ namespace ui
             s32 GetWidth();
             s32 GetHeight();
             
+            void Toggle(); // Off if on, on if off (just change to the opposite state)
             bool IsOn();
 
             void OnRender(pu::ui::render::Renderer::Ref &Drawer, s32 X, s32 Y);

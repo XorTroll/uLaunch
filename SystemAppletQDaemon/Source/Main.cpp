@@ -126,7 +126,7 @@ void HandleGeneralChannel()
             }
         }
     }
-    svcSleepThread(100000000L);
+    svcSleepThread(100'000'000L);
 }
 
 void HandleAppletMessage()
@@ -434,8 +434,6 @@ namespace qdaemon
                 svcSleepThread(10'000'000);
             }
         #endif
-
-        svcSleepThread(100'000'000); // Wait for proper moment
     }
 
     void Exit()

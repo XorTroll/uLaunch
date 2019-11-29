@@ -604,6 +604,8 @@ namespace ui
 
     void MenuLayout::OnInput(u64 down, u64 up, u64 held, pu::ui::Touch pos)
     {
+        qapp->CommonMenuOnLoop();
+
         auto quickon = this->quickMenu->IsOn();
         this->itemsMenu->SetEnabled(!quickon);
         if(quickon) return;
@@ -723,6 +725,7 @@ namespace ui
         }
         else if(down & KEY_PLUS) this->logo_Click();
         else if(down & KEY_MINUS) this->menuToggle_Click();
+        else if((down & KEY_L) || (down & KEY_R) || (down & KEY_ZL) || (down & KEY_ZR) || (down & KEY_LSTICK) || (down & KEY_RSTICK)) this->quickMenu->Toggle();
     }
 
     void MenuLayout::SetUser(u128 user)

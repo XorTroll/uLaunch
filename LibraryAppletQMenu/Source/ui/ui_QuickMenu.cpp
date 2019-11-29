@@ -48,6 +48,11 @@ namespace ui
     {
         return 720;
     }
+
+    void QuickMenu::Toggle()
+    {
+        this->on = !this->on;
+    }
     
     bool QuickMenu::IsOn()
     {
@@ -130,12 +135,14 @@ namespace ui
         }
         else
         {
-            auto prevon = this->on;
-            this->on = false;
-            if(Held & KEY_LSTICK) this->on = true;
-            if(Held & KEY_RSTICK) this->on = true;
-
-            if(prevon && !this->on) this->off_wait = prevheld;
+            if(Down & KEY_A) this->Toggle();
+            else if(Down & KEY_B)
+            {
+                prevheld = 0;
+                this->Toggle();
+            }
+            
+            if(!this->on && (this->bgalpha > 0) && (this->fgalpha > 0)) this->off_wait = prevheld;
         }
     }
 
@@ -143,40 +150,20 @@ namespace ui
     {
         QuickMenuDirection dir = QuickMenuDirection::None;
 
-        if(this->lastheld & KEY_RSTICK)
+        if(this->lastheld & KEY_UP)
         {
-            if(this->lastheld & KEY_RSTICK_UP)
-            {
-                dir = QuickMenuDirection::Up;
-                if(this->lastheld & KEY_RSTICK_LEFT) dir = QuickMenuDirection::UpLeft;
-                else if(this->lastheld & KEY_RSTICK_RIGHT) dir = QuickMenuDirection::UpRight;
-            }
-            else if(this->lastheld & KEY_RSTICK_DOWN)
-            {
-                dir = QuickMenuDirection::Down;
-                if(this->lastheld & KEY_RSTICK_LEFT) dir = QuickMenuDirection::DownLeft;
-                else if(this->lastheld & KEY_RSTICK_RIGHT) dir = QuickMenuDirection::DownRight;
-            }
-            else if(this->lastheld & KEY_RSTICK_LEFT) dir = QuickMenuDirection::Left;
-            else if(this->lastheld & KEY_RSTICK_RIGHT) dir = QuickMenuDirection::Right;
+            dir = QuickMenuDirection::Up;
+            if(this->lastheld & KEY_LEFT) dir = QuickMenuDirection::UpLeft;
+            else if(this->lastheld & KEY_RIGHT) dir = QuickMenuDirection::UpRight;
         }
-        else if(this->lastheld & KEY_LSTICK)
+        else if(this->lastheld & KEY_DOWN)
         {
-            if(this->lastheld & KEY_LSTICK_UP)
-            {
-                dir = QuickMenuDirection::Up;
-                if(this->lastheld & KEY_LSTICK_LEFT) dir = QuickMenuDirection::UpLeft;
-                else if(this->lastheld & KEY_LSTICK_RIGHT) dir = QuickMenuDirection::UpRight;
-            }
-            else if(this->lastheld & KEY_LSTICK_DOWN)
-            {
-                dir = QuickMenuDirection::Down;
-                if(this->lastheld & KEY_LSTICK_LEFT) dir = QuickMenuDirection::DownLeft;
-                else if(this->lastheld & KEY_LSTICK_RIGHT) dir = QuickMenuDirection::DownRight;
-            }
-            else if(this->lastheld & KEY_LSTICK_LEFT) dir = QuickMenuDirection::Left;
-            else if(this->lastheld & KEY_LSTICK_RIGHT) dir = QuickMenuDirection::Right;
+            dir = QuickMenuDirection::Down;
+            if(this->lastheld & KEY_LEFT) dir = QuickMenuDirection::DownLeft;
+            else if(this->lastheld & KEY_RIGHT) dir = QuickMenuDirection::DownRight;
         }
+        else if(this->lastheld & KEY_LEFT) dir = QuickMenuDirection::Left;
+        else if(this->lastheld & KEY_RIGHT) dir = QuickMenuDirection::Right;
 
         return dir;
     }

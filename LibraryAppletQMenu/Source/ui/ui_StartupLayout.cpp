@@ -34,6 +34,8 @@ namespace ui
 
     void StartupLayout::OnInput(u64 down, u64 up, u64 held, pu::ui::Touch pos)
     {
+        qapp->CommonMenuOnLoop();
+
         if(this->loadmenu)
         {
             this->loadmenu = false;

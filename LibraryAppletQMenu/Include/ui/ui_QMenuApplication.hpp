@@ -78,6 +78,8 @@ namespace ui
 
             void SetSelectedUser(u128 user_id);
             u128 GetSelectedUser();
+
+            void CommonMenuOnLoop();
         private:
             am::QMenuStartMode stmode;
             StartupLayout::Ref startupLayout;
@@ -94,4 +96,9 @@ namespace ui
             u32 bgm_fade_out_ms;
             pu::audio::Music bgm;
     };
+
+    inline void QMenuApplication::CommonMenuOnLoop() // Stuff all menus should handle (currently just connected controllers)
+    {
+        if(!hidIsControllerConnected(CONTROLLER_HANDHELD) && !hidIsControllerConnected(CONTROLLER_PLAYER_1)) this->menuLayout->HandleControllerAppletOpen();
+    }
 }

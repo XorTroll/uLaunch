@@ -128,6 +128,8 @@ namespace ui
 
     void LanguagesMenuLayout::OnInput(u64 down, u64 up, u64 held, pu::ui::Touch pos)
     {
+        qapp->CommonMenuOnLoop();
+
         bool ret = am::QMenuIsHomePressed();
         if(down & KEY_B)
         {

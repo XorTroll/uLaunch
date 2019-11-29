@@ -121,7 +121,6 @@ namespace am
     Result QDaemon_QMenuWriteImpl(void *data, size_t size, bool wait)
     Q_AM_WAIT(LibraryAppletSend(data, size))
     
-
     Result QDaemon_QMenuReadImpl(void *data, size_t size, bool wait)
     Q_AM_WAIT(LibraryAppletRead(data, size))
 
