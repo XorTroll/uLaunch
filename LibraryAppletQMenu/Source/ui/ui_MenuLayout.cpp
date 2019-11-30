@@ -64,10 +64,10 @@ namespace ui
         this->users->SetOnClick(std::bind(&MenuLayout::users_Click, this));
         qapp->ApplyConfigForElement("main_menu", "user_icon", this->users);
         this->Add(this->users);
-        this->web = ClickableImage::New(340, 53, cfg::GetAssetByTheme(theme, "ui/WebIcon.png"));
-        this->web->SetOnClick(std::bind(&MenuLayout::web_Click, this));
-        qapp->ApplyConfigForElement("main_menu", "web_icon", this->web);
-        this->Add(this->web);
+        this->controller = ClickableImage::New(340, 53, cfg::GetAssetByTheme(theme, "ui/ControllerIcon.png"));
+        this->controller->SetOnClick(std::bind(&MenuLayout::controller_Click, this));
+        qapp->ApplyConfigForElement("main_menu", "controller_icon", this->controller);
+        this->Add(this->controller);
 
         auto curtime = util::GetCurrentTime();
         this->timeText = pu::ui::elm::TextBlock::New(515, 68, curtime);
@@ -126,13 +126,13 @@ namespace ui
         this->quickMenu = QuickMenu::New(cfg::GetAssetByTheme(theme, "ui/QuickMenuMain.png"));
 
         this->quickMenu->SetEntry(QuickMenuDirection::Up, cfg::GetAssetByTheme(theme, "ui/UserIcon.png"), std::bind(&MenuLayout::users_Click, this));
-        this->quickMenu->SetEntry(QuickMenuDirection::Down, cfg::GetAssetByTheme(theme, "ui/SettingsIcon.png"), std::bind(&MenuLayout::settings_Click, this));
-        this->quickMenu->SetEntry(QuickMenuDirection::Left, cfg::GetAssetByTheme(theme, "ui/WebIcon.png"), std::bind(&MenuLayout::web_Click, this));
+        this->quickMenu->SetEntry(QuickMenuDirection::UpLeft, cfg::GetAssetByTheme(theme, "ui/PowerIcon.png"), std::bind(&MenuLayout::HandlePowerDialog, this));
+        this->quickMenu->SetEntry(QuickMenuDirection::UpRight, cfg::GetAssetByTheme(theme, "ui/SettingsIcon.png"), std::bind(&MenuLayout::settings_Click, this));
+        this->quickMenu->SetEntry(QuickMenuDirection::Left, cfg::GetAssetByTheme(theme, "ui/ControllerIcon.png"), std::bind(&MenuLayout::controller_Click, this));
         this->quickMenu->SetEntry(QuickMenuDirection::Right, cfg::GetAssetByTheme(theme, "ui/ThemesIcon.png"), std::bind(&MenuLayout::themes_Click, this));
-        this->quickMenu->SetEntry(QuickMenuDirection::UpLeft, cfg::GetAssetByTheme(theme, "ui/ControllerIcon.png"), std::bind(&MenuLayout::HandleControllerAppletOpen, this));
-        this->quickMenu->SetEntry(QuickMenuDirection::UpRight, cfg::GetAssetByTheme(theme, "ui/AlbumIcon.png"), std::bind(&MenuLayout::HandleOpenAlbum, this));
-        this->quickMenu->SetEntry(QuickMenuDirection::DownLeft, cfg::GetAssetByTheme(theme, "ui/PowerIcon.png"), std::bind(&MenuLayout::HandlePowerDialog, this));
-        this->quickMenu->SetEntry(QuickMenuDirection::DownRight, cfg::GetAssetByTheme(theme, "ui/HelpIcon.png"), std::bind(&MenuLayout::HandleShowHelp, this));
+        this->quickMenu->SetEntry(QuickMenuDirection::DownLeft, cfg::GetAssetByTheme(theme, "ui/WebIcon.png"), std::bind(&MenuLayout::HandleWebPageOpen, this));
+        this->quickMenu->SetEntry(QuickMenuDirection::DownRight, cfg::GetAssetByTheme(theme, "ui/AlbumIcon.png"), std::bind(&MenuLayout::HandleOpenAlbum, this));
+        this->quickMenu->SetEntry(QuickMenuDirection::Down, cfg::GetAssetByTheme(theme, "ui/HelpIcon.png"), std::bind(&MenuLayout::HandleShowHelp, this));
 
         this->Add(this->quickMenu);
 
@@ -768,9 +768,9 @@ namespace ui
         this->HandleUserMenu();
     }
 
-    void MenuLayout::web_Click()
+    void MenuLayout::controller_Click()
     {
-        this->HandleWebPageOpen();
+        this->HandleControllerAppletOpen();
     }
 
     void MenuLayout::HandleCloseSuspended()

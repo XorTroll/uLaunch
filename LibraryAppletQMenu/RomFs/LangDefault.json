@@ -117,9 +117,9 @@
     "help_title": "uLaunch help",
     "help_launch": "Press A to launch the selected entry, or to return to it if suspended.",
     "help_close": "Press X to close the currently opened title.",
-    "help_quick": "Press L / R-stick or L / R / ZL / ZR to open the quick menu. There press A having an option focused to select it or press B to cancel.",
-    "help_multiselect": "Press Y to open the multiselect mode\n(with this mode open, press Y to select/deselect any title, Y to confirm the selection or B to cancel)",
+    "help_quick": "Press L / R-stick or L / R / ZL / ZR to open the quick menu. Then, press A having an option focused, or press B to cancel.",
+    "help_multiselect": "Press Y to open the multiselect mode. Then, press Y to (de)select any title, Y to confirm the selection or B to cancel.",
     "help_back": "Press B or HOME on any menu (except the startup menu) to return to the main menu.",
-    "help_minus": "Press Minus (-) on the main menu to swap between the normal menu and the homebrew menu\n(the first swap will take longer due to homebrew scanning!)",
+    "help_minus": "Press Minus (-) on the main menu to swap between the normal menu and the homebrew menu.",
     "help_plus": "Press Plus (+) to see uLaunch's information (project version, description...)"
 }

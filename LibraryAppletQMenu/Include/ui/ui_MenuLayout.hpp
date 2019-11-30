@@ -24,7 +24,7 @@ namespace ui
             void settings_Click();
             void themes_Click();
             void users_Click();
-            void web_Click();
+            void controller_Click();
             void MoveFolder(std::string name, bool fade);
             void OnInput(u64 down, u64 up, u64 held, pu::ui::Touch pos);
             void SetUser(u128 user);
@@ -48,7 +48,7 @@ namespace ui
             pu::ui::elm::Image::Ref topMenuImage;
             pu::ui::elm::Image::Ref connIcon;
             ClickableImage::Ref users;
-            ClickableImage::Ref web;
+            ClickableImage::Ref controller;
             ClickableImage::Ref logo;
             pu::ui::elm::TextBlock::Ref timeText;
             pu::ui::elm::TextBlock::Ref batteryText;

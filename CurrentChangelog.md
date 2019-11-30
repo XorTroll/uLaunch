@@ -1,5 +1,11 @@
 # Changelog
 
+- Main menu
+
+  - Added a new way to open menus without touchscreen: presenting the **quick menu**! Just hold L/R-stick, then move it while being held to select a menu, leave the stick and profit!
+
+  - Changed the web browser touchable menu item with the controller applet one, for what it's worth.
+
 - Settings menu
 
   - New settings were added:
@@ -22,19 +28,17 @@
 
     - Serial number
 
-- Added **controller menu applet** support to change/manage players and controllers!
+- Added **controller menu applet** (as a menu touchable icon, as mentioned above) support to change/manage players and controllers!
 
-- Added **album applet** support to view your captures!
+- Added **album applet** (as part of the aforementioned **quick menu**) support to view your captures!
 
-- Added a **power menu** as part of the *quick menu* shown below, to quickly power off, reboot or sleep the console.
+- Added a **power menu** (as part of the aforementioned **quick menu**) to quickly power off, reboot or sleep the console!
 
 - QForegroundViewer has been refactored into a major application: **uViewer!**
 
   - New entry creator menu (custom entry creator to be accessible from main menu), customizable with plugins!
 
-  - Custom RetroArch plugin to make ROM forwarding super easy!
-
-- Main menu
+  - This includes a custom RetroArch-themed DLL plugin, easily loadable by uViewer, to make ROM forwarding really easy!
 
   - Added a new way to open menus without touchscreen: presenting the **quick menu**! Just hold L/R-stick, then move it while being held to select a menu, leave the stick and profit!
 

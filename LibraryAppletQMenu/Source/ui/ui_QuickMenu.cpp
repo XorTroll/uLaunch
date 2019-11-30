@@ -135,11 +135,14 @@ namespace ui
         }
         else
         {
-            if(Down & KEY_A) this->Toggle();
-            else if(Down & KEY_B)
+            if(this->on)
             {
-                prevheld = 0;
-                this->Toggle();
+                if(Down & KEY_A) this->Toggle();
+                else if(Down & KEY_B)
+                {
+                    prevheld = 0;
+                    this->Toggle();
+                }
             }
             
             if(!this->on && (this->bgalpha > 0) && (this->fgalpha > 0)) this->off_wait = prevheld;
