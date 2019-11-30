@@ -33,6 +33,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject>uViewer.Program</StartupObject>
@@ -139,10 +140,6 @@
     <ProjectReference Include="..\uViewer.Plugins\uViewer.Plugins.csproj">
       <Project>{d214a10a-d24a-4c23-ace1-19c2ab235400}</Project>
       <Name>uViewer.Plugins</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\uViewer.RetroPlugin\uViewer.RetroPlugin.csproj">
-      <Project>{7f456aef-a4eb-4af4-8bd7-90d60a1113d4}</Project>
-      <Name>uViewer.RetroPlugin</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
