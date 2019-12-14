@@ -19,9 +19,9 @@ include $(DEVKITPRO)/libnx/switch_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	../Common/Source ../Common/Source/am ../Common/Source/cfg ../Common/Source/db ../Common/Source/fs ../Common/Source/net ../Common/Source/os ../Common/Source/util Source Source/ui
+SOURCES		:=	../Common/source ../Common/source/am ../Common/source/cfg ../Common/source/db ../Common/source/fs ../Common/source/net ../Common/source/os ../Common/source/util source source/ui
 DATA		:=	data
-INCLUDES	:=	../Common/Include Include
+INCLUDES	:=	../Common/include include
 EXEFS_SRC	:=	exefs_src
 
 #---------------------------------------------------------------------------------
@@ -138,9 +138,7 @@ $(BUILD):
 	@$(MAKE) -C ../Plutonium/Plutonium/
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 	@mkdir -p $(CURDIR)/Out
-	@build_romfs $(CURDIR)/RomFs $(CURDIR)/Out/romfs.bin
 	@cp $(OUTPUT).nsp $(CURDIR)/Out/exefs.nsp
-	@touch $(CURDIR)/Out/fsmitm.flag
 
 #---------------------------------------------------------------------------------
 clean:
