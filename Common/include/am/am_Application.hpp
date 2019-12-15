@@ -10,7 +10,7 @@ namespace am
         u32 magic;
         u8 one;
         u8 pad[3];
-        u8 uid[0x10];
+        AccountUid uid;
         u8 unk2[0x400 - 0x18];
     };
 

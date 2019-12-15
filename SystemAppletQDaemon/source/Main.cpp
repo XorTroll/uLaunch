@@ -42,11 +42,6 @@ bool album_flag = false;
 ams::os::Mutex latestqlock;
 am::QMenuMessage latestqmenumsg = am::QMenuMessage::Invalid;
 
-void CommonSleepHandle()
-{
-    appletStartSleepSequence(true);
-}
-
 am::QDaemonStatus CreateStatus()
 {
     am::QDaemonStatus status = {};
@@ -63,6 +58,11 @@ am::QDaemonStatus CreateStatus()
     else if(tmptype == cfg::TitleType::Homebrew) memcpy(&status.input, &hbapplaunch_copy, sizeof(hbapplaunch_copy));
 
     return status;
+}
+
+void HandleSleep()
+{
+    appletStartSleepSequence(true);
 }
 
 void HandleHomeButton()
@@ -125,7 +125,7 @@ void HandleGeneralChannel()
                     }
                     case os::GeneralChannelMessage::Sleep:
                     {
-                        appletStartSleepSequence(true);
+                        HandleSleep();
                         break;
                     }
                     default: // We don't have anything special to do for the rest
@@ -159,14 +159,14 @@ void HandleAppletMessage()
             }
             case os::AppletMessage::PowerButton:
             {
-                appletStartSleepSequence(true);
+                HandleSleep();
                 break;
             }
             default:
                 break;
         }
     }
-    svcSleepThread(100000000L);
+    svcSleepThread(100'000'000L);
 }
 
 void HandleQMenuMessage()
@@ -555,8 +555,7 @@ int main()
         {
             if(!am::LibraryAppletIsActive())
             {
-                bool needuser = am::ApplicationNeedsUser(titlelaunch_flag);
-                am::ApplicationStart(titlelaunch_flag, false, needuser ? selected_uid : (AccountUid){});
+                am::ApplicationStart(titlelaunch_flag, false, selected_uid);
                 sth_done = true;
                 titlelaunch_flag = 0;
             }

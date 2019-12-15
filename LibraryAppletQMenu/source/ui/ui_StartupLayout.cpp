@@ -34,7 +34,6 @@ namespace ui
 
     void StartupLayout::OnInput(u64 down, u64 up, u64 held, pu::ui::Touch pos)
     {
-        /*
         qapp->CommonMenuOnLoop();
 
         if(this->loadmenu)
@@ -46,7 +45,6 @@ namespace ui
             qapp->FadeIn();
             qapp->ShowNotification(cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_quick_info"), 3000); // Show for 3s
         }
-        */
     }
 
     void StartupLayout::user_Click(AccountUid uid, bool has_password)

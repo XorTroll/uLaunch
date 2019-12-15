@@ -30,7 +30,7 @@ namespace am
             ApplicationSelectedUserArgument arg = {};
             arg.magic = SelectedUserMagic;
             arg.one = 1;
-            memcpy(arg.uid, &user_id, sizeof(user_id));
+            memcpy(&arg.uid, &user_id, sizeof(user_id));
             ApplicationSend(&arg, sizeof(arg), AppletLaunchParameterKind_PreselectedUser);
         }
 

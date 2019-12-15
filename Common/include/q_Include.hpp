@@ -82,6 +82,7 @@ inline constexpr ResultWith<Args...> SuccessResultWith(Args &&...args)
 
 inline void Panic(std::string msg)
 {
+    /*
     consoleInit(NULL);
     CONSOLE_OUT("")
     CONSOLE_OUT("uLaunch - main menu panic")
@@ -105,6 +106,9 @@ inline void Panic(std::string msg)
     }
 
     consoleExit(NULL);
+    */
+
+    // TODO: non-console panic...?
 }
 
 #define Q_R_TRY(expr) { auto _tmp_rc = (expr); if(R_FAILED(_tmp_rc)) { Panic("'" #expr "' failed: " + util::FormatResultDisplay(_tmp_rc)); } }
