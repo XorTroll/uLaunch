@@ -55,6 +55,9 @@ namespace qmenu
         net::Finalize();
         nsExit();
         accountExit();
+
+        // Explicitly call appletExit (due to bad handling in 3.0.0 libnx)
+        appletExit();
     }
 }
 

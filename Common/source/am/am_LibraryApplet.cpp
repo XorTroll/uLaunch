@@ -7,12 +7,9 @@ namespace am
 
     bool LibraryAppletIsActive()
     {
-        bool active = false;
-        if(applet_holder.StateChangedEvent.revent == INVALID_HANDLE) active = false;
-        if(!serviceIsActive(&applet_holder.s)) active = false;
-        active = !appletHolderCheckFinished(&applet_holder);
-        if(!active) appletUpdateCallerAppletCaptureImage();
-        return active;
+        if(applet_holder.StateChangedEvent.revent == INVALID_HANDLE) return false;
+        if(!serviceIsActive(&applet_holder.s)) return false;
+        return !appletHolderCheckFinished(&applet_holder);
     }
 
     bool LibraryAppletIsQMenu()
