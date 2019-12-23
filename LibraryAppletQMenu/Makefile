@@ -45,7 +45,7 @@ LIBS	:= -lnx -lpu -lfreetype -lSDL2_mixer -lopusfile -lopus -lmodplug -lmpg123 -
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS	:= $(PORTLIBS) $(LIBNX) $(CURDIR)/../Plutonium/Plutonium/Output
+LIBDIRS	:= $(PORTLIBS) $(CURDIR)/../master-libnx/nx $(CURDIR)/../Plutonium/Plutonium/Output
 
 
 #---------------------------------------------------------------------------------

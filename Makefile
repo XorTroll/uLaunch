@@ -4,6 +4,7 @@ export Q_VERSION := 0.2
 .PHONY: all dev clean
 
 all:
+	@$(MAKE) -C master-libnx/
 	@$(MAKE) -C libstratosphere/
 	@$(MAKE) -C SystemAppletQDaemon/
 	@$(MAKE) -C LibraryAppletQMenu/
@@ -28,6 +29,7 @@ dev: setdev all
 
 clean:
 	@rm -rf $(CURDIR)/SdOut
+	@$(MAKE) clean -C master-libnx/
 	@$(MAKE) clean -C libstratosphere/
 	@$(MAKE) clean -C SystemAppletQDaemon/
 	@$(MAKE) clean -C LibraryAppletQMenu/

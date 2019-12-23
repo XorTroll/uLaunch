@@ -55,9 +55,6 @@ namespace qmenu
         net::Finalize();
         nsExit();
         accountExit();
-
-        // Explicitly call appletExit (due to bad handling in 3.0.0 libnx)
-        appletExit();
     }
 }
 
@@ -115,6 +112,9 @@ int main()
             
             if(smode == am::QMenuStartMode::MenuApplicationSuspended) qapp->Show();
             else qapp->ShowWithFadeIn();
+
+            // Exit RomFs manually, Plutonium won't do it for us since we're initializing it manually
+            romfsExit();
 
             delete[] app_buf;
             qmenu::Exit();

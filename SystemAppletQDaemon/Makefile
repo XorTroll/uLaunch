@@ -3,7 +3,10 @@
 #---------------------------------------------------------------------------------
 include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/../libstratosphere/config/templates/stratosphere.mk
 
-CXXFLAGS	+= -fexceptions	-DQ_VERSION=\"$(Q_VERSION)\"
+APMWRAPS	:=	-Wl,-wrap,apmInitialize -Wl,-wrap,apmSetPerformanceConfiguration -Wl,-wrap,apmExit
+
+CXXFLAGS	+= -fexceptions	-DQ_VERSION=\"$(Q_VERSION)\" $(APMWRAPS)
+LDFLAGS	+=	$(APMWRAPS)
 
 ifeq ($(Q_DEV),1)
     CXXFLAGS	+=	-DQ_DEV
