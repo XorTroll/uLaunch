@@ -5,10 +5,6 @@ extern "C"
 {
     u32 __nx_applet_type = AppletType_LibraryApplet;
     u32 __nx_applet_exit_mode = 2;
-
-    void __appExit(void)
-    {
-    }
 }
 
 hb::TargetInput hb_input;
