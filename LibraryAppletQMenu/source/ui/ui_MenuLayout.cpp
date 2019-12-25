@@ -391,9 +391,13 @@ namespace ui
                                     }
                                     if(titlelaunch)
                                     {
-                                        titlelaunch = false;
-                                        this->HandleCloseSuspended();
-                                        titlelaunch = !qapp->IsSuspended();
+                                        // Homebrew launching code already does this checks later - doing this check only with installed titles
+                                        if((cfg::TitleType)title.title_type == cfg::TitleType::Installed)
+                                        {
+                                            titlelaunch = false;
+                                            this->HandleCloseSuspended();
+                                            titlelaunch = !qapp->IsSuspended();
+                                        }
                                     }
                                 }
                                 if(titlelaunch)
@@ -1113,11 +1117,17 @@ namespace ui
 
         if(msg != os::GeneralChannelMessage::Invalid)
         {
+            // Fade out on all cases
+            qapp->FadeOut();
             os::SystemAppletMessage smsg = {};
             smsg.magic = os::SAMSMagic;
             smsg.message = (u32)msg;
 
             os::PushSystemAppletMessage(smsg);
+            svcSleepThread(1'500'000'000L);
+
+            // When we get back after sleep we will do a cool fade in, whereas wuth the other options the console will be already off/rebooted
+            qapp->FadeIn();
         }
     }
 

@@ -82,33 +82,7 @@ inline constexpr ResultWith<Args...> SuccessResultWith(Args &&...args)
 
 inline void Panic(std::string msg)
 {
-    /*
-    consoleInit(NULL);
-    CONSOLE_OUT("")
-    CONSOLE_OUT("uLaunch - main menu panic")
-    CONSOLE_OUT("Panic error: " << msg)
-    CONSOLE_OUT("")
-    CONSOLE_OUT("Press any key to shutdown the console...")
-
-    while(true)
-    {
-        hidScanInput();
-        if(hidKeysDown(CONTROLLER_P1_AUTO))
-        {
-            consoleExit(NULL);
-            bpcInitialize();
-            bpcShutdownSystem();
-            bpcExit();
-            while(true);
-
-            break;
-        }
-    }
-
-    consoleExit(NULL);
-    */
-
     // TODO: non-console panic...?
 }
 
-#define Q_R_TRY(expr) { auto _tmp_rc = (expr); if(R_FAILED(_tmp_rc)) { Panic("'" #expr "' failed: " + util::FormatResultDisplay(_tmp_rc)); } }
+#define Q_R_TRY(expr) { auto _tmp_rc = (expr); if(R_FAILED(_tmp_rc)) { fatalThrow(_tmp_rc); } }

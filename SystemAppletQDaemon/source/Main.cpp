@@ -445,11 +445,12 @@ namespace qdaemon
 
         fs::CreateDirectory(Q_BASE_DB_DIR);
         db::Commit();
+        fs::CreateDirectory(Q_BASE_DB_DIR "/user");
+        db::Commit();
+
         fs::CreateDirectory(Q_BASE_SD_DIR);
         fs::CreateDirectory(Q_ENTRIES_PATH);
         fs::CreateDirectory(Q_THEMES_PATH);
-        fs::CreateDirectory(Q_BASE_DB_DIR "/user");
-        db::Commit();
         fs::CreateDirectory(Q_BASE_SD_DIR "/title");
         fs::CreateDirectory(Q_BASE_SD_DIR "/user");
         fs::CreateDirectory(Q_BASE_SD_DIR "/nro");
@@ -483,6 +484,7 @@ namespace qdaemon
                 {
                     db::Mount();
                     fs::DeleteDirectory(Q_BASE_DB_DIR);
+                    db::Commit();
                     fs::CreateDirectory(Q_BASE_DB_DIR);
                     db::Commit();
                     db::Unmount();

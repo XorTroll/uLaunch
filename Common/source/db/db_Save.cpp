@@ -60,10 +60,12 @@ namespace db
         std::string pwd;
         auto filename = GetUserPasswordFilePath(password.uid);
         if(fs::ExistsFile(filename)) return RES_VALUE(Db, PasswordAlreadyExists);
-
-        if(!fs::WriteFile(filename, &password, sizeof(password), true)) return RES_VALUE(Db, PasswordWriteFail);
-        db::Commit();
-        return 0;
+        if(fs::WriteFile(filename, &password, sizeof(password), true))
+        {
+            db::Commit();
+            return 0;
+        }
+        return RES_VALUE(Db, PasswordWriteFail);
     }
 
     Result RemoveUserPassword(AccountUid uid)
@@ -71,6 +73,7 @@ namespace db
         auto passfile = GetUserPasswordFilePath(uid);
         if(!fs::ExistsFile(passfile)) return RES_VALUE(Db, PasswordNotFound);
         fs::DeleteFile(passfile);
+        db::Commit();
         return 0;
     }
 

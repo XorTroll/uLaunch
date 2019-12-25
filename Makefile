@@ -29,8 +29,6 @@ dev: setdev all
 
 clean:
 	@rm -rf $(CURDIR)/SdOut
-	@$(MAKE) clean -C master-libnx/
-	@$(MAKE) clean -C libstratosphere/
 	@$(MAKE) clean -C SystemAppletQDaemon/
 	@$(MAKE) clean -C LibraryAppletQMenu/
 	@$(MAKE) clean -C LibraryAppletQHbTarget/

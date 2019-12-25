@@ -6,8 +6,6 @@ namespace db
 {
     static constexpr u64 HomeMenuSaveDataId = 0x8000000000001010;
     
-    #define DB_INSIDE_BASE_DIR(path) std::string(Q_BASE_DB_DIR "/") + path
-    
     struct PassBlock
     {
         AccountUid uid;
