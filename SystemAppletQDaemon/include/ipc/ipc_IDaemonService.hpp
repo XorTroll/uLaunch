@@ -1,7 +1,7 @@
 
 #pragma once
-#include <stratosphere.hpp>
 #include <q_Include.hpp>
+#include <stratosphere.hpp>
 
 namespace ipc
 {

@@ -34,8 +34,6 @@ using JSON = nlohmann::json;
 
 static constexpr size_t RawRGBAScreenBufferSize = 1280 * 720 * 4;
 
-#ifndef R_TRY
-
 // Thanks SciresM
 #define R_TRY(res_expr) \
 ({ \
@@ -44,8 +42,6 @@ static constexpr size_t RawRGBAScreenBufferSize = 1280 * 720 * 4;
         return _tmp_r_try_rc; \
     } \
 })
-
-#endif
 
 #define R_TRY_WITH(res_expr, ...) \
 ({ \
