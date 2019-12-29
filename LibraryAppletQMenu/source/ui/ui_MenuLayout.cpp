@@ -361,6 +361,24 @@ namespace ui
                                 {
                                     this->MoveFolder(foldr.name, true);
                                 }
+                                else if(down & KEY_Y)
+                                {
+                                    auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_rename_folder"), cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_rename_folder_conf"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "no") }, true);
+                                    if(sopt == 0)
+                                    {
+                                        SwkbdConfig swkbd;
+                                        swkbdCreate(&swkbd, 0);
+                                        swkbdConfigSetGuideText(&swkbd, cfg::GetLanguageString(config.main_lang, config.default_lang, "swkbd_rename_folder_guide").c_str());
+                                        char dir[500] = {0};
+                                        auto rc = swkbdShow(&swkbd, dir, 500);
+                                        swkbdClose(&swkbd);
+                                        if(R_SUCCEEDED(rc))
+                                        {
+                                            cfg::RenameFolder(list, foldr.name, dir);
+                                            this->MoveFolder(this->curfolder, true);
+                                        }
+                                    }
+                                }
                                 titleidx = -1;
                             }
                         }
@@ -527,7 +545,6 @@ namespace ui
                     this->itemName->SetText(foldr.name);
                     titleidx = -1;
                 }
-                
             }
             if(titleidx >= 0)
             {

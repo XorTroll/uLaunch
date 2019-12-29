@@ -1,3 +1,4 @@
+#include <ipc/ipc_IDaemonService.hpp>
 #include <db/db_Save.hpp>
 #include <os/os_Titles.hpp>
 #include <os/os_HomeMenu.hpp>
@@ -9,7 +10,6 @@
 #include <am/am_HomeMenu.hpp>
 #include <am/am_QCommunications.hpp>
 #include <util/util_Convert.hpp>
-#include <ipc/ipc_IDaemonService.hpp>
 #include <cfg/cfg_Config.hpp>
 
 extern "C"

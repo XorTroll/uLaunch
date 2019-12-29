@@ -111,6 +111,7 @@ namespace cfg
     void RemoveRecord(TitleRecord &record);
     bool MoveRecordTo(TitleList &list, TitleRecord record, std::string folder);
     TitleFolder &FindFolderByName(TitleList &list, std::string name);
+    void RenameFolder(TitleList &list, std::string old_name, std::string new_name);
     bool ExistsRecord(TitleList &list, TitleRecord record);
 
     std::string GetTitleCacheIconPath(u64 app_id);

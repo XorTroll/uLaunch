@@ -488,6 +488,20 @@ namespace cfg
         return list.root;
     }
 
+    void RenameFolder(TitleList &list, std::string old_name, std::string new_name)
+    {
+        auto &folder = FindFolderByName(list, old_name);
+        if(!folder.name.empty())
+        {
+            folder.name = new_name;
+            for(auto &entry: folder.titles)
+            {
+                entry.sub_folder = new_name;
+                SaveRecord(entry);
+            }
+        }
+    }
+
     bool ExistsRecord(TitleList &list, TitleRecord record)
     {
         bool title_found = false;
