@@ -4,6 +4,7 @@
 #include <ui/ui_QMenuApplication.hpp>
 #include <fs/fs_Stdio.hpp>
 #include <os/os_Misc.hpp>
+#include <os/os_HomeMenu.hpp>
 #include <net/net_Service.hpp>
 #include <am/am_LibraryApplet.hpp>
 
@@ -81,9 +82,13 @@ namespace ui
                 qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "lang_set"), R_SUCCEEDED(rc) ? cfg::GetLanguageString(config.main_lang, config.default_lang, "lang_set_ok") : cfg::GetLanguageString(config.main_lang, config.default_lang, "lang_set_error") + ": " + util::FormatResult(rc), { cfg::GetLanguageString(config.main_lang, config.default_lang, "ok") }, true);
                 if(R_SUCCEEDED(rc))
                 {
-                    bpcInitialize();
-                    bpcRebootSystem();
-                    bpcExit();
+                    qapp->FadeOut();
+                    os::SystemAppletMessage smsg = {};
+                    smsg.magic = os::SAMSMagic;
+                    smsg.message = (u32)os::GeneralChannelMessage::Reboot;
+
+                    os::PushSystemAppletMessage(smsg);
+                    svcSleepThread(1'500'000'000L);
                 }
             }
         }

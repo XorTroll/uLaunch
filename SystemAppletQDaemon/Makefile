@@ -3,14 +3,23 @@
 #---------------------------------------------------------------------------------
 include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/../libstratosphere/config/templates/stratosphere.mk
 
-APMWRAPS	:=	-Wl,-wrap,apmInitialize -Wl,-wrap,apmSetPerformanceConfiguration -Wl,-wrap,apmExit
+APMWRAPS	=	-Wl,-wrap,apmInitialize -Wl,-wrap,apmSetPerformanceConfiguration -Wl,-wrap,apmExit
 
-CXXFLAGS	+= -fexceptions	-DQ_VERSION=\"$(Q_VERSION)\" $(APMWRAPS)
-LDFLAGS	+=	$(APMWRAPS)
+ARCH	=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE -Wl,-wrap,apmInitialize -Wl,-wrap,apmSetPerformanceConfiguration -Wl,-wrap,apmExit
+
+CFLAGS	=	-g -Wall -O2 -ffunction-sections \
+			$(ARCH) $(DEFINES)
+
+CFLAGS	+=	$(INCLUDE) -D__SWITCH__ -DQ_VERSION=\"$(Q_VERSION)\"
 
 ifeq ($(Q_DEV),1)
-    CXXFLAGS	+=	-DQ_DEV
+    CFLAGS	+=	-DQ_DEV
 endif
+
+CXXFLAGS	= $(CFLAGS) -fno-rtti -fexceptions -std=gnu++17
+
+ASFLAGS	=	-g $(ARCH)
+LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 SOURCES		+=	../Common/source ../Common/source/am ../Common/source/cfg ../Common/source/db ../Common/source/fs ../Common/source/net ../Common/source/os ../Common/source/util
 INCLUDES	+=	../Common/include
