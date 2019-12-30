@@ -1,5 +1,5 @@
 
-export Q_VERSION := 0.2
+export Q_VERSION := 0.2.1
 
 .PHONY: all dev clean
 
