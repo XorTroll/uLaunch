@@ -82,7 +82,7 @@ int main()
             app_buf = new u8[RawRGBAScreenBufferSize]();
             qmenu::Initialize();
             
-            list = cfg::LoadTitleList(true);
+            list = cfg::LoadTitleList();
 
             // Get system language and load translations (default one if not present)
             u64 lcode = 0;

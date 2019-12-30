@@ -524,6 +524,9 @@ int main()
     // Force disable USB since it's broken :(
     // if(config.viewer_usb_enabled) qdaemon::LaunchForegroundThread();
 
+    // Cache everything on startup
+    cfg::CacheEverything();
+
     auto status = CreateStatus();
     Q_R_TRY(am::QDaemon_LaunchQMenu(am::QMenuStartMode::StartupScreen, status))
 

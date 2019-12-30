@@ -13,5 +13,5 @@ namespace os
         return (app_id == OS_FLOG_APP_ID);
     }
 
-    std::vector<cfg::TitleRecord> QueryInstalledTitles(bool cache);
+    std::vector<cfg::TitleRecord> QueryInstalledTitles();
 }

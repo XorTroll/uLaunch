@@ -58,12 +58,55 @@ namespace cfg
                     rec.title_type = (u32)TitleType::Homebrew;
                     strcpy(rec.nro_target.nro_path, path.c_str());
                     nros.push_back(rec);
-                    CacheHomebrew(path); // Always cache when querying.
                 }
             }
         })
 
         return nros;
+    }
+
+    static void CacheInstalledTitles()
+    {
+        NsApplicationRecord *recordbuf = new NsApplicationRecord[OS_MAX_TITLE_COUNT]();
+        s32 record_count = 0;
+        auto rc = nsListApplicationRecord(recordbuf, OS_MAX_TITLE_COUNT, 0, &record_count);
+        if(R_SUCCEEDED(rc))
+        {
+            for(s32 i = 0; i < record_count; i++)
+            {
+                u64 appid = recordbuf[i].application_id;
+                NsApplicationControlData control = {};
+                size_t dummy;
+                auto rc = nsGetApplicationControlData(NsApplicationControlSource_Storage, appid, &control, sizeof(control), &dummy);
+                if(R_SUCCEEDED(rc))
+                {
+                    auto fname = cfg::GetTitleCacheIconPath(appid);
+                    fs::WriteFile(fname, control.icon, sizeof(control.icon), true);
+                }
+            }
+        }
+        delete[] recordbuf;
+    }
+
+    static void CacheAllHomebrew(std::string hb_base_path)
+    {
+        FS_FOR(hb_base_path, name, path,
+        {
+            if(dt->d_type & DT_DIR)
+            {
+                CacheAllHomebrew(path);
+            }
+            else
+            {
+                if(util::StringEndsWith(name, ".nro")) CacheHomebrew(path);
+            }
+        })
+    }
+
+    void CacheEverything(std::string hb_base_path)
+    {
+        CacheInstalledTitles();
+        CacheAllHomebrew(hb_base_path);
     }
 
     std::string GetRecordIconPath(TitleRecord record)
@@ -560,12 +603,12 @@ namespace cfg
         return title_found;
     }
 
-    TitleList LoadTitleList(bool cache)
+    TitleList LoadTitleList()
     {
         TitleList list = {};
         
         // Installed titles first
-        auto titles = os::QueryInstalledTitles(cache);
+        auto titles = os::QueryInstalledTitles();
 
         FS_FOR(std::string(Q_ENTRIES_PATH), name, path,
         {
@@ -626,9 +669,7 @@ namespace cfg
                         rec.name = entry.value("name", "");
                         rec.author = entry.value("author", "");
                         rec.version = entry.value("version", "");
-
-                        // Only cache homebrew added to main menu.
-                        CacheHomebrew(nropath);
+                        
                         std::string argv = entry.value("nro_argv", "");
                         strcpy(rec.nro_target.nro_path, nropath.c_str());
                         if(!argv.empty()) strcpy(rec.nro_target.argv, argv.c_str());
