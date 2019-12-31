@@ -95,6 +95,27 @@ You will need devkitPro, devkitA64, libnx and all SDL2 libraries for switch deve
 Clone (**recursively!**) this repo (uses libstratosphere and Plutonium submodules) and hit `make` in root. It should build everything and generate a `titles` folder ready for use inside `SdOut`.
 
 Using `make dev` instead of regular `make` will compile uLaunch in debug mode, which makes the backend process display a debug console and a special menu before usual boot to perform special tasks. This is only meant to be used by developers.
+ 
+### Docker
+
+A Docker switch development environment is included in order to make it easier to compile the project.
+
+    # Run environment
+    $ docker-compose up -d
+    
+    # Connect to the environment
+    $ docker-compose exec switch bash
+    
+    # Update packages
+    $ dkp-pacman -Syu
+    
+Once we are connected inside, we can run the commands:
+
+    # Development build
+    $ make dev
+    
+    # Production build
+    $ make
 
 ## Credits
 

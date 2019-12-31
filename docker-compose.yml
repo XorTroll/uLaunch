@@ -1,0 +1,8 @@
+version: "3.7"
+services:
+  switch:
+    image: devkitpro/devkita64
+    tty: true
+    working_dir: /root/src
+    volumes:
+    - ./:/root/src
