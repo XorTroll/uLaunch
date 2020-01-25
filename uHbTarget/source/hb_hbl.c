@@ -3,13 +3,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define _HBTARGET_STR(x) #x
-#define HBTARGET_STR(x) _HBTARGET_STR(x)
-
-#define HBTARGET_NOTICE_TEXT(major, minor, micro) "uHbTarget as part of uLaunch v" HBTARGET_STR(major) "." HBTARGET_STR(minor) "." HBTARGET_STR(micro) " :)"
-
 char g_noticeText[] =
-    HBTARGET_NOTICE_TEXT(UL_MAJOR, UL_MINOR, UL_MICRO) "\0"
+    "uHbTarget as part of uLaunch v" UL_VERSION " :)" "\0"
     "There is only one true CFW in the scene.";
 
 static char g_argv[2048];
