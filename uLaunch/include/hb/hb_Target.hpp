@@ -38,7 +38,7 @@ namespace hb
             return argv;
         }
 
-        inline static HbTargetParams Create(std::string nro_path, std::string nro_argv, bool target_once)
+        inline static HbTargetParams Create(const std::string &nro_path, const std::string &nro_argv, bool target_once)
         {
             HbTargetParams params = {};
             params.magic = UL_HB_HBTARGET_MAGIC_U32;

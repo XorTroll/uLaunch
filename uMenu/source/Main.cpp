@@ -8,13 +8,15 @@
 #include <cfg/cfg_Config.hpp>
 #include <net/net_Service.hpp>
 #include <util/util_Misc.hpp>
-#include <ui/ui_QMenuApplication.hpp>
+#include <ui/ui_MenuApplication.hpp>
 #include <os/os_HomeMenu.hpp>
 #include <util/util_Convert.hpp>
+#include <am/am_LibraryApplet.hpp>
 
 extern "C"
 {
     u32 __nx_applet_type = AppletType_LibraryApplet; // Explicitly declare we're a library applet (need to do so for non-hbloader homebrew)
+    TimeServiceType __nx_time_service_type = TimeServiceType_System;
     size_t __nx_heap_size = 0xD000000; // 208MB heap
 }
 
@@ -22,7 +24,7 @@ extern "C"
 
 // Some global vars
 
-ui::QMenuApplication::Ref qapp;
+ui::MenuApplication::Ref qapp;
 cfg::TitleList list;
 std::vector<cfg::TitleRecord> homebrew;
 cfg::Config config;
@@ -40,7 +42,7 @@ namespace qmenu
         UL_R_TRY(setsysInitialize())
         UL_R_TRY(setInitialize())
 
-        UL_R_TRY(am::QMenu_InitializeDaemonService())
+        UL_R_TRY(am::Menu_InitializeDaemonService())
 
         // Load menu config and theme
         config = cfg::EnsureConfig();
@@ -49,7 +51,7 @@ namespace qmenu
 
     void Exit()
     {
-        am::QMenu_FinalizeDaemonService();
+        am::Menu_FinalizeDaemonService();
 
         setExit();
         setsysExit();
@@ -62,17 +64,17 @@ namespace qmenu
 
 int main()
 {
-    auto [rc, smode] = am::QMenu_ProcessInput();
+    auto [rc, smode] = am::Menu_ProcessInput();
     if(R_SUCCEEDED(rc))
     {
-        am::QDaemonStatus status = {};
+        am::DaemonStatus status = {};
         
-        // Information block sent as an extra storage to QMenu.
-        am::QLibraryAppletReadStorage(&status, sizeof(status));
+        // Information block sent as an extra storage to Menu.
+        am::Menu_DaemonReadImpl(&status, sizeof(status), false);
 
         // First read sent storages, then init the renderer (UI, which also inits RomFs), then init everything else
 
-        if(smode != am::QMenuStartMode::Invalid)
+        if(smode != am::MenuStartMode::Invalid)
         {
             // Check if our RomFs file exists...
             if(!fs::ExistsFile(MENU_ROMFS_BIN)) Panic("Unable to find RomFs binary: '" MENU_ROMFS_BIN "'");
@@ -107,12 +109,12 @@ int main()
             renderoptions.InitRomFs = false; // We have loaded RomFs from an external file, so :P
 
             auto renderer = pu::ui::render::Renderer::New(SDL_INIT_EVERYTHING, renderoptions, pu::ui::render::RendererHardwareFlags);
-            qapp = ui::QMenuApplication::New(renderer);
+            qapp = ui::MenuApplication::New(renderer);
 
             qapp->SetInformation(smode, status);
             qapp->Prepare();
             
-            if(smode == am::QMenuStartMode::MenuApplicationSuspended) qapp->Show();
+            if(smode == am::MenuStartMode::MenuApplicationSuspended) qapp->Show();
             else qapp->ShowWithFadeIn();
 
             // Exit RomFs manually, Plutonium won't do it for us since we're initializing it manually

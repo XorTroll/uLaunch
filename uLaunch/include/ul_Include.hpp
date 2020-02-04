@@ -89,14 +89,4 @@ inline void Panic(std::string msg)
     // TODO: non-console panic...?
 }
 
-inline void HandleECSMain()
-{
-    u64 this_app_id = 0;
-    svcGetInfo(&this_app_id, InfoType_ProgramId, CUR_PROCESS_HANDLE, 0);
-
-    ldrShellInitialize();
-    serviceDispatchIn(ldrShellGetServiceSession(), 65001, this_app_id);
-    ldrShellExit();
-}
-
 #define UL_R_TRY(expr) { auto _tmp_rc = (expr); if(R_FAILED(_tmp_rc)) { fatalThrow(_tmp_rc); } }

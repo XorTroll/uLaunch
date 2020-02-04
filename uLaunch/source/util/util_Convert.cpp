@@ -31,11 +31,6 @@ namespace util
         return strm.str();
     }
 
-    u64 Get64FromString(std::string val)
-    {
-        return strtoull(val.c_str(), NULL, 16);
-    }
-
     std::string FormatApplicationId(u64 app_id)
     {
         std::stringstream strm;

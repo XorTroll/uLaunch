@@ -51,7 +51,7 @@ namespace res
     RES_DEFINE(InvalidJSONFile, 1)
     RES_MODULE_END
 
-    RES_MODULE_BEGIN(QDaemon, 3)
+    RES_MODULE_BEGIN(Daemon, 3)
     RES_DEFINE(ApplicationActive, 1)
     RES_DEFINE(InvalidSelectedUser, 2)
     RES_DEFINE(AlreadyQueued, 3)

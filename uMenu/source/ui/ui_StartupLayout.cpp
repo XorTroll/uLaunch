@@ -1,10 +1,10 @@
 #include <ui/ui_StartupLayout.hpp>
 #include <os/os_Account.hpp>
 #include <util/util_Convert.hpp>
-#include <ui/ui_QMenuApplication.hpp>
+#include <ui/ui_MenuApplication.hpp>
 #include <fs/fs_Stdio.hpp>
 
-extern ui::QMenuApplication::Ref qapp;
+extern ui::MenuApplication::Ref qapp;
 extern cfg::Theme theme;
 extern cfg::Config config;
 
@@ -66,11 +66,11 @@ namespace ui
                 rc = rc2;
                 if(R_SUCCEEDED(rc))
                 {
-                    am::QMenuCommandWriter writer(am::QDaemonMessage::TryLogUser);
+                    am::MenuCommandWriter writer(am::DaemonMessage::TryLogUser);
                     writer.Write<db::PassBlock>(pass);
                     writer.FinishWrite();
 
-                    am::QMenuCommandResultReader reader;
+                    am::MenuCommandResultReader reader;
                     rc = reader.GetReadResult();
                     reader.FinishRead();
 
@@ -119,11 +119,11 @@ namespace ui
                 auto [rc, name] = os::GetAccountName(user);
                 if(R_FAILED(rc)) continue;
 
-                am::QMenuCommandWriter writer(am::QDaemonMessage::UserHasPassword);
+                am::MenuCommandWriter writer(am::DaemonMessage::UserHasPassword);
                 writer.Write<AccountUid>(user);
                 writer.FinishWrite();
 
-                am::QMenuCommandResultReader res;
+                am::MenuCommandResultReader res;
                 res.FinishRead();
 
                 bool has_pass = R_SUCCEEDED(res.GetReadResult());

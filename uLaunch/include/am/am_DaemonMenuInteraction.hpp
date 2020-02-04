@@ -3,9 +3,12 @@
 #include <ul_Include.hpp>
 #include <hb/hb_Target.hpp>
 
+#define AM_DAEMON_PRIVATE_SERVICE_NAME "qdmnsrv"
+#define AM_DAEMON_PUBLIC_SERVICE_NAME "ulaunch"
+
 namespace am
 {
-    enum class QMenuStartMode
+    enum class MenuStartMode
     {
         Invalid,
         StartupScreen,
@@ -14,20 +17,20 @@ namespace am
         MenuLaunchFailure
     };
 
-    enum class QMenuMessage
+    enum class MenuMessage
     {
         Invalid,
         HomeRequest
     };
 
-    enum class QDaemonMessage
+    enum class DaemonMessage
     {
         Invalid,
         SetSelectedUser,
         LaunchApplication,
         ResumeApplication,
         TerminateApplication,
-        LaunchHomebrewLibApplet,
+        LaunchHomebrewLibraryApplet,
         LaunchHomebrewApplication,
         OpenWebPage,
         GetSelectedUser,
@@ -39,36 +42,29 @@ namespace am
         OpenAlbum,
     };
 
-    struct QDaemonStatus
+    struct DaemonStatus
     {
         AccountUid selected_user;
         hb::HbTargetParams params; // Set if homebrew (via flog takeover) is suspended
         u64 app_id; // Set if any title (other than flog) is suspended
     };
 
-    #define AM_QDAEMON_SERVICE_NAME "qdmnsrv"
+    ResultWith<MenuStartMode> Menu_ProcessInput();
 
-    Result QDaemon_LaunchQMenu(QMenuStartMode mode, QDaemonStatus status);
-    // Result QDaemon_LaunchQHbTarget(hb::HbTargetParams input);
+    Result Menu_InitializeDaemonService();
+    ResultWith<MenuMessage> Menu_GetLatestMenuMessage();
+    bool MenuIsHomePressed();
+    void Menu_FinalizeDaemonService();
 
-    Result QLibraryAppletReadStorage(void *data, size_t size);
-    Result QApplicationReadStorage(void *data, size_t size);
-    ResultWith<QMenuStartMode> QMenu_ProcessInput();
+    Result Daemon_MenuWriteImpl(void *data, size_t size, bool wait);
+    Result Daemon_MenuReadImpl(void *data, size_t size, bool wait);
 
-    Result QMenu_InitializeDaemonService();
-    ResultWith<QMenuMessage> QMenu_GetLatestQMenuMessage();
-    bool QMenuIsHomePressed();
-    void QMenu_FinalizeDaemonService();
+    Result Menu_DaemonWriteImpl(void *data, size_t size, bool wait);
+    Result Menu_DaemonReadImpl(void *data, size_t size, bool wait);
 
-    Result QDaemon_QMenuWriteImpl(void *data, size_t size, bool wait);
-    Result QDaemon_QMenuReadImpl(void *data, size_t size, bool wait);
+    typedef Result(*DMCommandRWFunction)(void*, size_t, bool);
 
-    Result QMenu_QDaemonWriteImpl(void *data, size_t size, bool wait);
-    Result QMenu_QDaemonReadImpl(void *data, size_t size, bool wait);
-
-    typedef Result(*QCommandRWFunction)(void*, size_t, bool);
-
-    struct QCommandCommonHeader
+    struct DMCommandCommonHeader
     {
         u32 magic;
         u32 val;
@@ -77,18 +73,18 @@ namespace am
     static constexpr u32 Magic = 0x434D4151;
     static constexpr size_t BlockSize = 0x4000;
 
-    template<QCommandRWFunction WriteFn>
-    class QCommandWriter
+    template<DMCommandRWFunction WriteFn>
+    class DMCommandWriter
     {
         private:
-            QCommandCommonHeader request;
+            DMCommandCommonHeader request;
             u8 *data_block;
             size_t data_pos;
             Result inner_rc;
             bool write_done;
 
         public:
-            QCommandWriter(u32 value)
+            DMCommandWriter(u32 value)
             {
                 write_done = false;
                 request.magic = Magic;
@@ -98,7 +94,7 @@ namespace am
                 inner_rc = WriteFn(&request, sizeof(request), false);
             }
 
-            ~QCommandWriter()
+            ~DMCommandWriter()
             {
                 FinishWrite();
             }
@@ -131,11 +127,11 @@ namespace am
             }
     };
 
-    template<QCommandRWFunction ReadFn>
-    class QCommandReader
+    template<DMCommandRWFunction ReadFn>
+    class DMCommandReader
     {
         private:
-            QCommandCommonHeader response;
+            DMCommandCommonHeader response;
             u8 *data_block;
             size_t data_pos;
             Result inner_rc;
@@ -143,17 +139,17 @@ namespace am
             bool fn_wait;
 
         public:
-            QCommandReader(bool wait = false)
+            DMCommandReader(bool wait = false)
             {
                 fn_wait = wait;
                 read_done = false;
                 data_pos = 0;
                 data_block = new u8[BlockSize]();
-                inner_rc = ReadFn(&response, sizeof(QCommandCommonHeader), fn_wait);
+                inner_rc = ReadFn(&response, sizeof(DMCommandCommonHeader), fn_wait);
                 if(R_SUCCEEDED(inner_rc)) inner_rc = ReadFn(data_block, BlockSize, fn_wait);
             }
 
-            ~QCommandReader()
+            ~DMCommandReader()
             {
                 FinishRead();
             }
@@ -191,27 +187,27 @@ namespace am
             }
     };
 
-    class QDaemonCommandReader : public QCommandReader<QDaemon_QMenuReadImpl>
+    class DaemonCommandReader : public DMCommandReader<Daemon_MenuReadImpl>
     {
         public:
-            QDaemonMessage GetMessage()
+            DaemonMessage GetMessage()
             {
-                return (QDaemonMessage)GetValue();
+                return (DaemonMessage)GetValue();
             }
     };
 
-    class QDaemonCommandWriter : public QCommandWriter<QDaemon_QMenuWriteImpl>
+    class DaemonCommandWriter : public DMCommandWriter<Daemon_MenuWriteImpl>
     {
         public:
-            QDaemonCommandWriter(QMenuMessage msg) : QCommandWriter((u32)msg)
+            DaemonCommandWriter(MenuMessage msg) : DMCommandWriter((u32)msg)
             {
             }
     };
 
-    class QDaemonCommandResultReader : public QCommandReader<QDaemon_QMenuReadImpl>
+    class DaemonCommandResultReader : public DMCommandReader<Daemon_MenuReadImpl>
     {
         public:
-            QDaemonCommandResultReader() : QCommandReader(true)
+            DaemonCommandResultReader() : DMCommandReader(true)
             {
             }
 
@@ -221,35 +217,35 @@ namespace am
             }
     };
 
-    class QDaemonCommandResultWriter : public QCommandWriter<QDaemon_QMenuWriteImpl>
+    class DaemonCommandResultWriter : public DMCommandWriter<Daemon_MenuWriteImpl>
     {
         public:
-            QDaemonCommandResultWriter(Result rc) : QCommandWriter(rc)
+            DaemonCommandResultWriter(Result rc) : DMCommandWriter(rc)
             {
             }
     };
 
-    class QMenuCommandReader : public QCommandReader<QMenu_QDaemonReadImpl>
+    class MenuCommandReader : public DMCommandReader<Menu_DaemonReadImpl>
     {
         public:
-            QMenuMessage GetMessage()
+            MenuMessage GetMessage()
             {
-                return (QMenuMessage)GetValue();
+                return (MenuMessage)GetValue();
             }
     };
 
-    class QMenuCommandWriter : public QCommandWriter<QMenu_QDaemonWriteImpl>
+    class MenuCommandWriter : public DMCommandWriter<Menu_DaemonWriteImpl>
     {
         public:
-            QMenuCommandWriter(QDaemonMessage msg) : QCommandWriter((u32)msg)
+            MenuCommandWriter(DaemonMessage msg) : DMCommandWriter((u32)msg)
             {
             }
     };
 
-    class QMenuCommandResultReader : public QCommandReader<QMenu_QDaemonReadImpl>
+    class MenuCommandResultReader : public DMCommandReader<Menu_DaemonReadImpl>
     {
         public:
-            QMenuCommandResultReader() : QCommandReader(true)
+            MenuCommandResultReader() : DMCommandReader(true)
             {
             }
 
@@ -259,10 +255,10 @@ namespace am
             }
     };
 
-    class QMenuCommandResultWriter : public QCommandWriter<QMenu_QDaemonWriteImpl>
+    class MenuCommandResultWriter : public DMCommandWriter<Menu_DaemonWriteImpl>
     {
         public:
-            QMenuCommandResultWriter(Result rc) : QCommandWriter(rc)
+            MenuCommandResultWriter(Result rc) : DMCommandWriter(rc)
             {
             }
     };

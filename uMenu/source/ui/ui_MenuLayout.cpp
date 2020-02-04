@@ -5,12 +5,12 @@
 #include <util/util_Misc.hpp>
 #include <os/os_Misc.hpp>
 #include <am/am_LibraryApplet.hpp>
-#include <ui/ui_QMenuApplication.hpp>
+#include <ui/ui_MenuApplication.hpp>
 #include <os/os_HomeMenu.hpp>
 #include <fs/fs_Stdio.hpp>
 #include <net/net_Service.hpp>
 
-extern ui::QMenuApplication::Ref qapp;
+extern ui::MenuApplication::Ref qapp;
 extern cfg::TitleList list;
 extern std::vector<cfg::TitleRecord> homebrew;
 extern cfg::Config config;
@@ -288,204 +288,214 @@ namespace ui
         }
         else
         {
-            if((down & KEY_A) || (down & KEY_X) || (down & KEY_Y))
+            if((index == 0) && this->homebrew_mode)
             {
-                if((index == 0) && this->homebrew_mode)
+                if(down & KEY_A)
                 {
+                    pu::audio::Play(this->sfxTitleLaunch);
+                    am::MenuCommandWriter writer(am::DaemonMessage::LaunchHomebrewLibraryApplet);
+                    hb::HbTargetParams ipt = {};
+                    strcpy(ipt.nro_path, MENU_HBMENU_NRO); // Launch normal hbmenu
+                    strcpy(ipt.nro_argv, MENU_HBMENU_NRO);
+                    writer.Write<hb::HbTargetParams>(ipt);
+                    writer.FinishWrite();
+
+                    qapp->StopPlayBGM();
+                    qapp->CloseWithFadeOut();
+                    return;
+                }
+            }
+            else
+            {
+                u32 realidx = index;
+                if(this->homebrew_mode) realidx--;
+                if(this->homebrew_mode)
+                {
+                    auto hb = homebrew[realidx];
                     if(down & KEY_A)
                     {
-                        pu::audio::Play(this->sfxTitleLaunch);
-                        am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchHomebrewLibApplet);
-                        hb::HbTargetParams ipt = {};
-                        strcpy(ipt.nro_path, MENU_HBMENU_NRO); // Launch normal hbmenu
-                        strcpy(ipt.nro_argv, MENU_HBMENU_NRO);
-                        writer.Write<hb::HbTargetParams>(ipt);
-                        writer.FinishWrite();
-
-                        qapp->StopPlayBGM();
-                        qapp->CloseWithFadeOut();
-                        return;
+                        bool hblaunch = true;
+                        if(qapp->IsHomebrewSuspended())
+                        {
+                            if(qapp->EqualsSuspendedHomebrewPath(hb.nro_target.nro_path))
+                            {
+                                if(this->mode == 1) this->mode = 2;
+                                hblaunch = false;
+                            }
+                            else
+                            {
+                                hblaunch = false;
+                                this->HandleCloseSuspended();
+                                hblaunch = !qapp->IsHomebrewSuspended();
+                            }
+                        }
+                        if(hblaunch) this->HandleHomebrewLaunch(hb);
+                    }
+                    else if(down & KEY_X)
+                    {
+                        if(qapp->IsSuspended())
+                        {
+                            if(qapp->EqualsSuspendedHomebrewPath(hb.nro_target.nro_path)) this->HandleCloseSuspended();
+                        }
+                    }
+                    else if(down & KEY_Y)
+                    {
+                        if(!this->select_on) this->select_on = true;
+                        this->itemsMenu->SetItemMultiselected(this->itemsMenu->GetSelectedItem(), true);
                     }
                 }
                 else
                 {
-                    u32 realidx = index;
-                    if(this->homebrew_mode) realidx--;
-                    if(this->homebrew_mode)
+                    auto &folder = cfg::FindFolderByName(list, this->curfolder);
+                    s32 titleidx = realidx;
+                    if(this->curfolder.empty())
                     {
-                        auto hb = homebrew[realidx];
-                        if(down & KEY_A)
+                        if(realidx >= list.folders.size())
                         {
-                            bool hblaunch = true;
-                            if(qapp->IsHomebrewSuspended())
+                            titleidx -= list.folders.size();
+                        }
+                        else
+                        {
+                            auto foldr = list.folders[realidx];
+                            if(down & KEY_A)
                             {
-                                if(qapp->EqualsSuspendedHomebrewPath(hb.nro_target.nro_path))
+                                this->MoveFolder(foldr.name, true);
+                            }
+                            else if(down & KEY_Y)
+                            {
+                                auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_rename_folder"), cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_rename_folder_conf"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "no") }, true);
+                                if(sopt == 0)
                                 {
-                                    if(this->mode == 1) this->mode = 2;
-                                    hblaunch = false;
-                                }
-                                else
-                                {
-                                    hblaunch = false;
-                                    this->HandleCloseSuspended();
-                                    hblaunch = !qapp->IsHomebrewSuspended();
+                                    SwkbdConfig swkbd;
+                                    swkbdCreate(&swkbd, 0);
+                                    swkbdConfigSetGuideText(&swkbd, cfg::GetLanguageString(config.main_lang, config.default_lang, "swkbd_rename_folder_guide").c_str());
+                                    char dir[500] = {0};
+                                    auto rc = swkbdShow(&swkbd, dir, 500);
+                                    swkbdClose(&swkbd);
+                                    if(R_SUCCEEDED(rc))
+                                    {
+                                        cfg::RenameFolder(list, foldr.name, dir);
+                                        this->MoveFolder(this->curfolder, true);
+                                    }
                                 }
                             }
-                            if(hblaunch) this->HandleHomebrewLaunch(hb);
+                            titleidx = -1;
+                        }
+                    }
+                    if(titleidx >= 0)
+                    {
+                        auto title = folder.titles[titleidx];
+                        if(down & KEY_A)
+                        {
+                            bool titlelaunch = true;
+
+                            if(qapp->IsSuspended())
+                            {
+                                if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew)
+                                {
+                                    if(qapp->EqualsSuspendedHomebrewPath(title.nro_target.nro_path))
+                                    {
+                                        if(this->mode == 1) this->mode = 2;
+                                        titlelaunch = false;
+                                    }
+                                }
+                                else if((cfg::TitleType)title.title_type == cfg::TitleType::Installed)
+                                {
+                                    if(title.app_id == qapp->GetSuspendedApplicationId())
+                                    {
+                                        if(this->mode == 1) this->mode = 2;
+                                        titlelaunch = false;
+                                    }
+                                }
+                                if(titlelaunch)
+                                {
+                                    // Homebrew launching code already does this checks later - doing this check only with installed titles
+                                    if((cfg::TitleType)title.title_type == cfg::TitleType::Installed)
+                                    {
+                                        titlelaunch = false;
+                                        this->HandleCloseSuspended();
+                                        titlelaunch = !qapp->IsSuspended();
+                                    }
+                                }
+                            }
+                            if(titlelaunch)
+                            {
+                                if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew) this->HandleHomebrewLaunch(title);
+                                else
+                                {
+                                    pu::audio::Play(this->sfxTitleLaunch);
+                                    am::MenuCommandWriter writer(am::DaemonMessage::LaunchApplication);
+                                    writer.Write<u64>(title.app_id);
+                                    writer.FinishWrite();
+
+                                    am::MenuCommandResultReader reader;
+                                    if(reader && R_SUCCEEDED(reader.GetReadResult()))
+                                    {
+                                        qapp->StopPlayBGM();
+                                        qapp->CloseWithFadeOut();
+                                        return;
+                                    }
+                                    else
+                                    {
+                                        auto rc = reader.GetReadResult();
+                                        qapp->ShowNotification(cfg::GetLanguageString(config.main_lang, config.default_lang, "app_launch_error") + ": " + util::FormatResult(rc));
+                                    }
+                                    reader.FinishRead();
+                                }
+                            }
                         }
                         else if(down & KEY_X)
                         {
                             if(qapp->IsSuspended())
                             {
-                                if(qapp->EqualsSuspendedHomebrewPath(hb.nro_target.nro_path)) this->HandleCloseSuspended();
+                                if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew)
+                                {
+                                    if(qapp->EqualsSuspendedHomebrewPath(title.nro_target.nro_path)) this->HandleCloseSuspended();
+                                }
+                                else
+                                {
+                                    if(title.app_id == qapp->GetSuspendedApplicationId()) this->HandleCloseSuspended();
+                                }
                             }
                         }
                         else if(down & KEY_Y)
                         {
-                            if(!this->select_on) this->select_on = true;
-                            this->itemsMenu->SetItemMultiselected(this->itemsMenu->GetSelectedItem(), true);
-                        }
-                    }
-                    else
-                    {
-                        auto &folder = cfg::FindFolderByName(list, this->curfolder);
-                        s32 titleidx = realidx;
-                        if(this->curfolder.empty())
-                        {
-                            if(realidx >= list.folders.size())
+                            if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew)
                             {
-                                titleidx -= list.folders.size();
-                            }
-                            else
-                            {
-                                auto foldr = list.folders[realidx];
-                                if(down & KEY_A)
-                                {
-                                    this->MoveFolder(foldr.name, true);
-                                }
-                                else if(down & KEY_Y)
-                                {
-                                    auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_rename_folder"), cfg::GetLanguageString(config.main_lang, config.default_lang, "menu_rename_folder_conf"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "no") }, true);
-                                    if(sopt == 0)
-                                    {
-                                        SwkbdConfig swkbd;
-                                        swkbdCreate(&swkbd, 0);
-                                        swkbdConfigSetGuideText(&swkbd, cfg::GetLanguageString(config.main_lang, config.default_lang, "swkbd_rename_folder_guide").c_str());
-                                        char dir[500] = {0};
-                                        auto rc = swkbdShow(&swkbd, dir, 500);
-                                        swkbdClose(&swkbd);
-                                        if(R_SUCCEEDED(rc))
-                                        {
-                                            cfg::RenameFolder(list, foldr.name, dir);
-                                            this->MoveFolder(this->curfolder, true);
-                                        }
-                                    }
-                                }
-                                titleidx = -1;
-                            }
-                        }
-                        if(titleidx >= 0)
-                        {
-                            auto title = folder.titles[titleidx];
-                            if(down & KEY_A)
-                            {
-                                bool titlelaunch = true;
-
-                                if(qapp->IsSuspended())
-                                {
-                                    if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew)
-                                    {
-                                        if(qapp->EqualsSuspendedHomebrewPath(title.nro_target.nro_path))
-                                        {
-                                            if(this->mode == 1) this->mode = 2;
-                                            titlelaunch = false;
-                                        }
-                                    }
-                                    else if((cfg::TitleType)title.title_type == cfg::TitleType::Installed)
-                                    {
-                                        if(title.app_id == qapp->GetSuspendedApplicationId())
-                                        {
-                                            if(this->mode == 1) this->mode = 2;
-                                            titlelaunch = false;
-                                        }
-                                    }
-                                    if(titlelaunch)
-                                    {
-                                        // Homebrew launching code already does this checks later - doing this check only with installed titles
-                                        if((cfg::TitleType)title.title_type == cfg::TitleType::Installed)
-                                        {
-                                            titlelaunch = false;
-                                            this->HandleCloseSuspended();
-                                            titlelaunch = !qapp->IsSuspended();
-                                        }
-                                    }
-                                }
-                                if(titlelaunch)
-                                {
-                                    if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew) this->HandleHomebrewLaunch(title);
-                                    else
-                                    {
-                                        pu::audio::Play(this->sfxTitleLaunch);
-                                        am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchApplication);
-                                        writer.Write<u64>(title.app_id);
-                                        writer.FinishWrite();
-
-                                        am::QMenuCommandResultReader reader;
-                                        if(reader && R_SUCCEEDED(reader.GetReadResult()))
-                                        {
-                                            qapp->StopPlayBGM();
-                                            qapp->CloseWithFadeOut();
-                                            return;
-                                        }
-                                        else
-                                        {
-                                            auto rc = reader.GetReadResult();
-                                            qapp->ShowNotification(cfg::GetLanguageString(config.main_lang, config.default_lang, "app_launch_error") + ": " + util::FormatResult(rc));
-                                        }
-                                        reader.FinishRead();
-                                    }
-                                }
-                            }
-                            else if(down & KEY_X)
-                            {
-                                if(qapp->IsSuspended())
-                                {
-                                    if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew)
-                                    {
-                                        if(qapp->EqualsSuspendedHomebrewPath(title.nro_target.nro_path)) this->HandleCloseSuspended();
-                                    }
-                                    else
-                                    {
-                                        if(title.app_id == qapp->GetSuspendedApplicationId()) this->HandleCloseSuspended();
-                                    }
-                                }
-                            }
-                            else if(down & KEY_Y)
-                            {
-                                if((cfg::TitleType)title.title_type == cfg::TitleType::Homebrew)
-                                {
-                                    auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "entry_options"), cfg::GetLanguageString(config.main_lang, config.default_lang, "entry_action"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "entry_move"), cfg::GetLanguageString(config.main_lang, config.default_lang, "entry_remove"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
-                                    if(sopt == 0)
-                                    {
-                                        if(!this->select_on) this->select_on = true;
-                                        this->itemsMenu->SetItemMultiselected(this->itemsMenu->GetSelectedItem(), true);
-                                    }
-                                    else if(sopt == 1)
-                                    {
-                                        auto sopt2 = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "entry_remove"), cfg::GetLanguageString(config.main_lang, config.default_lang, "entry_remove_conf"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "no") }, true);
-                                        if(sopt2 == 0)
-                                        {
-                                            cfg::RemoveRecord(title);
-                                            folder.titles.erase(folder.titles.begin() + titleidx);
-                                            qapp->ShowNotification(cfg::GetLanguageString(config.main_lang, config.default_lang, "entry_remove_ok"));
-                                            this->MoveFolder(this->curfolder, true);
-                                        }
-                                    }
-                                }
-                                else
+                                auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "entry_options"), cfg::GetLanguageString(config.main_lang, config.default_lang, "entry_action"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "entry_move"), cfg::GetLanguageString(config.main_lang, config.default_lang, "entry_remove"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
+                                if(sopt == 0)
                                 {
                                     if(!this->select_on) this->select_on = true;
                                     this->itemsMenu->SetItemMultiselected(this->itemsMenu->GetSelectedItem(), true);
+                                }
+                                else if(sopt == 1)
+                                {
+                                    auto sopt2 = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "entry_remove"), cfg::GetLanguageString(config.main_lang, config.default_lang, "entry_remove_conf"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "no") }, true);
+                                    if(sopt2 == 0)
+                                    {
+                                        cfg::RemoveRecord(title);
+                                        folder.titles.erase(folder.titles.begin() + titleidx);
+                                        qapp->ShowNotification(cfg::GetLanguageString(config.main_lang, config.default_lang, "entry_remove_ok"));
+                                        this->MoveFolder(this->curfolder, true);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                if(!this->select_on) this->select_on = true;
+                                this->itemsMenu->SetItemMultiselected(this->itemsMenu->GetSelectedItem(), true);
+                            }
+                        }
+                        else if(down & KEY_UP)
+                        {
+                            if((cfg::TitleType)title.title_type == cfg::TitleType::Installed)
+                            {
+                                auto sopt = qapp->CreateShowDialog("Homebrew title take-over", "Would you like to select this title for homebrew launching?\nIf selected, homebrew will be launched as an application over this title.", { "Yes", "Cancel" }, true);
+                                if(sopt == 0)
+                                {
+                                    config.homebrew_title_application_id = title.app_id;
+                                    cfg::SaveConfig(config);
+                                    qapp->ShowNotification("Done");
                                 }
                             }
                         }
@@ -669,7 +679,7 @@ namespace ui
             }
         }
 
-        if(am::QMenuIsHomePressed())
+        if(am::MenuIsHomePressed())
         {
             if(qapp->IsSuspended())
             {
@@ -713,10 +723,10 @@ namespace ui
                 if(this->rawalpha == 255)
                 {
                     this->bgSuspendedRaw->SetAlphaFactor(this->rawalpha);
-                    am::QMenuCommandWriter writer(am::QDaemonMessage::ResumeApplication);
+                    am::MenuCommandWriter writer(am::DaemonMessage::ResumeApplication);
                     writer.FinishWrite();
 
-                    am::QMenuCommandResultReader reader;
+                    am::MenuCommandResultReader reader;
                     reader.FinishRead();
                 }
                 else
@@ -801,7 +811,7 @@ namespace ui
         auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "suspended_app"), cfg::GetLanguageString(config.main_lang, config.default_lang, "suspended_close"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "no") }, true);
         if(sopt == 0)
         {
-            am::QMenuCommandWriter writer(am::QDaemonMessage::TerminateApplication);
+            am::MenuCommandWriter writer(am::DaemonMessage::TerminateApplication);
             writer.FinishWrite();
 
             this->itemsMenu->UnsetSuspendedItem();
@@ -828,7 +838,7 @@ namespace ui
             strcpy(ipt.nro_argv, rec.nro_target.nro_argv);
             if(strlen(rec.nro_target.nro_argv)) sprintf(ipt.nro_argv, "%s %s", rec.nro_target.nro_path, rec.nro_target.nro_argv);
 
-            am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchHomebrewLibApplet);
+            am::MenuCommandWriter writer(am::DaemonMessage::LaunchHomebrewLibraryApplet);
             writer.Write<hb::HbTargetParams>(ipt);
             writer.FinishWrite();
 
@@ -838,38 +848,46 @@ namespace ui
         }
         else if(launchmode == 2)
         {
-            bool launch = true;
-            if(qapp->IsSuspended())
+            if(config.homebrew_title_application_id != 0)
             {
-                launch = false;
-                this->HandleCloseSuspended();
-                if(!qapp->IsSuspended()) launch = true;
+                bool launch = true;
+                if(qapp->IsSuspended())
+                {
+                    launch = false;
+                    this->HandleCloseSuspended();
+                    if(!qapp->IsSuspended()) launch = true;
+                }
+                if(launch)
+                {
+                    pu::audio::Play(this->sfxTitleLaunch);
+                    hb::HbTargetParams ipt = {};
+                    strcpy(ipt.nro_path, rec.nro_target.nro_path);
+                    strcpy(ipt.nro_argv, rec.nro_target.nro_argv);
+                    if(strlen(rec.nro_target.nro_argv)) sprintf(ipt.nro_argv, "%s %s", rec.nro_target.nro_path, rec.nro_target.nro_argv);
+
+                    am::MenuCommandWriter writer(am::DaemonMessage::LaunchHomebrewApplication);
+                    writer.Write<u64>(config.homebrew_title_application_id);
+                    writer.Write<hb::HbTargetParams>(ipt);
+                    writer.FinishWrite();
+
+                    am::MenuCommandResultReader reader;
+                    if(reader && R_SUCCEEDED(reader.GetReadResult()))
+                    {
+                        qapp->StopPlayBGM();
+                        qapp->CloseWithFadeOut();
+                        return;
+                    }
+                    else
+                    {
+                        auto rc = reader.GetReadResult();
+                        qapp->ShowNotification(cfg::GetLanguageString(config.main_lang, config.default_lang, "app_launch_error") + ": " + util::FormatResult(rc));
+                    }
+                    reader.FinishRead();
+                }
             }
-            if(launch)
+            else
             {
-                pu::audio::Play(this->sfxTitleLaunch);
-                hb::HbTargetParams ipt = {};
-                strcpy(ipt.nro_path, rec.nro_target.nro_path);
-                strcpy(ipt.nro_argv, rec.nro_target.nro_argv);
-                if(strlen(rec.nro_target.nro_argv)) sprintf(ipt.nro_argv, "%s %s", rec.nro_target.nro_path, rec.nro_target.nro_argv);
-
-                am::QMenuCommandWriter writer(am::QDaemonMessage::LaunchHomebrewApplication);
-                writer.Write<hb::HbTargetParams>(ipt);
-                writer.FinishWrite();
-
-                am::QMenuCommandResultReader reader;
-                if(reader && R_SUCCEEDED(reader.GetReadResult()))
-                {
-                    qapp->StopPlayBGM();
-                    qapp->CloseWithFadeOut();
-                    return;
-                }
-                else
-                {
-                    auto rc = reader.GetReadResult();
-                    qapp->ShowNotification(cfg::GetLanguageString(config.main_lang, config.default_lang, "app_launch_error") + ": " + util::FormatResult(rc));
-                }
-                reader.FinishRead();
+                qapp->CreateShowDialog("Launch", "There is no title specified for homebrew to take over it.\nSelect one by pressing up over it.", { "Ok" }, true);
             }
         }
     }
@@ -878,11 +896,11 @@ namespace ui
     {
         auto uid = qapp->GetSelectedUser();
         
-        am::QMenuCommandWriter writer(am::QDaemonMessage::UserHasPassword);
+        am::MenuCommandWriter writer(am::DaemonMessage::UserHasPassword);
         writer.Write<AccountUid>(uid);
         writer.FinishWrite();
 
-        am::QMenuCommandResultReader res;
+        am::MenuCommandResultReader res;
         res.FinishRead();
 
         bool has_pass = R_SUCCEEDED(res.GetReadResult());
@@ -929,12 +947,12 @@ namespace ui
                                         rc = rc3;
                                         if(R_SUCCEEDED(rc))
                                         {
-                                            am::QMenuCommandWriter writer(am::QDaemonMessage::ChangeUserPassword);
+                                            am::MenuCommandWriter writer(am::DaemonMessage::ChangeUserPassword);
                                             writer.Write<db::PassBlock>(oldpass);
                                             writer.Write<db::PassBlock>(newpass);
                                             writer.FinishWrite();
 
-                                            am::QMenuCommandResultReader reader;
+                                            am::MenuCommandResultReader reader;
                                             rc = reader.GetReadResult();
                                         }
                                         qapp->ShowNotification(R_SUCCEEDED(rc) ? cfg::GetLanguageString(config.main_lang, config.default_lang, "user_pass_change_ok") : cfg::GetLanguageString(config.main_lang, config.default_lang, "user_pass_change_error") + ": " + util::FormatResult(rc));
@@ -946,11 +964,11 @@ namespace ui
                                 auto sopt2 = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "user_pass_remove_full"), cfg::GetLanguageString(config.main_lang, config.default_lang, "user_pass_remove_conf"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
                                 if(sopt2 == 0)
                                 {
-                                    am::QMenuCommandWriter writer(am::QDaemonMessage::RemoveUserPassword);
+                                    am::MenuCommandWriter writer(am::DaemonMessage::RemoveUserPassword);
                                     writer.Write<db::PassBlock>(oldpass);
                                     writer.FinishWrite();
 
-                                    am::QMenuCommandResultReader reader;
+                                    am::MenuCommandResultReader reader;
                                     rc = reader.GetReadResult();
 
                                     qapp->ShowNotification(R_SUCCEEDED(rc) ? cfg::GetLanguageString(config.main_lang, config.default_lang, "user_pass_remove_ok") : cfg::GetLanguageString(config.main_lang, config.default_lang, "user_pass_remove_error") + ": " + util::FormatResult(rc));
@@ -979,11 +997,11 @@ namespace ui
                         auto sopt = qapp->CreateShowDialog(cfg::GetLanguageString(config.main_lang, config.default_lang, "user_pass_reg"), cfg::GetLanguageString(config.main_lang, config.default_lang, "user_pass_reg_conf"), { cfg::GetLanguageString(config.main_lang, config.default_lang, "yes"), cfg::GetLanguageString(config.main_lang, config.default_lang, "cancel") }, true);
                         if(sopt == 0)
                         {
-                            am::QMenuCommandWriter writer(am::QDaemonMessage::RegisterUserPassword);
+                            am::MenuCommandWriter writer(am::DaemonMessage::RegisterUserPassword);
                             writer.Write<db::PassBlock>(newpass);
                             writer.FinishWrite();
 
-                            am::QMenuCommandResultReader reader;
+                            am::MenuCommandResultReader reader;
                             rc = reader.GetReadResult();
                         }
                     }
@@ -998,9 +1016,9 @@ namespace ui
             *(u32*)in = 7; // Type -> ShowMyProfile
             memcpy((AccountUid*)(in + 0x8), &uid, sizeof(uid));
 
-            am::LibraryAppletQMenuLaunchWithSimple(AppletId_myPage, 1, in, sizeof(in), NULL, 0, [&]() -> bool
+            am::LibraryAppletDaemonLaunchWithSimple(AppletId_myPage, 1, in, sizeof(in), NULL, 0, [&]() -> bool
             {
-                return !am::QMenuIsHomePressed();
+                return !am::MenuIsHomePressed();
             });
         }
         else if(sopt == 2)
@@ -1017,7 +1035,7 @@ namespace ui
             {
                 if(logoff == 2)
                 {
-                    am::QMenuCommandWriter writer(am::QDaemonMessage::TerminateApplication);
+                    am::MenuCommandWriter writer(am::DaemonMessage::TerminateApplication);
                     writer.FinishWrite();
 
                     this->itemsMenu->UnsetSuspendedItem();
@@ -1046,7 +1064,7 @@ namespace ui
             webPageCreate(&web, url);
             webConfigSetWhitelist(&web, ".*");
 
-            am::QMenuCommandWriter writer(am::QDaemonMessage::OpenWebPage);
+            am::MenuCommandWriter writer(am::DaemonMessage::OpenWebPage);
             writer.Write<WebCommonConfig>(web);
             writer.FinishWrite();
 
@@ -1086,7 +1104,7 @@ namespace ui
         arg2.take_over_connection = true;
         arg2.left_justify = true;
 
-        am::LibraryAppletQMenuLaunchWith(AppletId_controller, 0,
+        am::LibraryAppletDaemonLaunchWith(AppletId_controller, 0,
         [&](AppletHolder *h)
         {
             libappletPushInData(h, &arg1, sizeof(arg1));
@@ -1097,7 +1115,7 @@ namespace ui
         },
         [&]() -> bool
         {
-            return !am::QMenuIsHomePressed();
+            return !am::MenuIsHomePressed();
         });
     }
 
@@ -1117,7 +1135,7 @@ namespace ui
 
     void MenuLayout::HandleOpenAlbum()
     {
-        am::QMenuCommandWriter writer(am::QDaemonMessage::OpenAlbum);
+        am::MenuCommandWriter writer(am::DaemonMessage::OpenAlbum);
         writer.FinishWrite();
 
         qapp->StopPlayBGM();

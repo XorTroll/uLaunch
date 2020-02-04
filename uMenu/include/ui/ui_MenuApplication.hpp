@@ -8,16 +8,16 @@
 
 namespace ui
 {
-    class QMenuApplication : public pu::ui::Application
+    class MenuApplication : public pu::ui::Application
     {
         public:
             using Application::Application;
-            ~QMenuApplication();
-            PU_SMART_CTOR(QMenuApplication)
+            ~MenuApplication();
+            PU_SMART_CTOR(MenuApplication)
 
             void OnLoad() override;
 
-            void SetInformation(am::QMenuStartMode mode, am::QDaemonStatus status);
+            void SetInformation(am::MenuStartMode mode, am::DaemonStatus status);
             void LoadMenu();
             void LoadStartupMenu();
             void LoadThemeMenu();
@@ -81,14 +81,14 @@ namespace ui
 
             void CommonMenuOnLoop();
         private:
-            am::QMenuStartMode stmode;
+            am::MenuStartMode stmode;
             StartupLayout::Ref startupLayout;
             MenuLayout::Ref menuLayout;
             ThemeMenuLayout::Ref themeMenuLayout;
             SettingsMenuLayout::Ref settingsMenuLayout;
             LanguagesMenuLayout::Ref languagesMenuLayout;
             pu::ui::extras::Toast::Ref notifToast;
-            am::QDaemonStatus status;
+            am::DaemonStatus status;
             JSON uijson;
             JSON bgmjson;
             bool bgm_loop;
@@ -97,7 +97,7 @@ namespace ui
             pu::audio::Music bgm;
     };
 
-    inline void QMenuApplication::CommonMenuOnLoop() // Stuff all menus should handle (currently just connected controllers)
+    inline void MenuApplication::CommonMenuOnLoop() // Stuff all menus should handle (currently just connected controllers)
     {
         if(!hidIsControllerConnected(CONTROLLER_HANDHELD) && !hidIsControllerConnected(CONTROLLER_PLAYER_1)) this->menuLayout->HandleControllerAppletOpen();
     }

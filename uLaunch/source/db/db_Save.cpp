@@ -27,7 +27,7 @@ namespace db
         fsdevCommitDevice(UL_DB_MOUNT_NAME);
     }
 
-    ResultWith<PassBlock> PackPassword(AccountUid uid, std::string pass)
+    ResultWith<PassBlock> PackPassword(AccountUid uid, const std::string &pass)
     {
         PassBlock pb = {};
         if((pass.length() > 15) || (pass.empty())) return MakeResultWith(RES_VALUE(Db, InvalidPasswordLength), pb);

@@ -5,7 +5,7 @@
 #include <am/am_Application.hpp>
 #include <am/am_LibraryApplet.hpp>
 #include <am/am_HomeMenu.hpp>
-#include <am/am_QCommunications.hpp>
+#include <am/am_DaemonMenuInteraction.hpp>
 
 namespace ecs
 {
@@ -25,7 +25,7 @@ namespace ecs
         ams::sf::hipc::ServerManager<MaxServers, ServerOptions> manager_instance;
     }
 
-    static void ManagerLoopHandler(void *arg)
+    static void ECSManagerThread(void *arg)
     {
         manager_instance.LoopProcess();
     }
@@ -38,7 +38,7 @@ namespace ecs
         initialized = R_SUCCEEDED(rc);
         if(initialized)
         {
-            R_TRY(threadCreate(&manager_process_thread, &ManagerLoopHandler, nullptr, nullptr, 0x8000, 0x2b, -2));
+            R_TRY(threadCreate(&manager_process_thread, &ECSManagerThread, nullptr, nullptr, 0x8000, 0x2b, -2));
             R_TRY(threadStart(&manager_process_thread));
         }
         return rc;
@@ -87,14 +87,9 @@ namespace ecs
     Result LaunchApplet(u64 program_id, u32 la_version, void *args, size_t args_size)
     {
         Result rc = 0xdead;
-        auto appletid = DetectAppletIdByProgramId(program_id);
+        auto appletid = am::LibraryAppletGetAppletIdForProgramId(program_id);
         if(appletid != 0) rc = am::LibraryAppletStart(appletid, la_version, args, args_size);
         return rc;
-    }
-
-    Result LaunchApplication(u64 program_id, void *args, size_t args_size, AccountUid uid)
-    {
-        return am::ApplicationStart(program_id, false, uid, args, args_size);
     }
     
     Result LaunchSystemProcess(u64 program_id, std::string argv_str)

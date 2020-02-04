@@ -9,13 +9,14 @@
 #include <am/am_Application.hpp>
 #include <am/am_LibraryApplet.hpp>
 #include <am/am_HomeMenu.hpp>
-#include <am/am_QCommunications.hpp>
+#include <am/am_DaemonMenuInteraction.hpp>
 #include <util/util_Convert.hpp>
 #include <cfg/cfg_Config.hpp>
 
 extern "C"
 {
     u32 __nx_applet_type = AppletType_SystemApplet;
+    TimeServiceType __nx_time_service_type = TimeServiceType_System;
     #if UL_DEV
         size_t __nx_heap_size = 0x3000000; // Dev builds use 48MB (still lower than official qlaunch) for debug console
     #else
@@ -35,11 +36,12 @@ namespace ams
 
 AccountUid selected_uid = {};
 hb::HbTargetParams hblaunch_flag = {};
-hb::HbTargetParams hbapplaunch_copy = {};
 hb::HbTargetParams hbapplaunch_flag = {};
+hb::HbTargetParams hbapplaunch_flag_temp = {};
 u64 titlelaunch_flag = 0;
 WebCommonConfig webapplet_flag = {};
 bool album_flag = false;
+bool app_opened_hb = false;
 u8 *usbbuf = nullptr;
 cfg::Config config = {};
 Thread ipc_thr;
@@ -49,22 +51,22 @@ Thread usb_thr;
 bool debug_menu = false;
 
 ams::os::Mutex latestqlock;
-am::QMenuMessage latestqmenumsg = am::QMenuMessage::Invalid;
+am::MenuMessage latestqmenumsg = am::MenuMessage::Invalid;
 
-am::QDaemonStatus CreateStatus()
+am::DaemonStatus CreateStatus()
 {
-    am::QDaemonStatus status = {};
+    am::DaemonStatus status = {};
     memcpy(&status.selected_user, &selected_uid, sizeof(selected_uid));
 
     cfg::TitleType tmptype = cfg::TitleType::Invalid;
     if(am::ApplicationIsActive())
     {
         tmptype = cfg::TitleType::Installed;
-        if(os::IsFlogTitle(am::ApplicationGetId())) tmptype = cfg::TitleType::Homebrew;
+        if(app_opened_hb) tmptype = cfg::TitleType::Homebrew;
     }
 
     if(tmptype == cfg::TitleType::Installed) status.app_id = am::ApplicationGetId();
-    else if(tmptype == cfg::TitleType::Homebrew) status.params = hbapplaunch_copy;
+    else if(tmptype == cfg::TitleType::Homebrew) memcpy(&status.params, &hbapplaunch_flag_temp, sizeof(hbapplaunch_flag_temp));
 
     return status;
 }
@@ -74,20 +76,20 @@ void HandleSleep()
     appletStartSleepSequence(true);
 }
 
-Result LaunchMenu(am::QMenuStartMode stmode, am::QDaemonStatus status)
+Result LaunchMenu(am::MenuStartMode stmode, am::DaemonStatus status)
 {
     if(debug_menu) return 0;
-    return ecs::RegisterLaunchAsApplet(0x010000000000100B, (u32)stmode, "/ulaunch/bin/uMenu/", &status, sizeof(status));
+    return ecs::RegisterLaunchAsApplet(config.menu_program_id, (u32)stmode, "/ulaunch/bin/uMenu/", &status, sizeof(status));
 }
 
 void HandleHomeButton()
 {
     bool used_to_reopen_menu = false;
-    if(am::LibraryAppletIsActive() && !am::LibraryAppletIsQMenu())
+    if(am::LibraryAppletIsActive() && !am::LibraryAppletIsMenu())
     {
         am::LibraryAppletTerminate();
         auto status = CreateStatus();
-        UL_R_TRY(LaunchMenu(am::QMenuStartMode::Menu, status));
+        UL_R_TRY(LaunchMenu(am::MenuStartMode::Menu, status));
         return;
     }
     if(am::ApplicationIsActive())
@@ -96,14 +98,14 @@ void HandleHomeButton()
         {
             am::HomeMenuSetForeground();
             auto status = CreateStatus();
-            UL_R_TRY(LaunchMenu(am::QMenuStartMode::MenuApplicationSuspended, status));
+            UL_R_TRY(LaunchMenu(am::MenuStartMode::MenuApplicationSuspended, status));
             used_to_reopen_menu = true;
         }
     }
-    if(am::LibraryAppletIsQMenu() && !used_to_reopen_menu)
+    if(am::LibraryAppletIsMenu() && !used_to_reopen_menu)
     {
         std::scoped_lock _lock(latestqlock);
-        latestqmenumsg = am::QMenuMessage::HomeRequest;
+        latestqmenumsg = am::MenuMessage::HomeRequest;
     }
 }
 
@@ -185,162 +187,165 @@ void HandleAppletMessage()
 
 void HandleMenuMessage()
 {
-    if(am::LibraryAppletIsQMenu())
+    if(am::LibraryAppletIsMenu())
     {
-        am::QDaemonCommandReader reader;
+        am::DaemonCommandReader reader;
         if(reader)
         {
             switch(reader.GetMessage())
             {
-                case am::QDaemonMessage::SetSelectedUser:
+                case am::DaemonMessage::SetSelectedUser:
                 {
                     selected_uid = reader.Read<AccountUid>();
                     reader.FinishRead();
 
                     break;
                 }
-                case am::QDaemonMessage::LaunchApplication:
+                case am::DaemonMessage::LaunchApplication:
                 {
                     auto app_id = reader.Read<u64>();
                     reader.FinishRead();
 
                     if(am::ApplicationIsActive())
                     {
-                        am::QDaemonCommandResultWriter res(RES_VALUE(QDaemon, ApplicationActive));
+                        am::DaemonCommandResultWriter res(RES_VALUE(Daemon, ApplicationActive));
                         res.FinishWrite();
                     }
                     else if(!accountUidIsValid(&selected_uid))
                     {
-                        am::QDaemonCommandResultWriter res(RES_VALUE(QDaemon, InvalidSelectedUser));
+                        am::DaemonCommandResultWriter res(RES_VALUE(Daemon, InvalidSelectedUser));
                         res.FinishWrite();
                     }
                     else if(titlelaunch_flag > 0)
                     {
-                        am::QDaemonCommandResultWriter res(RES_VALUE(QDaemon, AlreadyQueued));
+                        am::DaemonCommandResultWriter res(RES_VALUE(Daemon, AlreadyQueued));
                         res.FinishWrite();
                     }
                     else
                     {
                         titlelaunch_flag = app_id;
-                        am::QDaemonCommandResultWriter res(0);
+                        am::DaemonCommandResultWriter res(0);
                         res.FinishWrite();
                     }
                     break;
                 }
-                case am::QDaemonMessage::ResumeApplication:
+                case am::DaemonMessage::ResumeApplication:
                 {
                     reader.FinishRead();
 
                     if(!am::ApplicationIsActive())
                     {
-                        am::QDaemonCommandResultWriter res(RES_VALUE(QDaemon, ApplicationNotActive));
+                        am::DaemonCommandResultWriter res(RES_VALUE(Daemon, ApplicationNotActive));
                         res.FinishWrite();
                     }
                     else
                     {
                         am::ApplicationSetForeground();
-                        am::QDaemonCommandResultWriter res(0);
+                        am::DaemonCommandResultWriter res(0);
                         res.FinishWrite();
                     }
                     break;
                 }
-                case am::QDaemonMessage::TerminateApplication:
+                case am::DaemonMessage::TerminateApplication:
                 {
                     reader.FinishRead();
 
                     am::ApplicationTerminate();
+                    app_opened_hb = false;
 
                     break;
                 }
-                case am::QDaemonMessage::LaunchHomebrewLibApplet:
+                case am::DaemonMessage::LaunchHomebrewLibraryApplet:
                 {
                     hblaunch_flag = reader.Read<hb::HbTargetParams>();
                     reader.FinishRead();
 
                     break;
                 }
-                case am::QDaemonMessage::LaunchHomebrewApplication:
+                case am::DaemonMessage::LaunchHomebrewApplication:
                 {
+                    auto app_id = reader.Read<u64>();
                     auto ipt = reader.Read<hb::HbTargetParams>();
                     reader.FinishRead();
 
                     if(am::ApplicationIsActive())
                     {
-                        am::QDaemonCommandResultWriter res(RES_VALUE(QDaemon, ApplicationActive));
+                        am::DaemonCommandResultWriter res(RES_VALUE(Daemon, ApplicationActive));
                         res.FinishWrite();
                     }
                     else if(!accountUidIsValid(&selected_uid))
                     {
-                        am::QDaemonCommandResultWriter res(RES_VALUE(QDaemon, InvalidSelectedUser));
+                        am::DaemonCommandResultWriter res(RES_VALUE(Daemon, InvalidSelectedUser));
                         res.FinishWrite();
                     }
                     else if(titlelaunch_flag > 0)
                     {
-                        am::QDaemonCommandResultWriter res(RES_VALUE(QDaemon, AlreadyQueued));
+                        am::DaemonCommandResultWriter res(RES_VALUE(Daemon, AlreadyQueued));
                         res.FinishWrite();
                     }
                     else
                     {
-                        hbapplaunch_copy = ipt;
-                        hbapplaunch_flag = hbapplaunch_copy;
-                        am::QDaemonCommandResultWriter res(0);
+                        memcpy(&hbapplaunch_flag, &ipt, sizeof(ipt));
+                        memcpy(&hbapplaunch_flag_temp, &ipt, sizeof(ipt));
+                        titlelaunch_flag = app_id;
+                        am::DaemonCommandResultWriter res(0);
                         res.FinishWrite();
                     }
                     break;
                 }
-                case am::QDaemonMessage::OpenWebPage:
+                case am::DaemonMessage::OpenWebPage:
                 {
                     webapplet_flag = reader.Read<WebCommonConfig>();
                     reader.FinishRead();
 
                     break;
                 }
-                case am::QDaemonMessage::GetSelectedUser:
+                case am::DaemonMessage::GetSelectedUser:
                 {
                     reader.FinishRead();
 
-                    am::QDaemonCommandResultWriter res(0);
+                    am::DaemonCommandResultWriter res(0);
                     res.Write<AccountUid>(selected_uid);
                     res.FinishWrite();
                     
                     break;
                 }
-                case am::QDaemonMessage::UserHasPassword:
+                case am::DaemonMessage::UserHasPassword:
                 {
                     auto uid = reader.Read<AccountUid>();
                     reader.FinishRead();
 
                     auto [rc, pass] = db::AccessPassword(uid);
                     
-                    am::QDaemonCommandResultWriter res(rc);
+                    am::DaemonCommandResultWriter res(rc);
                     res.FinishWrite();
 
                     break;
                 }
-                case am::QDaemonMessage::TryLogUser:
+                case am::DaemonMessage::TryLogUser:
                 {
                     auto pass = reader.Read<db::PassBlock>();
                     reader.FinishRead();
 
                     auto rc = db::TryLogUser(pass);
 
-                    am::QDaemonCommandResultWriter res(rc);
+                    am::DaemonCommandResultWriter res(rc);
                     res.FinishWrite();
 
                     break;
                 }
-                case am::QDaemonMessage::RegisterUserPassword:
+                case am::DaemonMessage::RegisterUserPassword:
                 {
                     auto pass = reader.Read<db::PassBlock>();
                     reader.FinishRead();
 
                     auto rc = db::RegisterUserPassword(pass);
 
-                    am::QDaemonCommandResultWriter res(rc);
+                    am::DaemonCommandResultWriter res(rc);
                     res.FinishWrite();
                     break;
                 }
-                case am::QDaemonMessage::ChangeUserPassword:
+                case am::DaemonMessage::ChangeUserPassword:
                 {
                     auto pass = reader.Read<db::PassBlock>();
                     auto newpass = reader.Read<db::PassBlock>();
@@ -353,12 +358,12 @@ void HandleMenuMessage()
                         if(R_SUCCEEDED(rc)) rc = db::RegisterUserPassword(newpass);
                     }
 
-                    am::QDaemonCommandResultWriter res(rc);
+                    am::DaemonCommandResultWriter res(rc);
                     res.FinishWrite();
 
                     break;
                 }
-                case am::QDaemonMessage::RemoveUserPassword:
+                case am::DaemonMessage::RemoveUserPassword:
                 {
                     auto pass = reader.Read<db::PassBlock>();
                     reader.FinishRead();
@@ -369,12 +374,12 @@ void HandleMenuMessage()
                         rc = db::RemoveUserPassword(pass.uid);
                     }
 
-                    am::QDaemonCommandResultWriter res(rc);
+                    am::DaemonCommandResultWriter res(rc);
                     res.FinishWrite();
 
                     break;
                 }
-                case am::QDaemonMessage::OpenAlbum:
+                case am::DaemonMessage::OpenAlbum:
                 {
                     reader.FinishRead();
                     album_flag = true;
@@ -400,15 +405,15 @@ namespace
     constexpr size_t MaxServers = 2;
     constexpr size_t MaxSessions = 2;
 
-    constexpr ams::sm::ServiceName PrivateServiceName = ams::sm::ServiceName::Encode(AM_QDAEMON_SERVICE_NAME);
+    constexpr ams::sm::ServiceName PrivateServiceName = ams::sm::ServiceName::Encode(AM_DAEMON_PRIVATE_SERVICE_NAME);
     ams::sf::hipc::ServerManager<MaxServers, ServerOptions, MaxSessions> private_service_manager;
 }
 
-namespace qdaemon
+namespace daemn
 {
     void IPCManagerThread(void *arg)
     {
-        private_service_manager.RegisterServer<ipc::IDaemonService>(PrivateServiceName, MaxSessions);
+        UL_R_TRY(private_service_manager.RegisterServer<ipc::IDaemonService>(PrivateServiceName, MaxSessions).GetValue());
         private_service_manager.LoopProcess();
     }
 
@@ -435,7 +440,7 @@ namespace qdaemon
         {
             if(!am::LibraryAppletIsActive())
             {
-                am::WebAppletStart(&webapplet_flag);
+                UL_R_TRY(am::WebAppletStart(&webapplet_flag));
 
                 sth_done = true;
                 memset(&webapplet_flag, 0, sizeof(webapplet_flag));
@@ -446,7 +451,7 @@ namespace qdaemon
             if(!am::LibraryAppletIsActive())
             {
                 u8 albumflag = 2;
-                am::LibraryAppletStart(AppletId_photoViewer, 0x10000, &albumflag, sizeof(albumflag));
+                UL_R_TRY(am::LibraryAppletStart(AppletId_photoViewer, 0x10000, &albumflag, sizeof(albumflag)));
 
                 sth_done = true;
                 album_flag = false;
@@ -456,18 +461,21 @@ namespace qdaemon
         {
             if(!am::LibraryAppletIsActive())
             {
-                am::ApplicationStart(titlelaunch_flag, false, selected_uid);
-                sth_done = true;
-                titlelaunch_flag = 0;
-            }
-        }
-        if(strlen(hbapplaunch_flag.nro_path))
-        {
-            if(!am::LibraryAppletIsActive())
-            {
-                am::ApplicationStart(OS_FLOG_APP_ID, true, selected_uid, &hbapplaunch_flag, sizeof(hbapplaunch_flag));
-                sth_done = true;
-                hbapplaunch_flag.nro_path[0] = '\0';
+                if(strlen(hbapplaunch_flag.nro_path))
+                {
+                    auto params = hb::HbTargetParams::Create(hbapplaunch_flag.nro_path, hbapplaunch_flag.nro_argv, false);
+                    UL_R_TRY(ecs::RegisterLaunchAsApplication(titlelaunch_flag, "/ulaunch/bin/uHbTarget/app/", &params, sizeof(params), selected_uid));
+                    sth_done = true;
+                    app_opened_hb = true;
+                    titlelaunch_flag = 0;
+                    hbapplaunch_flag.nro_path[0] = '\0';
+                }
+                else
+                {
+                    UL_R_TRY(am::ApplicationStart(titlelaunch_flag, false, selected_uid));
+                    sth_done = true;
+                    titlelaunch_flag = 0;
+                }
             }
         }
         if(strlen(hblaunch_flag.nro_path))
@@ -475,36 +483,29 @@ namespace qdaemon
             if(!am::LibraryAppletIsActive())
             {
                 auto params = hb::HbTargetParams::Create(hblaunch_flag.nro_path, hblaunch_flag.nro_argv, false);
-                auto rc = ecs::RegisterLaunchAsApplet(0x0100000000001003, 0, "/ulaunch/bin/uHbTarget/applet/", &params, sizeof(params));
+                UL_R_TRY(ecs::RegisterLaunchAsApplet(config.homebrew_applet_program_id, 0, "/ulaunch/bin/uHbTarget/applet/", &params, sizeof(params)));
                 sth_done = true;
                 hblaunch_flag.nro_path[0] = '\0';
             }
         }
         if(!am::LibraryAppletIsActive())
         {
-            switch(am::LibraryAppletGetId())
+            auto cur_id = am::LibraryAppletGetId();
+            if((cur_id == AppletId_web) || (cur_id == AppletId_photoViewer) || (cur_id == config.homebrew_applet_program_id))
             {
-                case am::QHbTargetAppletId:
-                case AppletId_web:
-                case AppletId_photoViewer:
-                {
-                    auto status = CreateStatus();
-                    UL_R_TRY(LaunchMenu(am::QMenuStartMode::Menu, status));
-                    sth_done = true;
-                    break;
-                }
-                default:
-                    break;
+                auto status = CreateStatus();
+                UL_R_TRY(LaunchMenu(am::MenuStartMode::Menu, status));
+                sth_done = true;
             }
         }
         if(!sth_done && !debug_menu)
         {
             // If nothing was done, but nothing is active... An application or applet might have crashed, terminated, failed to launch...
-            // No matter what is it, we reopen QMenu in launch-error mode.
+            // No matter what is it, we reopen Menu in launch-error mode.
             if(!am::ApplicationIsActive() && !am::LibraryAppletIsActive())
             {
                 auto status = CreateStatus();
-                UL_R_TRY(LaunchMenu(am::QMenuStartMode::MenuLaunchFailure, status));
+                UL_R_TRY(LaunchMenu(am::MenuStartMode::MenuLaunchFailure, status));
             }
         }
     }
@@ -547,6 +548,7 @@ namespace qdaemon
         fs::CreateDirectory(UL_BASE_SD_DIR "/lang");
 
         config = cfg::EnsureConfig();
+        am::LibraryAppletSetMenuAppletId(am::LibraryAppletGetAppletIdForProgramId(config.menu_program_id));
 
         if(config.viewer_usb_enabled)
         {
@@ -624,24 +626,24 @@ namespace qdaemon
     }
 }
 
-// QDaemon handles basic qlaunch functionality and serves as a back-end for uLaunch, communicating with QMenu front-end when neccessary.
+// Daemon handles basic qlaunch functionality and serves as a back-end for uLaunch, communicating with Menu front-end when neccessary.
 int main()
 {
-    qdaemon::Initialize();
+    daemn::Initialize();
 
     // Cache everything on startup
     cfg::CacheEverything();
 
     auto status = CreateStatus();
-    UL_R_TRY(LaunchMenu(am::QMenuStartMode::StartupScreen, status))
+    UL_R_TRY(LaunchMenu(am::MenuStartMode::StartupScreen, status))
 
     while(true)
     {
-        qdaemon::LoopUpdate();
+        daemn::LoopUpdate();
         svcSleepThread(10'000'000);
     }
 
-    qdaemon::Exit();
+    daemn::Exit();
 
     return 0;
 }

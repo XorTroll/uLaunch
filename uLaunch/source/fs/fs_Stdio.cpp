@@ -3,53 +3,53 @@
 
 namespace fs
 {
-    static bool ExistsImpl(size_t st_mode, std::string path)
+    static bool ExistsImpl(size_t st_mode, const std::string &path)
     {
         struct stat st;
         return (stat(path.c_str(), &st) == 0) && (st.st_mode & st_mode);
     }
 
-    bool ExistsFile(std::string path)
+    bool ExistsFile(const std::string &path)
     {
         return ExistsImpl(S_IFREG, path);
     }
 
-    bool ExistsDirectory(std::string path)
+    bool ExistsDirectory(const std::string &path)
     {
         return ExistsImpl(S_IFDIR, path);
     }
 
-    void CreateDirectory(std::string path)
+    void CreateDirectory(const std::string &path)
     {
         mkdir(path.c_str(), 777);
     }
 
-    void CreateFile(std::string path)
+    void CreateFile(const std::string &path)
     {
         fsdevCreateFile(path.c_str(), 0, 0);
     }
 
-    void CreateConcatenationFile(std::string path)
+    void CreateConcatenationFile(const std::string &path)
     {
         fsdevCreateFile(path.c_str(), 0, FsCreateOption_BigFile);
     }
 
-    void DeleteDirectory(std::string path)
+    void DeleteDirectory(const std::string &path)
     {
         fsdevDeleteDirectoryRecursively(path.c_str());
     }
 
-    void DeleteFile(std::string path)
+    void DeleteFile(const std::string &path)
     {
         remove(path.c_str());
     }
 
-    void MoveFile(std::string p1, std::string p2)
+    void MoveFile(const std::string &p1, const std::string &p2)
     {
         rename(p1.c_str(), p2.c_str());
     }
 
-    void CopyFile(std::string p, std::string np)
+    void CopyFile(const std::string &p, const std::string &np)
     {
         FILE *inf = fopen(p.c_str(), "rb");
         if(inf)
@@ -77,7 +77,7 @@ namespace fs
         }
     }
 
-    static void HandleDirectoryImpl(bool copy, std::string d, std::string nd)
+    static void HandleDirectoryImpl(bool copy, const std::string &d, const std::string &nd)
     {
         DIR *dp = opendir(d.c_str());
         CreateDirectory(nd);
@@ -102,12 +102,12 @@ namespace fs
         if(!copy) DeleteDirectory(d);
     }
 
-    void MoveDirectory(std::string d, std::string nd)
+    void MoveDirectory(const std::string &d, const std::string &nd)
     {
         return HandleDirectoryImpl(false, d, nd);
     }
 
-    void CopyDirectory(std::string d, std::string nd)
+    void CopyDirectory(const std::string &d, const std::string &nd)
     {
         return HandleDirectoryImpl(true, d, nd);
     }

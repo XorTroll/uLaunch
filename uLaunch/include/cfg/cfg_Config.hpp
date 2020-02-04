@@ -69,14 +69,25 @@ namespace cfg
         std::string icon_path;
     };
 
+    // Take over eShop by default
+    static constexpr u64 DefaultMenuProgramId = 0x010000000000100B;
+
+    // Take over parental controls applet by default
+    static constexpr u64 DefaultHomebrewAppletProgramId = 0x0100000000001001;
+
     struct Config
     {
         std::string theme_name;
         bool system_title_override_enabled;
         bool viewer_usb_enabled;
+        u64 menu_program_id;
+        u64 homebrew_applet_program_id;
+        u64 homebrew_title_application_id;
 
         JSON main_lang;
         JSON default_lang;
+
+        Config() : system_title_override_enabled(false), viewer_usb_enabled(false), menu_program_id(DefaultMenuProgramId), homebrew_applet_program_id(DefaultHomebrewAppletProgramId), homebrew_title_application_id(0) {}
     };
 
     static constexpr u32 CurrentThemeFormatVersion = 1;
@@ -86,35 +97,35 @@ namespace cfg
     #define CFG_CONFIG_JSON UL_BASE_SD_DIR "/config.json"
 
     TitleList LoadTitleList();
-    std::vector<TitleRecord> QueryAllHomebrew(std::string base = "sdmc:/switch");
-    void CacheEverything(std::string hb_base_path = "sdmc:/switch");
+    std::vector<TitleRecord> QueryAllHomebrew(const std::string &base = "sdmc:/switch");
+    void CacheEverything(const std::string &hb_base_path = "sdmc:/switch");
     std::string GetRecordIconPath(TitleRecord record);
     RecordInformation GetRecordInformation(TitleRecord record);
 
-    Theme LoadTheme(std::string base_name);
+    Theme LoadTheme(const std::string &base_name);
     std::vector<Theme> LoadThemes();
-    std::string GetAssetByTheme(Theme &base, std::string resource_base);
+    std::string GetAssetByTheme(const Theme &base, const std::string &resource_base);
 
-    inline bool ThemeIsDefault(Theme &base)
+    inline bool ThemeIsDefault(const Theme &base)
     {
         return base.base_name.empty();
     }
 
-    std::string GetLanguageJSONPath(std::string lang);
-    std::string GetLanguageString(JSON &lang, JSON &def, std::string name);
+    std::string GetLanguageJSONPath(const std::string &lang);
+    std::string GetLanguageString(const JSON &lang, const JSON &def, const std::string &name);
 
     Config CreateNewAndLoadConfig();
     Config LoadConfig();
     Config EnsureConfig();
-    void SaveConfig(Config &cfg);
+    void SaveConfig(const Config &cfg);
 
     void SaveRecord(TitleRecord &record);
     void RemoveRecord(TitleRecord &record);
-    bool MoveRecordTo(TitleList &list, TitleRecord record, std::string folder);
-    TitleFolder &FindFolderByName(TitleList &list, std::string name);
-    void RenameFolder(TitleList &list, std::string old_name, std::string new_name);
+    bool MoveRecordTo(TitleList &list, TitleRecord record, const std::string &folder);
+    TitleFolder &FindFolderByName(TitleList &list, const std::string &name);
+    void RenameFolder(TitleList &list, const std::string &old_name, const std::string &new_name);
     bool ExistsRecord(TitleList &list, TitleRecord record);
 
     std::string GetTitleCacheIconPath(u64 app_id);
-    std::string GetNROCacheIconPath(std::string path);
+    std::string GetNROCacheIconPath(const std::string &path);
 }

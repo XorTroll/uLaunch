@@ -1,4 +1,4 @@
-#include <ui/ui_QMenuApplication.hpp>
+#include <ui/ui_MenuApplication.hpp>
 #include <util/util_Misc.hpp>
 
 extern u8 *app_buf;
@@ -6,12 +6,12 @@ extern cfg::Theme theme;
 
 namespace ui
 {
-    QMenuApplication::~QMenuApplication()
+    MenuApplication::~MenuApplication()
     {
         pu::audio::Delete(this->bgm);
     }
 
-    void QMenuApplication::OnLoad()
+    void MenuApplication::OnLoad()
     {
         pu::ui::render::SetDefaultFont(cfg::GetAssetByTheme(theme, "ui/Font.ttf"));
 
@@ -43,7 +43,7 @@ namespace ui
 
         switch(this->stmode)
         {
-            case am::QMenuStartMode::StartupScreen:
+            case am::MenuStartMode::StartupScreen:
                 this->LoadStartupMenu();
                 break;
             default:
@@ -53,88 +53,88 @@ namespace ui
         }
     }
 
-    void QMenuApplication::SetInformation(am::QMenuStartMode mode, am::QDaemonStatus status)
+    void MenuApplication::SetInformation(am::MenuStartMode mode, am::DaemonStatus status)
     {
         this->stmode = mode;
         this->status = status;
     }
 
-    void QMenuApplication::LoadMenu()
+    void MenuApplication::LoadMenu()
     {
         this->menuLayout->SetUser(this->status.selected_user);
         this->LoadLayout(this->menuLayout);
     }
 
-    void QMenuApplication::LoadStartupMenu()
+    void MenuApplication::LoadStartupMenu()
     {
         this->StopPlayBGM();
         this->startupLayout->ReloadMenu();
         this->LoadLayout(this->startupLayout);
     }
 
-    void QMenuApplication::LoadThemeMenu()
+    void MenuApplication::LoadThemeMenu()
     {
         this->themeMenuLayout->Reload();
         this->LoadLayout(this->themeMenuLayout);
     }
 
-    void QMenuApplication::LoadSettingsMenu()
+    void MenuApplication::LoadSettingsMenu()
     {
         this->settingsMenuLayout->Reload();
         this->LoadLayout(this->settingsMenuLayout);
     }
 
-    void QMenuApplication::LoadSettingsLanguagesMenu()
+    void MenuApplication::LoadSettingsLanguagesMenu()
     {
         this->languagesMenuLayout->Reload();
         this->LoadLayout(this->languagesMenuLayout);
     }
 
-    bool QMenuApplication::IsSuspended()
+    bool MenuApplication::IsSuspended()
     {
         return this->IsTitleSuspended() || this->IsHomebrewSuspended();
     }
 
-    bool QMenuApplication::IsTitleSuspended()
+    bool MenuApplication::IsTitleSuspended()
     {
         return this->status.app_id > 0;
     }
 
-    bool QMenuApplication::IsHomebrewSuspended()
+    bool MenuApplication::IsHomebrewSuspended()
     {
         return strlen(this->status.params.nro_path);
     }
 
-    bool QMenuApplication::EqualsSuspendedHomebrewPath(std::string path)
+    bool MenuApplication::EqualsSuspendedHomebrewPath(std::string path)
     {
         return this->status.params.nro_path == path;
     }
 
-    u64 QMenuApplication::GetSuspendedApplicationId()
+    u64 MenuApplication::GetSuspendedApplicationId()
     {
         return this->status.app_id;
     }
 
-    void QMenuApplication::NotifyEndSuspended()
+    void MenuApplication::NotifyEndSuspended()
     {
         // Blanking the whole status would also blank the selected user...
         this->status.params = {};
         this->status.app_id = 0;
     }
 
-    bool QMenuApplication::LaunchFailed()
+    bool MenuApplication::LaunchFailed()
     {
-        return (this->stmode == am::QMenuStartMode::MenuLaunchFailure);
+        return (this->stmode == am::MenuStartMode::MenuLaunchFailure);
     }
 
-    void QMenuApplication::ShowNotification(std::string text, u64 timeout)
+    void MenuApplication::ShowNotification(std::string text, u64 timeout)
     {
         this->EndOverlay();
         this->notifToast->SetText(text);
         this->StartOverlayWithTimeout(this->notifToast, timeout);
     }
 
-    void QMenuApplication::StartPlayBGM()
+    void MenuApplication::StartPlayBGM()
     {
         if(this->bgm != NULL)
         {
@@ -144,22 +144,22 @@ namespace ui
         }
     }
 
-    void QMenuApplication::StopPlayBGM()
+    void MenuApplication::StopPlayBGM()
     {
         if(this->bgm_fade_out_ms > 0) pu::audio::FadeOut(this->bgm_fade_out_ms);
         else pu::audio::Stop();
     }
     
-    void QMenuApplication::SetSelectedUser(AccountUid user_id)
+    void MenuApplication::SetSelectedUser(AccountUid user_id)
     {
-        am::QMenuCommandWriter writer(am::QDaemonMessage::SetSelectedUser);
+        am::MenuCommandWriter writer(am::DaemonMessage::SetSelectedUser);
         writer.Write<AccountUid>(user_id);
         writer.FinishWrite();
 
         memcpy(&this->status.selected_user, &user_id, sizeof(user_id));
     }
 
-    AccountUid QMenuApplication::GetSelectedUser()
+    AccountUid MenuApplication::GetSelectedUser()
     {
         return this->status.selected_user;
     }

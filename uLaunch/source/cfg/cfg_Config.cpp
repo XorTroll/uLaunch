@@ -8,7 +8,7 @@
 
 namespace cfg
 {
-    void CacheHomebrew(std::string nro_path)
+    void CacheHomebrew(const std::string &nro_path)
     {
         auto nroimg = GetNROCacheIconPath(nro_path);
         FILE *f = fopen(nro_path.c_str(), "rb");
@@ -39,7 +39,7 @@ namespace cfg
         }
     }
 
-    std::vector<TitleRecord> QueryAllHomebrew(std::string base)
+    std::vector<TitleRecord> QueryAllHomebrew(const std::string &base)
     {
         std::vector<TitleRecord> nros;
 
@@ -88,7 +88,7 @@ namespace cfg
         delete[] recordbuf;
     }
 
-    static void CacheAllHomebrew(std::string hb_base_path)
+    static void CacheAllHomebrew(const std::string &hb_base_path)
     {
         FS_FOR(hb_base_path, name, path,
         {
@@ -103,7 +103,7 @@ namespace cfg
         })
     }
 
-    void CacheEverything(std::string hb_base_path)
+    void CacheEverything(const std::string &hb_base_path)
     {
         CacheInstalledTitles();
         CacheAllHomebrew(hb_base_path);
@@ -188,7 +188,7 @@ namespace cfg
         return info;
     }
 
-    Theme LoadTheme(std::string base_name)
+    Theme LoadTheme(const std::string &base_name)
     {
         Theme theme = {};
         theme.base_name = base_name;
@@ -223,7 +223,7 @@ namespace cfg
         return themes;
     }
 
-    std::string GetAssetByTheme(Theme &base, std::string resource_base)
+    std::string GetAssetByTheme(const Theme &base, const std::string &resource_base)
     {
         auto base_res = base.path + "/" + resource_base;
         if(fs::ExistsFile(base_res)) return base_res;
@@ -232,12 +232,12 @@ namespace cfg
         return "";
     }
 
-    std::string GetLanguageJSONPath(std::string lang)
+    std::string GetLanguageJSONPath(const std::string &lang)
     {
         return UL_BASE_SD_DIR "/lang/" + lang + ".json";
     }
 
-    std::string GetLanguageString(JSON &lang, JSON &def, std::string name)
+    std::string GetLanguageString(const JSON &lang, const JSON &def, const std::string &name)
     {
         auto str = lang.value(name, "");
         if(str.empty()) str = def.value(name, "");
@@ -246,29 +246,36 @@ namespace cfg
 
     Config CreateNewAndLoadConfig()
     {
-        Config cfg = {};
-        cfg.system_title_override_enabled = false; // Due to ban risk, have it disabled by default.
-        cfg.viewer_usb_enabled = false; // Do not enable this by default due to conflicts with USB homebrew
-        cfg.theme_name = ""; // Default theme (none)
+        // Default constructor sets everything
+        Config cfg;
         SaveConfig(cfg);
         return cfg;
     }
 
     Config LoadConfig()
     {
-        Config cfg = {};
+        // Default constructor sets everything
+        Config cfg;
         auto [rc, cfgjson] = util::LoadJSONFromFile(CFG_CONFIG_JSON);
         if(R_SUCCEEDED(rc))
         {
             cfg.theme_name = cfgjson.value("theme_name", "");
             cfg.system_title_override_enabled = cfgjson.value("system_title_override_enabled", false);
             cfg.viewer_usb_enabled = cfgjson.value("viewer_usb_enabled", false);
+            auto menu_id_str = cfgjson.value("menu_program_id", "");
+            if(!menu_id_str.empty()) cfg.menu_program_id = util::Get64FromString(menu_id_str);
+            auto hb_applet_id_str = cfgjson.value("homebrew_applet_program_id", "");
+            if(!hb_applet_id_str.empty()) cfg.homebrew_applet_program_id = util::Get64FromString(hb_applet_id_str);
+            auto hb_title_id_str = cfgjson.value("homebrew_title_application_id", "");
+            if(!hb_title_id_str.empty()) cfg.homebrew_title_application_id = util::Get64FromString(hb_title_id_str);
         }
         else
         {
             fs::DeleteFile(CFG_CONFIG_JSON);
             return CreateNewAndLoadConfig();
         }
+        // Doing this saves any fields not set previously
+        SaveConfig(cfg);
         return cfg;
     }
 
@@ -278,13 +285,15 @@ namespace cfg
         return LoadConfig();
     }
 
-    void SaveConfig(Config &cfg)
+    void SaveConfig(const Config &cfg)
     {
         fs::DeleteFile(CFG_CONFIG_JSON);
         JSON j = JSON::object();
         j["theme_name"] = cfg.theme_name;
         j["system_title_override_enabled"] = cfg.system_title_override_enabled;
-        j["viewer_usb_enabled"] = cfg.viewer_usb_enabled;
+        j["menu_program_id"] = util::FormatApplicationId(cfg.menu_program_id);
+        j["homebrew_applet_program_id"] = util::FormatApplicationId(cfg.homebrew_applet_program_id);
+        j["homebrew_title_application_id"] = util::FormatApplicationId(cfg.homebrew_title_application_id);
         std::ofstream ofs(CFG_CONFIG_JSON);
         ofs << std::setw(4) << j;
         ofs.close();
@@ -353,7 +362,7 @@ namespace cfg
         fs::DeleteFile(json);
     }
 
-    bool MoveTitleToDirectory(TitleList &list, u64 app_id, std::string folder)
+    bool MoveTitleToDirectory(TitleList &list, u64 app_id, const std::string &folder)
     {
         bool title_found = false;
         TitleRecord record_copy = {};
@@ -421,7 +430,7 @@ namespace cfg
         return title_found;
     }
 
-    bool MoveRecordTo(TitleList &list, TitleRecord record, std::string folder)
+    bool MoveRecordTo(TitleList &list, TitleRecord record, const std::string &folder)
     {
         bool title_found = false;
         TitleRecord record_copy = {};
@@ -518,7 +527,7 @@ namespace cfg
         return title_found;
     }
 
-    TitleFolder &FindFolderByName(TitleList &list, std::string name)
+    TitleFolder &FindFolderByName(TitleList &list, const std::string &name)
     {
         if(!name.empty())
         {
@@ -531,7 +540,7 @@ namespace cfg
         return list.root;
     }
 
-    void RenameFolder(TitleList &list, std::string old_name, std::string new_name)
+    void RenameFolder(TitleList &list, const std::string &old_name, const std::string &new_name)
     {
         auto &folder = FindFolderByName(list, old_name);
         if(!folder.name.empty())
@@ -706,7 +715,7 @@ namespace cfg
         return UL_BASE_SD_DIR "/title/" + strappid + ".jpg";
     }
 
-    std::string GetNROCacheIconPath(std::string path)
+    std::string GetNROCacheIconPath(const std::string &path)
     {
         char pathcopy[FS_MAX_PATH] = {0};
         strcpy(pathcopy, path.c_str());

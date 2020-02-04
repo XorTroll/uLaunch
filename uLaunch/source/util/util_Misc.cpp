@@ -3,7 +3,7 @@
 
 namespace util
 {
-    ResultWith<JSON> LoadJSONFromFile(std::string path)
+    ResultWith<JSON> LoadJSONFromFile(const std::string &path)
     {
         JSON ret = JSON::object();
         if(fs::ExistsFile(path))

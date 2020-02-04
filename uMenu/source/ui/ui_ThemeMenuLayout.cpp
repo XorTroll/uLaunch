@@ -1,10 +1,10 @@
 #include <ui/ui_ThemeMenuLayout.hpp>
 #include <os/os_Account.hpp>
 #include <util/util_Convert.hpp>
-#include <ui/ui_QMenuApplication.hpp>
+#include <ui/ui_MenuApplication.hpp>
 #include <fs/fs_Stdio.hpp>
 
-extern ui::QMenuApplication::Ref qapp;
+extern ui::MenuApplication::Ref qapp;
 extern cfg::Theme theme;
 extern cfg::Config config;
 
@@ -105,7 +105,7 @@ namespace ui
 
     void ThemeMenuLayout::OnInput(u64 down, u64 up, u64 held, pu::ui::Touch pos)
     {
-        bool ret = am::QMenuIsHomePressed();
+        bool ret = am::MenuIsHomePressed();
         if(down & KEY_B) ret = true;
         if(ret)
         {

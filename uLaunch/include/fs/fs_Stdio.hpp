@@ -4,17 +4,17 @@
 
 namespace fs
 {
-    bool ExistsFile(std::string path);
-    bool ExistsDirectory(std::string path);
+    bool ExistsFile(const std::string &path);
+    bool ExistsDirectory(const std::string &path);
 
-    void CreateDirectory(std::string path);
-    void CreateFile(std::string path);
-    void CreateConcatenationFile(std::string path);
+    void CreateDirectory(const std::string &path);
+    void CreateFile(const std::string &path);
+    void CreateConcatenationFile(const std::string &path);
 
-    void DeleteDirectory(std::string path);
-    void DeleteFile(std::string path);
+    void DeleteDirectory(const std::string &path);
+    void DeleteFile(const std::string &path);
 
-    inline bool WriteFile(std::string path, void *data, size_t size, bool overwrite)
+    inline bool WriteFile(const std::string &path, void *data, size_t size, bool overwrite)
     {
         FILE *f = fopen(path.c_str(), overwrite ? "wb" : "ab+");
         if(f)
@@ -26,7 +26,7 @@ namespace fs
         return false;
     }
 
-    inline bool ReadFile(std::string path, void *data, size_t size)
+    inline bool ReadFile(const std::string &path, void *data, size_t size)
     {
         FILE *f = fopen(path.c_str(), "rb");
         if(f)
@@ -38,7 +38,7 @@ namespace fs
         return false;
     }
 
-    inline size_t GetFileSize(std::string path)
+    inline size_t GetFileSize(const std::string &path)
     {
         FILE *f = fopen(path.c_str(), "rb");
         if(f)
@@ -52,11 +52,11 @@ namespace fs
         return 0;
     }
 
-    void MoveFile(std::string p1, std::string p2);
-    void CopyFile(std::string p, std::string np);
+    void MoveFile(const std::string &p1, const std::string &p2);
+    void CopyFile(const std::string &p, const std::string &np);
 
-    void MoveDirectory(std::string d, std::string nd);
-    void CopyDirectory(std::string d, std::string nd);
+    void MoveDirectory(const std::string &d, const std::string &nd);
+    void CopyDirectory(const std::string &d, const std::string &nd);
 
     #define FS_FOR(dir, name_var, path_var, ...) \
         DIR *dp = opendir(dir.c_str()); \

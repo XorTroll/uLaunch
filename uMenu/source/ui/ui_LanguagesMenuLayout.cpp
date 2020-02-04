@@ -1,14 +1,14 @@
 #include <ui/ui_LanguagesMenuLayout.hpp>
 #include <os/os_Account.hpp>
 #include <util/util_Convert.hpp>
-#include <ui/ui_QMenuApplication.hpp>
+#include <ui/ui_MenuApplication.hpp>
 #include <fs/fs_Stdio.hpp>
 #include <os/os_Misc.hpp>
 #include <os/os_HomeMenu.hpp>
 #include <net/net_Service.hpp>
 #include <am/am_LibraryApplet.hpp>
 
-extern ui::QMenuApplication::Ref qapp;
+extern ui::MenuApplication::Ref qapp;
 extern cfg::Theme theme;
 extern cfg::Config config;
 
@@ -98,7 +98,7 @@ namespace ui
     {
         qapp->CommonMenuOnLoop();
 
-        bool ret = am::QMenuIsHomePressed();
+        bool ret = am::MenuIsHomePressed();
         if(down & KEY_B)
         {
             qapp->FadeOut();

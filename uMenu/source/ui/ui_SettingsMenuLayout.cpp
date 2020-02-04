@@ -2,12 +2,12 @@
 #include <os/os_Account.hpp>
 #include <os/os_Misc.hpp>
 #include <util/util_Convert.hpp>
-#include <ui/ui_QMenuApplication.hpp>
+#include <ui/ui_MenuApplication.hpp>
 #include <fs/fs_Stdio.hpp>
 #include <net/net_Service.hpp>
 #include <am/am_LibraryApplet.hpp>
 
-extern ui::QMenuApplication::Ref qapp;
+extern ui::MenuApplication::Ref qapp;
 extern cfg::Theme theme;
 extern cfg::Config config;
 
@@ -177,9 +177,9 @@ namespace ui
                 *(u32*)in = 1; // 0 = normal, 1 = qlaunch, 2 = starter?
                 u8 out[8] = {0};
 
-                am::LibraryAppletQMenuLaunchWithSimple(AppletId_netConnect, 0, in, sizeof(in), out, sizeof(out), [&]() -> bool
+                am::LibraryAppletDaemonLaunchWithSimple(AppletId_netConnect, 0, in, sizeof(in), out, sizeof(out), [&]() -> bool
                 {
-                    return !am::QMenuIsHomePressed();
+                    return !am::MenuIsHomePressed();
                 });
                 auto rc = *(u32*)in;
 
@@ -270,7 +270,7 @@ namespace ui
     {
         qapp->CommonMenuOnLoop();
 
-        bool ret = am::QMenuIsHomePressed();
+        bool ret = am::MenuIsHomePressed();
         if(down & KEY_B) ret = true;
         if(ret)
         {

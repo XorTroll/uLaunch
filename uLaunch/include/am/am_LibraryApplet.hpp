@@ -1,6 +1,7 @@
 
 #pragma once
 #include <ul_Include.hpp>
+#include <map>
 
 namespace am
 {
@@ -33,29 +34,32 @@ namespace am
     }
 
     bool LibraryAppletIsActive();
-    bool LibraryAppletIsQMenu();
+    void LibraryAppletSetMenuAppletId(AppletId id);
+    bool LibraryAppletIsMenu();
     void LibraryAppletTerminate();
     Result LibraryAppletStart(AppletId id, u32 la_version, void *in_data, size_t in_size);
     Result LibraryAppletSend(void *data, size_t size);
     Result LibraryAppletRead(void *data, size_t size);
     Result WebAppletStart(WebCommonConfig *web);
-    Result LibraryAppletQMenuLaunchWith(AppletId id, u32 la_version, std::function<void(AppletHolder*)> on_prepare, std::function<void(AppletHolder*)> on_finish, std::function<bool()> on_wait);
+    Result LibraryAppletDaemonLaunchWith(AppletId id, u32 la_version, std::function<void(AppletHolder*)> on_prepare, std::function<void(AppletHolder*)> on_finish, std::function<bool()> on_wait);
 
-    inline Result LibraryAppletQMenuLaunchWithSimple(AppletId id, u32 la_version, void *in_data, size_t in_size, void *out_data, size_t out_size, std::function<bool()> on_wait)
+    inline Result LibraryAppletDaemonLaunchWithSimple(AppletId id, u32 la_version, void *in_data, size_t in_size, void *out_data, size_t out_size, std::function<bool()> on_wait)
     {
-        return LibraryAppletQMenuLaunchWith(id, la_version,
+        return LibraryAppletDaemonLaunchWith(id, la_version,
         [&](AppletHolder *h)
         {
             if(in_size > 0) libappletPushInData(h, in_data, in_size);
         },
         [&](AppletHolder *h)
         {
-            if(out_size > 0) libappletPopOutData(h, out_data, out_size, NULL);
+            if(out_size > 0) libappletPopOutData(h, out_data, out_size, nullptr);
         }, on_wait);
     }
 
+    u64 LibraryAppletGetProgramIdForAppletId(AppletId id);
+    AppletId LibraryAppletGetAppletIdForProgramId(u64 id);
+
     AppletId LibraryAppletGetId();
 
-    static constexpr AppletId QMenuAppletId = AppletId_shop;
-    static constexpr AppletId QHbTargetAppletId = AppletId_auth;
+    static constexpr AppletId InvalidAppletId = (AppletId)0;
 }

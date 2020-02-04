@@ -17,11 +17,10 @@ namespace am
     static_assert(sizeof(ApplicationSelectedUserArgument) == 0x400, "ApplicationSelectedUserArgument must be 0x400!");
 
     static constexpr u32 SelectedUserMagic = 0xC79497CA;
-    static constexpr u64 QHbTargetSystemApplicationId = OS_FLOG_APP_ID;
 
     bool ApplicationIsActive();
     void ApplicationTerminate();
-    Result ApplicationStart(u64 app_id, bool system, AccountUid user_id, void *data = NULL, size_t size = 0);
+    Result ApplicationStart(u64 app_id, bool system, AccountUid user_id, void *data = nullptr, size_t size = 0);
     bool ApplicationHasForeground();
     Result ApplicationSetForeground();
     Result ApplicationSend(void *data, size_t size, AppletLaunchParameterKind kind = AppletLaunchParameterKind_UserChannel);

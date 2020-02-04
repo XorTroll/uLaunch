@@ -1,8 +1,8 @@
 #include <ipc/ipc_IDaemonService.hpp>
-#include <am/am_QCommunications.hpp>
+#include <am/am_DaemonMenuInteraction.hpp>
 
 extern ams::os::Mutex latestqlock;
-extern am::QMenuMessage latestqmenumsg;
+extern am::DaemonMessage latestqmenumsg;
 
 namespace ipc
 {
@@ -10,6 +10,6 @@ namespace ipc
     {
         std::scoped_lock _lock(latestqlock);
         msg.SetValue((u32)latestqmenumsg);
-        latestqmenumsg = am::QMenuMessage::Invalid;
+        latestqmenumsg = am::DaemonMessage::Invalid;
     }
 }
