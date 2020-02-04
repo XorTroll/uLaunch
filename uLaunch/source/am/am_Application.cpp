@@ -2,28 +2,28 @@
 
 namespace am
 {
-    extern bool home_focus;
-    AppletApplication app_holder;
-    u64 latest_appid;
+    extern bool g_home_has_focus;
+    static AppletApplication g_application_holder;
+    static u64 g_last_app_id;
 
     bool ApplicationIsActive()
     {
-        if(app_holder.StateChangedEvent.revent == INVALID_HANDLE) return false;
-        if(!serviceIsActive(&app_holder.s)) return false;
-        return !appletApplicationCheckFinished(&app_holder);
+        if(g_application_holder.StateChangedEvent.revent == INVALID_HANDLE) return false;
+        if(!serviceIsActive(&g_application_holder.s)) return false;
+        return !appletApplicationCheckFinished(&g_application_holder);
     }
 
     void ApplicationTerminate()
     {
-        appletApplicationRequestExit(&app_holder);
-        if(!home_focus) home_focus = true;
+        appletApplicationRequestExit(&g_application_holder);
+        if(!g_home_has_focus) g_home_has_focus = true;
     }
 
     Result ApplicationStart(u64 app_id, bool system, AccountUid user_id, void *data, size_t size)
     {
-        appletApplicationClose(&app_holder);
-        if(system) R_TRY(appletCreateSystemApplication(&app_holder, app_id));
-        else R_TRY(appletCreateApplication(&app_holder, app_id));
+        appletApplicationClose(&g_application_holder);
+        if(system) R_TRY(appletCreateSystemApplication(&g_application_holder, app_id));
+        else R_TRY(appletCreateApplication(&g_application_holder, app_id));
         
         if(accountUidIsValid(&user_id))
         {
@@ -37,23 +37,23 @@ namespace am
         if(size > 0) ApplicationSend(data, size);
 
         R_TRY(appletUnlockForeground());
-        R_TRY(appletApplicationStart(&app_holder));
+        R_TRY(appletApplicationStart(&g_application_holder));
         R_TRY(ApplicationSetForeground());
 
-        latest_appid = app_id;
+        g_last_app_id = app_id;
 
         return 0;
     }
 
     bool ApplicationHasForeground()
     {
-        return !home_focus;
+        return !g_home_has_focus;
     }
 
     Result ApplicationSetForeground()
     {
-        auto rc = appletApplicationRequestForApplicationToGetForeground(&app_holder);
-        if(R_SUCCEEDED(rc)) home_focus = false;
+        auto rc = appletApplicationRequestForApplicationToGetForeground(&g_application_holder);
+        if(R_SUCCEEDED(rc)) g_home_has_focus = false;
         return rc;
     }
 
@@ -64,7 +64,7 @@ namespace am
         if(R_SUCCEEDED(rc))
         {
             rc = appletStorageWrite(&st, 0, data, size);
-            if(R_SUCCEEDED(rc)) rc = appletApplicationPushLaunchParameter(&app_holder, kind, &st);
+            if(R_SUCCEEDED(rc)) rc = appletApplicationPushLaunchParameter(&g_application_holder, kind, &st);
             appletStorageClose(&st);
         }
         return rc;
@@ -72,7 +72,7 @@ namespace am
 
     u64 ApplicationGetId()
     {
-        return latest_appid;
+        return g_last_app_id;
     }
 
     bool ApplicationNeedsUser(u64 app_id)

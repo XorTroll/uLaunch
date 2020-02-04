@@ -85,7 +85,7 @@ namespace ui
         SetLanguage ilang = SetLanguage_ENUS;
         setGetLanguageCode(&lcode);
         setMakeLanguage(lcode, &ilang);
-        this->PushSettingItem(cfg::GetLanguageString(config.main_lang, config.default_lang, "set_console_lang"), EncodeForSettings(os::LanguageNames[ilang]), 4);
+        this->PushSettingItem(cfg::GetLanguageString(config.main_lang, config.default_lang, "set_console_lang"), EncodeForSettings(os::GetLanguageName(ilang)), 4);
         bool console_info_upload = false;
         setsysGetConsoleInformationUploadFlag(&console_info_upload);
         this->PushSettingItem(cfg::GetLanguageString(config.main_lang, config.default_lang, "set_console_info_upload"), EncodeForSettings(console_info_upload), 5);

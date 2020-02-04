@@ -50,8 +50,8 @@ Thread usb_thr;
 // This way the menu isn't loaded, even if nothing but the home menu is present, which outside of the debug menu is considered an invalid state
 bool debug_menu = false;
 
-ams::os::Mutex latestqlock;
-am::MenuMessage latestqmenumsg = am::MenuMessage::Invalid;
+ams::os::Mutex g_last_menu_msg_lock;
+am::MenuMessage g_last_menu_msg = am::MenuMessage::Invalid;
 
 am::DaemonStatus CreateStatus()
 {
@@ -104,8 +104,8 @@ void HandleHomeButton()
     }
     if(am::LibraryAppletIsMenu() && !used_to_reopen_menu)
     {
-        std::scoped_lock _lock(latestqlock);
-        latestqmenumsg = am::MenuMessage::HomeRequest;
+        std::scoped_lock _lock(g_last_menu_msg_lock);
+        g_last_menu_msg = am::MenuMessage::HomeRequest;
     }
 }
 

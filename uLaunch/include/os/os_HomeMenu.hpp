@@ -33,14 +33,14 @@ namespace os
     enum class AppletMessage : u32
     {
         Invalid,
-        Exit = 0x4,
-        FocusStateChange = 0xF,
-        HomeButton = 0x14,
-        PowerButton = 0x16,
-        BackFromSleep = 0x1A,
-        ChangeOperationMode = 0x1E,
-        ChangePerformanceMode = 0x1F,
-        SdCardOut = 0x21,
+        Exit = 4,
+        FocusStateChange = 15,
+        HomeButton = 20,
+        PowerButton = 22,
+        BackFromSleep = 26,
+        ChangeOperationMode = 30,
+        ChangePerformanceMode = 31,
+        SdCardOut = 33,
     };
 
     Result PushSystemAppletMessage(SystemAppletMessage msg);

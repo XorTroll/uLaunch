@@ -3,18 +3,18 @@
 
 namespace am
 {
-    bool home_focus = true;
-    extern AppletHolder applet_holder;
+    bool g_home_has_focus = true;
+    extern AppletHolder g_applet_holder;
 
     bool HomeMenuHasForeground()
     {
-        return home_focus;
+        return g_home_has_focus;
     }
 
     Result HomeMenuSetForeground()
     {
         Result rc = appletRequestToGetForeground();
-        if(R_SUCCEEDED(rc)) home_focus = true;
+        if(R_SUCCEEDED(rc)) g_home_has_focus = true;
         return rc;
     }
 }

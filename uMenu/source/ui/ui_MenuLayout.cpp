@@ -1091,14 +1091,19 @@ namespace ui
     void MenuLayout::HandleControllerAppletOpen()
     {
         am::controller::InitialArg arg1 = {};
+        am::controller::MainArg arg2 = {};
+
         HidControllerType type;
         hidGetSupportedNpadStyleSet(&type);
-        arg1.controller_type = (u64)type;
+        HidJoyHoldType htype;
+        hidGetNpadJoyHoldType(&htype);
+        arg1.npad_style_set = (u32)type;
+        arg1.npad_joy_hold_type = (u32)htype;
         arg1.this_size = sizeof(arg1);
+        arg1.arg_size = sizeof(arg2);
         arg1.unk2 = true;
         arg1.unk3 = true;
 
-        am::controller::MainArg arg2 = {};
         arg2.min_player_count = 0;
         arg2.max_player_count = 4;
         arg2.take_over_connection = true;

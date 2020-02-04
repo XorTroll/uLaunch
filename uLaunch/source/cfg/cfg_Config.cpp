@@ -67,9 +67,9 @@ namespace cfg
 
     static void CacheInstalledTitles()
     {
-        NsApplicationRecord *recordbuf = new NsApplicationRecord[OS_MAX_TITLE_COUNT]();
+        NsApplicationRecord *recordbuf = new NsApplicationRecord[os::MaxInstalledCount]();
         s32 record_count = 0;
-        auto rc = nsListApplicationRecord(recordbuf, OS_MAX_TITLE_COUNT, 0, &record_count);
+        auto rc = nsListApplicationRecord(recordbuf, os::MaxInstalledCount, 0, &record_count);
         if(R_SUCCEEDED(rc))
         {
             for(s32 i = 0; i < record_count; i++)

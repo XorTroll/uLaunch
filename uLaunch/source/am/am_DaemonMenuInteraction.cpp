@@ -4,7 +4,7 @@
 
 namespace am
 {
-    Service daemon_private_srv;
+    static Service g_daemon_private_srv;
 
     #define UL_AM_LOOP_TRY_WITH(...) { \
         Result rc = 0; \
@@ -37,14 +37,14 @@ namespace am
 
     Result Menu_InitializeDaemonService()
     {
-        if(serviceIsActive(&daemon_private_srv)) return 0;
-        return smGetService(&daemon_private_srv, AM_DAEMON_PRIVATE_SERVICE_NAME);
+        if(serviceIsActive(&g_daemon_private_srv)) return 0;
+        return smGetService(&g_daemon_private_srv, AM_DAEMON_PRIVATE_SERVICE_NAME);
     }
 
     ResultWith<MenuMessage> Menu_GetLatestMenuMessage()
     {
         u32 outmsg = 0;
-        auto rc = serviceDispatchOut(&daemon_private_srv, 0, outmsg);
+        auto rc = serviceDispatchOut(&g_daemon_private_srv, 0, outmsg);
         return MakeResultWith(rc, (MenuMessage)outmsg);
     }
 
@@ -57,7 +57,7 @@ namespace am
 
     void Menu_FinalizeDaemonService()
     {
-        serviceClose(&daemon_private_srv);
+        serviceClose(&g_daemon_private_srv);
     }
 
     Result Daemon_MenuWriteImpl(void *data, size_t size, bool wait)

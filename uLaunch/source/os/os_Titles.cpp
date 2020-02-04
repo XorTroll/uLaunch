@@ -7,9 +7,9 @@ namespace os
     std::vector<cfg::TitleRecord> QueryInstalledTitles()
     {
         std::vector<cfg::TitleRecord> titles;
-        NsApplicationRecord *recordbuf = new NsApplicationRecord[OS_MAX_TITLE_COUNT]();
+        NsApplicationRecord *recordbuf = new NsApplicationRecord[MaxInstalledCount]();
         s32 record_count = 0;
-        auto rc = nsListApplicationRecord(recordbuf, OS_MAX_TITLE_COUNT, 0, &record_count);
+        auto rc = nsListApplicationRecord(recordbuf, MaxInstalledCount, 0, &record_count);
         if(R_SUCCEEDED(rc))
         {
             for(s32 i = 0; i < record_count; i++)

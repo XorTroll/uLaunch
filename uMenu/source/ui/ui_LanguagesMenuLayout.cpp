@@ -48,7 +48,7 @@ namespace ui
         setMakeLanguage(lcode, &ilang);
         
         u32 idx = 0;
-        for(auto &lang: os::LanguageNames)
+        for(auto &lang: os::GetLanguageNameList())
         {
             auto name = lang;
             if((u32)ilang == idx) name += " " + cfg::GetLanguageString(config.main_lang, config.default_lang, "lang_selected");

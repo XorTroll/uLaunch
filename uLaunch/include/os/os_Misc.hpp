@@ -25,47 +25,8 @@ namespace os
         TraditionalChinese
     };
 
-    static std::vector<std::string> LanguageCodes =
-    {
-        "ja",
-        "en-US",
-        "fr",
-        "de",
-        "it",
-        "es",
-        "zh-CN",
-        "ko",
-        "nl",
-        "pt",
-        "ru",
-        "zh-TW",
-        "en-GB",
-        "fr-CA",
-        "es-419",
-        "zn-Hans",
-        "zn-Hant"
-    };
-
-    static std::vector<std::string> LanguageNames =
-    {
-        "Japanese",
-        "American English",
-        "Français",
-        "Deutsch",
-        "Italiano",
-        "Español",
-        "Chinese",
-        "Korean",
-        "Nederlands",
-        "Português",
-        "Русский",
-        "Taiwanese",
-        "British English",
-        "Français canadien",
-        "Español latino",
-        "Chinese (simplified)",
-        "Chinese (traditional)"
-    };
+    std::string GetLanguageName(u32 idx);
+    std::vector<std::string> &GetLanguageNameList();
 
     u32 GetBatteryLevel();
     bool IsConsoleCharging();

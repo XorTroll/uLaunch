@@ -14,12 +14,12 @@ namespace hb
         char nro_argv[FS_MAX_PATH];
         bool target_once;
 
-        std::string GetNROPath()
+        inline std::string GetNROPath()
         {
             return this->nro_path;
         }
 
-        std::string GetNROArgv()
+        inline std::string GetNROArgv()
         {
             return this->nro_argv;
         }
