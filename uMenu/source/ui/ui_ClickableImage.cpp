@@ -12,7 +12,7 @@ namespace ui
         this->y = Y;
         this->w = 0;
         this->h = 0;
-        this->ntex = NULL;
+        this->ntex = nullptr;
         this->touched = false;
         this->cb = [&](){};
         this->SetImage(Image);
@@ -20,10 +20,10 @@ namespace ui
 
     ClickableImage::~ClickableImage()
     {
-        if(this->ntex != NULL)
+        if(this->ntex != nullptr)
         {
             pu::ui::render::DeleteTexture(this->ntex);
-            this->ntex = NULL;
+            this->ntex = nullptr;
         }
     }
 
@@ -74,8 +74,8 @@ namespace ui
 
     void ClickableImage::SetImage(pu::String Image)
     {
-        if(this->ntex != NULL) pu::ui::render::DeleteTexture(this->ntex);
-        this->ntex = NULL;
+        if(this->ntex != nullptr) pu::ui::render::DeleteTexture(this->ntex);
+        this->ntex = nullptr;
         if(fs::ExistsFile(Image.AsUTF8()))
         {
             this->img = Image;
@@ -87,7 +87,7 @@ namespace ui
 
     bool ClickableImage::IsImageValid()
     {
-        return ((ntex != NULL) && this->img.HasAny());
+        return ((ntex != nullptr) && this->img.HasAny());
     }
 
     void ClickableImage::SetOnClick(std::function<void()> Callback)

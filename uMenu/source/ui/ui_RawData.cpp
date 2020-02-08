@@ -11,22 +11,22 @@ namespace ui
         this->pitch = Width * PixNum;
         this->ptr = raw;
         this->falpha = 255;
-        if(raw != NULL)
+        if(raw != nullptr)
         {
             this->ntex = SDL_CreateTexture(pu::ui::render::GetMainRenderer(), SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING, Width, Height);
-            if(this->ntex != NULL)
+            if(this->ntex != nullptr)
             {
-                SDL_UpdateTexture(this->ntex, NULL, raw, this->pitch);
+                SDL_UpdateTexture(this->ntex, nullptr, raw, this->pitch);
             }
         }
     }
 
     RawData::~RawData()
     {
-        if(this->ntex != NULL)
+        if(this->ntex != nullptr)
         {
             pu::ui::render::DeleteTexture(this->ntex);
-            this->ntex = NULL;
+            this->ntex = nullptr;
         }
     }
 
@@ -77,7 +77,7 @@ namespace ui
 
     void RawData::OnRender(pu::ui::render::Renderer::Ref &Drawer, s32 X, s32 Y)
     {
-        if(this->ntex != NULL)
+        if(this->ntex != nullptr)
         {
             Drawer->SetBaseRenderAlpha(this->falpha);
             Drawer->RenderTexture(this->ntex, X, Y, { -1, this->w, this->h, -1 });

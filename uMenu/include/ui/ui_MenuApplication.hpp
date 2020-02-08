@@ -8,6 +8,15 @@
 
 namespace ui
 {
+    enum class MenuType
+    {
+        Startup,
+        Main,
+        Settings,
+        Theme,
+        Languages,
+    };
+
     class MenuApplication : public pu::ui::Application
     {
         public:
@@ -27,20 +36,20 @@ namespace ui
             bool IsSuspended();
             bool IsTitleSuspended();
             bool IsHomebrewSuspended();
-            bool EqualsSuspendedHomebrewPath(std::string path);
+            bool EqualsSuspendedHomebrewPath(const std::string &path);
             u64 GetSuspendedApplicationId();
             void NotifyEndSuspended();
             bool LaunchFailed();
-            void ShowNotification(std::string text, u64 timeout = 1500);
+            void ShowNotification(const std::string &text, u64 timeout = 1500);
 
             template<typename T>
-            T GetUIConfigValue(std::string name, T def)
+            T GetUIConfigValue(const std::string &name, T def)
             {
                 return this->uijson.value<T>(name, def);
             }
 
             template<typename Elem>
-            void ApplyConfigForElement(std::string menu, std::string name, std::shared_ptr<Elem> &Ref, bool also_visible = true)
+            void ApplyConfigForElement(const std::string &menu, const std::string &name, std::shared_ptr<Elem> &Ref, bool also_visible = true)
             {
                 if(this->uijson.count(menu))
                 {
@@ -76,10 +85,15 @@ namespace ui
             void StartPlayBGM();
             void StopPlayBGM();
 
+            StartupLayout::Ref &GetStartupLayout();
+            MenuLayout::Ref &GetMenuLayout();
+            ThemeMenuLayout::Ref &GetThemeMenuLayout();
+            SettingsMenuLayout::Ref &GetSettingsMenuLayout();
+            LanguagesMenuLayout::Ref &GetLanguagesMenuLayout();
+
             void SetSelectedUser(AccountUid user_id);
             AccountUid GetSelectedUser();
-
-            void CommonMenuOnLoop();
+            MenuType GetCurrentLoadedMenu();
         private:
             am::MenuStartMode stmode;
             StartupLayout::Ref startupLayout;
@@ -89,6 +103,7 @@ namespace ui
             LanguagesMenuLayout::Ref languagesMenuLayout;
             pu::ui::extras::Toast::Ref notifToast;
             am::DaemonStatus status;
+            MenuType loaded_menu;
             JSON uijson;
             JSON bgmjson;
             bool bgm_loop;
@@ -97,8 +112,5 @@ namespace ui
             pu::audio::Music bgm;
     };
 
-    inline void MenuApplication::CommonMenuOnLoop() // Stuff all menus should handle (currently just connected controllers)
-    {
-        if(!hidIsControllerConnected(CONTROLLER_HANDHELD) && !hidIsControllerConnected(CONTROLLER_PLAYER_1)) this->menuLayout->HandleControllerAppletOpen();
-    }
+    void UiOnHomeButtonDetection();
 }

@@ -1,45 +1,36 @@
 
 #pragma once
 #include <ul_Include.hpp>
-#include <pu/Plutonium>
+#include <ui/ui_IMenuLayout.hpp>
 #include <ui/ui_SideMenu.hpp>
 #include <ui/ui_RawData.hpp>
 #include <ui/ui_ClickableImage.hpp>
 #include <ui/ui_QuickMenu.hpp>
+#include <ui/ui_Actions.hpp>
 #include <cfg/cfg_Config.hpp>
 
 namespace ui
 {
-    class MenuLayout : public pu::ui::Layout
+    class MenuLayout : public IMenuLayout
     {
         public:
             MenuLayout(void *raw, u8 min_alpha);
             ~MenuLayout();
             PU_SMART_CTOR(MenuLayout)
 
+            void OnMenuInput(u64 down, u64 up, u64 held, pu::ui::Touch pos) override;
+            void OnHomeButtonPress() override;
+
             void menu_Click(u64 down, u32 index);
             void menu_OnSelected(u32 index);
             void menuToggle_Click();
-            void logo_Click();
-            void settings_Click();
-            void themes_Click();
-            void users_Click();
-            void controller_Click();
-            void MoveFolder(std::string name, bool fade);
-            void OnInput(u64 down, u64 up, u64 held, pu::ui::Touch pos);
+            void MoveFolder(const std::string &name, bool fade);
             void SetUser(AccountUid user);
             void HandleCloseSuspended();
             void HandleHomebrewLaunch(cfg::TitleRecord &rec);
-            void HandleUserMenu();
-            void HandleWebPageOpen();
-            void HandleSettingsMenu();
-            void HandleThemesMenu();
-            void HandleControllerAppletOpen();
-            void HandleShowHelp();
-            void HandleOpenAlbum();
-            void HandlePowerDialog();
-            void HandleMultiselectMoveToFolder(std::string folder);
+            void HandleMultiselectMoveToFolder(const std::string &folder);
             void StopMultiselect();
+            void DoTerminateApplication();
         private:
             void *susptr;
             bool last_hasconn;

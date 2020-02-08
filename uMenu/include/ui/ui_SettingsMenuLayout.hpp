@@ -1,19 +1,22 @@
 
 #pragma once
 #include <ul_Include.hpp>
-#include <pu/Plutonium>
+#include <ui/ui_IMenuLayout.hpp>
 #include <cfg/cfg_Config.hpp>
 
 namespace ui
 {
-    class SettingsMenuLayout : public pu::ui::Layout
+    class SettingsMenuLayout : public IMenuLayout
     {
         public:
             SettingsMenuLayout();
             PU_SMART_CTOR(SettingsMenuLayout)
-            void OnInput(u64 down, u64 up, u64 held, pu::ui::Touch pos);
+
+            void OnMenuInput(u64 down, u64 up, u64 held, pu::ui::Touch pos) override;
+            void OnHomeButtonPress() override;
+
             void Reload();
-            void PushSettingItem(std::string name, std::string value_display, int id);
+            void PushSettingItem(const std::string &name, const std::string &value_display, int id);
             void setting_Click(u32 id);
         private:
             pu::ui::elm::TextBlock::Ref infoText;

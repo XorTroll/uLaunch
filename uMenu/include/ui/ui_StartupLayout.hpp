@@ -3,17 +3,20 @@
 #include <ul_Include.hpp>
 #include <am/am_DaemonMenuInteraction.hpp>
 #include <db/db_Save.hpp>
-#include <pu/Plutonium>
+#include <ui/ui_IMenuLayout.hpp>
 
 namespace ui
 {
-    class StartupLayout : public pu::ui::Layout
+    class StartupLayout : public IMenuLayout
     {
         public:
             StartupLayout();
             PU_SMART_CTOR(StartupLayout)
-            void OnInput(u64 down, u64 up, u64 held, pu::ui::Touch pos);
-            void user_Click(AccountUid uid, bool has_password);
+            
+            void OnMenuInput(u64 down, u64 up, u64 held, pu::ui::Touch pos) override;
+            void OnHomeButtonPress() override;
+
+            void user_Click(AccountUid uid);
             void create_Click();
             void ReloadMenu();
         private:

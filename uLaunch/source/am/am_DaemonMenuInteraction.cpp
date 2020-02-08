@@ -35,31 +35,6 @@ namespace am
         return MakeResultWith(rc, (MenuStartMode)in_args.LaVersion);
     }
 
-    Result Menu_InitializeDaemonService()
-    {
-        if(serviceIsActive(&g_daemon_private_srv)) return 0;
-        return smGetService(&g_daemon_private_srv, AM_DAEMON_PRIVATE_SERVICE_NAME);
-    }
-
-    ResultWith<MenuMessage> Menu_GetLatestMenuMessage()
-    {
-        u32 outmsg = 0;
-        auto rc = serviceDispatchOut(&g_daemon_private_srv, 0, outmsg);
-        return MakeResultWith(rc, (MenuMessage)outmsg);
-    }
-
-    bool MenuIsHomePressed()
-    {
-        auto [rc, msg] = Menu_GetLatestMenuMessage();
-        if(R_FAILED(rc)) return false;
-        return (msg == MenuMessage::HomeRequest);
-    }
-
-    void Menu_FinalizeDaemonService()
-    {
-        serviceClose(&g_daemon_private_srv);
-    }
-
     Result Daemon_MenuWriteImpl(void *data, size_t size, bool wait)
     UL_AM_WAIT(LibraryAppletSend(data, size))
     

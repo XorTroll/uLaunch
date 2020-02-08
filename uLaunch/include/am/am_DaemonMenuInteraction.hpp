@@ -34,11 +34,6 @@ namespace am
         LaunchHomebrewApplication,
         OpenWebPage,
         GetSelectedUser,
-        UserHasPassword,
-        TryLogUser,
-        RegisterUserPassword,
-        ChangeUserPassword,
-        RemoveUserPassword,
         OpenAlbum,
     };
 
@@ -50,11 +45,6 @@ namespace am
     };
 
     ResultWith<MenuStartMode> Menu_ProcessInput();
-
-    Result Menu_InitializeDaemonService();
-    ResultWith<MenuMessage> Menu_GetLatestMenuMessage();
-    bool MenuIsHomePressed();
-    void Menu_FinalizeDaemonService();
 
     Result Daemon_MenuWriteImpl(void *data, size_t size, bool wait);
     Result Daemon_MenuReadImpl(void *data, size_t size, bool wait);

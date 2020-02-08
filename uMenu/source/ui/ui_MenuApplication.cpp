@@ -2,10 +2,43 @@
 #include <util/util_Misc.hpp>
 
 extern u8 *app_buf;
-extern cfg::Theme theme;
+extern cfg::Theme g_ul_theme;
+extern ui::MenuApplication::Ref g_menu_app_instance;
 
 namespace ui
 {
+    void UiOnHomeButtonDetection()
+    {
+        switch(g_menu_app_instance->GetCurrentLoadedMenu())
+        {
+            case MenuType::Startup:
+            {
+                g_menu_app_instance->GetStartupLayout()->DoOnHomeButtonPress();
+                break;
+            }
+            case MenuType::Main:
+            {
+                g_menu_app_instance->GetMenuLayout()->DoOnHomeButtonPress();
+                break;
+            }
+            case MenuType::Settings:
+            {
+                g_menu_app_instance->GetSettingsMenuLayout()->DoOnHomeButtonPress();
+                break;
+            }
+            case MenuType::Theme:
+            {
+                g_menu_app_instance->GetThemeMenuLayout()->DoOnHomeButtonPress();
+                break;
+            }
+            case MenuType::Languages:
+            {
+                g_menu_app_instance->GetLanguagesMenuLayout()->DoOnHomeButtonPress();
+                break;
+            }
+        }
+    }
+
     MenuApplication::~MenuApplication()
     {
         pu::audio::Delete(this->bgm);
@@ -13,7 +46,7 @@ namespace ui
 
     void MenuApplication::OnLoad()
     {
-        pu::ui::render::SetDefaultFont(cfg::GetAssetByTheme(theme, "ui/Font.ttf"));
+        pu::ui::render::SetDefaultFont(cfg::GetAssetByTheme(g_ul_theme, "ui/Font.ttf"));
 
         if(this->IsSuspended())
         {
@@ -21,9 +54,9 @@ namespace ui
             appletGetLastApplicationCaptureImageEx(app_buf, RawRGBAScreenBufferSize, &flag);
         }
 
-        auto [_rc, jui] = util::LoadJSONFromFile(cfg::GetAssetByTheme(theme, "ui/UI.json"));
+        auto [_rc, jui] = util::LoadJSONFromFile(cfg::GetAssetByTheme(g_ul_theme, "ui/UI.json"));
         this->uijson = jui;
-        auto [_rc2, jbgm] = util::LoadJSONFromFile(cfg::GetAssetByTheme(theme, "sound/BGM.json"));
+        auto [_rc2, jbgm] = util::LoadJSONFromFile(cfg::GetAssetByTheme(g_ul_theme, "sound/BGM.json"));
         this->bgmjson = jbgm;
         this->bgm_loop = this->bgmjson.value("loop", true);
         this->bgm_fade_in_ms = this->bgmjson.value("fade_in_ms", 1500);
@@ -33,7 +66,7 @@ namespace ui
         pu::ui::Color toastbaseclr = pu::ui::Color::FromHex(GetUIConfigValue<std::string>("toast_base_color", "#282828ff"));
         this->notifToast = pu::ui::extras::Toast::New("...", 20, toasttextclr, toastbaseclr);
 
-        this->bgm = pu::audio::Open(cfg::GetAssetByTheme(theme, "sound/BGM.mp3"));
+        this->bgm = pu::audio::Open(cfg::GetAssetByTheme(g_ul_theme, "sound/BGM.mp3"));
 
         this->startupLayout = StartupLayout::New();
         this->menuLayout = MenuLayout::New(app_buf, this->uijson.value("suspended_final_alpha", 80));
@@ -63,6 +96,7 @@ namespace ui
     {
         this->menuLayout->SetUser(this->status.selected_user);
         this->LoadLayout(this->menuLayout);
+        this->loaded_menu = MenuType::Main;
     }
 
     void MenuApplication::LoadStartupMenu()
@@ -70,24 +104,28 @@ namespace ui
         this->StopPlayBGM();
         this->startupLayout->ReloadMenu();
         this->LoadLayout(this->startupLayout);
+        this->loaded_menu = MenuType::Startup;
     }
 
     void MenuApplication::LoadThemeMenu()
     {
         this->themeMenuLayout->Reload();
         this->LoadLayout(this->themeMenuLayout);
+        this->loaded_menu = MenuType::Theme;
     }
 
     void MenuApplication::LoadSettingsMenu()
     {
         this->settingsMenuLayout->Reload();
         this->LoadLayout(this->settingsMenuLayout);
+        this->loaded_menu = MenuType::Settings;
     }
 
     void MenuApplication::LoadSettingsLanguagesMenu()
     {
         this->languagesMenuLayout->Reload();
         this->LoadLayout(this->languagesMenuLayout);
+        this->loaded_menu = MenuType::Languages;
     }
 
     bool MenuApplication::IsSuspended()
@@ -105,7 +143,7 @@ namespace ui
         return strlen(this->status.params.nro_path);
     }
 
-    bool MenuApplication::EqualsSuspendedHomebrewPath(std::string path)
+    bool MenuApplication::EqualsSuspendedHomebrewPath(const std::string &path)
     {
         return this->status.params.nro_path == path;
     }
@@ -127,7 +165,7 @@ namespace ui
         return (this->stmode == am::MenuStartMode::MenuLaunchFailure);
     }
 
-    void MenuApplication::ShowNotification(std::string text, u64 timeout)
+    void MenuApplication::ShowNotification(const std::string &text, u64 timeout)
     {
         this->EndOverlay();
         this->notifToast->SetText(text);
@@ -136,7 +174,7 @@ namespace ui
 
     void MenuApplication::StartPlayBGM()
     {
-        if(this->bgm != NULL)
+        if(this->bgm != nullptr)
         {
             int loops = this->bgm_loop ? -1 : 1;
             if(this->bgm_fade_in_ms > 0) pu::audio::PlayWithFadeIn(this->bgm, loops, this->bgm_fade_in_ms);
@@ -148,6 +186,31 @@ namespace ui
     {
         if(this->bgm_fade_out_ms > 0) pu::audio::FadeOut(this->bgm_fade_out_ms);
         else pu::audio::Stop();
+    }
+
+    StartupLayout::Ref &MenuApplication::GetStartupLayout()
+    {
+        return this->startupLayout;
+    }
+
+    MenuLayout::Ref &MenuApplication::GetMenuLayout()
+    {
+        return this->menuLayout;
+    }
+
+    ThemeMenuLayout::Ref &MenuApplication::GetThemeMenuLayout()
+    {
+        return this->themeMenuLayout;
+    }
+
+    SettingsMenuLayout::Ref &MenuApplication::GetSettingsMenuLayout()
+    {
+        return this->settingsMenuLayout;
+    }
+
+    LanguagesMenuLayout::Ref &MenuApplication::GetLanguagesMenuLayout()
+    {
+        return this->languagesMenuLayout;
     }
     
     void MenuApplication::SetSelectedUser(AccountUid user_id)
@@ -162,5 +225,10 @@ namespace ui
     AccountUid MenuApplication::GetSelectedUser()
     {
         return this->status.selected_user;
+    }
+
+    MenuType MenuApplication::GetCurrentLoadedMenu()
+    {
+        return this->loaded_menu;
     }
 }

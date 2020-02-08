@@ -34,12 +34,8 @@ namespace ui
         static constexpr s32 MainItemY = (720 - MainItemSize) / 2;
 
         public:
-            QuickMenu(std::string main_icon);
+            QuickMenu(const std::string &main_icon);
             PU_SMART_CTOR(QuickMenu)
-            ~QuickMenu();
-
-            void SetEntry(QuickMenuDirection direction, std::string icon, std::function<void()> on_selected);
-            void RemoveEntry(QuickMenuDirection direction);
 
             s32 GetX();
             s32 GetY();
@@ -53,14 +49,8 @@ namespace ui
             void OnInput(u64 Down, u64 Up, u64 Held, pu::ui::Touch Pos);
 
         private:
-            QuickMenuDirection GetCurrentDirection();
-            std::tuple<s32, s32> ComputePositionForDirection(QuickMenuDirection direction);
             bool on;
-            s64 off_wait;
-            pu::ui::render::NativeTexture nmain;
-            u64 lastheld;
             s32 bgalpha;
-            s32 fgalpha;
-            std::map<QuickMenuDirection, QuickMenuSubItem> item_map;
+            pu::ui::elm::Menu::Ref dev_opt_menu;
     };
 }

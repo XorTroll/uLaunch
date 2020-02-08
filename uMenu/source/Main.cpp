@@ -12,6 +12,8 @@
 #include <os/os_HomeMenu.hpp>
 #include <util/util_Convert.hpp>
 #include <am/am_LibraryApplet.hpp>
+#include <am_DaemonMessages.hpp>
+#include <am_LibAppletWrap.hpp>
 
 extern "C"
 {
@@ -24,11 +26,11 @@ extern "C"
 
 // Some global vars
 
-ui::MenuApplication::Ref qapp;
-cfg::TitleList list;
-std::vector<cfg::TitleRecord> homebrew;
-cfg::Config config;
-cfg::Theme theme;
+ui::MenuApplication::Ref g_menu_app_instance;
+cfg::TitleList g_entry_list;
+std::vector<cfg::TitleRecord> g_homebrew_records;
+cfg::Config g_ul_config;
+cfg::Theme g_ul_theme;
 u8 *app_buf;
 
 namespace qmenu
@@ -42,16 +44,22 @@ namespace qmenu
         UL_R_TRY(setsysInitialize())
         UL_R_TRY(setInitialize())
 
-        UL_R_TRY(am::Menu_InitializeDaemonService())
+        // Register handlers for detection
+        am::RegisterLibAppletHomeMenuDetection();
+        am::RegisterOnMessageDetect(&ui::UiOnHomeButtonDetection, am::MenuMessage::HomeRequest);
 
-        // Load menu config and theme
-        config = cfg::EnsureConfig();
-        theme = cfg::LoadTheme(config.theme_name);
+        // Initialize Daemon message handling
+        UL_R_TRY(am::InitializeDaemonMessageHandler())
+        
+
+        // Load menu g_ul_config and theme
+        g_ul_config = cfg::EnsureConfig();
+        g_ul_theme = cfg::LoadTheme(g_ul_config.theme_name);
     }
 
     void Exit()
     {
-        am::Menu_FinalizeDaemonService();
+        am::ExitDaemonMessageHandler();
 
         setExit();
         setsysExit();
@@ -86,7 +94,7 @@ int main()
             app_buf = new u8[RawRGBAScreenBufferSize]();
             qmenu::Initialize();
             
-            list = cfg::LoadTitleList();
+            g_entry_list = cfg::LoadTitleList();
 
             // Get system language and load translations (default one if not present)
             u64 lcode = 0;
@@ -96,12 +104,12 @@ int main()
             auto [rc1, defjson] = util::LoadJSONFromFile(CFG_LANG_DEFAULT);
             if(R_SUCCEEDED(rc1))
             {
-                config.default_lang = defjson;
-                config.main_lang = defjson;
+                g_ul_config.default_lang = defjson;
+                g_ul_config.main_lang = defjson;
                 if(fs::ExistsFile(lpath))
                 {
                     auto [rc2, ljson] = util::LoadJSONFromFile(lpath);
-                    if(R_SUCCEEDED(rc2)) config.main_lang = ljson;
+                    if(R_SUCCEEDED(rc2)) g_ul_config.main_lang = ljson;
                 }
             }
 
@@ -109,13 +117,13 @@ int main()
             renderoptions.InitRomFs = false; // We have loaded RomFs from an external file, so :P
 
             auto renderer = pu::ui::render::Renderer::New(SDL_INIT_EVERYTHING, renderoptions, pu::ui::render::RendererHardwareFlags);
-            qapp = ui::MenuApplication::New(renderer);
+            g_menu_app_instance = ui::MenuApplication::New(renderer);
 
-            qapp->SetInformation(smode, status);
-            qapp->Prepare();
+            g_menu_app_instance->SetInformation(smode, status);
+            g_menu_app_instance->Prepare();
             
-            if(smode == am::MenuStartMode::MenuApplicationSuspended) qapp->Show();
-            else qapp->ShowWithFadeIn();
+            if(smode == am::MenuStartMode::MenuApplicationSuspended) g_menu_app_instance->Show();
+            else g_menu_app_instance->ShowWithFadeIn();
 
             // Exit RomFs manually, Plutonium won't do it for us since we're initializing it manually
             romfsExit();

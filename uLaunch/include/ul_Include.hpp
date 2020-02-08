@@ -75,6 +75,8 @@ inline constexpr ResultWith<Args...> SuccessResultWith(Args &&...args)
     return MakeResultWith(0, args...);
 }
 
+static constexpr Mutex EmptyMutex = (Mutex)0;
+
 #include <ul_Results.hpp>
 
 // Console (debug)

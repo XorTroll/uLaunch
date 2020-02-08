@@ -15,7 +15,7 @@ namespace ui
         static constexpr u32 ExtraIconSize = ItemSize + (Margin * 2);
 
         public:
-            SideMenu(pu::ui::Color SuspendedColor, std::string CursorPath, std::string SuspendedImagePath, std::string MultiselectImagePath, u32 TextX, u32 TextY, u32 TextSize, pu::ui::Color TextColor, s32 y);
+            SideMenu(pu::ui::Color suspended_clr, std::string cursor_path, std::string suspended_img_path, std::string multiselect_img_path, u32 txt_x, u32 txt_y, u32 txt_sz, pu::ui::Color txt_clr, s32 y);
             PU_SMART_CTOR(SideMenu)
             ~SideMenu();
 
@@ -25,27 +25,27 @@ namespace ui
             void SetY(s32 y);
             s32 GetWidth() override;
             s32 GetHeight() override;
-            void OnRender(pu::ui::render::Renderer::Ref &Drawer, s32 X, s32 Y) override;
-            void OnInput(u64 Down, u64 Up, u64 Held, pu::ui::Touch Touch) override;
-            void SetOnItemSelected(std::function<void(u64, u32)> Fn);
-            void SetOnSelectionChanged(std::function<void(u32)> Fn);
+            void OnRender(pu::ui::render::Renderer::Ref &drawer, s32 x, s32 y) override;
+            void OnInput(u64 down, u64 up, u64 held, pu::ui::Touch pos) override;
+            void SetOnItemSelected(std::function<void(u64, u32)> fn);
+            void SetOnSelectionChanged(std::function<void(u32)> fn);
             void ClearItems();
-            void AddItem(std::string Icon, std::string Text = "");
-            void SetSuspendedItem(u32 Index);
+            void AddItem(const std::string &icon, const std::string &txt = "");
+            void SetSuspendedItem(u32 idx);
             void UnsetSuspendedItem();
-            void SetSelectedItem(u32 Index);
+            void SetSelectedItem(u32 idx);
             void HandleMoveLeft();
             void HandleMoveRight();
             int GetSuspendedItem();
             u32 GetSelectedItem();
             u32 GetBaseItemIndex();
-            void SetBaseItemIndex(u32 index);
-            void SetBasePositions(u32 SelectedIdx, u32 BaseIdx);
+            void SetBaseItemIndex(u32 idx);
+            void SetBasePositions(u32 selected_idx, u32 base_idx);
             void ClearBorderIcons();
             void UpdateBorderIcons();
             void ResetMultiselections();
-            void SetItemMultiselected(u32 index, bool selected);
-            bool IsItemMultiselected(u32 index);
+            void SetItemMultiselected(u32 idx, bool selected);
+            bool IsItemMultiselected(u32 idx);
             bool IsAnyMultiselected();
             void SetEnabled(bool enabled);
         private:
@@ -81,6 +81,6 @@ namespace ui
             u32 scrollcount;
             bool IsLeftFirst();
             bool IsRightLast();
-            void ReloadIcons(u32 Direction);
+            void ReloadIcons(u32 dir);
     };
 }

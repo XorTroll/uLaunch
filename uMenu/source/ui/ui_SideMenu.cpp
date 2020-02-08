@@ -2,25 +2,25 @@
 
 namespace ui
 {
-    SideMenu::SideMenu(pu::ui::Color SuspendedColor, std::string CursorPath, std::string SuspendedImagePath, std::string MultiselectImagePath, u32 TextX, u32 TextY, u32 TextSize, pu::ui::Color TextColor, s32 y)
+    SideMenu::SideMenu(pu::ui::Color suspended_clr, std::string cursor_path, std::string suspended_img_path, std::string multiselect_img_path, u32 txt_x, u32 txt_y, u32 txt_sz, pu::ui::Color txt_clr, s32 y)
     {
         this->selitm = 0;
         this->suspitm = -1;
-        this->suspclr = SuspendedColor;
+        this->suspclr = suspended_clr;
         this->baseiconidx = 0;
         this->scrollflag = 0;
         this->movalpha = 0;
-        this->leftbicon = NULL;
-        this->rightbicon = NULL;
-        this->cursoricon = pu::ui::render::LoadImage(CursorPath);
-        this->suspicon = pu::ui::render::LoadImage(SuspendedImagePath);
-        this->mselicon = pu::ui::render::LoadImage(MultiselectImagePath);
-        this->textfont = pu::ui::render::LoadDefaultFont(TextSize);
-        this->textx = TextX;
-        this->texty = TextY;
-        this->textclr = TextColor;
-        this->onselect = [&](u32,u64){};
-        this->onselch = [&](u32){};
+        this->leftbicon = nullptr;
+        this->rightbicon = nullptr;
+        this->cursoricon = pu::ui::render::LoadImage(cursor_path);
+        this->suspicon = pu::ui::render::LoadImage(suspended_img_path);
+        this->mselicon = pu::ui::render::LoadImage(multiselect_img_path);
+        this->textfont = pu::ui::render::LoadDefaultFont(txt_sz);
+        this->textx = txt_x;
+        this->texty = txt_y;
+        this->textclr = txt_clr;
+        this->onselect = [](u32,u64){};
+        this->onselch = [](u32){};
         this->scrolltpvalue = 50;
         this->scrollcount = 0;
         this->enabled = true;
@@ -29,15 +29,15 @@ namespace ui
 
     SideMenu::~SideMenu()
     {
-        if(this->cursoricon != NULL)
+        if(this->cursoricon != nullptr)
         {
             pu::ui::render::DeleteTexture(this->cursoricon);
-            this->cursoricon = NULL;
+            this->cursoricon = nullptr;
         }
-        if(this->suspicon != NULL)
+        if(this->suspicon != nullptr)
         {
             pu::ui::render::DeleteTexture(this->suspicon);
-            this->suspicon = NULL;
+            this->suspicon = nullptr;
         }
         this->ClearItems();
     }
@@ -70,7 +70,7 @@ namespace ui
         return ItemSize + FocusSize + FocusMargin;
     }
 
-    void SideMenu::OnRender(pu::ui::render::Renderer::Ref &Drawer, s32 X, s32 Y)
+    void SideMenu::OnRender(pu::ui::render::Renderer::Ref &drawer, s32 x, s32 y)
     {
         if(this->icons.empty()) return;
         if(this->ricons.empty())
@@ -80,7 +80,7 @@ namespace ui
                 auto icon = pu::ui::render::LoadImage(this->icons[this->baseiconidx + i]);
                 auto text = this->icons_texts[this->baseiconidx + i];
                 this->ricons.push_back(icon);
-                pu::ui::render::NativeTexture ntext = NULL;
+                pu::ui::render::NativeTexture ntext = nullptr;
                 if(!text.empty()) ntext = pu::ui::render::RenderText(this->textfont, text, this->textclr);
                 this->ricons_texts.push_back(ntext);
             }
@@ -88,44 +88,44 @@ namespace ui
             (this->onselch)(this->selitm);
         }
 
-        u32 basex = X;
+        u32 basex = x;
 
         for(u32 i = 0; i < this->ricons.size(); i++)
         {
             auto ricon = this->ricons[i];
-            Drawer->RenderTexture(ricon, basex, Y, { -1, ItemSize, ItemSize, -1 });
+            drawer->RenderTexture(ricon, basex, y, { -1, ItemSize, ItemSize, -1 });
             auto ntext = this->ricons_texts[i];
-            if(ntext != NULL) Drawer->RenderTexture(ntext, basex + this->textx, Y + this->texty);
-            if(this->IsItemMultiselected(this->baseiconidx + i)) Drawer->RenderTexture(this->mselicon, basex - Margin, Y - Margin, { -1, ExtraIconSize, ExtraIconSize, -1 });
+            if(ntext != nullptr) drawer->RenderTexture(ntext, basex + this->textx, y + this->texty);
+            if(this->IsItemMultiselected(this->baseiconidx + i)) drawer->RenderTexture(this->mselicon, basex - Margin, y - Margin, { -1, ExtraIconSize, ExtraIconSize, -1 });
             if(this->suspitm >= 0)
             {
                 if((this->baseiconidx + i) == (u32)suspitm)
                 {
-                    if(this->suspicon != NULL) Drawer->RenderTexture(this->suspicon, basex - Margin, Y - Margin, { -1, ExtraIconSize, ExtraIconSize, -1 });
+                    if(this->suspicon != nullptr) drawer->RenderTexture(this->suspicon, basex - Margin, y - Margin, { -1, ExtraIconSize, ExtraIconSize, -1 });
                 }
             }
-            if(this->cursoricon != NULL)
+            if(this->cursoricon != nullptr)
             {
                 if((this->baseiconidx + i) == selitm)
                 {
-                    Drawer->RenderTexture(this->cursoricon, basex - Margin, Y - Margin, { 255 - movalpha, ExtraIconSize, ExtraIconSize, -1 });
+                    drawer->RenderTexture(this->cursoricon, basex - Margin, y - Margin, { 255 - movalpha, ExtraIconSize, ExtraIconSize, -1 });
                 }
                 else if((this->baseiconidx + i) == preselitm)
                 {
-                    Drawer->RenderTexture(this->cursoricon, basex - Margin, Y - Margin, { movalpha, ExtraIconSize, ExtraIconSize, -1 });
+                    drawer->RenderTexture(this->cursoricon, basex - Margin, y - Margin, { movalpha, ExtraIconSize, ExtraIconSize, -1 });
                 }
             }
             basex += ItemSize + Margin;
         }
 
-        if(leftbicon != NULL)
+        if(leftbicon != nullptr)
         {
-            Drawer->RenderTexture(leftbicon, X - ItemSize - Margin, Y, { -1, ItemSize, ItemSize, -1 });
+            drawer->RenderTexture(leftbicon, x - ItemSize - Margin, y, { -1, ItemSize, ItemSize, -1 });
         }
 
-        if(rightbicon != NULL)
+        if(rightbicon != nullptr)
         {
-            Drawer->RenderTexture(rightbicon, X + ((ItemSize + Margin) * 4), Y, { -1, ItemSize, ItemSize, -1 });
+            drawer->RenderTexture(rightbicon, x + ((ItemSize + Margin) * 4), y, { -1, ItemSize, ItemSize, -1 });
         }
 
         if(movalpha > 0)
@@ -136,23 +136,23 @@ namespace ui
         }
     }
 
-    void SideMenu::OnInput(u64 Down, u64 Up, u64 Held, pu::ui::Touch Touch)
+    void SideMenu::OnInput(u64 down, u64 up, u64 held, pu::ui::Touch pos)
     {
         if(this->ricons.empty()) return;
         if(!this->enabled) return;
 
-        if(Down & KEY_LEFT) HandleMoveLeft();
-        else if(Down & KEY_RIGHT) HandleMoveRight();
-        else if(!Touch.IsEmpty())
+        if(down & KEY_LEFT) HandleMoveLeft();
+        else if(down & KEY_RIGHT) HandleMoveRight();
+        else if(!pos.IsEmpty())
         {
             s32 basex = this->GetProcessedX();
             s32 basey = this->GetProcessedY();
 
-            if(this->cursoricon != NULL)
+            if(this->cursoricon != nullptr)
             {
                 for(u32 i = 0; i < this->ricons.size(); i++)
                 {
-                    if((Touch.X >= basex) && (Touch.X < (basex + (s32)ItemSize)) && (Touch.Y >= basey) && (Touch.Y < (basey + (s32)ItemSize)))
+                    if((pos.X >= basex) && (pos.X < (basex + (s32)ItemSize)) && (pos.Y >= basey) && (pos.Y < (basey + (s32)ItemSize)))
                     {
                         if((this->baseiconidx + i) == selitm) (this->onselect)(KEY_A, this->selitm);
                         else
@@ -168,9 +168,9 @@ namespace ui
                 }
             }
         }
-        else (this->onselect)(Down, this->selitm);
+        else (this->onselect)(down, this->selitm);
 
-        if(Held & KEY_LEFT)
+        if(held & KEY_LEFT)
         {
             if(this->scrollflag == 1)
             {
@@ -206,7 +206,7 @@ namespace ui
                 this->scrolltp = std::chrono::steady_clock::now();
             }
         }
-        else if(Held & KEY_RIGHT)
+        else if(held & KEY_RIGHT)
         {
             if(this->scrollflag == 2)
             {
@@ -250,14 +250,14 @@ namespace ui
         }
     }
 
-    void SideMenu::SetOnItemSelected(std::function<void(u64, u32)> Fn)
+    void SideMenu::SetOnItemSelected(std::function<void(u64, u32)> fn)
     {
-        this->onselect = Fn;
+        this->onselect = fn;
     }
 
-    void SideMenu::SetOnSelectionChanged(std::function<void(u32)> Fn)
+    void SideMenu::SetOnSelectionChanged(std::function<void(u32)> fn)
     {
-        this->onselch = Fn;
+        this->onselch = fn;
     }
 
     void SideMenu::ClearItems()
@@ -267,12 +267,12 @@ namespace ui
         this->icons_mselected.clear();
         for(auto ricon: this->ricons)
         {
-            if(ricon != NULL) pu::ui::render::DeleteTexture(ricon);
+            if(ricon != nullptr) pu::ui::render::DeleteTexture(ricon);
         }
         this->ricons.clear();
         for(auto rtext: this->ricons_texts)
         {
-            if(rtext != NULL) pu::ui::render::DeleteTexture(rtext);
+            if(rtext != nullptr) pu::ui::render::DeleteTexture(rtext);
         }
         this->ricons_texts.clear();
         this->selitm = 0;
@@ -281,10 +281,10 @@ namespace ui
         this->ClearBorderIcons();
     }
 
-    void SideMenu::AddItem(std::string Icon, std::string Text)
+    void SideMenu::AddItem(const std::string &icon, const std::string &txt)
     {
-        this->icons.push_back(Icon);
-        this->icons_texts.push_back(Text);
+        this->icons.push_back(icon);
+        this->icons_texts.push_back(txt);
         this->icons_mselected.push_back(false);
     }
 
@@ -298,9 +298,9 @@ namespace ui
         this->suspitm = -1;
     }
 
-    void SideMenu::SetSelectedItem(u32 Index)
+    void SideMenu::SetSelectedItem(u32 idx)
     {
-        if(Index < this->icons.size()) this->selitm = Index;
+        if(idx < this->icons.size()) this->selitm = idx;
     }
 
     void SideMenu::HandleMoveLeft()
@@ -362,16 +362,16 @@ namespace ui
         return false;
     }
 
-    void SideMenu::ReloadIcons(u32 Direction)
+    void SideMenu::ReloadIcons(u32 dir)
     {
-        switch(Direction)
+        switch(dir)
         {
             case 1: // Left
             {
                 auto icon = pu::ui::render::LoadImage(this->icons[this->selitm]);
                 this->ricons.insert(this->ricons.begin(), icon);
                 auto text = this->icons_texts[this->selitm];
-                pu::ui::render::NativeTexture ntext = NULL;
+                pu::ui::render::NativeTexture ntext = nullptr;
                 if(!text.empty()) ntext = pu::ui::render::RenderText(this->textfont, text, this->textclr);
                 this->ricons_texts.insert(this->ricons_texts.begin(), ntext);
                 this->baseiconidx--;
@@ -380,7 +380,7 @@ namespace ui
                     pu::ui::render::DeleteTexture(this->ricons.back());
                     this->ricons.pop_back();
                     auto ntext = this->ricons_texts.back();
-                    if(ntext != NULL) pu::ui::render::DeleteTexture(ntext);
+                    if(ntext != nullptr) pu::ui::render::DeleteTexture(ntext);
                     this->ricons_texts.pop_back();
                 }
                 break;
@@ -396,7 +396,7 @@ namespace ui
                     pu::ui::render::DeleteTexture(this->ricons.front());
                     this->ricons.erase(this->ricons.begin());
                     auto ntext = this->ricons_texts.front();
-                    if(ntext != NULL) pu::ui::render::DeleteTexture(ntext);
+                    if(ntext != nullptr) pu::ui::render::DeleteTexture(ntext);
                     this->ricons_texts.erase(this->ricons_texts.begin());
                     this->baseiconidx++;
                 }
@@ -416,34 +416,28 @@ namespace ui
         this->baseiconidx = index;
     }
 
-    void SideMenu::SetBasePositions(u32 SelectedIdx, u32 BaseIdx)
+    void SideMenu::SetBasePositions(u32 selected_idx, u32 base_idx)
     {
-        if(SelectedIdx < this->icons.size())
+        if(selected_idx < this->icons.size())
         {
-            this->SetSelectedItem(SelectedIdx);
-            this->SetBaseItemIndex(BaseIdx);
+            this->SetSelectedItem(selected_idx);
+            this->SetBaseItemIndex(base_idx);
         }
     }
 
     void SideMenu::ClearBorderIcons()
     {
-        if(leftbicon != NULL) pu::ui::render::DeleteTexture(leftbicon);
-        leftbicon = NULL;
-        if(rightbicon != NULL) pu::ui::render::DeleteTexture(rightbicon);
-        rightbicon = NULL;
+        if(this->leftbicon != nullptr) pu::ui::render::DeleteTexture(this->leftbicon);
+        this->leftbicon = nullptr;
+        if(this->rightbicon != nullptr) pu::ui::render::DeleteTexture(this->rightbicon);
+        this->rightbicon = nullptr;
     }
 
     void SideMenu::UpdateBorderIcons()
     {
         this->ClearBorderIcons();
-        if(baseiconidx > 0)
-        {
-            leftbicon = pu::ui::render::LoadImage(icons[baseiconidx - 1]);
-        }
-        if((baseiconidx + 4) < icons.size())
-        {
-            rightbicon = pu::ui::render::LoadImage(icons[baseiconidx + 4]);
-        }
+        if(this->baseiconidx > 0) this->leftbicon = pu::ui::render::LoadImage(this->icons[this->baseiconidx - 1]);
+        if((this->baseiconidx + 4) < this->icons.size()) this->rightbicon = pu::ui::render::LoadImage(this->icons[this->baseiconidx + 4]);
     }
 
     void SideMenu::ResetMultiselections()
@@ -454,10 +448,7 @@ namespace ui
 
     void SideMenu::SetItemMultiselected(u32 index, bool selected)
     {
-        if(index < this->icons_mselected.size())
-        {
-            this->icons_mselected[index] = selected;
-        }
+        if(index < this->icons_mselected.size()) this->icons_mselected[index] = selected;
     }
 
     bool SideMenu::IsItemMultiselected(u32 index)

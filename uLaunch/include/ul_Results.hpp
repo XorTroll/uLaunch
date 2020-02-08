@@ -38,20 +38,11 @@ namespace res
 
     RES_BLOCK_BEGIN
 
-    RES_MODULE_BEGIN(Db, 1)
-    RES_DEFINE(InvalidPasswordLength, 1)
-    RES_DEFINE(PasswordNotFound, 2)
-    RES_DEFINE(PasswordAlreadyExists, 3)
-    RES_DEFINE(PasswordWriteFail, 4)
-    RES_DEFINE(PasswordUserMismatch, 5)
-    RES_DEFINE(PasswordMismatch, 6)
-    RES_MODULE_END
-
-    RES_MODULE_BEGIN(Misc, 2)
+    RES_MODULE_BEGIN(Misc, 1)
     RES_DEFINE(InvalidJSONFile, 1)
     RES_MODULE_END
 
-    RES_MODULE_BEGIN(Daemon, 3)
+    RES_MODULE_BEGIN(Daemon, 2)
     RES_DEFINE(ApplicationActive, 1)
     RES_DEFINE(InvalidSelectedUser, 2)
     RES_DEFINE(AlreadyQueued, 3)
