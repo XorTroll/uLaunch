@@ -290,6 +290,7 @@ namespace cfg
         fs::DeleteFile(CFG_CONFIG_JSON);
         JSON j = JSON::object();
         j["theme_name"] = cfg.theme_name;
+        j["viewer_usb_enabled"] = cfg.viewer_usb_enabled;
         j["system_title_override_enabled"] = cfg.system_title_override_enabled;
         j["menu_program_id"] = util::FormatApplicationId(cfg.menu_program_id);
         j["homebrew_applet_program_id"] = util::FormatApplicationId(cfg.homebrew_applet_program_id);

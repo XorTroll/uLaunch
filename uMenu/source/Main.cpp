@@ -44,9 +44,10 @@ namespace qmenu
         UL_R_TRY(setsysInitialize())
         UL_R_TRY(setInitialize())
 
-        // Register handlers for detection
-        am::RegisterLibAppletHomeMenuDetection();
-        am::RegisterOnMessageDetect(&ui::UiOnHomeButtonDetection, am::MenuMessage::HomeRequest);
+        // Register handlers for HOME button press detection
+        am::RegisterLibAppletHomeButtonDetection();
+        ui::RegisterHomeButtonDetection();
+        ui::QuickMenu::RegisterHomeButtonDetection();
 
         // Initialize Daemon message handling
         UL_R_TRY(am::InitializeDaemonMessageHandler())

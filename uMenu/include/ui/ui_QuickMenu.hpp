@@ -37,6 +37,8 @@ namespace ui
             QuickMenu(const std::string &main_icon);
             PU_SMART_CTOR(QuickMenu)
 
+            static void RegisterHomeButtonDetection();
+
             s32 GetX();
             s32 GetY();
             s32 GetWidth();
@@ -51,6 +53,6 @@ namespace ui
         private:
             bool on;
             s32 bgalpha;
-            pu::ui::elm::Menu::Ref dev_opt_menu;
+            pu::ui::elm::Menu::Ref options_menu;
     };
 }

@@ -5,6 +5,7 @@
 #include <ui/ui_ThemeMenuLayout.hpp>
 #include <ui/ui_SettingsMenuLayout.hpp>
 #include <ui/ui_LanguagesMenuLayout.hpp>
+#include <am_DaemonMessages.hpp>
 
 namespace ui
 {
@@ -113,4 +114,9 @@ namespace ui
     };
 
     void UiOnHomeButtonDetection();
+
+    inline void RegisterHomeButtonDetection()
+    {
+        am::RegisterOnMessageDetect(&UiOnHomeButtonDetection, am::MenuMessage::HomeRequest);
+    }
 }

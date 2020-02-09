@@ -2,7 +2,7 @@
 #include <am/am_DaemonMenuInteraction.hpp>
 
 extern ams::os::Mutex g_last_menu_msg_lock;
-extern am::MenuMessage g_last_menu_msg = am::MenuMessage::Invalid;
+extern am::MenuMessage g_last_menu_msg;
 
 namespace ipc
 {

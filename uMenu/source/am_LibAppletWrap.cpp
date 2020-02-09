@@ -15,7 +15,7 @@ namespace am
         mutexUnlock(&g_amwrap_detection_lock);
     }
 
-    void RegisterLibAppletHomeMenuDetection()
+    void RegisterLibAppletHomeButtonDetection()
     {
         RegisterOnMessageDetect(&OnHomeButtonDetection, am::MenuMessage::HomeRequest);
     }

@@ -3,5 +3,5 @@
 
 namespace am
 {
-    void RegisterLibAppletHomeMenuDetection();
+    void RegisterLibAppletHomeButtonDetection();
 }

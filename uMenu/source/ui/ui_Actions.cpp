@@ -70,11 +70,13 @@ namespace ui::actions
     {
         HidLaControllerSupportArg arg = {};
         hidLaCreateControllerSupportArg(&arg);
-        for(u32 i = 0; i < 8; i++) strcpy(arg.explain_text[i], "Demo explain text");
+        arg.enable_explain_text = true;
+        for(u32 i = 0; i < 8; i++) strcpy(arg.explain_text[i], "Test explain text");
         hidLaShowControllerSupportForSystem(nullptr, &arg, true);
     }
 
-    void ShowWebPage() {
+    void ShowWebPage()
+    {
         SwkbdConfig swkbd;
         swkbdCreate(&swkbd, 0);
         swkbdConfigSetGuideText(&swkbd, cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "swkbd_webpage_guide").c_str());
