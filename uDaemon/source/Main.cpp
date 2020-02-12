@@ -43,6 +43,7 @@ WebCommonConfig webapplet_flag = {};
 bool album_flag = false;
 bool menu_restart_flag = false;
 bool app_opened_hb = false;
+AppletOperationMode console_mode;
 u8 *usbbuf = nullptr;
 cfg::Config config = {};
 Thread ipc_thr;
@@ -117,7 +118,7 @@ void HandleGeneralChannel()
     if(R_SUCCEEDED(rc))
     {
         os::SystemAppletMessage sams = {};
-        rc = appletStorageRead(&sams_st, 0, &sams, sizeof(os::SystemAppletMessage));
+        rc = appletStorageRead(&sams_st, 0, &sams, sizeof(sams));
         appletStorageClose(&sams_st);
         if(R_SUCCEEDED(rc))
         {
@@ -154,6 +155,16 @@ void HandleGeneralChannel()
     }
 }
 
+void UpdateOperationMode()
+{
+    // libnx, thank you so much for not exposing the actual code to get the mode via IPC ;)
+    // We're qlaunch, not using appletMainLoop, thus have to take care of this manually
+
+    u8 tmp_mode = 0;
+    UL_R_TRY(serviceDispatchOut(appletGetServiceSession_CommonStateGetter(), 5, tmp_mode));
+    console_mode = (AppletOperationMode)tmp_mode;
+}
+
 void HandleAppletMessage()
 {
     u32 nmsg = 0;
@@ -177,6 +188,11 @@ void HandleAppletMessage()
             case os::AppletMessage::PowerButton:
             {
                 HandleSleep();
+                break;
+            }
+            case os::AppletMessage::ChangeOperationMode:
+            {
+                UpdateOperationMode();
                 break;
             }
             default:
@@ -480,13 +496,16 @@ namespace daemn
         
         UL_R_TRY(nsInitialize())
         UL_R_TRY(appletLoadAndApplyIdlePolicySettings())
+        UpdateOperationMode();
         UL_R_TRY(ecs::Initialize())
         
         UL_R_TRY(db::Mount())
 
-        fs::CreateDirectory(UL_BASE_DB_DIR);
+        // Remove old password files
+        fs::DeleteDirectory(UL_BASE_DB_DIR "/user");
         db::Commit();
-        fs::CreateDirectory(UL_BASE_DB_DIR "/user");
+
+        fs::CreateDirectory(UL_BASE_DB_DIR);
         db::Commit();
 
         fs::CreateDirectory(UL_BASE_SD_DIR);
