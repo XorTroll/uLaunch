@@ -35,6 +35,7 @@ namespace am
         OpenWebPage,
         GetSelectedUser,
         OpenAlbum,
+        RestartMenu,
     };
 
     struct DaemonStatus

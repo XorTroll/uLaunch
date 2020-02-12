@@ -131,7 +131,13 @@ namespace ui
                 {
                     g_ul_config.theme_name = "";
                     cfg::SaveConfig(g_ul_config);
-                    g_menu_app_instance->ShowNotification(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_changed"));
+
+                    am::MenuCommandWriter writer(am::DaemonMessage::RestartMenu);
+                    writer.FinishWrite();
+
+                    g_menu_app_instance->StopPlayBGM();
+                    g_menu_app_instance->CloseWithFadeOut();
+                    // g_menu_app_instance->ShowNotification(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_changed"));
                 }
             }
         }
@@ -148,7 +154,13 @@ namespace ui
                 {
                     g_ul_config.theme_name = seltheme.base_name;
                     cfg::SaveConfig(g_ul_config);
-                    g_menu_app_instance->ShowNotification(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_changed"));
+
+                    am::MenuCommandWriter writer(am::DaemonMessage::RestartMenu);
+                    writer.FinishWrite();
+
+                    g_menu_app_instance->StopPlayBGM();
+                    g_menu_app_instance->CloseWithFadeOut();
+                    // g_menu_app_instance->ShowNotification(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_changed"));
                 }
             }
         }

@@ -41,6 +41,7 @@ hb::HbTargetParams hbapplaunch_flag_temp = {};
 u64 titlelaunch_flag = 0;
 WebCommonConfig webapplet_flag = {};
 bool album_flag = false;
+bool menu_restart_flag = false;
 bool app_opened_hb = false;
 u8 *usbbuf = nullptr;
 cfg::Config config = {};
@@ -317,6 +318,13 @@ void HandleMenuMessage()
 
                     break;
                 }
+                case am::DaemonMessage::RestartMenu:
+                {
+                    reader.FinishRead();
+                    menu_restart_flag = true;
+
+                    break;
+                }
                 default:
                     break;
             }
@@ -375,6 +383,17 @@ namespace daemn
 
                 sth_done = true;
                 memset(&webapplet_flag, 0, sizeof(webapplet_flag));
+            }
+        }
+        if(menu_restart_flag)
+        {
+            if(!am::LibraryAppletIsActive())
+            {
+                auto status = CreateStatus();
+                UL_R_TRY(LaunchMenu(am::MenuStartMode::StartupScreen, status))
+
+                sth_done = true;
+                menu_restart_flag = false;
             }
         }
         if(album_flag)

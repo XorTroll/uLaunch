@@ -4,8 +4,6 @@
 
 namespace am
 {
-    static Service g_daemon_private_srv;
-
     #define UL_AM_LOOP_TRY_WITH(...) { \
         Result rc = 0; \
         do \
