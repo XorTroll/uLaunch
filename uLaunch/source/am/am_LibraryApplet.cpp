@@ -39,6 +39,11 @@ namespace am
         g_menu_applet_id = id;
     }
 
+    AppletId LibraryAppletGetMenuAppletId()
+    {
+        return g_menu_applet_id;
+    }
+
     bool LibraryAppletIsMenu()
     {
         return (LibraryAppletIsActive() && (g_menu_applet_id != InvalidAppletId) && (LibraryAppletGetId() == g_menu_applet_id));

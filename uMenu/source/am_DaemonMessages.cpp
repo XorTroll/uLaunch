@@ -20,19 +20,19 @@ namespace am
             mutexUnlock(&g_receiver_lock);
             if(should_stop) break;
             MenuMessage tmp_msg = MenuMessage::Invalid;
-            auto rc = serviceDispatchOut(&g_daemon_srv, 0, tmp_msg);
-            if(R_SUCCEEDED(rc))
+            u64 pid_placeholder = 0;
+            UL_ASSERT(serviceDispatchInOut(&g_daemon_srv, 0, pid_placeholder, tmp_msg,
+                .in_send_pid = true,
+            ));
+            mutexLock(&g_receiver_lock);
+            for(auto &[cb, msg] : g_callback_table)
             {
-                mutexLock(&g_receiver_lock);
-                for(auto &[cb, msg] : g_callback_table)
+                if(msg == tmp_msg)
                 {
-                    if(msg == tmp_msg)
-                    {
-                        cb();
-                    }
+                    cb();
                 }
-                mutexUnlock(&g_receiver_lock);
             }
+            mutexUnlock(&g_receiver_lock);
             svcSleepThread(10'000'000ul);
         }
     }
@@ -61,6 +61,7 @@ namespace am
         g_thr_should_stop = true;
         mutexUnlock(&g_receiver_lock);
         threadWaitForExit(&g_receiver_thr);
+        threadClose(&g_receiver_thr);
         serviceClose(&g_daemon_srv);
         g_init = false;
     }

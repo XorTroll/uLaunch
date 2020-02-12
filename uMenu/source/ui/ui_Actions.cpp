@@ -17,7 +17,6 @@ extern cfg::Config g_ul_config;
 
 namespace ui::actions
 {
-
     void ShowAboutDialog()
     {
         g_menu_app_instance->CreateShowDialog(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "ulaunch_about"), "uLaunch v" + std::string(UL_VERSION) + "\n\n" + cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "ulaunch_desc") + ":\nhttps://github.com/XorTroll/uLaunch", { cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "ok") }, true, "romfs:/LogoLarge.png");

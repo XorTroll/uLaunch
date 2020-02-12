@@ -23,7 +23,6 @@ namespace am
 
 extern "C"
 {
-
     // Wrap libappletStart and libappletLaunch to use our custom waiting system
     Result __wrap_libappletStart(AppletHolder *h)
     {
@@ -37,7 +36,6 @@ extern "C"
         {
             while(true)
             {
-
                 if(appletHolderCheckFinished(h)) break;
                 if(!serviceIsActive(&h->s)) break;
 
@@ -58,10 +56,7 @@ extern "C"
 
             LibAppletExitReason reason = appletHolderGetExitReason(h);
 
-            if(reason == LibAppletExitReason_Canceled || reason == LibAppletExitReason_Abnormal || reason == LibAppletExitReason_Unexpected)
-            {
-                rc = MAKERESULT(Module_Libnx, LibnxError_LibAppletBadExit);
-            }
+            if(reason == LibAppletExitReason_Canceled || reason == LibAppletExitReason_Abnormal || reason == LibAppletExitReason_Unexpected) rc = MAKERESULT(Module_Libnx, LibnxError_LibAppletBadExit);
         }
 
         mutexLock(&g_amwrap_detection_lock);
@@ -73,19 +68,18 @@ extern "C"
 
     Result __wrap_libappletLaunch(AppletId id, LibAppletArgs *commonargs, const void* arg, size_t arg_size, void* reply, size_t reply_size, size_t *out_reply_size)
     {
-        Result rc=0;
         AppletHolder holder;
 
-        rc = appletCreateLibraryApplet(&holder, id, LibAppletMode_AllForeground);
-        if (R_FAILED(rc)) return rc;
+        Result rc = appletCreateLibraryApplet(&holder, id, LibAppletMode_AllForeground);
+        if(R_FAILED(rc)) return rc;
 
         rc = libappletArgsPush(commonargs, &holder);
 
-        if (R_SUCCEEDED(rc) && arg && arg_size) rc = libappletPushInData(&holder, arg, arg_size);
+        if(R_SUCCEEDED(rc) && arg && arg_size) rc = libappletPushInData(&holder, arg, arg_size);
 
-        if (R_SUCCEEDED(rc)) rc = __wrap_libappletStart(&holder);
+        if(R_SUCCEEDED(rc)) rc = __wrap_libappletStart(&holder);
 
-        if (R_SUCCEEDED(rc) && reply && reply_size) rc = libappletPopOutData(&holder, reply, reply_size, out_reply_size);
+        if(R_SUCCEEDED(rc) && reply && reply_size) rc = libappletPopOutData(&holder, reply, reply_size, out_reply_size);
 
         appletHolderClose(&holder);
 

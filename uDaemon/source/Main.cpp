@@ -1,5 +1,6 @@
 #include <ecs/ecs_ExternalContent.hpp>
-#include <ipc/ipc_IDaemonService.hpp>
+#include <ipc/ipc_IPrivateService.hpp>
+#include <ipc/ipc_IPublicService.hpp>
 #include <db/db_Save.hpp>
 #include <os/os_Titles.hpp>
 #include <os/os_HomeMenu.hpp>
@@ -91,7 +92,7 @@ void HandleHomeButton()
     {
         am::LibraryAppletTerminate();
         auto status = CreateStatus();
-        UL_R_TRY(LaunchMenu(am::MenuStartMode::Menu, status));
+        UL_ASSERT(LaunchMenu(am::MenuStartMode::Menu, status));
         return;
     }
     if(am::ApplicationIsActive())
@@ -100,7 +101,7 @@ void HandleHomeButton()
         {
             am::HomeMenuSetForeground();
             auto status = CreateStatus();
-            UL_R_TRY(LaunchMenu(am::MenuStartMode::MenuApplicationSuspended, status));
+            UL_ASSERT(LaunchMenu(am::MenuStartMode::MenuApplicationSuspended, status));
             used_to_reopen_menu = true;
         }
     }
@@ -161,7 +162,7 @@ void UpdateOperationMode()
     // We're qlaunch, not using appletMainLoop, thus have to take care of this manually
 
     u8 tmp_mode = 0;
-    UL_R_TRY(serviceDispatchOut(appletGetServiceSession_CommonStateGetter(), 5, tmp_mode));
+    UL_ASSERT(serviceDispatchOut(appletGetServiceSession_CommonStateGetter(), 5, tmp_mode));
     console_mode = (AppletOperationMode)tmp_mode;
 }
 
@@ -357,19 +358,26 @@ namespace
         static const size_t MaxDomainObjects = 0x40;
     };
 
-    constexpr size_t MaxServers = 2;
-    constexpr size_t MaxSessions = 2;
-
+    constexpr size_t MaxPrivateSessions = 1;
     constexpr ams::sm::ServiceName PrivateServiceName = ams::sm::ServiceName::Encode(AM_DAEMON_PRIVATE_SERVICE_NAME);
-    ams::sf::hipc::ServerManager<MaxServers, ServerOptions, MaxSessions> private_service_manager;
+
+    constexpr size_t MaxPublicSessions = 0x20;
+    constexpr ams::sm::ServiceName PublicServiceName = ams::sm::ServiceName::Encode(AM_DAEMON_PUBLIC_SERVICE_NAME);
+
+    constexpr size_t NumServers = 2;
+    constexpr size_t MaxSessions = MaxPrivateSessions + MaxPublicSessions + 1;
+
+    
+    ams::sf::hipc::ServerManager<NumServers, ServerOptions, MaxSessions> daemon_ipc_manager;
 }
 
 namespace daemn
 {
     void IPCManagerThread(void *arg)
     {
-        UL_R_TRY(private_service_manager.RegisterServer<ipc::IDaemonService>(PrivateServiceName, MaxSessions).GetValue());
-        private_service_manager.LoopProcess();
+        UL_ASSERT(daemon_ipc_manager.RegisterServer<ipc::IPrivateService>(PrivateServiceName, MaxPrivateSessions).GetValue());
+        UL_ASSERT(daemon_ipc_manager.RegisterServer<ipc::IPublicService>(PublicServiceName, MaxPublicSessions).GetValue());
+        daemon_ipc_manager.LoopProcess();
     }
 
     void USBViewerThread(void *arg)
@@ -395,7 +403,7 @@ namespace daemn
         {
             if(!am::LibraryAppletIsActive())
             {
-                UL_R_TRY(am::WebAppletStart(&webapplet_flag));
+                UL_ASSERT(am::WebAppletStart(&webapplet_flag));
 
                 sth_done = true;
                 memset(&webapplet_flag, 0, sizeof(webapplet_flag));
@@ -406,7 +414,7 @@ namespace daemn
             if(!am::LibraryAppletIsActive())
             {
                 auto status = CreateStatus();
-                UL_R_TRY(LaunchMenu(am::MenuStartMode::StartupScreen, status))
+                UL_ASSERT(LaunchMenu(am::MenuStartMode::StartupScreen, status))
 
                 sth_done = true;
                 menu_restart_flag = false;
@@ -417,7 +425,7 @@ namespace daemn
             if(!am::LibraryAppletIsActive())
             {
                 u8 albumflag = 2;
-                UL_R_TRY(am::LibraryAppletStart(AppletId_photoViewer, 0x10000, &albumflag, sizeof(albumflag)));
+                UL_ASSERT(am::LibraryAppletStart(AppletId_photoViewer, 0x10000, &albumflag, sizeof(albumflag)));
 
                 sth_done = true;
                 album_flag = false;
@@ -430,7 +438,7 @@ namespace daemn
                 if(strlen(hbapplaunch_flag.nro_path))
                 {
                     auto params = hb::HbTargetParams::Create(hbapplaunch_flag.nro_path, hbapplaunch_flag.nro_argv, false);
-                    UL_R_TRY(ecs::RegisterLaunchAsApplication(titlelaunch_flag, "/ulaunch/bin/uHbTarget/app/", &params, sizeof(params), selected_uid));
+                    UL_ASSERT(ecs::RegisterLaunchAsApplication(titlelaunch_flag, "/ulaunch/bin/uHbTarget/app/", &params, sizeof(params), selected_uid));
                     sth_done = true;
                     app_opened_hb = true;
                     titlelaunch_flag = 0;
@@ -438,7 +446,7 @@ namespace daemn
                 }
                 else
                 {
-                    UL_R_TRY(am::ApplicationStart(titlelaunch_flag, false, selected_uid));
+                    UL_ASSERT(am::ApplicationStart(titlelaunch_flag, false, selected_uid));
                     sth_done = true;
                     titlelaunch_flag = 0;
                 }
@@ -449,7 +457,7 @@ namespace daemn
             if(!am::LibraryAppletIsActive())
             {
                 auto params = hb::HbTargetParams::Create(hblaunch_flag.nro_path, hblaunch_flag.nro_argv, false);
-                UL_R_TRY(ecs::RegisterLaunchAsApplet(config.homebrew_applet_program_id, 0, "/ulaunch/bin/uHbTarget/applet/", &params, sizeof(params)));
+                UL_ASSERT(ecs::RegisterLaunchAsApplet(config.homebrew_applet_program_id, 0, "/ulaunch/bin/uHbTarget/applet/", &params, sizeof(params)));
                 sth_done = true;
                 hblaunch_flag.nro_path[0] = '\0';
             }
@@ -460,7 +468,7 @@ namespace daemn
             if((cur_id == AppletId_web) || (cur_id == AppletId_photoViewer) || (cur_id == config.homebrew_applet_program_id))
             {
                 auto status = CreateStatus();
-                UL_R_TRY(LaunchMenu(am::MenuStartMode::Menu, status));
+                UL_ASSERT(LaunchMenu(am::MenuStartMode::Menu, status));
                 sth_done = true;
             }
         }
@@ -471,7 +479,7 @@ namespace daemn
             if(!am::ApplicationIsActive() && !am::LibraryAppletIsActive())
             {
                 auto status = CreateStatus();
-                UL_R_TRY(LaunchMenu(am::MenuStartMode::MenuLaunchFailure, status));
+                UL_ASSERT(LaunchMenu(am::MenuStartMode::MenuLaunchFailure, status));
             }
         }
     }
@@ -494,12 +502,13 @@ namespace daemn
     {
         ams::hos::SetVersionForLibnx();
         
-        UL_R_TRY(nsInitialize())
-        UL_R_TRY(appletLoadAndApplyIdlePolicySettings())
+        UL_ASSERT(nsInitialize())
+        UL_ASSERT(pminfoInitialize())
+        UL_ASSERT(appletLoadAndApplyIdlePolicySettings())
         UpdateOperationMode();
-        UL_R_TRY(ecs::Initialize())
+        UL_ASSERT(ecs::Initialize())
         
-        UL_R_TRY(db::Mount())
+        UL_ASSERT(db::Mount())
 
         // Remove old password files
         fs::DeleteDirectory(UL_BASE_DB_DIR "/user");
@@ -521,12 +530,12 @@ namespace daemn
 
         if(config.viewer_usb_enabled)
         {
-            UL_R_TRY(usbCommsInitialize());
+            UL_ASSERT(usbCommsInitialize());
             usbbuf = new (std::align_val_t(0x1000)) u8[RawRGBAScreenBufferSize]();
-            UL_R_TRY(LaunchUSBViewerThread());
+            UL_ASSERT(LaunchUSBViewerThread());
         }
 
-        UL_R_TRY(LaunchIPCManagerThread())
+        UL_ASSERT(LaunchIPCManagerThread())
 
         #if UL_DEV
             // Debug testing mode
@@ -590,6 +599,7 @@ namespace daemn
         }
 
         nsExit();
+        pminfoExit();
         ecs::Exit();
         db::Unmount();
     }
@@ -604,7 +614,7 @@ int main()
     cfg::CacheEverything();
 
     auto status = CreateStatus();
-    UL_R_TRY(LaunchMenu(am::MenuStartMode::StartupScreen, status))
+    UL_ASSERT(LaunchMenu(am::MenuStartMode::StartupScreen, status))
 
     while(true)
     {

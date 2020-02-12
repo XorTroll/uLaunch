@@ -22,7 +22,7 @@ using JSON = nlohmann::json;
 
 #define UL_BASE_DIR "ulaunch"
 #define UL_BASE_SD_DIR "sdmc:/" UL_BASE_DIR
-#define UL_DB_MOUNT_NAME "qsave"
+#define UL_DB_MOUNT_NAME "ul_save"
 #define UL_DB_MOUNT_PATH UL_DB_MOUNT_NAME ":/"
 #define UL_BASE_DB_DIR UL_DB_MOUNT_PATH UL_BASE_DIR
 #define UL_ENTRIES_PATH UL_BASE_SD_DIR "/entries"
@@ -79,16 +79,15 @@ static constexpr Mutex EmptyMutex = (Mutex)0;
 
 #include <ul_Results.hpp>
 
+#define UL_ASSERT(expr) { auto _tmp_rc = (expr); if(R_FAILED(_tmp_rc)) { fatalThrow(_tmp_rc); } }
+
 // Console (debug)
+
+#if UL_DEV
 
 #include <iostream>
 
 #define CONSOLE_OUT(...) { std::cout << __VA_ARGS__ << std::endl; consoleUpdate(NULL); }
 #define CONSOLE_FMT(fmt, ...) { printf(fmt "\n", ##__VA_ARGS__); consoleUpdate(NULL); }
 
-inline void Panic(std::string msg)
-{
-    // TODO: non-console panic...?
-}
-
-#define UL_R_TRY(expr) { auto _tmp_rc = (expr); if(R_FAILED(_tmp_rc)) { fatalThrow(_tmp_rc); } }
+#endif

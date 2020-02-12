@@ -37,12 +37,12 @@ namespace qmenu
 {
     void Initialize()
     {
-        UL_R_TRY(accountInitialize(AccountServiceType_System))
-        UL_R_TRY(nsInitialize())
-        UL_R_TRY(net::Initialize())
-        UL_R_TRY(psmInitialize())
-        UL_R_TRY(setsysInitialize())
-        UL_R_TRY(setInitialize())
+        UL_ASSERT(accountInitialize(AccountServiceType_System))
+        UL_ASSERT(nsInitialize())
+        UL_ASSERT(net::Initialize())
+        UL_ASSERT(psmInitialize())
+        UL_ASSERT(setsysInitialize())
+        UL_ASSERT(setInitialize())
 
         // Register handlers for HOME button press detection
         am::RegisterLibAppletHomeButtonDetection();
@@ -50,7 +50,7 @@ namespace qmenu
         ui::QuickMenu::RegisterHomeButtonDetection();
 
         // Initialize Daemon message handling
-        UL_R_TRY(am::InitializeDaemonMessageHandler())
+        UL_ASSERT(am::InitializeDaemonMessageHandler())
         
 
         // Load menu g_ul_config and theme
@@ -86,10 +86,10 @@ int main()
         if(smode != am::MenuStartMode::Invalid)
         {
             // Check if our RomFs file exists...
-            if(!fs::ExistsFile(MENU_ROMFS_BIN)) Panic("Unable to find RomFs binary: '" MENU_ROMFS_BIN "'");
+            if(!fs::ExistsFile(MENU_ROMFS_BIN)) UL_ASSERT(RES_VALUE(Menu, RomfsBinNotFound))
 
             // Try to mount RomFs from our binary
-            UL_R_TRY(romfsMountFromFsdev(MENU_ROMFS_BIN, 0, "romfs"))
+            UL_ASSERT(romfsMountFromFsdev(MENU_ROMFS_BIN, 0, "romfs"))
 
             // After initializing RomFs, start initializing the rest of stuff here
             app_buf = new u8[RawRGBAScreenBufferSize]();
