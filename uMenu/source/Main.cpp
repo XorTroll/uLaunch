@@ -31,7 +31,7 @@ cfg::TitleList g_entry_list;
 std::vector<cfg::TitleRecord> g_homebrew_records;
 cfg::Config g_ul_config;
 cfg::Theme g_ul_theme;
-u8 *app_buf;
+u8 *g_app_capture_buffer;
 
 namespace qmenu
 {
@@ -50,8 +50,7 @@ namespace qmenu
         ui::QuickMenu::RegisterHomeButtonDetection();
 
         // Initialize Daemon message handling
-        UL_ASSERT(am::InitializeDaemonMessageHandler())
-        
+        UL_ASSERT(am::InitializeDaemonMessageHandler());
 
         // Load menu g_ul_config and theme
         g_ul_config = cfg::EnsureConfig();
@@ -92,7 +91,7 @@ int main()
             UL_ASSERT(romfsMountFromFsdev(MENU_ROMFS_BIN, 0, "romfs"))
 
             // After initializing RomFs, start initializing the rest of stuff here
-            app_buf = new u8[RawRGBAScreenBufferSize]();
+            g_app_capture_buffer = new u8[RawRGBAScreenBufferSize]();
             qmenu::Initialize();
             
             g_entry_list = cfg::LoadTitleList();
@@ -103,33 +102,33 @@ int main()
             std::string syslang = (char*)&lcode;
             auto lpath = cfg::GetLanguageJSONPath(syslang);
             auto [rc1, defjson] = util::LoadJSONFromFile(CFG_LANG_DEFAULT);
-            if(R_SUCCEEDED(rc1))
+            UL_ASSERT(rc1);
+            g_ul_config.default_lang = defjson;
+            g_ul_config.main_lang = defjson;
+            if(fs::ExistsFile(lpath))
             {
-                g_ul_config.default_lang = defjson;
-                g_ul_config.main_lang = defjson;
-                if(fs::ExistsFile(lpath))
-                {
-                    auto [rc2, ljson] = util::LoadJSONFromFile(lpath);
-                    if(R_SUCCEEDED(rc2)) g_ul_config.main_lang = ljson;
-                }
+                auto [rc2, ljson] = util::LoadJSONFromFile(lpath);
+                if(R_SUCCEEDED(rc2)) g_ul_config.main_lang = ljson;
             }
 
-            auto renderoptions = pu::ui::render::RendererInitOptions::RendererEverything;
-            renderoptions.InitRomFs = false; // We have loaded RomFs from an external file, so :P
+            // Get the text sizes to initialize default fonts
+            auto [rc2, uijson] = util::LoadJSONFromFile(cfg::GetAssetByTheme(g_ul_theme, "ui/UI.json"));
+            UL_ASSERT(rc2);
+            auto menu_folder_txt_sz = uijson.value<u32>("menu_folder_text_size", 25);
 
-            auto renderer = pu::ui::render::Renderer::New(SDL_INIT_EVERYTHING, renderoptions, pu::ui::render::RendererHardwareFlags);
+            auto renderer = pu::ui::render::Renderer::New(pu::ui::render::RendererInitOptions(SDL_INIT_EVERYTHING, pu::ui::render::RendererHardwareFlags).WithIMG(pu::ui::render::IMGAllFlags).WithMixer(pu::ui::render::MixerAllFlags).WithTTF().WithDefaultFontSize(menu_folder_txt_sz));
             g_menu_app_instance = ui::MenuApplication::New(renderer);
 
-            g_menu_app_instance->SetInformation(smode, status);
+            g_menu_app_instance->SetInformation(smode, status, uijson);
             g_menu_app_instance->Prepare();
             
             if(smode == am::MenuStartMode::MenuApplicationSuspended) g_menu_app_instance->Show();
             else g_menu_app_instance->ShowWithFadeIn();
 
-            // Exit RomFs manually, Plutonium won't do it for us since we're initializing it manually
+            // Exit RomFs manually, as we initialized it manually too
             romfsExit();
 
-            delete[] app_buf;
+            delete[] g_app_capture_buffer;
             qmenu::Exit();
         }
     }

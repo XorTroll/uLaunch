@@ -1,7 +1,7 @@
 #include <ui/ui_MenuApplication.hpp>
 #include <util/util_Misc.hpp>
 
-extern u8 *app_buf;
+extern u8 *g_app_capture_buffer;
 extern cfg::Theme g_ul_theme;
 extern ui::MenuApplication::Ref g_menu_app_instance;
 
@@ -46,16 +46,14 @@ namespace ui
 
     void MenuApplication::OnLoad()
     {
-        pu::ui::render::SetDefaultFont(cfg::GetAssetByTheme(g_ul_theme, "ui/Font.ttf"));
+        // pu::ui::render::SetDefaultFont(cfg::GetAssetByTheme(g_ul_theme, "ui/Font.ttf"));
 
         if(this->IsSuspended())
         {
             bool flag;
-            appletGetLastApplicationCaptureImageEx(app_buf, RawRGBAScreenBufferSize, &flag);
+            appletGetLastApplicationCaptureImageEx(g_app_capture_buffer, RawRGBAScreenBufferSize, &flag);
         }
 
-        auto [_rc, jui] = util::LoadJSONFromFile(cfg::GetAssetByTheme(g_ul_theme, "ui/UI.json"));
-        this->uijson = jui;
         auto [_rc2, jbgm] = util::LoadJSONFromFile(cfg::GetAssetByTheme(g_ul_theme, "sound/BGM.json"));
         this->bgmjson = jbgm;
         this->bgm_loop = this->bgmjson.value("loop", true);
@@ -64,12 +62,12 @@ namespace ui
 
         pu::ui::Color toasttextclr = pu::ui::Color::FromHex(GetUIConfigValue<std::string>("toast_text_color", "#e1e1e1ff"));
         pu::ui::Color toastbaseclr = pu::ui::Color::FromHex(GetUIConfigValue<std::string>("toast_base_color", "#282828ff"));
-        this->notifToast = pu::ui::extras::Toast::New("...", 20, toasttextclr, toastbaseclr);
+        this->notifToast = pu::ui::extras::Toast::New("...", "DefaultFont@20", toasttextclr, toastbaseclr);
 
         this->bgm = pu::audio::Open(cfg::GetAssetByTheme(g_ul_theme, "sound/BGM.mp3"));
 
         this->startupLayout = StartupLayout::New();
-        this->menuLayout = MenuLayout::New(app_buf, this->uijson.value("suspended_final_alpha", 80));
+        this->menuLayout = MenuLayout::New(g_app_capture_buffer, this->uijson.value("suspended_final_alpha", 80));
         this->themeMenuLayout = ThemeMenuLayout::New();
         this->settingsMenuLayout = SettingsMenuLayout::New();
         this->languagesMenuLayout = LanguagesMenuLayout::New();
@@ -86,10 +84,11 @@ namespace ui
         }
     }
 
-    void MenuApplication::SetInformation(am::MenuStartMode mode, am::DaemonStatus status)
+    void MenuApplication::SetInformation(am::MenuStartMode mode, am::DaemonStatus status, JSON ui_json)
     {
         this->stmode = mode;
         this->status = status;
+        this->uijson = ui_json;
     }
 
     void MenuApplication::LoadMenu()

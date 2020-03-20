@@ -27,7 +27,7 @@ namespace ui
 
             void OnLoad() override;
 
-            void SetInformation(am::MenuStartMode mode, am::DaemonStatus status);
+            void SetInformation(am::MenuStartMode mode, am::DaemonStatus status, JSON ui_json);
             void LoadMenu();
             void LoadStartupMenu();
             void LoadThemeMenu();
@@ -44,7 +44,7 @@ namespace ui
             void ShowNotification(const std::string &text, u64 timeout = 1500);
 
             template<typename T>
-            T GetUIConfigValue(const std::string &name, T def)
+            inline T GetUIConfigValue(const std::string &name, T def)
             {
                 return this->uijson.value<T>(name, def);
             }

@@ -12,4 +12,5 @@ namespace net
     Result GetMACAddress(u64 *out);
 
     std::string FormatMACAddress(u64 addr);
+    std::string GetConsoleIPAddress();
 }

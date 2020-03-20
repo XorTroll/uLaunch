@@ -55,7 +55,7 @@ namespace ecs
         }
     }
 
-    static Result ldrShellAtmosphereSetExternalContentSource(u64 app_id, Handle *out_h)
+    static inline Result ldrShellAtmosphereRegisterExternalCode(u64 app_id, Handle *out_h)
     {
         return serviceDispatchIn(ldrShellGetServiceSession(), 65000, app_id,
             .out_handle_attrs = { SfOutHandleAttr_HipcMove },
@@ -63,7 +63,7 @@ namespace ecs
         );
     }
 
-    static Result ldrShellAtmosphereClearExternalContentSource(u64 app_id)
+    static inline Result ldrShellAtmosphereUnregisterExternalCode(u64 app_id)
     {
         return serviceDispatchIn(ldrShellGetServiceSession(), 65001, app_id);
     }
@@ -71,16 +71,16 @@ namespace ecs
     Result RegisterExternalContent(u64 app_id, std::string exefs_path)
     {
         Handle move_h = INVALID_HANDLE;
-        ldrShellAtmosphereClearExternalContentSource(app_id);
-        R_TRY(ldrShellAtmosphereSetExternalContentSource(app_id, &move_h));
+        ldrShellAtmosphereUnregisterExternalCode(app_id);
+        R_TRY(ldrShellAtmosphereRegisterExternalCode(app_id, &move_h));
 
         // Create a remote access session to SD's filesystem (ams's original remote fs would close it, and we don't want that!)
-        std::unique_ptr<ams::fs::fsa::IFileSystem> sd_ifs = std::make_unique<RemoteFileSystem>(fsdevGetDeviceFileSystem("sdmc"), false);
+        std::unique_ptr<ams::fs::fsa::IFileSystem> sd_ifs = std::make_unique<RemoteSdCardFileSystem>();
         auto sd_ifs_ipc = std::make_shared<ams::fssrv::impl::FileSystemInterfaceAdapter>(std::make_shared<ams::fssystem::SubDirectoryFileSystem>(std::move(sd_ifs), exefs_path.c_str()), false);
 
         ams::sf::cmif::ServiceObjectHolder srv_holder(std::move(sd_ifs_ipc));
         R_TRY(manager_instance.RegisterSession(move_h, std::move(srv_holder)).GetValue());
-        
+
         return 0;
     }
 

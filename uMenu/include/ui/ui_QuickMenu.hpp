@@ -21,7 +21,7 @@ namespace ui
     struct QuickMenuSubItem
     {
         std::function<void()> on_select;
-        pu::ui::render::NativeTexture nicon;
+        pu::sdl2::Texture nicon;
     };
 
     class QuickMenu : public pu::ui::elm::Element

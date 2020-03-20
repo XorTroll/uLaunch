@@ -1,4 +1,7 @@
 #include <net/net_Service.hpp>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <unistd.h>
 
 namespace net
 {
@@ -47,5 +50,13 @@ namespace net
             if(i < 6) str += ":";
         }
         return str;
+    }
+
+    std::string GetConsoleIPAddress()
+    {
+        char ipaddr[0x20] = {0};
+        auto ip = gethostid();
+        inet_ntop(AF_INET, &ip, ipaddr, sizeof(ipaddr));
+        return ipaddr;
     }
 }

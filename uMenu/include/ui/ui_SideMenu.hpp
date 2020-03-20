@@ -15,7 +15,7 @@ namespace ui
         static constexpr u32 ExtraIconSize = ItemSize + (Margin * 2);
 
         public:
-            SideMenu(pu::ui::Color suspended_clr, std::string cursor_path, std::string suspended_img_path, std::string multiselect_img_path, u32 txt_x, u32 txt_y, u32 txt_sz, pu::ui::Color txt_clr, s32 y);
+            SideMenu(pu::ui::Color suspended_clr, std::string cursor_path, std::string suspended_img_path, std::string multiselect_img_path, u32 txt_x, u32 txt_y, pu::String font_name, pu::ui::Color txt_clr, s32 y);
             PU_SMART_CTOR(SideMenu)
             ~SideMenu();
 
@@ -65,14 +65,14 @@ namespace ui
             std::vector<bool> icons_mselected;
             std::function<void(u64, u32)> onselect;
             std::function<void(u32)> onselch;
-            std::vector<pu::ui::render::NativeTexture> ricons;
-            std::vector<pu::ui::render::NativeTexture> ricons_texts;
-            pu::ui::render::NativeTexture cursoricon;
-            pu::ui::render::NativeTexture suspicon;
-            pu::ui::render::NativeTexture leftbicon;
-            pu::ui::render::NativeTexture rightbicon;
-            pu::ui::render::NativeTexture mselicon;
-            pu::ui::render::NativeFont textfont;
+            std::vector<pu::sdl2::Texture> ricons;
+            std::vector<pu::sdl2::Texture> ricons_texts;
+            pu::sdl2::Texture cursoricon;
+            pu::sdl2::Texture suspicon;
+            pu::sdl2::Texture leftbicon;
+            pu::sdl2::Texture rightbicon;
+            pu::sdl2::Texture mselicon;
+            pu::String textfont;
             std::chrono::steady_clock::time_point scrolltp;
             bool scrollmoveflag;
             std::chrono::steady_clock::time_point scrollmovetp;

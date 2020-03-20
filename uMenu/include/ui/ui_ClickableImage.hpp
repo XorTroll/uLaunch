@@ -30,7 +30,7 @@ namespace ui
             void OnInput(u64 Down, u64 Up, u64 Held, pu::ui::Touch Pos);
         protected:
             pu::String img;
-            pu::ui::render::NativeTexture ntex;
+            pu::sdl2::Texture ntex;
             s32 x;
             s32 y;
             s32 w;

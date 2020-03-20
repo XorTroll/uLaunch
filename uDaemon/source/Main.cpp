@@ -28,7 +28,7 @@ extern "C"
 // Needed by libstratosphere
 namespace ams
 {
-    ncm::ProgramId CurrentProgramId = ncm::ProgramId::AppletQlaunch;
+    ncm::ProgramId CurrentProgramId = ncm::SystemAppletId::Qlaunch;
     namespace result
     {
         bool CallFatalOnResultAssertion = true;
@@ -371,7 +371,7 @@ namespace
     ams::sf::hipc::ServerManager<NumServers, ServerOptions, MaxSessions> daemon_ipc_manager;
 }
 
-namespace daemn
+namespace impl
 {
     void IPCManagerThread(void *arg)
     {
@@ -608,7 +608,7 @@ namespace daemn
 // Daemon handles basic qlaunch functionality and serves as a back-end for uLaunch, communicating with Menu front-end when neccessary.
 int main()
 {
-    daemn::Initialize();
+    impl::Initialize();
 
     // Cache everything on startup
     cfg::CacheEverything();
@@ -618,11 +618,11 @@ int main()
 
     while(true)
     {
-        daemn::LoopUpdate();
+        impl::LoopUpdate();
         svcSleepThread(10'000'000);
     }
 
-    daemn::Exit();
+    impl::Exit();
 
     return 0;
 }

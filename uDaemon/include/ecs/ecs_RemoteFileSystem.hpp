@@ -6,18 +6,14 @@ namespace ecs
 {
     // Slightly modified version of ams's RemoteFileSystem
     
-    class RemoteFileSystem : public ams::fs::fsa::IFileSystem {
+    class RemoteSdCardFileSystem : public ams::fs::fsa::IFileSystem {
         private:
             FsFileSystem *base_fs;
-            bool close_fs;
-        public:
-            RemoteFileSystem(::FsFileSystem *fs, bool close) : base_fs(fs), close_fs(close) { /* ... */ }
 
-            virtual ~RemoteFileSystem() {
-                if(close_fs) {
-                    fsFsClose(this->base_fs);
-                }
-            }
+        public:
+            RemoteSdCardFileSystem() : base_fs(fsdevGetDeviceFileSystem("sdmc")) { /* ... */ }
+
+            virtual ~RemoteSdCardFileSystem() { /* Don't close the fs */ }
 
         public:
             virtual ams::Result CreateFileImpl(const char *path, s64 size, int flags) override final {

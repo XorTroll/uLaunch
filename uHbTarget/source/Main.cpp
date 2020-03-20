@@ -7,6 +7,10 @@ extern "C"
     u32 __nx_applet_type;
     u32 __nx_applet_exit_mode = 2;
 
+    u32 __nx_fs_num_sessions = 1;
+    u32 __nx_fsdev_direntry_cache_size = 1;
+    bool __nx_fsdev_support_cwd = false;
+
     void hb_hbl_Target(const char *path, const char *argv, int do_once);
 }
 
@@ -17,7 +21,7 @@ NX_CONSTEXPR bool IsApplet(u64 program_id)
 
 NX_CONSTEXPR bool IsApplication(u64 program_id)
 {
-    return (0x0100000000010000 <= program_id); // (For forwarders :p) && (program_id <= 0x01FFFFFFFFFFFFFF);
+    return (0x0100000000010000 <= program_id); // (For forwarders :p) /* && (program_id <= 0x01FFFFFFFFFFFFFF); */
 }
 
 NX_CONSTEXPR bool IsSystemProcess(u64 program_id)

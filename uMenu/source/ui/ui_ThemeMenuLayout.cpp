@@ -27,20 +27,24 @@ namespace ui
         g_menu_app_instance->ApplyConfigForElement("themes_menu", "themes_menu_item", this->themesMenu);
         this->Add(this->themesMenu);
 
-        this->curThemeText = pu::ui::elm::TextBlock::New(20, 540, cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_current") + ":", 30);
+        this->curThemeText = pu::ui::elm::TextBlock::New(20, 540, cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_current") + ":");
+        this->curThemeText->SetFont("DefaultFont@30");
         this->curThemeText->SetColor(textclr);
         g_menu_app_instance->ApplyConfigForElement("themes_menu", "current_theme_text", this->curThemeText);
         this->Add(this->curThemeText);
         
-        this->curThemeName = pu::ui::elm::TextBlock::New(40, 610, "", 30);
+        this->curThemeName = pu::ui::elm::TextBlock::New(40, 610, "");
+        this->curThemeName->SetFont("DefaultFont@30");
         this->curThemeName->SetColor(textclr);
         g_menu_app_instance->ApplyConfigForElement("themes_menu", "current_theme_name_text", this->curThemeName);
         this->Add(this->curThemeName);
-        this->curThemeAuthor = pu::ui::elm::TextBlock::New(45, 650, "", 20);
+        this->curThemeAuthor = pu::ui::elm::TextBlock::New(45, 650, "");
+        this->curThemeAuthor->SetFont("DefaultFont@20");
         this->curThemeAuthor->SetColor(textclr);
         g_menu_app_instance->ApplyConfigForElement("themes_menu", "current_theme_author_text", this->curThemeAuthor);
         this->Add(this->curThemeAuthor);
-        this->curThemeVersion = pu::ui::elm::TextBlock::New(45, 675, "", 20);
+        this->curThemeVersion = pu::ui::elm::TextBlock::New(45, 675, "");
+        this->curThemeVersion->SetFont("DefaultFont@30");
         this->curThemeVersion->SetColor(textclr);
         g_menu_app_instance->ApplyConfigForElement("themes_menu", "current_theme_version_text", this->curThemeVersion);
         this->Add(this->curThemeVersion);

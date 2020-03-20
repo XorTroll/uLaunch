@@ -129,6 +129,8 @@ namespace ui
         net::GetMACAddress(&mac);
         auto strmac = net::FormatMACAddress(mac);
         this->PushSettingItem(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "set_mac_addr"), EncodeForSettings(strmac), -1);
+        auto ipstr = net::GetConsoleIPAddress();
+        this->PushSettingItem("Console IP address", EncodeForSettings(ipstr), -1);
     }
 
     void SettingsMenuLayout::PushSettingItem(const std::string &name, const std::string &value_display, int id)

@@ -2,7 +2,7 @@
 
 namespace ui
 {
-    SideMenu::SideMenu(pu::ui::Color suspended_clr, std::string cursor_path, std::string suspended_img_path, std::string multiselect_img_path, u32 txt_x, u32 txt_y, u32 txt_sz, pu::ui::Color txt_clr, s32 y)
+    SideMenu::SideMenu(pu::ui::Color suspended_clr, std::string cursor_path, std::string suspended_img_path, std::string multiselect_img_path, u32 txt_x, u32 txt_y, pu::String font_name, pu::ui::Color txt_clr, s32 y)
     {
         this->selitm = 0;
         this->suspitm = -1;
@@ -15,7 +15,7 @@ namespace ui
         this->cursoricon = pu::ui::render::LoadImage(cursor_path);
         this->suspicon = pu::ui::render::LoadImage(suspended_img_path);
         this->mselicon = pu::ui::render::LoadImage(multiselect_img_path);
-        this->textfont = pu::ui::render::LoadDefaultFont(txt_sz);
+        this->textfont = font_name;
         this->textx = txt_x;
         this->texty = txt_y;
         this->textclr = txt_clr;
@@ -80,7 +80,7 @@ namespace ui
                 auto icon = pu::ui::render::LoadImage(this->icons[this->baseiconidx + i]);
                 auto text = this->icons_texts[this->baseiconidx + i];
                 this->ricons.push_back(icon);
-                pu::ui::render::NativeTexture ntext = nullptr;
+                pu::sdl2::Texture ntext = nullptr;
                 if(!text.empty()) ntext = pu::ui::render::RenderText(this->textfont, text, this->textclr);
                 this->ricons_texts.push_back(ntext);
             }
@@ -371,7 +371,7 @@ namespace ui
                 auto icon = pu::ui::render::LoadImage(this->icons[this->selitm]);
                 this->ricons.insert(this->ricons.begin(), icon);
                 auto text = this->icons_texts[this->selitm];
-                pu::ui::render::NativeTexture ntext = nullptr;
+                pu::sdl2::Texture ntext = nullptr;
                 if(!text.empty()) ntext = pu::ui::render::RenderText(this->textfont, text, this->textclr);
                 this->ricons_texts.insert(this->ricons_texts.begin(), ntext);
                 this->baseiconidx--;

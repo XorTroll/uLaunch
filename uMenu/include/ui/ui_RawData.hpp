@@ -28,7 +28,7 @@ namespace ui
             s32 y;
             s32 w;
             s32 h;
-            pu::ui::render::NativeTexture ntex;
+            pu::sdl2::Texture ntex;
             u8 falpha;
             void *ptr;
             size_t fullsz;

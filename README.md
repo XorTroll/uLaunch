@@ -34,7 +34,7 @@ uLaunch is a very ambitious project, consisting on two custom library applets, a
 
 - Settings:
 
-  - Show connected WiFi network's name
+  - Show connected WiFi network's name, MAC and IP address...
   
   - Open connection applet in case user wants to change network settings
 

@@ -105,20 +105,23 @@ namespace ui
         g_menu_app_instance->ApplyConfigForElement("main_menu", "menu_toggle_button", this->menuToggle);
         this->Add(this->menuToggle);
 
-        this->itemName = pu::ui::elm::TextBlock::New(40, 610, "", 30);
+        this->itemName = pu::ui::elm::TextBlock::New(40, 610, "");
+        this->itemName->SetFont("DefaultFont@30");
         this->itemName->SetColor(textclr);
         g_menu_app_instance->ApplyConfigForElement("main_menu", "banner_name_text", this->itemName);
         this->Add(this->itemName);
-        this->itemAuthor = pu::ui::elm::TextBlock::New(45, 650, "", 20);
+        this->itemAuthor = pu::ui::elm::TextBlock::New(45, 650, "");
+        this->itemAuthor->SetFont("DefaultFont@20");
         this->itemAuthor->SetColor(textclr);
         g_menu_app_instance->ApplyConfigForElement("main_menu", "banner_author_text", this->itemAuthor);
         this->Add(this->itemAuthor);
-        this->itemVersion = pu::ui::elm::TextBlock::New(45, 675, "", 20);
+        this->itemVersion = pu::ui::elm::TextBlock::New(45, 675, "");
+        this->itemVersion->SetFont("DefaultFont@30");
         this->itemVersion->SetColor(textclr);
         g_menu_app_instance->ApplyConfigForElement("main_menu", "banner_version_text", this->itemVersion);
         this->Add(this->itemVersion);
-
-        this->itemsMenu = SideMenu::New(pu::ui::Color(0, 255, 120, 255), cfg::GetAssetByTheme(g_ul_theme, "ui/Cursor.png"), cfg::GetAssetByTheme(g_ul_theme, "ui/Suspended.png"), cfg::GetAssetByTheme(g_ul_theme, "ui/Multiselect.png"), menutextx, menutexty, menutextsz, textclr, 294);
+        std::string font_name = "DefaultFont@" + std::to_string(menutextsz);
+        this->itemsMenu = SideMenu::New(pu::ui::Color(0, 255, 120, 255), cfg::GetAssetByTheme(g_ul_theme, "ui/Cursor.png"), cfg::GetAssetByTheme(g_ul_theme, "ui/Suspended.png"), cfg::GetAssetByTheme(g_ul_theme, "ui/Multiselect.png"), menutextx, menutexty, font_name, textclr, 294);
         this->MoveFolder("", false);
         this->itemsMenu->SetOnItemSelected(std::bind(&MenuLayout::menu_Click, this, std::placeholders::_1, std::placeholders::_2));
         this->itemsMenu->SetOnSelectionChanged(std::bind(&MenuLayout::menu_OnSelected, this, std::placeholders::_1));
