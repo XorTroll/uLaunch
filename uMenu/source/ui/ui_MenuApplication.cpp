@@ -46,8 +46,6 @@ namespace ui
 
     void MenuApplication::OnLoad()
     {
-        // pu::ui::render::SetDefaultFont(cfg::GetAssetByTheme(g_ul_theme, "ui/Font.ttf"));
-
         if(this->IsSuspended())
         {
             bool flag;

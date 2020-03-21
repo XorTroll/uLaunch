@@ -105,18 +105,18 @@ namespace ui
         g_menu_app_instance->ApplyConfigForElement("main_menu", "menu_toggle_button", this->menuToggle);
         this->Add(this->menuToggle);
 
-        this->itemName = pu::ui::elm::TextBlock::New(40, 610, "");
+        this->itemName = pu::ui::elm::TextBlock::New(40, 610, "A");
         this->itemName->SetFont("DefaultFont@30");
         this->itemName->SetColor(textclr);
         g_menu_app_instance->ApplyConfigForElement("main_menu", "banner_name_text", this->itemName);
         this->Add(this->itemName);
-        this->itemAuthor = pu::ui::elm::TextBlock::New(45, 650, "");
+        this->itemAuthor = pu::ui::elm::TextBlock::New(45, 650, "A");
         this->itemAuthor->SetFont("DefaultFont@20");
         this->itemAuthor->SetColor(textclr);
         g_menu_app_instance->ApplyConfigForElement("main_menu", "banner_author_text", this->itemAuthor);
         this->Add(this->itemAuthor);
-        this->itemVersion = pu::ui::elm::TextBlock::New(45, 675, "");
-        this->itemVersion->SetFont("DefaultFont@30");
+        this->itemVersion = pu::ui::elm::TextBlock::New(45, 675, "A");
+        this->itemVersion->SetFont("DefaultFont@20");
         this->itemVersion->SetColor(textclr);
         g_menu_app_instance->ApplyConfigForElement("main_menu", "banner_version_text", this->itemVersion);
         this->Add(this->itemVersion);
