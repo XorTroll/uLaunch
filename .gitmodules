@@ -4,6 +4,3 @@
 [submodule "libstratosphere"]
 	path = libstratosphere
 	url = https://github.com/Atmosphere-NX/libstratosphere
-[submodule "master-libnx"]
-	path = master-libnx
-	url = https://github.com/switchbrew/libnx
