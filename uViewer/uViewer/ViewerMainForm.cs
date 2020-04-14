@@ -1,33 +1,76 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using libusbK;
+using System;
 using System.ComponentModel;
-using System.Drawing.Imaging;
 using System.Drawing;
-using System.Linq;
+using System.Drawing.Imaging;
+using System.IO;
 using System.Threading;
-using System.Runtime.InteropServices;
 using System.Windows.Forms;
-using libusbK;
 
 namespace uViewer
 {
+    public enum USBMode : uint
+    {
+        Invalid,
+        RawRGBA,
+        JPEG,
+    }
+
     public partial class ViewerMainForm : Form
     {
         private UsbK USB = null;
-        private Thread USBThread;
+        private Thread USBThread = null;
 
-        private ToolboxForm Toolbox;
+        private ToolboxForm Toolbox = null;
+        private static MemoryStream BaseStream = new MemoryStream((int)RawRGBAScreenBufferSize);
+        private static USBMode Mode = USBMode.Invalid;
+
+        public delegate void ApplyTypeImplDelegate(PictureBox Box, byte[] Data);
+        public static ApplyTypeImplDelegate ApplyModeDelegate = null;
+
+        public delegate void ApplyDelegate(byte[] data);
+
+        private static unsafe void ApplyRGBA(PictureBox Box, byte[] RGBA)
+        {
+            var bmp = Box.Image as Bitmap;
+            BitmapData img = bmp.LockBits(new Rectangle(0, 0, 1280, 720), ImageLockMode.ReadWrite, bmp.PixelFormat);
+
+            fixed (byte* raw_data = RGBA) unchecked
+            {
+                uint* ptr = (uint*)raw_data;
+                ptr++;
+                uint* image = (uint*)img.Scan0.ToPointer();
+                uint* ptr_end = ptr + 720 * 1280;
+                while (ptr != ptr_end)
+                {
+                    uint argb = *ptr << 8;
+                    *image = ((argb & 0x0000FF00) << 8) | ((argb & 0x00FF0000) >> 8) | ((argb & 0xFF000000) >> 24) | 0xFF000000;
+                    image++;
+                    ptr++;
+                }
+            }
+
+            bmp.UnlockBits(img);
+        }
+
+        private static void ApplyJPEG(PictureBox Box, byte[] JPEG)
+        {
+            BaseStream.Position = 0;
+            BaseStream.Write(JPEG, 4, (int)RawRGBAScreenBufferSize);
+            Box.Image = Image.FromStream(BaseStream);
+        }
 
         public const long RawRGBAScreenBufferSize = 1280 * 720 * 4;
+        public const long USBPacketSize = RawRGBAScreenBufferSize + 4;
 
         public byte[][] CaptureBlocks = new byte[][]
         {
-            new byte[RawRGBAScreenBufferSize], // Current block
-            new byte[RawRGBAScreenBufferSize], // Temporary blocks (5)
-            new byte[RawRGBAScreenBufferSize],
-            new byte[RawRGBAScreenBufferSize],
-            new byte[RawRGBAScreenBufferSize],
-            new byte[RawRGBAScreenBufferSize],
+            new byte[USBPacketSize], // Current block
+            new byte[USBPacketSize], // Temporary blocks (5)
+            new byte[USBPacketSize],
+            new byte[USBPacketSize],
+            new byte[USBPacketSize],
+            new byte[USBPacketSize],
         };
 
         public ViewerMainForm(UsbK USB)
@@ -56,7 +99,7 @@ namespace uViewer
             if(USB == null)
             {
                 MessageBox.Show("Unable to connect to uLaunch via USB-C cable.", "Unable to connect");
-                Environment.Exit(Environment.ExitCode);
+                Environment.Exit(1);
             }
             base.OnShown(e);
         }
@@ -70,13 +113,29 @@ namespace uViewer
         {
             try
             {
-                USB.ReadPipe(0x81, CaptureBlocks[0], CaptureBlocks[0].Length, out _, IntPtr.Zero);
-                Array.Copy(CaptureBlocks[4], CaptureBlocks[5], CaptureBlocks[4].Length);
-                Array.Copy(CaptureBlocks[3], CaptureBlocks[4], CaptureBlocks[3].Length);
-                Array.Copy(CaptureBlocks[2], CaptureBlocks[3], CaptureBlocks[2].Length);
-                Array.Copy(CaptureBlocks[1], CaptureBlocks[2], CaptureBlocks[1].Length);
-                Array.Copy(CaptureBlocks[0], CaptureBlocks[1], CaptureBlocks[0].Length);
-                ApplyRGBAInternal(CaptureBlocks[0]);
+                USB.ReadPipe(0x81, CaptureBlocks[0], (int)USBPacketSize, out _, IntPtr.Zero);
+                if(Mode == USBMode.Invalid)
+                {
+                    var mode_raw = BitConverter.ToUInt32(CaptureBlocks[0], 0);
+                    Mode = (USBMode)mode_raw;
+                    switch(Mode)
+                    {
+                        case USBMode.RawRGBA:
+                            ApplyModeDelegate = ApplyRGBA;
+                            break;
+                        case USBMode.JPEG:
+                            ApplyModeDelegate = ApplyJPEG;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                Buffer.BlockCopy(CaptureBlocks[4], 0, CaptureBlocks[5], 0, (int)USBPacketSize);
+                Buffer.BlockCopy(CaptureBlocks[3], 0, CaptureBlocks[4], 0, (int)USBPacketSize);
+                Buffer.BlockCopy(CaptureBlocks[2], 0, CaptureBlocks[3], 0, (int)USBPacketSize);
+                Buffer.BlockCopy(CaptureBlocks[1], 0, CaptureBlocks[2], 0, (int)USBPacketSize);
+                Buffer.BlockCopy(CaptureBlocks[0], 0, CaptureBlocks[1], 0, (int)USBPacketSize);
+                ApplyDataImpl(CaptureBlocks[0]);
             }
             catch
             {
@@ -87,45 +146,19 @@ namespace uViewer
 
         public static void InitializePictureBox(PictureBox Box)
         {
-            int w = 1280;
-            int h = 720;
-
-            Box.Image = new Bitmap(w, h, PixelFormat.Format32bppArgb);
+            Box.Image = new Bitmap(1280, 720, PixelFormat.Format32bppArgb);
         }
 
-        public static unsafe void ApplyRGBAToPictureBox(PictureBox Box, byte[] RGBA)
+        public void ApplyDataImpl(byte[] data)
         {
-            var bmp = Box.Image as Bitmap;
-            BitmapData img = bmp.LockBits(new Rectangle(0, 0, 1280, 720), ImageLockMode.ReadWrite, bmp.PixelFormat);
-
-            fixed (byte* rawData = RGBA) unchecked
+            if(CaptureBox.InvokeRequired)
             {
-                uint* ptr = (uint*)rawData;
-                uint* image = (uint*)img.Scan0.ToPointer();
-                uint* ptrEnd = ptr + 720 * 1280;
-                while (ptr != ptrEnd)
-                {
-                    uint argb = *ptr << 8;
-                    *image = ((argb & 0x0000FF00) << 8) | ((argb & 0x00FF0000) >> 8) | ((argb & 0xFF000000) >> 24) | 0xFF000000;
-                    image++; ptr++;
-                }
-            }
-
-            bmp.UnlockBits(img);
-        }
-
-        public delegate void ApplyDelegate(byte[] data);
-
-        public void ApplyRGBAInternal(byte[] data)
-        {
-            if (CaptureBox.InvokeRequired)
-            {
-                var d = new ApplyDelegate(ApplyRGBAInternal);
+                var d = new ApplyDelegate(ApplyDataImpl);
                 CaptureBox.Invoke(d, data);
             }
             else
             {
-                ApplyRGBAToPictureBox(CaptureBox, data);
+                ApplyModeDelegate(CaptureBox, data);
                 Refresh();
             }
         }

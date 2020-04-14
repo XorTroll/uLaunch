@@ -35,6 +35,13 @@ namespace ams
     }
 }
 
+enum class USBMode : u32
+{
+    Invalid,
+    RawRGBA,
+    JPEG
+};
+
 AccountUid selected_uid = {};
 hb::HbTargetParams hblaunch_flag = {};
 hb::HbTargetParams hbapplaunch_flag = {};
@@ -45,10 +52,14 @@ bool album_flag = false;
 bool menu_restart_flag = false;
 bool app_opened_hb = false;
 AppletOperationMode console_mode;
-u8 *usbbuf = nullptr;
+u8 *usb_buf = nullptr;
+u8 *usb_buf_read = nullptr;
 cfg::Config config = {};
 Thread ipc_thr;
 Thread usb_thr;
+USBMode usb_mode = USBMode::Invalid;
+
+static constexpr size_t USBPacketSize = RawRGBAScreenBufferSize + sizeof(u32);
 
 // This way the menu isn't loaded, even if nothing but the home menu is present, which outside of the debug menu is considered an invalid state
 bool debug_menu = false;
@@ -371,6 +382,18 @@ namespace
     ams::sf::hipc::ServerManager<NumServers, ServerOptions, MaxSessions> daemon_ipc_manager;
 }
 
+static inline Result capsscCommand1204(void *buf, size_t buf_size, u64 *out_jpeg_size)
+{
+    struct {
+        u32 a;
+        u64 b;
+    } in = {0, 10000000000};
+    return serviceDispatchInOut(capsscGetServiceSession(), 1204, in, *out_jpeg_size,
+        .buffer_attrs = { SfBufferAttr_HipcMapTransferAllowsNonSecure | SfBufferAttr_HipcMapAlias | SfBufferAttr_Out },
+        .buffers = { { buf, buf_size } },
+    );
+}
+
 namespace impl
 {
     void IPCManagerThread(void *arg)
@@ -380,16 +403,42 @@ namespace impl
         daemon_ipc_manager.LoopProcess();
     }
 
-    void USBViewerThread(void *arg)
+    void USBViewerRGBAThread(void *arg)
     {
         while(true)
         {
-            bool flag;
-            appletGetLastForegroundCaptureImageEx(usbbuf, RawRGBAScreenBufferSize, &flag);
+            bool tmp_flag;
+            appletGetLastForegroundCaptureImageEx(usb_buf_read, RawRGBAScreenBufferSize, &tmp_flag);
             appletUpdateLastForegroundCaptureImage();
-            usbCommsWrite(usbbuf, RawRGBAScreenBufferSize);
+            usbCommsWrite(usb_buf, USBPacketSize);
             svcSleepThread(10'000'000l);
         }
+    }
+
+    void USBViewerJPEGThread(void *arg)
+    {
+        while(true)
+        {
+            u64 tmp_size;
+            capsscCommand1204(usb_buf_read, RawRGBAScreenBufferSize, &tmp_size);
+            usbCommsWrite(usb_buf, USBPacketSize);
+            svcSleepThread(10'000'000l);
+        }
+    }
+
+    void PrepareUSBViewer()
+    {
+        usb_buf = new (std::align_val_t(0x1000)) u8[USBPacketSize]();
+        usb_buf_read = usb_buf + sizeof(u32);
+        u64 tmp_size;
+        auto rc = capsscCommand1204(usb_buf_read, RawRGBAScreenBufferSize, &tmp_size);
+        if(R_SUCCEEDED(rc)) usb_mode = USBMode::JPEG;
+        else
+        {
+            usb_mode = USBMode::RawRGBA;
+            capsscExit();
+        }
+        *(u32*)usb_buf = static_cast<u32>(usb_mode);
     }
 
     void LoopUpdate()
@@ -486,14 +535,24 @@ namespace impl
 
     Result LaunchIPCManagerThread()
     {
-        R_TRY(threadCreate(&ipc_thr, &IPCManagerThread, NULL, NULL, 0x4000, 0x2b, -2));
+        R_TRY(threadCreate(&ipc_thr, &IPCManagerThread, nullptr, nullptr, 0x4000, 0x2b, -2));
         R_TRY(threadStart(&ipc_thr));
         return 0;
     }
 
     Result LaunchUSBViewerThread()
     {
-        R_TRY(threadCreate(&usb_thr, &USBViewerThread, NULL, NULL, 0x4000, 0x2b, -2));
+        switch(usb_mode)
+        {
+            case USBMode::RawRGBA:
+                R_TRY(threadCreate(&usb_thr, &USBViewerRGBAThread, nullptr, nullptr, 0x4000, 0x2b, -2));
+                break;
+            case USBMode::JPEG:
+                R_TRY(threadCreate(&usb_thr, &USBViewerJPEGThread, nullptr, nullptr, 0x4000, 0x2b, -2));
+                break;
+            default:
+                return 0;
+        }
         R_TRY(threadStart(&usb_thr));
         return 0;
     }
@@ -531,7 +590,8 @@ namespace impl
         if(config.viewer_usb_enabled)
         {
             UL_ASSERT(usbCommsInitialize());
-            usbbuf = new (std::align_val_t(0x1000)) u8[RawRGBAScreenBufferSize]();
+            UL_ASSERT(capsscInitialize());
+            PrepareUSBViewer();
             UL_ASSERT(LaunchUSBViewerThread());
         }
 
@@ -541,7 +601,7 @@ namespace impl
             // Debug testing mode
             debug_menu = true;
 
-            consoleInit(NULL);
+            consoleInit(nullptr);
             CONSOLE_FMT("Welcome to uDaemon -> debug mode menu")
             CONSOLE_FMT("")
             CONSOLE_FMT("(A) -> Dump system save data to sd:/ulaunch/save_dump")
@@ -595,7 +655,8 @@ namespace impl
         if(config.viewer_usb_enabled)
         {
             usbCommsExit();
-            operator delete[](usbbuf, std::align_val_t(0x1000));
+            if(usb_mode == USBMode::JPEG) capsscExit();
+            operator delete[](usb_buf, std::align_val_t(0x1000));
         }
 
         nsExit();

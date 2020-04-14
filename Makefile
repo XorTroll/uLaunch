@@ -9,12 +9,9 @@ export UL_DEV	:=	0
 export UL_DEFS	:=	-DUL_DEV=$(UL_DEV) -DUL_MAJOR=$(UL_MAJOR) -DUL_MINOR=$(UL_MINOR) -DUL_MICRO=$(UL_MICRO) -DUL_VERSION=\"$(UL_VERSION)\"
 
 export UL_COMMON_SOURCES	:=	../uLaunch/source ../uLaunch/source/am ../uLaunch/source/cfg ../uLaunch/source/db ../uLaunch/source/fs ../uLaunch/source/net ../uLaunch/source/os ../uLaunch/source/util
-export UL_COMMON_INCLUDES	:=	../uLaunch/include ../master-libnx/nx/external/bsd/include
+export UL_COMMON_INCLUDES	:=	../uLaunch/include
 
 export UL_CXXFLAGS	:=	-fno-rtti -fexceptions -std=gnu++17
-
-# TODO: remove this and libnx master submodule when libnx releases
-export LIBNX	:=	$(CURDIR)/master-libnx/nx
 
 .PHONY: all base make_hbtarget hbtarget make_daemon daemon make_menu menu clean
 
@@ -22,7 +19,6 @@ all: hbtarget daemon menu
 
 base:
 	@mkdir -p SdOut/
-	@$(MAKE) -C master-libnx/
 
 make_hbtarget:
 	@$(MAKE) -C uHbTarget/

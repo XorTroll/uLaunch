@@ -37,18 +37,18 @@ namespace uViewer
 
         public void RefreshBackups()
         {
-            Array.Copy(Main.CaptureBlocks[5], CaptureBackups[4], CaptureBackups[4].Length);
-            Array.Copy(Main.CaptureBlocks[4], CaptureBackups[3], CaptureBackups[3].Length);
-            Array.Copy(Main.CaptureBlocks[3], CaptureBackups[2], CaptureBackups[2].Length);
-            Array.Copy(Main.CaptureBlocks[2], CaptureBackups[1], CaptureBackups[1].Length);
-            Array.Copy(Main.CaptureBlocks[1], CaptureBackups[0], CaptureBackups[0].Length);
+            Buffer.BlockCopy(Main.CaptureBlocks[5], 0, CaptureBackups[4], 0, CaptureBackups[4].Length);
+            Buffer.BlockCopy(Main.CaptureBlocks[4], 0, CaptureBackups[3], 0, CaptureBackups[3].Length);
+            Buffer.BlockCopy(Main.CaptureBlocks[3], 0, CaptureBackups[2], 0, CaptureBackups[2].Length);
+            Buffer.BlockCopy(Main.CaptureBlocks[2], 0, CaptureBackups[1], 0, CaptureBackups[1].Length);
+            Buffer.BlockCopy(Main.CaptureBlocks[1], 0, CaptureBackups[0], 0, CaptureBackups[0].Length);
         }
 
         private void ScreenshotList_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (ScreenshotList.SelectedIndex >= 0)
+            if(ScreenshotList.SelectedIndex >= 0)
             {
-                ViewerMainForm.ApplyRGBAToPictureBox(ScreenshotBox, CaptureBackups[ScreenshotList.SelectedIndex]);
+                ViewerMainForm.ApplyModeDelegate(ScreenshotBox, CaptureBackups[ScreenshotList.SelectedIndex]);
                 Refresh();
             }
         }
@@ -57,7 +57,7 @@ namespace uViewer
         {
             RefreshBackups();
             ScreenshotList.SelectedIndex = 0;
-            ViewerMainForm.ApplyRGBAToPictureBox(ScreenshotBox, CaptureBackups[ScreenshotList.SelectedIndex]);
+            ViewerMainForm.ApplyModeDelegate(ScreenshotBox, CaptureBackups[ScreenshotList.SelectedIndex]);
             Refresh();
         }
 
