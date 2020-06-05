@@ -32,6 +32,8 @@ using JSON = nlohmann::json;
 #error uLaunch's release version isn't defined.
 #endif
 
+#include <ul_Scope.hpp>
+
 static constexpr size_t RawRGBAScreenBufferSize = 1280 * 720 * 4;
 
 #ifndef R_TRY
@@ -75,19 +77,15 @@ inline constexpr ResultWith<Args...> SuccessResultWith(Args &&...args)
     return MakeResultWith(0, args...);
 }
 
+static constexpr Result ResultSuccess = 0;
+
 static constexpr Mutex EmptyMutex = (Mutex)0;
 
 #include <ul_Results.hpp>
 
-#define UL_ASSERT(expr) { auto _tmp_rc = (expr); if(R_FAILED(_tmp_rc)) { fatalThrow(_tmp_rc); } }
-
-// Console (debug)
-
-#if UL_DEV
-
-#include <iostream>
-
-#define CONSOLE_OUT(...) { std::cout << __VA_ARGS__ << std::endl; consoleUpdate(NULL); }
-#define CONSOLE_FMT(fmt, ...) { printf(fmt "\n", ##__VA_ARGS__); consoleUpdate(NULL); }
-
-#endif
+#define UL_ASSERT(expr) ({ \
+    const auto _tmp_rc = (expr); \
+    if(R_FAILED(_tmp_rc)) { \
+        fatalThrow(_tmp_rc); \
+    } \
+})

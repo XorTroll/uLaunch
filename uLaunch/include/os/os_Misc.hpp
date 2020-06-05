@@ -2,10 +2,9 @@
 #pragma once
 #include <ul_Include.hpp>
 
-namespace os
-{
-    enum class Language : u32
-    {
+namespace os {
+
+    enum class Language : u32 {
         Japanese,
         AmericanEnglish,
         French,
@@ -31,4 +30,6 @@ namespace os
     u32 GetBatteryLevel();
     bool IsConsoleCharging();
     std::string GetFirmwareVersion();
+    std::string GetCurrentTime();
+
 }

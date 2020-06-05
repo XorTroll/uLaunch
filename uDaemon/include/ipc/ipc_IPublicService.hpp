@@ -3,12 +3,11 @@
 #include <stratosphere.hpp>
 #include <ul_Include.hpp>
 
-namespace ipc
-{
-    class IPublicService : public ams::sf::IServiceObject
-    {
-        private:
+namespace ipc {
 
+    class IPublicService : public ams::sf::IServiceObject {
+
+        private:
             enum class CommandId
             {
             };
@@ -16,9 +15,9 @@ namespace ipc
         public:
 
         public:
-
-            DEFINE_SERVICE_DISPATCH_TABLE
-            {
+            DEFINE_SERVICE_DISPATCH_TABLE {
             };
+
     };
+
 }

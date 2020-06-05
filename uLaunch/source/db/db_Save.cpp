@@ -1,29 +1,25 @@
 #include <db/db_Save.hpp>
-#include <fs/fs_Stdio.hpp>
-#include <util/util_Convert.hpp>
 
-namespace db
-{
-    Result Mount()
-    {
+namespace db {
+
+    Result Mount() {
         FsFileSystem savefs;
         FsSaveDataAttribute attr = {};
         attr.system_save_data_id = HomeMenuSaveDataId;
         attr.save_data_type = FsSaveDataType_System;
 
-        auto rc = fsOpenSaveDataFileSystemBySystemSaveDataId(&savefs, FsSaveDataSpaceId_System, &attr);
-        if(R_SUCCEEDED(rc)) fsdevMountDevice(UL_DB_MOUNT_NAME, savefs);
+        R_TRY(fsOpenSaveDataFileSystemBySystemSaveDataId(&savefs, FsSaveDataSpaceId_System, &attr));
+        fsdevMountDevice(UL_DB_MOUNT_NAME, savefs);
         
-        return rc;
+        return ResultSuccess;
     }
 
-    void Unmount()
-    {
+    void Unmount() {
         fsdevUnmountDevice(UL_DB_MOUNT_NAME);
     }
 
-    void Commit()
-    {
+    void Commit() {
         fsdevCommitDevice(UL_DB_MOUNT_NAME);
     }
+
 }

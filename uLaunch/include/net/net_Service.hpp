@@ -2,8 +2,8 @@
 #pragma once
 #include <net/net_Types.hpp>
 
-namespace net
-{
+namespace net {
+
     Result Initialize();
     void Finalize();
     Result GetInternetConnectionStatus(NifmInternetConnectionStatus* status);
@@ -13,4 +13,5 @@ namespace net
 
     std::string FormatMACAddress(u64 addr);
     std::string GetConsoleIPAddress();
+
 }

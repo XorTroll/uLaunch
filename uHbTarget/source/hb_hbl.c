@@ -143,27 +143,6 @@ static void setupHbHeap(void)
 
 static Handle g_procHandle;
 
-static void procHandleReceiveThread(void* arg)
-{
-    Handle session = (Handle)(uintptr_t)arg;
-    Result rc;
-
-    void* base = armGetTls();
-    hipcMakeRequestInline(base);
-
-    s32 idx = 0;
-    rc = svcReplyAndReceive(&idx, &session, 1, INVALID_HANDLE, UINT64_MAX);
-    if (R_FAILED(rc))
-        fatalThrow(MAKERESULT(Module_HomebrewLoader, 15));
-
-    HipcParsedRequest r = hipcParseRequest(base);
-    if (r.meta.num_copy_handles != 1)
-        fatalThrow(MAKERESULT(Module_HomebrewLoader, 17));
-
-    g_procHandle = r.data.copy_handles[0];
-    svcCloseHandle(session);
-}
-
 //Gets the control.nacp for the current title id, and then sets g_isAutomaticGameplayRecording if less memory should be allocated.
 static void getIsAutomaticGameplayRecording(void) {
     if (hosversionAtLeast(5,0,0) && g_isApplication) {
@@ -189,35 +168,6 @@ static void getIsAutomaticGameplayRecording(void) {
             smExit();
         }
     }
-}
-
-static void getOwnProcessHandle(void)
-{
-    Result rc;
-
-    Handle server_handle, client_handle;
-    rc = svcCreateSession(&server_handle, &client_handle, 0, 0);
-    if (R_FAILED(rc))
-        fatalThrow(MAKERESULT(Module_HomebrewLoader, 12));
-
-    Thread t;
-    rc = threadCreate(&t, &procHandleReceiveThread, (void*)(uintptr_t)server_handle, NULL, 0x1000, 0x20, -2);
-    if (R_FAILED(rc))
-        fatalThrow(MAKERESULT(Module_HomebrewLoader, 10));
-
-    rc = threadStart(&t);
-    if (R_FAILED(rc))
-        fatalThrow(MAKERESULT(Module_HomebrewLoader, 13));
-
-    hipcMakeRequestInline(armGetTls(),
-        .num_copy_handles = 1,
-    ).copy_handles[0] = CUR_PROCESS_HANDLE;
-
-    svcSendSyncRequest(client_handle);
-    svcCloseHandle(client_handle);
-
-    threadWaitForExit(&t);
-    threadClose(&t);
 }
 
 Result sdInitMount()
@@ -456,10 +406,12 @@ void loadNro(void)
     hbTargetImpl((u64) entries, -1, entrypoint);
 }
 
-void hb_hbl_Target(const char *path, const char *argv, int do_once)
-{
+void hb_hbl_Target(Handle process_handle, const char *path, const char *argv, bool do_once) {
+    g_procHandle = process_handle;
     g_targetCounter = -1;
-    if(do_once) g_targetCounter = 1;
+    if(do_once) {
+        g_targetCounter = 1;
+    }
     g_isApplication = (__nx_applet_type == AppletType_Application) || (__nx_applet_type == AppletType_SystemApplication);
     memcpy(g_savedTls, (u8*)armGetTls() + 0x100, 0x100);
     strcpy(g_basePath, path);
@@ -467,6 +419,5 @@ void hb_hbl_Target(const char *path, const char *argv, int do_once)
 
     getIsAutomaticGameplayRecording();
     setupHbHeap();
-    getOwnProcessHandle();
     loadNro();
 }

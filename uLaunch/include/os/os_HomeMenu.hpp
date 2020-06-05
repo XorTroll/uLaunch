@@ -2,10 +2,9 @@
 #pragma once
 #include <ul_Include.hpp>
 
-namespace os
-{
-    enum class GeneralChannelMessage : u32
-    {
+namespace os {
+
+    enum class GeneralChannelMessage : u32 {
         Invalid,
         HomeButton = 2,
         Sleep = 3,
@@ -18,20 +17,28 @@ namespace os
         OverlayHidden = 17,
     };
 
-    struct SystemAppletMessage
-    {
+    struct SystemAppletMessage {
+
+        static constexpr u32 Magic = 0x534D4153; // "SAMS" -> System applet message...?
+
         u32 magic;
         u32 unk;
-        u32 message;
-        u8 data[0x400 - (sizeof(u32) * 3)]; // 1024 bytes are usually sent, so let's read it all.
-    } PACKED;
+        u32 general_channel_message;
+        u8 data[0x3F4];
 
-    static constexpr u32 SAMSMagic = 0x534D4153; // "SAMS" -> System Applet message...?
+        static inline constexpr SystemAppletMessage Create(GeneralChannelMessage msg) {
+            SystemAppletMessage sams = {};
+            sams.magic = Magic;
+            sams.general_channel_message = static_cast<u32>(msg);
+            return sams;
+        }
 
-    static_assert(sizeof(SystemAppletMessage) == 0x400, "System applet message must be 0x400!");
+    };
+    // 1024 bytes are always sent, so let's read it all.
+    static_assert(sizeof(SystemAppletMessage) == 0x400, "System applet message");
 
-    enum class AppletMessage : u32
-    {
+
+    enum class AppletMessage : u32 {
         Invalid,
         Exit = 4,
         FocusStateChange = 15,
@@ -44,4 +51,5 @@ namespace os
     };
 
     Result PushSystemAppletMessage(SystemAppletMessage msg);
+
 }

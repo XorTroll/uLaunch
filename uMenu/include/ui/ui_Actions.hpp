@@ -1,10 +1,9 @@
 
 #pragma once
-#include <ul_Include.hpp>
 #include <cfg/cfg_Config.hpp>
 
-namespace ui::actions
-{
+namespace ui::actions {
+
     void ShowAboutDialog();
     void ShowSettingsMenu();
     void ShowThemesMenu();
@@ -14,4 +13,5 @@ namespace ui::actions
     void ShowHelpDialog();
     void ShowAlbumApplet();
     void ShowPowerDialog();
+
 }

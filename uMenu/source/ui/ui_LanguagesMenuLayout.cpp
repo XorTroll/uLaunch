@@ -12,10 +12,9 @@ extern ui::MenuApplication::Ref g_menu_app_instance;
 extern cfg::Theme g_ul_theme;
 extern cfg::Config g_ul_config;
 
-namespace ui
-{
-    LanguagesMenuLayout::LanguagesMenuLayout()
-    {
+namespace ui {
+
+    LanguagesMenuLayout::LanguagesMenuLayout() {
         this->SetBackgroundImage(cfg::GetAssetByTheme(g_ul_theme, "ui/Background.png"));
 
         pu::ui::Color textclr = pu::ui::Color::FromHex(g_menu_app_instance->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
@@ -34,39 +33,36 @@ namespace ui
         this->Add(this->langsMenu);
     }
 
-    void LanguagesMenuLayout::OnMenuInput(u64 down, u64 up, u64 held, pu::ui::Touch pos)
-    {
-        if(down & KEY_B)
-        {
+    void LanguagesMenuLayout::OnMenuInput(u64 down, u64 up, u64 held, pu::ui::Touch touch_pos) {
+        if(down & KEY_B) {
             g_menu_app_instance->FadeOut();
             g_menu_app_instance->LoadSettingsMenu();
             g_menu_app_instance->FadeIn();
         }
     }
 
-    void LanguagesMenuLayout::OnHomeButtonPress()
-    {
+    void LanguagesMenuLayout::OnHomeButtonPress() {
         g_menu_app_instance->FadeOut();
         g_menu_app_instance->LoadMenu();
         g_menu_app_instance->FadeIn();
     }
 
-    void LanguagesMenuLayout::Reload()
-    {
+    void LanguagesMenuLayout::Reload() {
         this->langsMenu->ClearItems();
         this->langsMenu->SetSelectedIndex(0);
 
-        pu::ui::Color textclr = pu::ui::Color::FromHex(g_menu_app_instance->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
+        auto textclr = pu::ui::Color::FromHex(g_menu_app_instance->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
         u64 lcode = 0;
-        SetLanguage ilang = SetLanguage_ENUS;
+        auto ilang = SetLanguage_ENUS;
         setGetLanguageCode(&lcode);
         setMakeLanguage(lcode, &ilang);
         
         u32 idx = 0;
-        for(auto &lang: os::GetLanguageNameList())
-        {
+        for(auto &lang: os::GetLanguageNameList()) {
             auto name = lang;
-            if((u32)ilang == idx) name += " " + cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "lang_selected");
+            if(static_cast<u32>(ilang) == idx) {
+                name += " " + cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "lang_selected");
+            }
             auto litm = pu::ui::elm::MenuItem::New(name);
             litm->SetColor(textclr);
             litm->AddOnClick(std::bind(&LanguagesMenuLayout::lang_Click, this, idx));
@@ -75,37 +71,34 @@ namespace ui
         }
     }
 
-    void LanguagesMenuLayout::lang_Click(u32 idx)
-    {
+    void LanguagesMenuLayout::lang_Click(u32 idx) {
         u64 lcode = 0;
         SetLanguage ilang = SetLanguage_ENUS;
         setGetLanguageCode(&lcode);
         setMakeLanguage(lcode, &ilang);
 
-        if((u32)ilang == idx) g_menu_app_instance->ShowNotification(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "lang_active_this"));
-        else
-        {
+        if(static_cast<u32>(ilang) == idx) {
+            g_menu_app_instance->ShowNotification(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "lang_active_this"));
+        }
+        else {
             auto sopt = g_menu_app_instance->CreateShowDialog(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "lang_set"), cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "lang_set_conf"), { cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "yes"), cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "no") }, true);
-            if(sopt == 0)
-            {
+            if(sopt == 0) {
                 u64 codes[16] = {0};
                 s32 tmp;
                 setGetAvailableLanguageCodes(&tmp, codes, 16);
-                u64 code = codes[this->langsMenu->GetSelectedIndex()];
+                auto code = codes[this->langsMenu->GetSelectedIndex()];
 
                 auto rc = setsysSetLanguageCode(code);
                 g_menu_app_instance->CreateShowDialog(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "lang_set"), R_SUCCEEDED(rc) ? cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "lang_set_ok") : cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "lang_set_error") + ": " + util::FormatResult(rc), { cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "ok") }, true);
-                if(R_SUCCEEDED(rc))
-                {
+                if(R_SUCCEEDED(rc)) {
                     g_menu_app_instance->FadeOut();
-                    os::SystemAppletMessage smsg = {};
-                    smsg.magic = os::SAMSMagic;
-                    smsg.message = (u32)os::GeneralChannelMessage::Reboot;
 
+                    auto smsg = os::SystemAppletMessage::Create(os::GeneralChannelMessage::Reboot);
                     os::PushSystemAppletMessage(smsg);
-                    svcSleepThread(1'500'000'000L);
+                    svcSleepThread(1'500'000'000ul);
                 }
             }
         }
     }
+
 }

@@ -10,33 +10,35 @@
 #include <am/am_Application.hpp>
 #include <am/am_LibraryApplet.hpp>
 #include <am/am_HomeMenu.hpp>
-#include <am/am_DaemonMenuInteraction.hpp>
+#include <dmi/dmi_DaemonMenuInteraction.hpp>
 #include <util/util_Convert.hpp>
 #include <cfg/cfg_Config.hpp>
 
-extern "C"
-{
+extern "C" {
+
     u32 __nx_applet_type = AppletType_SystemApplet;
     TimeServiceType __nx_time_service_type = TimeServiceType_System;
-    #if UL_DEV
-        size_t __nx_heap_size = 0x3000000; // Dev builds use 48MB (still lower than official qlaunch) for debug console
-    #else
-        size_t __nx_heap_size = 0x800000; // uDaemon uses 8MB - while official qlaunch uses 56MB! That's 48 extra MB for other applets
-    #endif
+
+    // uDaemon uses 8MB - while official qlaunch uses 56MB! That's 48 extra MB for other applets!
+    size_t __nx_heap_size = 0x800000;
+
 }
 
 // Needed by libstratosphere
-namespace ams
-{
+
+namespace ams {
+
     ncm::ProgramId CurrentProgramId = ncm::SystemAppletId::Qlaunch;
-    namespace result
-    {
+    
+    namespace result {
+
         bool CallFatalOnResultAssertion = true;
+
     }
+
 }
 
-enum class USBMode : u32
-{
+enum class USBMode : u32 {
     Invalid,
     RawRGBA,
     JPEG
@@ -61,296 +63,234 @@ USBMode usb_mode = USBMode::Invalid;
 
 static constexpr size_t USBPacketSize = RawRGBAScreenBufferSize + sizeof(u32);
 
-// This way the menu isn't loaded, even if nothing but the home menu is present, which outside of the debug menu is considered an invalid state
-bool debug_menu = false;
+ams::os::Mutex g_last_menu_msg_lock(false);
+dmi::MenuMessage g_last_menu_msg = dmi::MenuMessage::Invalid;
 
-ams::os::Mutex g_last_menu_msg_lock;
-am::MenuMessage g_last_menu_msg = am::MenuMessage::Invalid;
+dmi::DaemonStatus CreateStatus() {
+    dmi::DaemonStatus status = {};
+    status.selected_user = selected_uid;
 
-am::DaemonStatus CreateStatus()
-{
-    am::DaemonStatus status = {};
-    memcpy(&status.selected_user, &selected_uid, sizeof(selected_uid));
-
-    cfg::TitleType tmptype = cfg::TitleType::Invalid;
-    if(am::ApplicationIsActive())
-    {
-        tmptype = cfg::TitleType::Installed;
-        if(app_opened_hb) tmptype = cfg::TitleType::Homebrew;
+    if(am::ApplicationIsActive()) {
+        if(app_opened_hb) {
+            // Homebrew
+            status.params = hbapplaunch_flag_temp;
+        }
+        else {
+            // Regular title
+            status.app_id = am::ApplicationGetId();
+        }
     }
-
-    if(tmptype == cfg::TitleType::Installed) status.app_id = am::ApplicationGetId();
-    else if(tmptype == cfg::TitleType::Homebrew) memcpy(&status.params, &hbapplaunch_flag_temp, sizeof(hbapplaunch_flag_temp));
 
     return status;
 }
 
-void HandleSleep()
-{
+void HandleSleep() {
     appletStartSleepSequence(true);
 }
 
-Result LaunchMenu(am::MenuStartMode stmode, am::DaemonStatus status)
-{
-    if(debug_menu) return 0;
-    return ecs::RegisterLaunchAsApplet(config.menu_program_id, (u32)stmode, "/ulaunch/bin/uMenu/", &status, sizeof(status));
+Result LaunchMenu(dmi::MenuStartMode stmode, dmi::DaemonStatus status) {
+    R_TRY(ecs::RegisterLaunchAsApplet(config.menu_program_id, (u32)stmode, "/ulaunch/bin/uMenu/", &status, sizeof(status)));
+    return ResultSuccess;
 }
 
-void HandleHomeButton()
-{
+void HandleHomeButton() {
     bool used_to_reopen_menu = false;
-    if(am::LibraryAppletIsActive() && !am::LibraryAppletIsMenu())
-    {
+    if(am::LibraryAppletIsActive() && !am::LibraryAppletIsMenu()) {
         am::LibraryAppletTerminate();
         auto status = CreateStatus();
-        UL_ASSERT(LaunchMenu(am::MenuStartMode::Menu, status));
+        UL_ASSERT(LaunchMenu(dmi::MenuStartMode::Menu, status));
         return;
     }
-    if(am::ApplicationIsActive())
-    {
-        if(am::ApplicationHasForeground())
-        {
+    if(am::ApplicationIsActive()) {
+        if(am::ApplicationHasForeground()) {
             am::HomeMenuSetForeground();
             auto status = CreateStatus();
-            UL_ASSERT(LaunchMenu(am::MenuStartMode::MenuApplicationSuspended, status));
+            UL_ASSERT(LaunchMenu(dmi::MenuStartMode::MenuApplicationSuspended, status));
             used_to_reopen_menu = true;
         }
     }
-    if(am::LibraryAppletIsMenu() && !used_to_reopen_menu)
-    {
-        std::scoped_lock _lock(g_last_menu_msg_lock);
-        g_last_menu_msg = am::MenuMessage::HomeRequest;
+    if(am::LibraryAppletIsMenu() && !used_to_reopen_menu) {
+        std::scoped_lock lk(g_last_menu_msg_lock);
+        g_last_menu_msg = dmi::MenuMessage::HomeRequest;
     }
 }
 
-void HandleGeneralChannel()
-{
+Result HandleGeneralChannel() {
     AppletStorage sams_st;
-    auto rc = appletPopFromGeneralChannel(&sams_st);
-    if(R_SUCCEEDED(rc))
-    {
-        os::SystemAppletMessage sams = {};
-        rc = appletStorageRead(&sams_st, 0, &sams, sizeof(sams));
+    R_TRY(appletPopFromGeneralChannel(&sams_st));
+    UL_ON_SCOPE_EXIT({
         appletStorageClose(&sams_st);
-        if(R_SUCCEEDED(rc))
-        {
-            if(sams.magic == os::SAMSMagic)
-            {
-                os::GeneralChannelMessage msg = (os::GeneralChannelMessage)sams.message;
-                switch(msg)
-                {
-                    case os::GeneralChannelMessage::HomeButton: // Usually this doesn't happen, HOME is detected by applet messages...?
-                    {
-                        HandleHomeButton();
-                        break;
-                    }
-                    case os::GeneralChannelMessage::Shutdown:
-                    {
-                        appletStartShutdownSequence();
-                        break;
-                    }
-                    case os::GeneralChannelMessage::Reboot:
-                    {
-                        appletStartRebootSequence();
-                        break;
-                    }
-                    case os::GeneralChannelMessage::Sleep:
-                    {
-                        HandleSleep();
-                        break;
-                    }
-                    default: // We don't have anything special to do for the rest
-                        break;
-                }
-            }
-        }
-    }
-}
-
-void UpdateOperationMode()
-{
-    // libnx, thank you so much for not exposing the actual code to get the mode via IPC ;)
-    // We're qlaunch, not using appletMainLoop, thus have to take care of this manually
-
-    u8 tmp_mode = 0;
-    UL_ASSERT(serviceDispatchOut(appletGetServiceSession_CommonStateGetter(), 5, tmp_mode));
-    console_mode = (AppletOperationMode)tmp_mode;
-}
-
-void HandleAppletMessage()
-{
-    u32 nmsg = 0;
-    auto rc = appletGetMessage(&nmsg);
-    if(R_SUCCEEDED(rc))
-    {
-        os::AppletMessage msg = (os::AppletMessage)nmsg;
-        switch(msg)
-        {
-            case os::AppletMessage::HomeButton:
-            {
+    });
+    os::SystemAppletMessage sams = {};
+    R_TRY(appletStorageRead(&sams_st, 0, &sams, sizeof(sams)));
+    if(sams.magic == os::SystemAppletMessage::Magic) {
+        auto msg = static_cast<os::GeneralChannelMessage>(sams.general_channel_message);
+        switch(msg) {
+            // Usually this doesn't happen, HOME is detected by applet messages...?
+            case os::GeneralChannelMessage::HomeButton: {
                 HandleHomeButton();
                 break;
             }
-            case os::AppletMessage::SdCardOut:
-            {
-                // SD card out? Cya!
+            case os::GeneralChannelMessage::Shutdown: {
                 appletStartShutdownSequence();
                 break;
             }
-            case os::AppletMessage::PowerButton:
-            {
+            case os::GeneralChannelMessage::Reboot: {
+                appletStartRebootSequence();
+                break;
+            }
+            case os::GeneralChannelMessage::Sleep: {
                 HandleSleep();
                 break;
             }
-            case os::AppletMessage::ChangeOperationMode:
-            {
-                UpdateOperationMode();
-                break;
-            }
+            // We don't have anything special to do for the rest
             default:
                 break;
         }
     }
-    svcSleepThread(100'000'000L);
+    return ResultSuccess;
+}
+
+Result UpdateOperationMode() {
+    // Thank you so much libnx for not exposing the actual call to get the mode via IPC :P
+    // We're qlaunch, not using appletMainLoop, thus we have to take care of this manually...
+
+    u8 tmp_mode = 0;
+    R_TRY(serviceDispatchOut(appletGetServiceSession_CommonStateGetter(), 5, tmp_mode));
+    console_mode = static_cast<AppletOperationMode>(tmp_mode);
+    return ResultSuccess;
+}
+
+Result HandleAppletMessage()
+{
+    u32 raw_msg = 0;
+    R_TRY(appletGetMessage(&raw_msg));
+    auto msg = static_cast<os::AppletMessage>(raw_msg);
+    switch(msg) {
+        case os::AppletMessage::HomeButton: {
+            HandleHomeButton();
+            break;
+        }
+        case os::AppletMessage::SdCardOut: {
+            // Power off, since uMenu's UI relies on the SD card, so trying to use uMenu without the SD is quite risky...
+            appletStartShutdownSequence();
+            break;
+        }
+        case os::AppletMessage::PowerButton: {
+            HandleSleep();
+            break;
+        }
+        case os::AppletMessage::ChangeOperationMode: {
+            UpdateOperationMode();
+            break;
+        }
+        default:
+            break;
+    }
+    return ResultSuccess;
 }
 
 void HandleMenuMessage()
 {
-    if(am::LibraryAppletIsMenu())
-    {
-        am::DaemonCommandReader reader;
-        if(reader)
-        {
-            switch(reader.GetMessage())
-            {
-                case am::DaemonMessage::SetSelectedUser:
-                {
+    if(am::LibraryAppletIsMenu()) {
+        dmi::DaemonMessageReader reader;
+        if(reader) {
+            switch(reader.GetValue()) {
+                case dmi::DaemonMessage::SetSelectedUser: {
                     selected_uid = reader.Read<AccountUid>();
                     reader.FinishRead();
 
                     break;
                 }
-                case am::DaemonMessage::LaunchApplication:
-                {
+                case dmi::DaemonMessage::LaunchApplication: {
                     auto app_id = reader.Read<u64>();
                     reader.FinishRead();
 
-                    if(am::ApplicationIsActive())
-                    {
-                        am::DaemonCommandResultWriter res(RES_VALUE(Daemon, ApplicationActive));
-                        res.FinishWrite();
+                    if(am::ApplicationIsActive()) {
+                        dmi::DaemonResultWriter rc(RES_VALUE(Daemon, ApplicationActive));
                     }
-                    else if(!accountUidIsValid(&selected_uid))
-                    {
-                        am::DaemonCommandResultWriter res(RES_VALUE(Daemon, InvalidSelectedUser));
-                        res.FinishWrite();
+                    else if(!accountUidIsValid(&selected_uid)) {
+                        dmi::DaemonResultWriter rc(RES_VALUE(Daemon, InvalidSelectedUser));
                     }
-                    else if(titlelaunch_flag > 0)
-                    {
-                        am::DaemonCommandResultWriter res(RES_VALUE(Daemon, AlreadyQueued));
-                        res.FinishWrite();
+                    else if(titlelaunch_flag > 0) {
+                        dmi::DaemonResultWriter rc(RES_VALUE(Daemon, AlreadyQueued));
                     }
-                    else
-                    {
+                    else {
                         titlelaunch_flag = app_id;
-                        am::DaemonCommandResultWriter res(0);
-                        res.FinishWrite();
+                        dmi::DaemonResultWriter rc(ResultSuccess);
                     }
                     break;
                 }
-                case am::DaemonMessage::ResumeApplication:
-                {
+                case dmi::DaemonMessage::ResumeApplication: {
                     reader.FinishRead();
 
-                    if(!am::ApplicationIsActive())
-                    {
-                        am::DaemonCommandResultWriter res(RES_VALUE(Daemon, ApplicationNotActive));
-                        res.FinishWrite();
+                    if(!am::ApplicationIsActive()) {
+                        dmi::DaemonResultWriter rc(RES_VALUE(Daemon, ApplicationNotActive));
                     }
-                    else
-                    {
+                    else {
                         am::ApplicationSetForeground();
-                        am::DaemonCommandResultWriter res(0);
-                        res.FinishWrite();
+                        dmi::DaemonResultWriter rc(ResultSuccess);
                     }
                     break;
                 }
-                case am::DaemonMessage::TerminateApplication:
-                {
+                case dmi::DaemonMessage::TerminateApplication: {
                     reader.FinishRead();
 
                     am::ApplicationTerminate();
                     app_opened_hb = false;
-
                     break;
                 }
-                case am::DaemonMessage::LaunchHomebrewLibraryApplet:
-                {
+                case dmi::DaemonMessage::LaunchHomebrewLibraryApplet: {
                     hblaunch_flag = reader.Read<hb::HbTargetParams>();
                     reader.FinishRead();
 
                     break;
                 }
-                case am::DaemonMessage::LaunchHomebrewApplication:
-                {
+                case dmi::DaemonMessage::LaunchHomebrewApplication: {
                     auto app_id = reader.Read<u64>();
                     auto ipt = reader.Read<hb::HbTargetParams>();
                     reader.FinishRead();
 
-                    if(am::ApplicationIsActive())
-                    {
-                        am::DaemonCommandResultWriter res(RES_VALUE(Daemon, ApplicationActive));
-                        res.FinishWrite();
+                    if(am::ApplicationIsActive()) {
+                        dmi::DaemonResultWriter rc(RES_VALUE(Daemon, ApplicationActive));
                     }
-                    else if(!accountUidIsValid(&selected_uid))
-                    {
-                        am::DaemonCommandResultWriter res(RES_VALUE(Daemon, InvalidSelectedUser));
-                        res.FinishWrite();
+                    else if(!accountUidIsValid(&selected_uid)) {
+                        dmi::DaemonResultWriter rc(RES_VALUE(Daemon, InvalidSelectedUser));
                     }
-                    else if(titlelaunch_flag > 0)
-                    {
-                        am::DaemonCommandResultWriter res(RES_VALUE(Daemon, AlreadyQueued));
-                        res.FinishWrite();
+                    else if(titlelaunch_flag > 0) {
+                        dmi::DaemonResultWriter rc(RES_VALUE(Daemon, AlreadyQueued));
                     }
-                    else
-                    {
-                        memcpy(&hbapplaunch_flag, &ipt, sizeof(ipt));
-                        memcpy(&hbapplaunch_flag_temp, &ipt, sizeof(ipt));
+                    else {
+                        hbapplaunch_flag = ipt;
+                        hbapplaunch_flag_temp = ipt;
                         titlelaunch_flag = app_id;
-                        am::DaemonCommandResultWriter res(0);
-                        res.FinishWrite();
+                        dmi::DaemonResultWriter rc(ResultSuccess);
                     }
                     break;
                 }
-                case am::DaemonMessage::OpenWebPage:
-                {
+                case dmi::DaemonMessage::OpenWebPage: {
                     webapplet_flag = reader.Read<WebCommonConfig>();
                     reader.FinishRead();
 
                     break;
                 }
-                case am::DaemonMessage::GetSelectedUser:
-                {
+                case dmi::DaemonMessage::GetSelectedUser: {
                     reader.FinishRead();
 
-                    am::DaemonCommandResultWriter res(0);
-                    res.Write<AccountUid>(selected_uid);
-                    res.FinishWrite();
-                    
+                    dmi::DaemonResultWriter rc(ResultSuccess);
+                    rc.Write<AccountUid>(selected_uid);
                     break;
                 }
-                case am::DaemonMessage::OpenAlbum:
-                {
+                case dmi::DaemonMessage::OpenAlbum:{
                     reader.FinishRead();
+
                     album_flag = true;
-
                     break;
                 }
-                case am::DaemonMessage::RestartMenu:
-                {
+                case dmi::DaemonMessage::RestartMenu: {
                     reader.FinishRead();
-                    menu_restart_flag = true;
 
+                    menu_restart_flag = true;
                     break;
                 }
                 default:
@@ -360,10 +300,9 @@ void HandleMenuMessage()
     }
 }
 
-namespace
-{
-    struct ServerOptions
-    {
+namespace {
+
+    struct ServerOptions {
         static const size_t PointerBufferSize = 0x400;
         static const size_t MaxDomains = 0x40;
         static const size_t MaxDomainObjects = 0x40;
@@ -380,10 +319,10 @@ namespace
 
     
     ams::sf::hipc::ServerManager<NumServers, ServerOptions, MaxSessions> daemon_ipc_manager;
+
 }
 
-static inline Result capsscCommand1204(void *buf, size_t buf_size, u64 *out_jpeg_size)
-{
+static inline Result capsscCommand1204(void *buf, size_t buf_size, u64 *out_jpeg_size) {
     struct {
         u32 a;
         u64 b;
@@ -394,19 +333,16 @@ static inline Result capsscCommand1204(void *buf, size_t buf_size, u64 *out_jpeg
     );
 }
 
-namespace impl
-{
-    void IPCManagerThread(void *arg)
-    {
+namespace impl {
+
+    void IPCManagerThread(void *arg) {
         UL_ASSERT(daemon_ipc_manager.RegisterServer<ipc::IPrivateService>(PrivateServiceName, MaxPrivateSessions).GetValue());
         UL_ASSERT(daemon_ipc_manager.RegisterServer<ipc::IPublicService>(PublicServiceName, MaxPublicSessions).GetValue());
         daemon_ipc_manager.LoopProcess();
     }
 
-    void USBViewerRGBAThread(void *arg)
-    {
-        while(true)
-        {
+    void USBViewerRGBAThread(void *arg) {
+        while(true) {
             bool tmp_flag;
             appletGetLastForegroundCaptureImageEx(usb_buf_read, RawRGBAScreenBufferSize, &tmp_flag);
             appletUpdateLastForegroundCaptureImage();
@@ -415,10 +351,8 @@ namespace impl
         }
     }
 
-    void USBViewerJPEGThread(void *arg)
-    {
-        while(true)
-        {
+    void USBViewerJPEGThread(void *arg) {
+        while(true) {
             u64 tmp_size;
             capsscCommand1204(usb_buf_read, RawRGBAScreenBufferSize, &tmp_size);
             usbCommsWrite(usb_buf, USBPacketSize);
@@ -426,53 +360,46 @@ namespace impl
         }
     }
 
-    void PrepareUSBViewer()
-    {
-        usb_buf = new (std::align_val_t(0x1000)) u8[USBPacketSize]();
+    void PrepareUSBViewer() {
+        usb_buf = new (std::align_val_t(0x1000), std::nothrow) u8[USBPacketSize]();
         usb_buf_read = usb_buf + sizeof(u32);
         u64 tmp_size;
-        auto rc = capsscCommand1204(usb_buf_read, RawRGBAScreenBufferSize, &tmp_size);
-        if(R_SUCCEEDED(rc)) usb_mode = USBMode::JPEG;
-        else
-        {
+        if(R_SUCCEEDED(capsscCommand1204(usb_buf_read, RawRGBAScreenBufferSize, &tmp_size))) {
+            usb_mode = USBMode::JPEG;
+        }
+        else {
             usb_mode = USBMode::RawRGBA;
             capsscExit();
         }
-        *(u32*)usb_buf = static_cast<u32>(usb_mode);
+        *reinterpret_cast<u32*>(usb_buf) = static_cast<u32>(usb_mode);
     }
 
-    void LoopUpdate()
-    {
+    void LoopUpdate() {
         HandleGeneralChannel();
         HandleAppletMessage();
         HandleMenuMessage();
 
         bool sth_done = false;
-        if(webapplet_flag.version > 0) // A valid version in this config is always >= 0x20000
-        {
-            if(!am::LibraryAppletIsActive())
-            {
+        // A valid version in this config is always >= 0x20000
+        if(webapplet_flag.version > 0) {
+            if(!am::LibraryAppletIsActive()) {
                 UL_ASSERT(am::WebAppletStart(&webapplet_flag));
 
                 sth_done = true;
-                memset(&webapplet_flag, 0, sizeof(webapplet_flag));
+                webapplet_flag = {};
             }
         }
-        if(menu_restart_flag)
-        {
-            if(!am::LibraryAppletIsActive())
-            {
+        if(menu_restart_flag) {
+            if(!am::LibraryAppletIsActive()) {
                 auto status = CreateStatus();
-                UL_ASSERT(LaunchMenu(am::MenuStartMode::StartupScreen, status))
+                UL_ASSERT(LaunchMenu(dmi::MenuStartMode::StartupScreen, status));
 
                 sth_done = true;
                 menu_restart_flag = false;
             }
         }
-        if(album_flag)
-        {
-            if(!am::LibraryAppletIsActive())
-            {
+        if(album_flag) {
+            if(!am::LibraryAppletIsActive()) {
                 u8 albumflag = 2;
                 UL_ASSERT(am::LibraryAppletStart(AppletId_photoViewer, 0x10000, &albumflag, sizeof(albumflag)));
 
@@ -480,12 +407,9 @@ namespace impl
                 album_flag = false;
             }
         }
-        if(titlelaunch_flag > 0)
-        {
-            if(!am::LibraryAppletIsActive())
-            {
-                if(strlen(hbapplaunch_flag.nro_path))
-                {
+        if(titlelaunch_flag > 0) {
+            if(!am::LibraryAppletIsActive()) {
+                if(strlen(hbapplaunch_flag.nro_path)) {
                     auto params = hb::HbTargetParams::Create(hbapplaunch_flag.nro_path, hbapplaunch_flag.nro_argv, false);
                     UL_ASSERT(ecs::RegisterLaunchAsApplication(titlelaunch_flag, "/ulaunch/bin/uHbTarget/app/", &params, sizeof(params), selected_uid));
                     sth_done = true;
@@ -493,81 +417,77 @@ namespace impl
                     titlelaunch_flag = 0;
                     hbapplaunch_flag.nro_path[0] = '\0';
                 }
-                else
-                {
+                else {
                     UL_ASSERT(am::ApplicationStart(titlelaunch_flag, false, selected_uid));
                     sth_done = true;
                     titlelaunch_flag = 0;
                 }
             }
         }
-        if(strlen(hblaunch_flag.nro_path))
-        {
-            if(!am::LibraryAppletIsActive())
-            {
+        if(strlen(hblaunch_flag.nro_path)) {
+            if(!am::LibraryAppletIsActive()) {
                 auto params = hb::HbTargetParams::Create(hblaunch_flag.nro_path, hblaunch_flag.nro_argv, false);
                 UL_ASSERT(ecs::RegisterLaunchAsApplet(config.homebrew_applet_program_id, 0, "/ulaunch/bin/uHbTarget/applet/", &params, sizeof(params)));
                 sth_done = true;
                 hblaunch_flag.nro_path[0] = '\0';
             }
         }
-        if(!am::LibraryAppletIsActive())
-        {
+        if(!am::LibraryAppletIsActive()) {
             auto cur_id = am::LibraryAppletGetId();
-            if((cur_id == AppletId_web) || (cur_id == AppletId_photoViewer) || (cur_id == config.homebrew_applet_program_id))
-            {
+            if((cur_id == AppletId_web) || (cur_id == AppletId_photoViewer) || (cur_id == config.homebrew_applet_program_id)) {
                 auto status = CreateStatus();
-                UL_ASSERT(LaunchMenu(am::MenuStartMode::Menu, status));
+                UL_ASSERT(LaunchMenu(dmi::MenuStartMode::Menu, status));
                 sth_done = true;
             }
         }
-        if(!sth_done && !debug_menu)
-        {
+        if(!sth_done) {
             // If nothing was done, but nothing is active... An application or applet might have crashed, terminated, failed to launch...
             // No matter what is it, we reopen Menu in launch-error mode.
-            if(!am::ApplicationIsActive() && !am::LibraryAppletIsActive())
-            {
+            if(!am::ApplicationIsActive() && !am::LibraryAppletIsActive()) {
                 auto status = CreateStatus();
-                UL_ASSERT(LaunchMenu(am::MenuStartMode::MenuLaunchFailure, status));
+                UL_ASSERT(LaunchMenu(dmi::MenuStartMode::MenuLaunchFailure, status));
             }
         }
+        svcSleepThread(10'000'000);
     }
 
-    Result LaunchIPCManagerThread()
-    {
+    Result LaunchIPCManagerThread() {
         R_TRY(threadCreate(&ipc_thr, &IPCManagerThread, nullptr, nullptr, 0x4000, 0x2b, -2));
         R_TRY(threadStart(&ipc_thr));
-        return 0;
+        return ResultSuccess;
     }
 
-    Result LaunchUSBViewerThread()
-    {
-        switch(usb_mode)
-        {
-            case USBMode::RawRGBA:
+    Result LaunchUSBViewerThread() {
+        switch(usb_mode) {
+            case USBMode::RawRGBA: {
                 R_TRY(threadCreate(&usb_thr, &USBViewerRGBAThread, nullptr, nullptr, 0x4000, 0x2b, -2));
                 break;
-            case USBMode::JPEG:
+            }
+            case USBMode::JPEG: {
                 R_TRY(threadCreate(&usb_thr, &USBViewerJPEGThread, nullptr, nullptr, 0x4000, 0x2b, -2));
                 break;
+            }
             default:
-                return 0;
+                return ResultSuccess;
         }
         R_TRY(threadStart(&usb_thr));
-        return 0;
+        return ResultSuccess;
     }
 
-    void Initialize()
-    {
-        ams::hos::SetVersionForLibnx();
-        
-        UL_ASSERT(nsInitialize())
-        UL_ASSERT(pminfoInitialize())
-        UL_ASSERT(appletLoadAndApplyIdlePolicySettings())
+    void Initialize() {
+        UL_ASSERT(setsysInitialize());
+        SetSysFirmwareVersion fwver = {};
+        UL_ASSERT(setsysGetFirmwareVersion(&fwver));
+        hosversionSet(MAKEHOSVERSION(fwver.major, fwver.minor, fwver.micro));
+        setsysExit();
+
+        UL_ASSERT(nsInitialize());
+        UL_ASSERT(pminfoInitialize());
+        UL_ASSERT(appletLoadAndApplyIdlePolicySettings());
         UpdateOperationMode();
-        UL_ASSERT(ecs::Initialize())
+        UL_ASSERT(ecs::Initialize());
         
-        UL_ASSERT(db::Mount())
+        UL_ASSERT(db::Mount());
 
         // Remove old password files
         fs::DeleteDirectory(UL_BASE_DB_DIR "/user");
@@ -587,76 +507,23 @@ namespace impl
         config = cfg::EnsureConfig();
         am::LibraryAppletSetMenuAppletId(am::LibraryAppletGetAppletIdForProgramId(config.menu_program_id));
 
-        if(config.viewer_usb_enabled)
-        {
+        if(config.viewer_usb_enabled) {
             UL_ASSERT(usbCommsInitialize());
             UL_ASSERT(capsscInitialize());
             PrepareUSBViewer();
             UL_ASSERT(LaunchUSBViewerThread());
         }
 
-        UL_ASSERT(LaunchIPCManagerThread())
-
-        #if UL_DEV
-            // Debug testing mode
-            debug_menu = true;
-
-            consoleInit(nullptr);
-            CONSOLE_FMT("Welcome to uDaemon -> debug mode menu")
-            CONSOLE_FMT("")
-            CONSOLE_FMT("(A) -> Dump system save data to sd:/ulaunch/save_dump")
-            CONSOLE_FMT("(B) -> Delete uLaunch's saved content in save data (official HOME menu's content won't be touched)")
-            CONSOLE_FMT("(X) -> Reboot system")
-            CONSOLE_FMT("(Y) -> Continue to uMenu (launch normally)")
-            CONSOLE_FMT("")
-
-            while(true)
-            {
-                hidScanInput();
-                auto k = hidKeysDown(CONTROLLER_P1_AUTO);
-                if(k & KEY_A)
-                {
-                    db::Mount();
-                    fs::CopyDirectory(UL_DB_MOUNT_PATH, UL_BASE_SD_DIR "/save_dump");
-                    db::Unmount();
-                    CONSOLE_FMT(" - Dump done.")
-                }
-                else if(k & KEY_B)
-                {
-                    db::Mount();
-                    fs::DeleteDirectory(UL_BASE_DB_DIR);
-                    db::Commit();
-                    fs::CreateDirectory(UL_BASE_DB_DIR);
-                    db::Commit();
-                    db::Unmount();
-                    CONSOLE_FMT(" - Cleanup done.")
-                }
-                else if(k & KEY_X)
-                {
-                    CONSOLE_FMT(" - Rebooting...")
-                    svcSleepThread(200'000'000);
-                    appletStartRebootSequence();
-                }
-                else if(k & KEY_Y)
-                {
-                    CONSOLE_FMT(" - Proceeding with launch...")
-                    svcSleepThread(100'000'000);
-                    break;
-                }
-                LoopUpdate();
-                svcSleepThread(10'000'000);
-            }
-            debug_menu = false;
-        #endif
+        UL_ASSERT(LaunchIPCManagerThread());
     }
 
-    void Exit()
-    {
-        if(config.viewer_usb_enabled)
-        {
+    void Exit() {
+        if(config.viewer_usb_enabled) {
             usbCommsExit();
-            if(usb_mode == USBMode::JPEG) capsscExit();
-            operator delete[](usb_buf, std::align_val_t(0x1000));
+            if(usb_mode == USBMode::JPEG) {
+                capsscExit();
+            }
+            operator delete[](usb_buf, std::align_val_t(0x1000), std::nothrow);
         }
 
         nsExit();
@@ -664,26 +531,25 @@ namespace impl
         ecs::Exit();
         db::Unmount();
     }
+
 }
 
-// Daemon handles basic qlaunch functionality and serves as a back-end for uLaunch, communicating with Menu front-end when neccessary.
-int main()
-{
+// uDaemon handles basic qlaunch functionality and serves as a back-end for uLaunch, communicating with uMenu front-end when neccessary.
+
+int main() {
     impl::Initialize();
 
     // Cache everything on startup
     cfg::CacheEverything();
 
     auto status = CreateStatus();
-    UL_ASSERT(LaunchMenu(am::MenuStartMode::StartupScreen, status))
+    UL_ASSERT(LaunchMenu(dmi::MenuStartMode::StartupScreen, status));
 
-    while(true)
-    {
+    // Loop forever - qlaunch should NEVER terminate
+    while(true) {
         impl::LoopUpdate();
-        svcSleepThread(10'000'000);
     }
 
     impl::Exit();
-
     return 0;
 }

@@ -1,7 +1,8 @@
 
 #pragma once
 
-namespace am
-{
+namespace am {
+
     void RegisterLibAppletHomeButtonDetection();
+
 }

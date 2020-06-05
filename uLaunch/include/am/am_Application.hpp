@@ -3,20 +3,28 @@
 #include <ul_Include.hpp>
 #include <os/os_Titles.hpp>
 
-namespace am
-{
-    struct ApplicationSelectedUserArgument
-    {
+namespace am {
+
+    struct ApplicationSelectedUserArgument {
+
+        static constexpr u32 SelectedUserMagic = 0xC79497CA;
+
         u32 magic;
-        u8 one;
+        u8 unk_1;
         u8 pad[3];
         AccountUid uid;
-        u8 unk2[0x400 - 0x18];
+        u8 unk2[0x3E8];
+
+        static inline constexpr ApplicationSelectedUserArgument Create(AccountUid uid) {
+            ApplicationSelectedUserArgument arg = {};
+            arg.magic = SelectedUserMagic;
+            arg.unk_1 = 1;
+            arg.uid = uid;
+            return arg;
+        }
+
     };
-
-    static_assert(sizeof(ApplicationSelectedUserArgument) == 0x400, "ApplicationSelectedUserArgument must be 0x400!");
-
-    static constexpr u32 SelectedUserMagic = 0xC79497CA;
+    static_assert(sizeof(ApplicationSelectedUserArgument) == 0x400, "ApplicationSelectedUserArgument");
 
     bool ApplicationIsActive();
     void ApplicationTerminate();
@@ -27,4 +35,5 @@ namespace am
     u64 ApplicationGetId();
 
     bool ApplicationNeedsUser(u64 app_id);
+
 }

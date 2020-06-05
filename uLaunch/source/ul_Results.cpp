@@ -14,16 +14,14 @@
 
 #define RES_BLOCK_END };
 
-namespace res
-{
-    struct ResultImpl
-    {
+namespace res {
+
+    struct ResultImpl {
         u32 res_desc;
         std::string res_name;
     };
 
-    struct ResultModuleImpl
-    {
+    struct ResultModuleImpl {
         u32 mod_val;
         std::string mod_name;
         std::vector<ResultImpl> results;
@@ -49,16 +47,11 @@ namespace res
 
     RES_BLOCK_END
 
-    Result GetResultByModuleAndName(std::string mod, std::string name)
-    {
-        for(auto &module: g_result_impl_table)
-        {
-            if(module.mod_name == mod)
-            {
-                for(auto &res: module.results)
-                { 
-                    if(res.res_name == name)
-                    {
+    Result GetResultByModuleAndName(std::string mod, std::string name) {
+        for(auto &module: g_result_impl_table) {
+            if(module.mod_name == mod) {
+                for(auto &res: module.results) { 
+                    if(res.res_name == name) {
                         return MAKERESULT(Module, module.mod_val + res.res_desc);
                     }
                 }
@@ -67,16 +60,15 @@ namespace res
         return 0;
     }
 
-    std::string GetDescriptionByResult(Result rc)
-    {
-        for(auto &module: g_result_impl_table)
-        {
-            for(auto &res: module.results)
-            { 
-                auto resval = MAKERESULT(Module, module.mod_val + res.res_desc);
-                if(resval == rc) return module.mod_name + " - " + res.res_name;
+    std::string GetDescriptionByResult(Result rc) {
+        for(auto &module: g_result_impl_table) {
+            for(auto &res: module.results) {
+                if(rc == MAKERESULT(Module, module.mod_val + res.res_desc)) {
+                    return module.mod_name + " - " + res.res_name;
+                }
             }
         }
         return "Unknown result";
     }
+
 }

@@ -1,6 +1,6 @@
 [submodule "Plutonium"]
 	path = Plutonium
 	url = https://github.com/XorTroll/Plutonium
-[submodule "libstratosphere"]
-	path = libstratosphere
-	url = https://github.com/Atmosphere-NX/libstratosphere
+[submodule "Atmosphere-libs"]
+	path = Atmosphere-libs
+	url = https://github.com/Atmosphere-NX/Atmosphere-libs

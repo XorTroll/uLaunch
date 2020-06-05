@@ -92,13 +92,13 @@ Since launching this title should be impossible, it might involve ban risk. uLau
 
 You will need devkitPro, devkitA64, libnx and all SDL2 libraries for switch development.
 
-Clone (**recursively!**) this repo (uses libstratosphere and Plutonium submodules) and hit `make` in root. It should build everything and generate a `titles` folder ready for use inside `SdOut`.
+Clone (**recursively!**) this repo (uses Atmosphere-libs and Plutonium submodules) and hit `make` in root. It should build everything and generate a `titles` folder ready for use inside `SdOut`.
 
-Using `make dev` instead of regular `make` will compile uLaunch in debug mode, which makes the backend process display a debug console and a special menu before usual boot to perform special tasks. This is only meant to be used by developers.
+In order to only build a certain subproject, you can run `make` plus the subproject's name (`make daemon`, `make hbtarget` or `make menu`).
 
 ## Credits
 
-- SciresM for [libstratosphere](https://github.com/Atmosphere-NX/libstratosphere).
+- SciresM for [Atmosphere-libs](https://github.com/Atmosphere-NX/Atmosphere-libs).
 
 - Switchbrew team for libnx and [nx-hbloader](https://github.com/switchbrew/nx-hbloader), the base of *QHbTarget processes (they're just simple wrappers of hbloader in the end)
 

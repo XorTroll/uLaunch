@@ -1,62 +1,55 @@
 #include <net/net_Service.hpp>
-#include <arpa/inet.h>
-#include <sys/socket.h>
 #include <unistd.h>
 
-namespace net
-{
-    Result Initialize()
-    {
-        auto rc = nifmInitialize(NifmServiceType_System);
-        if(R_SUCCEEDED(rc)) rc = wlaninfInitialize();
-        return rc;
+namespace net {
+
+    Result Initialize() {
+        R_TRY(nifmInitialize(NifmServiceType_System));
+        R_TRY(wlaninfInitialize());
+        return ResultSuccess;
     }
 
-    void Finalize()
-    {
+    void Finalize() {
         wlaninfExit();
         nifmExit();
     }
 
-    bool HasConnection()
-    {
-        NifmInternetConnectionStatus status = NifmInternetConnectionStatus_ConnectingUnknown1;
-        nifmGetInternetConnectionStatus(NULL, NULL, &status);
-        return (status == NifmInternetConnectionStatus_Connected);
+    bool HasConnection() {
+        auto status = NifmInternetConnectionStatus_ConnectingUnknown1;
+        nifmGetInternetConnectionStatus(nullptr, nullptr, &status);
+        return status == NifmInternetConnectionStatus_Connected;
     }
 
-    Result GetCurrentNetworkProfile(NetworkProfileData *data)
-    {
+    Result GetCurrentNetworkProfile(NetworkProfileData *data) {
         return serviceDispatch(nifmGetServiceSession_GeneralService(), 5,
             .buffer_attrs = { SfBufferAttr_FixedSize | SfBufferAttr_Out | SfBufferAttr_HipcPointer },
             .buffers = { { data, sizeof(NetworkProfileData) } }
         );
     }
 
-    Result GetMACAddress(u64 *out)
-    {
+    Result GetMACAddress(u64 *out) {
         return serviceDispatchOut(wlaninfGetServiceSession(), 2, *out);
     }
 
-    std::string FormatMACAddress(u64 addr)
-    {
+    std::string FormatMACAddress(u64 addr) {
         std::stringstream strm;
         strm << std::hex << std::uppercase << addr;
         std::string str;
         auto sstrm = strm.str();
-        for(u32 i = 1; i < 7; i++)
-        {
+        for(u32 i = 1; i < 7; i++) {
             str += sstrm.substr((6 - i) * 2, 2);
-            if(i < 6) str += ":";
+            if(i < 6) {
+                str += ":";
+            }
         }
         return str;
     }
 
-    std::string GetConsoleIPAddress()
-    {
+    std::string GetConsoleIPAddress() {
         char ipaddr[0x20] = {0};
         auto ip = gethostid();
-        inet_ntop(AF_INET, &ip, ipaddr, sizeof(ipaddr));
+        sprintf(ipaddr, "%lu.%lu.%lu.%lu", (ip & 0xff000000) >> 24, (ip & 0x00ff0000) >> 16, (ip & 0x0000ff00) >> 8, (ip & 0x000000ff));
         return ipaddr;
     }
+
 }

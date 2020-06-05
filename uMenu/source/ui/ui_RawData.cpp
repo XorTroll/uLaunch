@@ -1,91 +1,67 @@
 #include <ui/ui_RawData.hpp>
 
-namespace ui
-{
-    RawData::RawData(s32 X, s32 Y, void *raw, s32 Width, s32 Height, u32 PixNum)
-    {
-        this->x = X;
-        this->y = Y;
-        this->w = Width;
-        this->h = Height;
-        this->pitch = Width * PixNum;
-        this->ptr = raw;
-        this->falpha = 255;
-        if(raw != nullptr)
-        {
-            this->ntex = SDL_CreateTexture(pu::ui::render::GetMainRenderer(), SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING, Width, Height);
-            if(this->ntex != nullptr)
-            {
-                SDL_UpdateTexture(this->ntex, nullptr, raw, this->pitch);
+namespace ui {
+
+    RawData::RawData(s32 x, s32 y, void *raw, s32 w, s32 h, u32 pix_num) : x(x), y(y), w(w), h(h), falpha(0xFF), ptr(raw), pitch(w * pix_num) {
+        if(this->ptr != nullptr) {
+            this->ntex = SDL_CreateTexture(pu::ui::render::GetMainRenderer(), SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING, this->w, this->h);
+            if(this->ntex != nullptr) {
+                SDL_UpdateTexture(this->ntex, nullptr, this->ptr, this->pitch);
             }
         }
     }
 
-    RawData::~RawData()
-    {
-        if(this->ntex != nullptr)
-        {
+    RawData::~RawData() {
+        if(this->ntex != nullptr) {
             pu::ui::render::DeleteTexture(this->ntex);
             this->ntex = nullptr;
         }
     }
 
-    s32 RawData::GetX()
-    {
+    s32 RawData::GetX() {
         return this->x;
     }
 
-    void RawData::SetX(s32 X)
-    {
-        this->x = X;
+    void RawData::SetX(s32 x) {
+        this->x = x;
     }
 
-    s32 RawData::GetY()
-    {
+    s32 RawData::GetY() {
         return this->y;
     }
 
-    void RawData::SetY(s32 Y)
-    {
-        this->y = Y;
+    void RawData::SetY(s32 y) {
+        this->y = y;
     }
 
-    s32 RawData::GetWidth()
-    {
+    s32 RawData::GetWidth() {
         return this->w;
     }
 
-    void RawData::SetWidth(s32 Width)
-    {
-        this->w = Width;
+    void RawData::SetWidth(s32 w) {
+        this->w = w;
     }
 
-    s32 RawData::GetHeight()
-    {
+    s32 RawData::GetHeight() {
         return this->h;
     }
 
-    void RawData::SetHeight(s32 Height)
-    {
-        this->h = Height;
+    void RawData::SetHeight(s32 h) {
+        this->h = h;
     }
 
-    void RawData::SetAlphaFactor(u8 Factor)
-    {
-        this->falpha = Factor;
+    void RawData::SetAlphaFactor(u8 factor) {
+        this->falpha = factor;
     }
 
-    void RawData::OnRender(pu::ui::render::Renderer::Ref &Drawer, s32 X, s32 Y)
-    {
-        if(this->ntex != nullptr)
-        {
-            Drawer->SetBaseRenderAlpha(this->falpha);
-            Drawer->RenderTexture(this->ntex, X, Y, { -1, this->w, this->h, -1 });
-            Drawer->UnsetBaseRenderAlpha();
+    void RawData::OnRender(pu::ui::render::Renderer::Ref &drawer, s32 x, s32 y) {
+        if(this->ntex != nullptr) {
+            drawer->SetBaseRenderAlpha(this->falpha);
+            drawer->RenderTexture(this->ntex, x, y, { -1, this->w, this->h, -1 });
+            drawer->UnsetBaseRenderAlpha();
         }
     }
 
-    void RawData::OnInput(u64 Down, u64 Up, u64 Held, pu::ui::Touch Pos)
-    {
-    }
+    void RawData::OnInput(u64 down, u64 up, u64 held, pu::ui::Touch touch_pos) {}
+
 }

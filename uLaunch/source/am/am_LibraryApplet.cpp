@@ -1,4 +1,5 @@
 #include <am/am_LibraryApplet.hpp>
+#include <map>
 
 namespace am
 {
@@ -6,8 +7,7 @@ namespace am
     static AppletId g_menu_applet_id = InvalidAppletId;
     static AppletId g_last_applet_id = InvalidAppletId;
 
-    static std::map<u64, AppletId> g_applet_id_table =
-    {
+    static std::map<u64, AppletId> g_applet_id_table = {
         { 0x0100000000001001, AppletId_auth },
         { 0x0100000000001002, AppletId_cabinet },
         { 0x0100000000001003, AppletId_controller },
@@ -27,69 +27,62 @@ namespace am
         { 0x0100000000001013, AppletId_myPage }
     };
 
-    bool LibraryAppletIsActive()
-    {
-        if(g_applet_holder.StateChangedEvent.revent == INVALID_HANDLE) return false;
-        if(!serviceIsActive(&g_applet_holder.s)) return false;
+    bool LibraryAppletIsActive() {
+        if(g_applet_holder.StateChangedEvent.revent == INVALID_HANDLE) {
+            return false;
+        }
+        if(!serviceIsActive(&g_applet_holder.s)) {
+            return false;
+        }
         return !appletHolderCheckFinished(&g_applet_holder);
     }
 
-    void LibraryAppletSetMenuAppletId(AppletId id)
-    {
+    void LibraryAppletSetMenuAppletId(AppletId id) {
         g_menu_applet_id = id;
     }
 
-    AppletId LibraryAppletGetMenuAppletId()
-    {
+    AppletId LibraryAppletGetMenuAppletId() {
         return g_menu_applet_id;
     }
 
-    bool LibraryAppletIsMenu()
-    {
-        return (LibraryAppletIsActive() && (g_menu_applet_id != InvalidAppletId) && (LibraryAppletGetId() == g_menu_applet_id));
+    bool LibraryAppletIsMenu() {
+        return LibraryAppletIsActive() && (g_menu_applet_id != InvalidAppletId) && (LibraryAppletGetId() == g_menu_applet_id);
     }
 
-    void LibraryAppletTerminate()
-    {
+    void LibraryAppletTerminate() {
         // Give it 15 seconds
         appletHolderRequestExitOrTerminate(&g_applet_holder, 15'000'000'000ul);
     }
 
-    Result LibraryAppletStart(AppletId id, u32 la_version, void *in_data, size_t in_size)
-    {
-        if(LibraryAppletIsActive()) LibraryAppletTerminate();
+    Result LibraryAppletStart(AppletId id, u32 la_version, void *in_data, size_t in_size) {
+        if(LibraryAppletIsActive()) {
+            LibraryAppletTerminate();
+        }
         appletHolderClose(&g_applet_holder);
         LibAppletArgs largs;
         libappletArgsCreate(&largs, la_version);
         R_TRY(appletCreateLibraryApplet(&g_applet_holder, id, LibAppletMode_AllForeground));
         R_TRY(libappletArgsPush(&largs, &g_applet_holder));
-        if(in_size > 0)
-        {
+        if(in_size > 0) {
             R_TRY(LibraryAppletSend(in_data, in_size));
         }
         R_TRY(appletHolderStart(&g_applet_holder));
         g_last_applet_id = id;
-        return 0;
+        return ResultSuccess;
     }
 
-    Result LibraryAppletSend(void *data, size_t size)
-    {
+    Result LibraryAppletSend(void *data, size_t size) {
         return libappletPushInData(&g_applet_holder, data, size);
     }
 
-    Result LibraryAppletRead(void *data, size_t size)
-    {
-        return libappletPopOutData(&g_applet_holder, data, size, NULL);
+    Result LibraryAppletRead(void *data, size_t size) {
+        return libappletPopOutData(&g_applet_holder, data, size, nullptr);
     }
 
-    Result WebAppletStart(WebCommonConfig *web)
-    {
-        return LibraryAppletStart(AppletId_web, web->version, &web->arg, sizeof(web->arg));
-    }
-
-    Result LibraryAppletDaemonLaunchWith(AppletId id, u32 la_version, std::function<void(AppletHolder*)> on_prepare, std::function<void(AppletHolder*)> on_finish, std::function<bool()> on_wait)
-    {
-        if(LibraryAppletIsActive()) LibraryAppletTerminate();
+    Result LibraryAppletDaemonLaunchWith(AppletId id, u32 la_version, std::function<void(AppletHolder*)> on_prepare, std::function<void(AppletHolder*)> on_finish, std::function<bool()> on_wait) {
+        if(LibraryAppletIsActive()) {
+            LibraryAppletTerminate();
+        }
         appletHolderClose(&g_applet_holder);
         LibAppletArgs largs;
         libappletArgsCreate(&largs, la_version);
@@ -97,11 +90,11 @@ namespace am
         R_TRY(libappletArgsPush(&largs, &g_applet_holder));
         on_prepare(&g_applet_holder);
         R_TRY(appletHolderStart(&g_applet_holder));
-        while(true)
-        {
-            if(!LibraryAppletIsActive()) break;
-            if(!on_wait())
-            {
+        while(true) {
+            if(!LibraryAppletIsActive()) {
+                break;
+            }
+            if(!on_wait()) {
                 LibraryAppletTerminate();
                 break;
             }
@@ -109,31 +102,31 @@ namespace am
         }
         on_finish(&g_applet_holder);
         appletHolderClose(&g_applet_holder);
-        return 0;
+        return ResultSuccess;
     }
 
-    u64 LibraryAppletGetProgramIdForAppletId(AppletId id)
-    {
-        for(auto &[program_id, applet_id] : g_applet_id_table)
-        {
-            if(applet_id == id) return program_id;
+    u64 LibraryAppletGetProgramIdForAppletId(AppletId id) {
+        for(auto &[program_id, applet_id] : g_applet_id_table) {
+            if(applet_id == id) {
+                return program_id;
+            }
         }
         return 0;
     }
 
-    AppletId LibraryAppletGetAppletIdForProgramId(u64 id)
-    {
-        for(auto &[program_id, applet_id] : g_applet_id_table)
-        {
-            if(program_id == id) return applet_id;
+    AppletId LibraryAppletGetAppletIdForProgramId(u64 id) {
+        auto it = g_applet_id_table.find(id);
+        if(it != g_applet_id_table.end()) {
+            return it->second;
         }
         return InvalidAppletId;
     }
 
-    AppletId LibraryAppletGetId()
-    {
+    AppletId LibraryAppletGetId() {
         auto idcopy = g_last_applet_id;
-        if(!LibraryAppletIsActive()) g_last_applet_id = InvalidAppletId;
+        if(!LibraryAppletIsActive()) {
+            g_last_applet_id = InvalidAppletId;
+        }
         return idcopy;
     }
 }

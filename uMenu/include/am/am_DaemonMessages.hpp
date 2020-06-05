@@ -1,13 +1,14 @@
 
 #pragma once
-#include <am/am_DaemonMenuInteraction.hpp>
+#include <dmi/dmi_DaemonMenuInteraction.hpp>
 #include <functional>
 
-namespace am
-{
+namespace am {
+
     using MessageDetectCallback = std::function<void()>;
 
     Result InitializeDaemonMessageHandler();
     void ExitDaemonMessageHandler();
-    void RegisterOnMessageDetect(MessageDetectCallback callback, MenuMessage desired_msg);
+    void RegisterOnMessageDetect(MessageDetectCallback callback, dmi::MenuMessage desired_msg);
+
 }

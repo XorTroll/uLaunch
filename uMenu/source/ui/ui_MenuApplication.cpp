@@ -5,61 +5,48 @@ extern u8 *g_app_capture_buffer;
 extern cfg::Theme g_ul_theme;
 extern ui::MenuApplication::Ref g_menu_app_instance;
 
-namespace ui
-{
-    void UiOnHomeButtonDetection()
-    {
-        switch(g_menu_app_instance->GetCurrentLoadedMenu())
-        {
-            case MenuType::Startup:
-            {
+namespace ui {
+
+    void UiOnHomeButtonDetection() {
+        switch(g_menu_app_instance->GetCurrentLoadedMenu()) {
+            case MenuType::Startup: {
                 g_menu_app_instance->GetStartupLayout()->DoOnHomeButtonPress();
                 break;
             }
-            case MenuType::Main:
-            {
+            case MenuType::Main: {
                 g_menu_app_instance->GetMenuLayout()->DoOnHomeButtonPress();
                 break;
             }
-            case MenuType::Settings:
-            {
+            case MenuType::Settings: {
                 g_menu_app_instance->GetSettingsMenuLayout()->DoOnHomeButtonPress();
                 break;
             }
-            case MenuType::Theme:
-            {
+            case MenuType::Theme: {
                 g_menu_app_instance->GetThemeMenuLayout()->DoOnHomeButtonPress();
                 break;
             }
-            case MenuType::Languages:
-            {
+            case MenuType::Languages: {
                 g_menu_app_instance->GetLanguagesMenuLayout()->DoOnHomeButtonPress();
                 break;
             }
         }
     }
 
-    MenuApplication::~MenuApplication()
-    {
-        pu::audio::Delete(this->bgm);
-    }
-
-    void MenuApplication::OnLoad()
-    {
-        if(this->IsSuspended())
-        {
+    void MenuApplication::OnLoad() {
+        if(this->IsSuspended()) {
             bool flag;
             appletGetLastApplicationCaptureImageEx(g_app_capture_buffer, RawRGBAScreenBufferSize, &flag);
         }
 
-        auto [_rc2, jbgm] = util::LoadJSONFromFile(cfg::GetAssetByTheme(g_ul_theme, "sound/BGM.json"));
+        auto jbgm = JSON::object();
+        util::LoadJSONFromFile(jbgm, cfg::GetAssetByTheme(g_ul_theme, "sound/BGM.json"));
         this->bgmjson = jbgm;
         this->bgm_loop = this->bgmjson.value("loop", true);
         this->bgm_fade_in_ms = this->bgmjson.value("fade_in_ms", 1500);
         this->bgm_fade_out_ms = this->bgmjson.value("fade_out_ms", 500);
 
-        pu::ui::Color toasttextclr = pu::ui::Color::FromHex(GetUIConfigValue<std::string>("toast_text_color", "#e1e1e1ff"));
-        pu::ui::Color toastbaseclr = pu::ui::Color::FromHex(GetUIConfigValue<std::string>("toast_base_color", "#282828ff"));
+        auto toasttextclr = pu::ui::Color::FromHex(GetUIConfigValue<std::string>("toast_text_color", "#e1e1e1ff"));
+        auto toastbaseclr = pu::ui::Color::FromHex(GetUIConfigValue<std::string>("toast_base_color", "#282828ff"));
         this->notifToast = pu::ui::extras::Toast::New("...", "DefaultFont@20", toasttextclr, toastbaseclr);
 
         this->bgm = pu::audio::Open(cfg::GetAssetByTheme(g_ul_theme, "sound/BGM.mp3"));
@@ -70,162 +57,143 @@ namespace ui
         this->settingsMenuLayout = SettingsMenuLayout::New();
         this->languagesMenuLayout = LanguagesMenuLayout::New();
 
-        switch(this->stmode)
-        {
-            case am::MenuStartMode::StartupScreen:
+        switch(this->stmode) {
+            case dmi::MenuStartMode::StartupScreen: {
                 this->LoadStartupMenu();
                 break;
-            default:
+            }
+            default: {
                 this->StartPlayBGM();
                 this->LoadMenu();
                 break;
+            }
         }
     }
 
-    void MenuApplication::SetInformation(am::MenuStartMode mode, am::DaemonStatus status, JSON ui_json)
-    {
+    void MenuApplication::SetInformation(dmi::MenuStartMode mode, dmi::DaemonStatus status, JSON ui_json) {
         this->stmode = mode;
         this->status = status;
         this->uijson = ui_json;
     }
 
-    void MenuApplication::LoadMenu()
-    {
+    void MenuApplication::LoadMenu() {
         this->menuLayout->SetUser(this->status.selected_user);
         this->LoadLayout(this->menuLayout);
         this->loaded_menu = MenuType::Main;
     }
 
-    void MenuApplication::LoadStartupMenu()
-    {
+    void MenuApplication::LoadStartupMenu() {
         this->StopPlayBGM();
         this->startupLayout->ReloadMenu();
         this->LoadLayout(this->startupLayout);
         this->loaded_menu = MenuType::Startup;
     }
 
-    void MenuApplication::LoadThemeMenu()
-    {
+    void MenuApplication::LoadThemeMenu() {
         this->themeMenuLayout->Reload();
         this->LoadLayout(this->themeMenuLayout);
         this->loaded_menu = MenuType::Theme;
     }
 
-    void MenuApplication::LoadSettingsMenu()
-    {
+    void MenuApplication::LoadSettingsMenu() {
         this->settingsMenuLayout->Reload();
         this->LoadLayout(this->settingsMenuLayout);
         this->loaded_menu = MenuType::Settings;
     }
 
-    void MenuApplication::LoadSettingsLanguagesMenu()
-    {
+    void MenuApplication::LoadSettingsLanguagesMenu() {
         this->languagesMenuLayout->Reload();
         this->LoadLayout(this->languagesMenuLayout);
         this->loaded_menu = MenuType::Languages;
     }
 
-    bool MenuApplication::IsSuspended()
-    {
+    bool MenuApplication::IsSuspended() {
         return this->IsTitleSuspended() || this->IsHomebrewSuspended();
     }
 
-    bool MenuApplication::IsTitleSuspended()
-    {
+    bool MenuApplication::IsTitleSuspended() {
         return this->status.app_id > 0;
     }
 
-    bool MenuApplication::IsHomebrewSuspended()
-    {
+    bool MenuApplication::IsHomebrewSuspended() {
         return strlen(this->status.params.nro_path);
     }
 
-    bool MenuApplication::EqualsSuspendedHomebrewPath(const std::string &path)
-    {
+    bool MenuApplication::EqualsSuspendedHomebrewPath(const std::string &path) {
         return this->status.params.nro_path == path;
     }
 
-    u64 MenuApplication::GetSuspendedApplicationId()
-    {
+    u64 MenuApplication::GetSuspendedApplicationId() {
         return this->status.app_id;
     }
 
-    void MenuApplication::NotifyEndSuspended()
-    {
+    void MenuApplication::NotifyEndSuspended() {
         // Blanking the whole status would also blank the selected user...
         this->status.params = {};
         this->status.app_id = 0;
     }
 
-    bool MenuApplication::LaunchFailed()
-    {
-        return (this->stmode == am::MenuStartMode::MenuLaunchFailure);
+    bool MenuApplication::LaunchFailed() {
+        return this->stmode == dmi::MenuStartMode::MenuLaunchFailure;
     }
 
-    void MenuApplication::ShowNotification(const std::string &text, u64 timeout)
-    {
+    void MenuApplication::ShowNotification(const std::string &text, u64 timeout) {
         this->EndOverlay();
         this->notifToast->SetText(text);
         this->StartOverlayWithTimeout(this->notifToast, timeout);
     }
 
-    void MenuApplication::StartPlayBGM()
-    {
-        if(this->bgm != nullptr)
-        {
+    void MenuApplication::StartPlayBGM() {
+        if(this->bgm != nullptr) {
             int loops = this->bgm_loop ? -1 : 1;
-            if(this->bgm_fade_in_ms > 0) pu::audio::PlayWithFadeIn(this->bgm, loops, this->bgm_fade_in_ms);
+            if(this->bgm_fade_in_ms > 0) {
+                pu::audio::PlayWithFadeIn(this->bgm, loops, this->bgm_fade_in_ms);
+            }
             else pu::audio::Play(this->bgm, loops);
         }
     }
 
-    void MenuApplication::StopPlayBGM()
-    {
-        if(this->bgm_fade_out_ms > 0) pu::audio::FadeOut(this->bgm_fade_out_ms);
-        else pu::audio::Stop();
+    void MenuApplication::StopPlayBGM() {
+        if(this->bgm_fade_out_ms > 0) {
+            pu::audio::FadeOut(this->bgm_fade_out_ms);
+        }
+        else {
+            pu::audio::Stop();
+        }
     }
 
-    StartupLayout::Ref &MenuApplication::GetStartupLayout()
-    {
+    StartupLayout::Ref &MenuApplication::GetStartupLayout() {
         return this->startupLayout;
     }
 
-    MenuLayout::Ref &MenuApplication::GetMenuLayout()
-    {
+    MenuLayout::Ref &MenuApplication::GetMenuLayout() {
         return this->menuLayout;
     }
 
-    ThemeMenuLayout::Ref &MenuApplication::GetThemeMenuLayout()
-    {
+    ThemeMenuLayout::Ref &MenuApplication::GetThemeMenuLayout() {
         return this->themeMenuLayout;
     }
 
-    SettingsMenuLayout::Ref &MenuApplication::GetSettingsMenuLayout()
-    {
+    SettingsMenuLayout::Ref &MenuApplication::GetSettingsMenuLayout() {
         return this->settingsMenuLayout;
     }
 
-    LanguagesMenuLayout::Ref &MenuApplication::GetLanguagesMenuLayout()
-    {
+    LanguagesMenuLayout::Ref &MenuApplication::GetLanguagesMenuLayout() {
         return this->languagesMenuLayout;
     }
     
-    void MenuApplication::SetSelectedUser(AccountUid user_id)
-    {
-        am::MenuCommandWriter writer(am::DaemonMessage::SetSelectedUser);
+    void MenuApplication::SetSelectedUser(AccountUid user_id) {
+        this->status.selected_user = user_id;
+        dmi::MenuMessageWriter writer(dmi::DaemonMessage::SetSelectedUser);
         writer.Write<AccountUid>(user_id);
-        writer.FinishWrite();
-
-        memcpy(&this->status.selected_user, &user_id, sizeof(user_id));
     }
 
-    AccountUid MenuApplication::GetSelectedUser()
-    {
+    AccountUid MenuApplication::GetSelectedUser() {
         return this->status.selected_user;
     }
 
-    MenuType MenuApplication::GetCurrentLoadedMenu()
-    {
+    MenuType MenuApplication::GetCurrentLoadedMenu() {
         return this->loaded_menu;
     }
+
 }

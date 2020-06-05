@@ -8,15 +8,14 @@ extern ui::MenuApplication::Ref g_menu_app_instance;
 extern cfg::Theme g_ul_theme;
 extern cfg::Config g_ul_config;
 
-namespace ui
-{
-    ThemeMenuLayout::ThemeMenuLayout()
-    {
+namespace ui {
+
+    ThemeMenuLayout::ThemeMenuLayout() {
         this->SetBackgroundImage(cfg::GetAssetByTheme(g_ul_theme, "ui/Background.png"));
 
-        pu::ui::Color textclr = pu::ui::Color::FromHex(g_menu_app_instance->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
-        pu::ui::Color menufocusclr = pu::ui::Color::FromHex(g_menu_app_instance->GetUIConfigValue<std::string>("menu_focus_color", "#5ebcffff"));
-        pu::ui::Color menubgclr = pu::ui::Color::FromHex(g_menu_app_instance->GetUIConfigValue<std::string>("menu_bg_color", "#0094ffff"));
+        auto textclr = pu::ui::Color::FromHex(g_menu_app_instance->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
+        auto menufocusclr = pu::ui::Color::FromHex(g_menu_app_instance->GetUIConfigValue<std::string>("menu_focus_color", "#5ebcffff"));
+        auto menubgclr = pu::ui::Color::FromHex(g_menu_app_instance->GetUIConfigValue<std::string>("menu_bg_color", "#0094ffff"));
 
         this->curThemeBanner = pu::ui::elm::Image::New(0, 585, cfg::GetAssetByTheme(g_ul_theme, "ui/BannerTheme.png"));
         g_menu_app_instance->ApplyConfigForElement("themes_menu", "banner_image", this->curThemeBanner);
@@ -55,28 +54,23 @@ namespace ui
         this->Add(this->curThemeIcon);
     }
 
-    void ThemeMenuLayout::OnMenuInput(u64 down, u64 up, u64 held, pu::ui::Touch pos)
-    {
-        if(down & KEY_B)
-        {
+    void ThemeMenuLayout::OnMenuInput(u64 down, u64 up, u64 held, pu::ui::Touch touch_pos) {
+        if(down & KEY_B) {
             g_menu_app_instance->FadeOut();
             g_menu_app_instance->LoadMenu();
             g_menu_app_instance->FadeIn();
         }
     }
 
-    void ThemeMenuLayout::OnHomeButtonPress()
-    {
+    void ThemeMenuLayout::OnHomeButtonPress() {
         g_menu_app_instance->FadeOut();
         g_menu_app_instance->LoadMenu();
         g_menu_app_instance->FadeIn();
     }
 
-    void ThemeMenuLayout::Reload()
-    {
-        pu::ui::Color textclr = pu::ui::Color::FromHex(g_menu_app_instance->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
-        if(cfg::ThemeIsDefault(g_ul_theme))
-        {
+    void ThemeMenuLayout::Reload() {
+        auto textclr = pu::ui::Color::FromHex(g_menu_app_instance->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
+        if(cfg::ThemeIsDefault(g_ul_theme)) {
             this->curThemeText->SetText(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_no_custom"));
             this->curThemeName->SetVisible(false);
             this->curThemeAuthor->SetVisible(false);
@@ -84,8 +78,7 @@ namespace ui
             this->curThemeBanner->SetVisible(false);
             this->curThemeIcon->SetVisible(false);
         }
-        else
-        {
+        else {
             this->curThemeText->SetText(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_current") + ":");
             this->curThemeName->SetVisible(true);
             this->curThemeName->SetText(g_ul_theme.manifest.name);
@@ -111,8 +104,7 @@ namespace ui
         ditm->SetIcon("romfs:/Logo.png");
         this->themesMenu->AddItem(ditm);
         
-        for(auto &ltheme: this->loadedThemes)
-        {
+        for(auto &ltheme: this->loadedThemes) {
             auto itm = pu::ui::elm::MenuItem::New(ltheme.manifest.name + " (v" + ltheme.manifest.release + ", " + cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_by") + " " + ltheme.manifest.author + ")");
             itm->AddOnClick(std::bind(&ThemeMenuLayout::theme_Click, this));
             itm->SetColor(textclr);
@@ -122,51 +114,47 @@ namespace ui
         }
     }
 
-    void ThemeMenuLayout::theme_Click()
-    {
+    void ThemeMenuLayout::theme_Click() {
         auto idx = this->themesMenu->GetSelectedIndex();
-        if(idx == 0)
-        {
-            if(cfg::ThemeIsDefault(g_ul_theme)) g_menu_app_instance->ShowNotification(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_no_custom"));
-            else
-            {
+        if(idx == 0) {
+            if(cfg::ThemeIsDefault(g_ul_theme)) {
+                g_menu_app_instance->ShowNotification(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_no_custom"));
+            }
+            else {
                 auto sopt = g_menu_app_instance->CreateShowDialog(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_reset"), cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_reset_conf"), { cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "yes"), cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "cancel") }, true);
-                if(sopt == 0)
-                {
+                if(sopt == 0) {
                     g_ul_config.theme_name = "";
                     cfg::SaveConfig(g_ul_config);
 
-                    am::MenuCommandWriter writer(am::DaemonMessage::RestartMenu);
-                    writer.FinishWrite();
-
                     g_menu_app_instance->StopPlayBGM();
                     g_menu_app_instance->CloseWithFadeOut();
                     // g_menu_app_instance->ShowNotification(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_changed"));
+
+                    dmi::MenuMessageWriter writer(dmi::DaemonMessage::RestartMenu);
                 }
             }
         }
-        else
-        {
+        else {
             idx--;
             auto seltheme = this->loadedThemes[idx];
             auto iconpath = seltheme.path + "/theme/Icon.png";
-            if(seltheme.base_name == g_ul_theme.base_name) g_menu_app_instance->ShowNotification(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_active_this"));
-            else
-            {
+            if(seltheme.base_name == g_ul_theme.base_name) {
+                g_menu_app_instance->ShowNotification(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_active_this"));
+            }
+            else {
                 auto sopt = g_menu_app_instance->CreateShowDialog(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_set"), cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_set_conf"), { cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "yes"), cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "cancel") }, true, iconpath);
-                if(sopt == 0)
-                {
+                if(sopt == 0) {
                     g_ul_config.theme_name = seltheme.base_name;
                     cfg::SaveConfig(g_ul_config);
-
-                    am::MenuCommandWriter writer(am::DaemonMessage::RestartMenu);
-                    writer.FinishWrite();
 
                     g_menu_app_instance->StopPlayBGM();
                     g_menu_app_instance->CloseWithFadeOut();
                     // g_menu_app_instance->ShowNotification(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_changed"));
+
+                    dmi::MenuMessageWriter writer(dmi::DaemonMessage::RestartMenu);
                 }
             }
         }
     }
+
 }

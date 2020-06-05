@@ -1,17 +1,15 @@
 #include <os/os_HomeMenu.hpp>
 
-namespace os
-{
-    Result PushSystemAppletMessage(SystemAppletMessage msg)
-    {
+namespace os {
+
+    Result PushSystemAppletMessage(SystemAppletMessage msg) {
         AppletStorage st;
-        auto rc = appletCreateStorage(&st, sizeof(msg));
-        if(R_SUCCEEDED(rc))
-        {
-            rc = appletStorageWrite(&st, 0, &msg, sizeof(msg));
-            if(R_SUCCEEDED(rc)) appletPushToGeneralChannel(&st);
+        R_TRY(appletCreateStorage(&st, sizeof(msg)));
+        UL_ON_SCOPE_EXIT({
             appletStorageClose(&st);
-        }
-        return rc;
+        });
+        R_TRY(appletStorageWrite(&st, 0, &msg, sizeof(msg)));
+        R_TRY(appletPushToGeneralChannel(&st));
+        return ResultSuccess;
     }
 }

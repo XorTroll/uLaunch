@@ -4,11 +4,9 @@ export UL_MINOR	:=	3
 export UL_MICRO :=	0
 export UL_VERSION	:=	$(UL_MAJOR).$(UL_MINOR).$(UL_MICRO)
 
-export UL_DEV	:=	0
+export UL_DEFS	:=	-DUL_MAJOR=$(UL_MAJOR) -DUL_MINOR=$(UL_MINOR) -DUL_MICRO=$(UL_MICRO) -DUL_VERSION=\"$(UL_VERSION)\"
 
-export UL_DEFS	:=	-DUL_DEV=$(UL_DEV) -DUL_MAJOR=$(UL_MAJOR) -DUL_MINOR=$(UL_MINOR) -DUL_MICRO=$(UL_MICRO) -DUL_VERSION=\"$(UL_VERSION)\"
-
-export UL_COMMON_SOURCES	:=	../uLaunch/source ../uLaunch/source/am ../uLaunch/source/cfg ../uLaunch/source/db ../uLaunch/source/fs ../uLaunch/source/net ../uLaunch/source/os ../uLaunch/source/util
+export UL_COMMON_SOURCES	:=	../uLaunch/source ../uLaunch/source/am ../uLaunch/source/dmi ../uLaunch/source/cfg ../uLaunch/source/db ../uLaunch/source/fs ../uLaunch/source/net ../uLaunch/source/os ../uLaunch/source/util
 export UL_COMMON_INCLUDES	:=	../uLaunch/include
 
 export UL_CXXFLAGS	:=	-fno-rtti -fexceptions -std=gnu++17
@@ -36,7 +34,7 @@ make_hbtarget:
 hbtarget: base make_hbtarget
 
 make_daemon:
-	@$(MAKE) -C libstratosphere/
+	@$(MAKE) -C Atmosphere-libs/
 	@$(MAKE) -C uDaemon/
 	@mkdir -p SdOut/atmosphere/contents/0100000000001000
 	@cp uDaemon/uDaemon.nsp SdOut/atmosphere/contents/0100000000001000/exefs.nsp

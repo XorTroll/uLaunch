@@ -16,11 +16,11 @@ namespace uViewer
 
         public byte[][] CaptureBackups = new byte[][]
         {
-            new byte[ViewerMainForm.RawRGBAScreenBufferSize], // Backups (5) so that new captures made by the main form don't replace old ones
-            new byte[ViewerMainForm.RawRGBAScreenBufferSize],
-            new byte[ViewerMainForm.RawRGBAScreenBufferSize],
-            new byte[ViewerMainForm.RawRGBAScreenBufferSize],
-            new byte[ViewerMainForm.RawRGBAScreenBufferSize],
+            new byte[ViewerMainForm.USBPacketSize], // Backups (5) so that new captures made by the main form don't replace old ones
+            new byte[ViewerMainForm.USBPacketSize],
+            new byte[ViewerMainForm.USBPacketSize],
+            new byte[ViewerMainForm.USBPacketSize],
+            new byte[ViewerMainForm.USBPacketSize],
         };
 
         public ScreenshotForm(ViewerMainForm main)

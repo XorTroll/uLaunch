@@ -8,16 +8,15 @@ extern ui::MenuApplication::Ref g_menu_app_instance;
 extern cfg::Theme g_ul_theme;
 extern cfg::Config g_ul_config;
 
-namespace ui
-{
-    StartupLayout::StartupLayout()
-    {
+namespace ui {
+
+    StartupLayout::StartupLayout() {
         this->SetBackgroundImage(cfg::GetAssetByTheme(g_ul_theme, "ui/Background.png"));
         this->loadmenu = false;
 
-        pu::ui::Color textclr = pu::ui::Color::FromHex(g_menu_app_instance->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
-        pu::ui::Color menufocusclr = pu::ui::Color::FromHex(g_menu_app_instance->GetUIConfigValue<std::string>("menu_focus_color", "#5ebcffff"));
-        pu::ui::Color menubgclr = pu::ui::Color::FromHex(g_menu_app_instance->GetUIConfigValue<std::string>("menu_bg_color", "#0094ffff"));
+        auto textclr = pu::ui::Color::FromHex(g_menu_app_instance->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
+        auto menufocusclr = pu::ui::Color::FromHex(g_menu_app_instance->GetUIConfigValue<std::string>("menu_focus_color", "#5ebcffff"));
+        auto menubgclr = pu::ui::Color::FromHex(g_menu_app_instance->GetUIConfigValue<std::string>("menu_bg_color", "#0094ffff"));
 
         this->infoText = pu::ui::elm::TextBlock::New(35, 635, cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "startup_welcome_info") + "\n" + cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "startup_control_info"));
         this->infoText->SetColor(textclr);
@@ -30,10 +29,8 @@ namespace ui
         this->Add(this->usersMenu);
     }
 
-    void StartupLayout::OnMenuInput(u64 down, u64 up, u64 held, pu::ui::Touch pos)
-    {
-        if(this->loadmenu)
-        {
+    void StartupLayout::OnMenuInput(u64 down, u64 up, u64 held, pu::ui::Touch touch_pos) {
+        if(this->loadmenu) {
             this->loadmenu = false;
             g_menu_app_instance->StartPlayBGM();
             g_menu_app_instance->FadeOut();
@@ -43,50 +40,44 @@ namespace ui
         }
     }
 
-    void StartupLayout::OnHomeButtonPress()
-    {
+    void StartupLayout::OnHomeButtonPress() {
         // ...
     }
 
-    void StartupLayout::user_Click(AccountUid uid)
-    {
+    void StartupLayout::user_Click(AccountUid uid) {
         this->loadmenu = true;
         g_menu_app_instance->SetSelectedUser(uid);
     }
 
-    void StartupLayout::create_Click()
-    {
+    void StartupLayout::create_Click() {
         auto rc = pselShowUserCreator();
-        if(R_SUCCEEDED(rc))
-        {
+        if(R_SUCCEEDED(rc)) {
             g_menu_app_instance->FadeOut();
             this->ReloadMenu();
             g_menu_app_instance->FadeIn();
         }
     }
 
-    void StartupLayout::ReloadMenu()
-    {
+    void StartupLayout::ReloadMenu() {
         this->usersMenu->ClearItems();
         this->usersMenu->SetSelectedIndex(0);
 
-        pu::ui::Color textclr = pu::ui::Color::FromHex(g_menu_app_instance->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
-        
-        auto [rc, users] = os::QuerySystemAccounts(true);
-        if(R_SUCCEEDED(rc))
-        {
-            for(auto user: users)
-            {
-                auto [rc, name] = os::GetAccountName(user);
-                if(R_FAILED(rc)) continue;
+        auto textclr = pu::ui::Color::FromHex(g_menu_app_instance->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
+        std::vector<AccountUid> users;
+        auto rc = os::QuerySystemAccounts(users, true);
+        if(R_SUCCEEDED(rc)) {
+            for(auto &user: users) {
+                std::string name;
+                auto rc = os::GetAccountName(name, user);
+                if(R_SUCCEEDED(rc)) {
+                    auto path = os::GetIconCacheImagePath(user);
+                    auto uitm = pu::ui::elm::MenuItem::New(name);
+                    uitm->SetIcon(path);
+                    uitm->AddOnClick(std::bind(&StartupLayout::user_Click, this, user));
+                    uitm->SetColor(textclr);
 
-                auto path = os::GetIconCacheImagePath(user);
-                auto uitm = pu::ui::elm::MenuItem::New(name);
-                uitm->SetIcon(path);
-                uitm->AddOnClick(std::bind(&StartupLayout::user_Click, this, user));
-                uitm->SetColor(textclr);
-
-                this->usersMenu->AddItem(uitm);
+                    this->usersMenu->AddItem(uitm);
+                }
             }
         }
 
@@ -95,4 +86,5 @@ namespace ui
         citm->AddOnClick(std::bind(&StartupLayout::create_Click, this));
         this->usersMenu->AddItem(citm);
     }
+
 }

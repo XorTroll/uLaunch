@@ -1,27 +1,19 @@
 #include <os/os_Titles.hpp>
-#include <db/db_Save.hpp>
-#include <fs/fs_Stdio.hpp>
 
-namespace os
-{
-    std::vector<cfg::TitleRecord> QueryInstalledTitles()
-    {
+namespace os {
+
+    std::vector<cfg::TitleRecord> QueryInstalledTitles() {
         std::vector<cfg::TitleRecord> titles;
-        NsApplicationRecord *recordbuf = new NsApplicationRecord[MaxInstalledCount]();
-        s32 record_count = 0;
-        auto rc = nsListApplicationRecord(recordbuf, MaxInstalledCount, 0, &record_count);
-        if(R_SUCCEEDED(rc))
-        {
-            for(s32 i = 0; i < record_count; i++)
-            {
-                cfg::TitleRecord rec = {};
-                rec.app_id = recordbuf[i].application_id;
-                rec.title_type = (u32)cfg::TitleType::Installed;
-                if(rec.app_id == 0) continue;
-                titles.push_back(rec);
+        UL_OS_FOR_EACH_APP_RECORD(record, {
+            cfg::TitleRecord rec = {};
+            rec.app_id = record.application_id;
+            if(rec.app_id == 0) {
+                continue;
             }
-        }
-        delete[] recordbuf;
+            rec.title_type = static_cast<u32>(cfg::TitleType::Installed);
+            titles.push_back(rec);
+        });
         return titles;
     }
+
 }

@@ -2,11 +2,11 @@
 #pragma once
 #include <stratosphere.hpp>
 
-namespace ecs
-{
+namespace ecs {
+
     // Slightly modified version of ams's RemoteFileSystem
-    
     class RemoteSdCardFileSystem : public ams::fs::fsa::IFileSystem {
+
         private:
             FsFileSystem *base_fs;
 
@@ -90,5 +90,7 @@ namespace ecs
             virtual ams::Result QueryEntryImpl(char *dst, size_t dst_size, const char *src, size_t src_size, ams::fs::fsa::QueryId query, const char *path) {
                 return fsFsQueryEntry(this->base_fs, dst, dst_size, src, src_size, path, static_cast<FsFileSystemQueryId>(query));
             }
+
     };
+
 }

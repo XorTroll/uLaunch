@@ -9,28 +9,10 @@
 #include <ui/ui_Actions.hpp>
 #include <cfg/cfg_Config.hpp>
 
-namespace ui
-{
-    class MenuLayout : public IMenuLayout
-    {
-        public:
-            MenuLayout(void *raw, u8 min_alpha);
-            ~MenuLayout();
-            PU_SMART_CTOR(MenuLayout)
+namespace ui {
 
-            void OnMenuInput(u64 down, u64 up, u64 held, pu::ui::Touch pos) override;
-            void OnHomeButtonPress() override;
+    class MenuLayout : public IMenuLayout {
 
-            void menu_Click(u64 down, u32 index);
-            void menu_OnSelected(u32 index);
-            void menuToggle_Click();
-            void MoveFolder(const std::string &name, bool fade);
-            void SetUser(AccountUid user);
-            void HandleCloseSuspended();
-            void HandleHomebrewLaunch(cfg::TitleRecord &rec);
-            void HandleMultiselectMoveToFolder(const std::string &folder);
-            void StopMultiselect();
-            void DoTerminateApplication();
         private:
             void *susptr;
             bool last_hasconn;
@@ -66,5 +48,46 @@ namespace ui
             s32 rawalpha;
             pu::audio::Sfx sfxTitleLaunch;
             pu::audio::Sfx sfxMenuToggle;
+
+            inline void ApplySuspendedRatio(bool increase) {
+                auto susp_w = this->bgSuspendedRaw->GetWidth();
+                auto susp_h = this->bgSuspendedRaw->GetHeight();
+                // Change size, 16:9 ratio
+                if(increase) {
+                    susp_w += 16;
+                    susp_h += 9;
+                }
+                else {
+                    susp_w -= 16;
+                    susp_h -= 9;
+                }
+                auto susp_x = (1280 - susp_w) / 2;
+                auto susp_y = (720 - susp_h) / 2;
+                this->bgSuspendedRaw->SetX(susp_x);
+                this->bgSuspendedRaw->SetY(susp_y);
+                this->bgSuspendedRaw->SetWidth(susp_w);
+                this->bgSuspendedRaw->SetHeight(susp_h);
+            }
+
+        public:
+            MenuLayout(void *raw, u8 min_alpha);
+            ~MenuLayout();
+            PU_SMART_CTOR(MenuLayout)
+
+            void OnMenuInput(u64 down, u64 up, u64 held, pu::ui::Touch touch_pos) override;
+            void OnHomeButtonPress() override;
+
+            void menu_Click(u64 down, u32 index);
+            void menu_OnSelected(u32 index);
+            void menuToggle_Click();
+            void MoveFolder(const std::string &name, bool fade);
+            void SetUser(AccountUid user);
+            void HandleCloseSuspended();
+            void HandleHomebrewLaunch(cfg::TitleRecord &rec);
+            void HandleMultiselectMoveToFolder(const std::string &folder);
+            void StopMultiselect();
+            void DoTerminateApplication();
+
     };
+
 }

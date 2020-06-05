@@ -1,31 +1,23 @@
 #include <ui/ui_QuickMenu.hpp>
 #include <ui/ui_MenuApplication.hpp>
 #include <cfg/cfg_Config.hpp>
-#include <am_DaemonMessages.hpp>
+#include <am/am_DaemonMessages.hpp>
 
 extern cfg::Theme g_ul_theme;
 extern ui::MenuApplication::Ref g_menu_app_instance;
 
-namespace ui
-{
+namespace ui {
+
     static Mutex g_quick_menu_home_lock = EmptyMutex;
     static bool g_quick_menu_home_pressed = false;
 
-    static void QuickMenuOnHomeButtonDetection()
-    {
-        mutexLock(&g_quick_menu_home_lock);
-        g_quick_menu_home_pressed = true;
-        mutexUnlock(&g_quick_menu_home_lock);
-    }
-
-    QuickMenu::QuickMenu(const std::string &main_icon)
-    {
+    QuickMenu::QuickMenu(const std::string &main_icon) {
         this->on = false;
         this->bgalpha = 0;
 
-        pu::ui::Color textclr = pu::ui::Color::FromHex(g_menu_app_instance->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
-        pu::ui::Color menufocusclr = pu::ui::Color::FromHex(g_menu_app_instance->GetUIConfigValue<std::string>("menu_focus_color", "#5ebcffff"));
-        pu::ui::Color menubgclr = pu::ui::Color::FromHex(g_menu_app_instance->GetUIConfigValue<std::string>("menu_bg_color", "#0094ffff"));
+        auto textclr = pu::ui::Color::FromHex(g_menu_app_instance->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
+        auto menufocusclr = pu::ui::Color::FromHex(g_menu_app_instance->GetUIConfigValue<std::string>("menu_focus_color", "#5ebcffff"));
+        auto menubgclr = pu::ui::Color::FromHex(g_menu_app_instance->GetUIConfigValue<std::string>("menu_bg_color", "#0094ffff"));
 
         this->options_menu = pu::ui::elm::Menu::New(200, 115, 880, menubgclr, 60, 8);
         this->options_menu->SetOnFocusColor(menufocusclr);
@@ -80,92 +72,96 @@ namespace ui
         this->options_menu->AddItem(opt_item);
     }
 
-    void QuickMenu::RegisterHomeButtonDetection()
-    {
-        am::RegisterOnMessageDetect(&QuickMenuOnHomeButtonDetection, am::MenuMessage::HomeRequest);
-    }
-
-    s32 QuickMenu::GetX()
-    {
+    s32 QuickMenu::GetX() {
         return 0;
     }
 
-    s32 QuickMenu::GetY()
-    {
+    s32 QuickMenu::GetY() {
         return 0;
     }
 
-    s32 QuickMenu::GetWidth()
-    {
+    s32 QuickMenu::GetWidth() {
         return 1280;
     }
 
-    s32 QuickMenu::GetHeight()
-    {
+    s32 QuickMenu::GetHeight() {
         return 720;
     }
 
-    void QuickMenu::Toggle()
-    {
+    void QuickMenu::Toggle() {
         this->on = !this->on;
     }
     
-    bool QuickMenu::IsOn()
-    {
+    bool QuickMenu::IsOn() {
         return this->on && (this->bgalpha > 0);
     }
 
-    void QuickMenu::OnRender(pu::ui::render::Renderer::Ref &Drawer, s32 X, s32 Y)
-    {
-        if(!this->on)
-        {
-            if(this->bgalpha > 0)
-            {
+    void QuickMenu::OnRender(pu::ui::render::Renderer::Ref &drawer, s32 x, s32 y) {
+        if(!this->on) {
+            if(this->bgalpha > 0) {
                 this->bgalpha -= 20;
-                if(this->bgalpha < 0) this->bgalpha = 0;
+                if(this->bgalpha < 0) {
+                    this->bgalpha = 0;
+                }
             }
         }
-        else
-        {
-            if(this->bgalpha < 220)
-            {
+        else {
+            if(this->bgalpha < 220) {
                 this->bgalpha += 20;
-                if(this->bgalpha > 220) this->bgalpha = 220;
+                if(this->bgalpha > 220) {
+                    this->bgalpha = 220;
+                }
             }
         }
         this->options_menu->SetVisible(this->bgalpha != 0);
 
-        Drawer->RenderRectangleFill({ 50, 50, 50, (u8)this->bgalpha }, 0, 0, 1280, 720);
+        auto bgalphau8 = static_cast<u8>(this->bgalpha);
 
-        if(this->bgalpha > 0)
-        {
-            if(this->bgalpha < 220) Drawer->SetBaseRenderAlpha((u8)this->bgalpha);
-            this->options_menu->OnRender(Drawer, this->options_menu->GetProcessedX(), this->options_menu->GetProcessedY());
-            if(this->bgalpha < 220) Drawer->UnsetBaseRenderAlpha();
+        drawer->RenderRectangleFill({ 50, 50, 50, bgalphau8 }, 0, 0, 1280, 720);
+
+        if(this->bgalpha > 0) {
+            if(this->bgalpha < 220) {
+                drawer->SetBaseRenderAlpha(bgalphau8);
+            }
+            this->options_menu->OnRender(drawer, this->options_menu->GetProcessedX(), this->options_menu->GetProcessedY());
+            if(this->bgalpha < 220) {
+                drawer->UnsetBaseRenderAlpha();
+            }
         }
     }
 
-    void QuickMenu::OnInput(u64 Down, u64 Up, u64 Held, pu::ui::Touch Pos)
-    {
-        if(this->on) this->options_menu->OnInput(Down, Up, Held, Pos);
-
-        if((Down & KEY_L) || (Down & KEY_R) || (Down & KEY_ZL) || (Down & KEY_ZR)) this->Toggle();
-        else if((Down & KEY_B) || (Down & KEY_A))
-        {
-            // B only valid for toggling off
-            // A = something selected in the menu :P
-            if(this->on) this->Toggle();
+    void QuickMenu::OnInput(u64 down, u64 up, u64 held, pu::ui::Touch touch_pos) {
+        if(this->on) {
+            this->options_menu->OnInput(down, up, held, touch_pos);
         }
-        else
-        {
-            if(this->on)
-            {
+
+        if((down & KEY_L) || (down & KEY_R) || (down & KEY_ZL) || (down & KEY_ZR)) {
+            this->Toggle();
+        }
+        else if((down & KEY_B) || (down & KEY_A)) {
+            // B only valid for toggling off
+            // A = something selected in the menu
+            if(this->on) {
+                this->Toggle();
+            }
+        }
+        else {
+            if(this->on) {
                 mutexLock(&g_quick_menu_home_lock);
                 auto home_pressed = g_quick_menu_home_pressed;
                 g_quick_menu_home_pressed = false;
                 mutexUnlock(&g_quick_menu_home_lock);
-                if(home_pressed) this->Toggle();
+                if(home_pressed) {
+                    this->Toggle();
+                }
             }
         }
     }
+
+    void QuickMenuOnHomeButtonDetection() {
+        mutexLock(&g_quick_menu_home_lock);
+        g_quick_menu_home_pressed = true;
+        mutexUnlock(&g_quick_menu_home_lock);
+    }
+
 }
