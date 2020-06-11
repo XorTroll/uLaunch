@@ -244,7 +244,7 @@ namespace ui {
     }
 
     void MenuLayout::menu_Click(u64 down, u32 index) {
-        if((this->select_on) && (down & KEY_A)) {
+        if(this->select_on && (down & KEY_A)) {
             if(!this->itemsMenu->IsAnyMultiselected()) {
                 this->StopMultiselect();
             }
@@ -431,11 +431,11 @@ namespace ui {
                     auto &folder = cfg::FindFolderByName(g_entry_list, this->curfolder);
                     s32 titleidx = realidx;
                     if(this->curfolder.empty()) {
-                        if(realidx >= g_entry_list.folders.size()) {
+                        if(static_cast<u32>(realidx) >= g_entry_list.folders.size()) {
                             titleidx -= g_entry_list.folders.size();
                         }
                         else {
-                            auto foldr = g_entry_list.folders[realidx];
+                            auto &foldr = g_entry_list.folders[realidx];
                             if(down & KEY_A) {
                                 this->MoveFolder(foldr.name, true);
                             }
@@ -715,7 +715,7 @@ namespace ui {
             this->itemsMenu->AddItem(cfg::GetRecordIconPath(itm));
             if(set_susp) {
                 u32 suspidx = tmpidx;
-                // Skip initial item if g_homebrew_records mode
+                // Skip initial item if homebrew mode
                 if(this->homebrew_mode) {
                     suspidx++;
                 }
@@ -812,8 +812,8 @@ namespace ui {
                         sprintf(ipt.nro_argv, "%s %s", rec.nro_target.nro_path, rec.nro_target.nro_argv);
                     }
 
-                    dmi::MenuMessageWriter writer(dmi::DaemonMessage::LaunchHomebrewApplication);
                     {
+                        dmi::MenuMessageWriter writer(dmi::DaemonMessage::LaunchHomebrewApplication);
                         writer.Write<u64>(g_ul_config.homebrew_title_application_id);
                         writer.Write<hb::HbTargetParams>(ipt);
                     }
@@ -828,7 +828,6 @@ namespace ui {
                         auto rc = reader.GetResult();
                         g_menu_app_instance->ShowNotification(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "app_launch_error") + ": " + util::FormatResult(rc));
                     }
-                    reader.FinishRead();
                 }
             }
             else {

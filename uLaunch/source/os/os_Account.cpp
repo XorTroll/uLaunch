@@ -11,7 +11,7 @@ namespace os {
     }
 
     Result QuerySystemAccounts(std::vector<AccountUid> &out_accounts, bool dump_icon) {
-        AccountUid uids[ACC_USER_LIST_SIZE] = {0};
+        AccountUid uids[ACC_USER_LIST_SIZE] = {};
         s32 acc_count = 0;
         R_TRY(accountListAllUsers(uids, ACC_USER_LIST_SIZE, &acc_count));
         for(s32 i = 0; i < acc_count; i++) {

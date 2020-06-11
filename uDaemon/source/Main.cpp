@@ -161,8 +161,7 @@ Result UpdateOperationMode() {
     return ResultSuccess;
 }
 
-Result HandleAppletMessage()
-{
+Result HandleAppletMessage() {
     u32 raw_msg = 0;
     R_TRY(appletGetMessage(&raw_msg));
     auto msg = static_cast<os::AppletMessage>(raw_msg);
@@ -190,8 +189,7 @@ Result HandleAppletMessage()
     return ResultSuccess;
 }
 
-void HandleMenuMessage()
-{
+void HandleMenuMessage() {
     if(am::LibraryAppletIsMenu()) {
         dmi::DaemonMessageReader reader;
         if(reader) {
@@ -448,11 +446,11 @@ namespace impl {
                 UL_ASSERT(LaunchMenu(dmi::MenuStartMode::MenuLaunchFailure, status));
             }
         }
-        svcSleepThread(10'000'000);
+        svcSleepThread(100'000'000ul);
     }
 
     Result LaunchIPCManagerThread() {
-        R_TRY(threadCreate(&ipc_thr, &IPCManagerThread, nullptr, nullptr, 0x4000, 0x2b, -2));
+        R_TRY(threadCreate(&ipc_thr, &IPCManagerThread, nullptr, nullptr, 0x4000, 0x2B, -2));
         R_TRY(threadStart(&ipc_thr));
         return ResultSuccess;
     }
@@ -460,11 +458,11 @@ namespace impl {
     Result LaunchUSBViewerThread() {
         switch(usb_mode) {
             case USBMode::RawRGBA: {
-                R_TRY(threadCreate(&usb_thr, &USBViewerRGBAThread, nullptr, nullptr, 0x4000, 0x2b, -2));
+                R_TRY(threadCreate(&usb_thr, &USBViewerRGBAThread, nullptr, nullptr, 0x4000, 0x2B, -2));
                 break;
             }
             case USBMode::JPEG: {
-                R_TRY(threadCreate(&usb_thr, &USBViewerJPEGThread, nullptr, nullptr, 0x4000, 0x2b, -2));
+                R_TRY(threadCreate(&usb_thr, &USBViewerJPEGThread, nullptr, nullptr, 0x4000, 0x2B, -2));
                 break;
             }
             default:
@@ -537,6 +535,8 @@ namespace impl {
 // uDaemon handles basic qlaunch functionality and serves as a back-end for uLaunch, communicating with uMenu front-end when neccessary.
 
 int main() {
+    consoleInit(nullptr);
+
     impl::Initialize();
 
     // Cache everything on startup

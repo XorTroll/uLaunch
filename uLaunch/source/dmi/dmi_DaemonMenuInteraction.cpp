@@ -6,7 +6,7 @@ namespace dmi {
 
     namespace impl {
 
-        #define _UL_AM_DMI_IMPL_RC_TRY_LOOP(...) ({ \
+        #define _UL_DMI_IMPL_RC_TRY_LOOP(...) ({ \
             auto rc = ResultSuccess; \
             do { \
                 __VA_ARGS__ \
@@ -15,35 +15,36 @@ namespace dmi {
             return rc; \
         })
 
-        #define _UL_AM_DMI_IMPL_RC_TRY(...) ({ \
+        #define _UL_DMI_IMPL_RC_TRY(...) ({ \
             auto rc = ResultSuccess; \
             __VA_ARGS__ \
             return rc; \
         })
 
-        #define _UL_AM_DMI_IMPL_RC(...) ({ \
+        #define _UL_DMI_IMPL_RC(...) ({ \
             if(wait) { \
-                _UL_AM_DMI_IMPL_RC_TRY_LOOP( __VA_ARGS__ ); \
+                _UL_DMI_IMPL_RC_TRY_LOOP( __VA_ARGS__ ); \
             } \
             else { \
-                _UL_AM_DMI_IMPL_RC_TRY( __VA_ARGS__ ); \
+                _UL_DMI_IMPL_RC_TRY( __VA_ARGS__ ); \
             } \
+            return ResultSuccess; \
         })
 
         Result DaemonWriteImpl(void *data, size_t size, bool wait) {
-            _UL_AM_DMI_IMPL_RC(
+            _UL_DMI_IMPL_RC(
                 rc = am::LibraryAppletSend(data, size);
             );
         }
         
         Result DaemonReadImpl(void *data, size_t size, bool wait) {
-            _UL_AM_DMI_IMPL_RC(
+            _UL_DMI_IMPL_RC(
                 rc = am::LibraryAppletRead(data, size);
             );
         }
 
         Result MenuWriteImpl(void *data, size_t size, bool wait) {
-            _UL_AM_DMI_IMPL_RC(
+            _UL_DMI_IMPL_RC(
                 AppletStorage st;
                 rc = appletCreateStorage(&st, size);
                 if(R_SUCCEEDED(rc))
@@ -58,7 +59,7 @@ namespace dmi {
         }
 
         Result MenuReadImpl(void *data, size_t size, bool wait) {
-            _UL_AM_DMI_IMPL_RC(
+            _UL_DMI_IMPL_RC(
                 AppletStorage st;
                 rc = appletPopInData(&st);
                 if(R_SUCCEEDED(rc)) {

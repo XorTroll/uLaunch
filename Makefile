@@ -9,7 +9,7 @@ export UL_DEFS	:=	-DUL_MAJOR=$(UL_MAJOR) -DUL_MINOR=$(UL_MINOR) -DUL_MICRO=$(UL_
 export UL_COMMON_SOURCES	:=	../uLaunch/source ../uLaunch/source/am ../uLaunch/source/dmi ../uLaunch/source/cfg ../uLaunch/source/db ../uLaunch/source/fs ../uLaunch/source/net ../uLaunch/source/os ../uLaunch/source/util
 export UL_COMMON_INCLUDES	:=	../uLaunch/include
 
-export UL_CXXFLAGS	:=	-fno-rtti -fexceptions -std=gnu++17
+export UL_CXXFLAGS	:=	-fno-rtti -fexceptions -fpermissive -std=gnu++17
 
 .PHONY: all base make_hbtarget hbtarget make_daemon daemon make_menu menu clean
 
@@ -34,7 +34,7 @@ make_hbtarget:
 hbtarget: base make_hbtarget
 
 make_daemon:
-	@$(MAKE) -C Atmosphere-libs/
+	@$(MAKE) -C Atmosphere-libs/libstratosphere/
 	@$(MAKE) -C uDaemon/
 	@mkdir -p SdOut/atmosphere/contents/0100000000001000
 	@cp uDaemon/uDaemon.nsp SdOut/atmosphere/contents/0100000000001000/exefs.nsp
