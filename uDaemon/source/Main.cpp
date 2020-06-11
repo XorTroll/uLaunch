@@ -535,8 +535,6 @@ namespace impl {
 // uDaemon handles basic qlaunch functionality and serves as a back-end for uLaunch, communicating with uMenu front-end when neccessary.
 
 int main() {
-    consoleInit(nullptr);
-
     impl::Initialize();
 
     // Cache everything on startup
