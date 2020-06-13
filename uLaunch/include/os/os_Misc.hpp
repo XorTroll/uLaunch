@@ -25,7 +25,7 @@ namespace os {
     };
 
     std::string GetLanguageName(u32 idx);
-    std::vector<std::string> &GetLanguageNameList();
+    const std::vector<std::string> &GetLanguageNameList();
 
     u32 GetBatteryLevel();
     bool IsConsoleCharging();

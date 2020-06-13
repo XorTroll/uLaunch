@@ -3,6 +3,7 @@
 #include <ul_Include.hpp>
 #include <hb/hb_Target.hpp>
 #include <fs/fs_Stdio.hpp>
+#include <util/util_Convert.hpp>
 
 namespace cfg {
 
@@ -130,7 +131,10 @@ namespace cfg {
     void RenameFolder(TitleList &list, const std::string &old_name, const std::string &new_name);
     bool ExistsRecord(TitleList &list, TitleRecord record);
 
-    std::string GetTitleCacheIconPath(u64 app_id);
+    inline std::string GetTitleCacheIconPath(u64 app_id) {
+        return UL_BASE_SD_DIR "/title/" + util::FormatApplicationId(app_id) + ".jpg";
+    }
+
     std::string GetNROCacheIconPath(const std::string &path);
 
 }

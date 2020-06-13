@@ -1,33 +1,38 @@
 #include <am/am_Application.hpp>
 
-namespace am
-{
-    extern bool g_home_has_focus;
-    static AppletApplication g_application_holder;
-    static u64 g_last_app_id;
+namespace am {
+
+    namespace {
+
+        AppletApplication g_ApplicationHolder;
+        u64 g_LastApplicationId;
+
+    }
+
+    extern bool g_DaemonHasFocus;
 
     bool ApplicationIsActive() {
-        if(g_application_holder.StateChangedEvent.revent == INVALID_HANDLE) {
+        if(g_ApplicationHolder.StateChangedEvent.revent == INVALID_HANDLE) {
             return false;
         }
-        if(!serviceIsActive(&g_application_holder.s)) {
+        if(!serviceIsActive(&g_ApplicationHolder.s)) {
             return false;
         }
-        return !appletApplicationCheckFinished(&g_application_holder);
+        return !appletApplicationCheckFinished(&g_ApplicationHolder);
     }
 
     void ApplicationTerminate() {
-        appletApplicationRequestExit(&g_application_holder);
-        g_home_has_focus = true;
+        appletApplicationRequestExit(&g_ApplicationHolder);
+        g_DaemonHasFocus = true;
     }
 
     Result ApplicationStart(u64 app_id, bool system, AccountUid user_id, void *data, size_t size) {
-        appletApplicationClose(&g_application_holder);
+        appletApplicationClose(&g_ApplicationHolder);
         if(system) {
-            R_TRY(appletCreateSystemApplication(&g_application_holder, app_id));
+            R_TRY(appletCreateSystemApplication(&g_ApplicationHolder, app_id));
         }
         else {
-            R_TRY(appletCreateApplication(&g_application_holder, app_id));
+            R_TRY(appletCreateApplication(&g_ApplicationHolder, app_id));
         }
         
         if(accountUidIsValid(&user_id)) {
@@ -40,20 +45,20 @@ namespace am
         }
 
         R_TRY(appletUnlockForeground());
-        R_TRY(appletApplicationStart(&g_application_holder));
+        R_TRY(appletApplicationStart(&g_ApplicationHolder));
         R_TRY(ApplicationSetForeground());
 
-        g_last_app_id = app_id;
+        g_LastApplicationId = app_id;
         return 0;
     }
 
     bool ApplicationHasForeground() {
-        return !g_home_has_focus;
+        return !g_DaemonHasFocus;
     }
 
     Result ApplicationSetForeground() {
-        R_TRY(appletApplicationRequestForApplicationToGetForeground(&g_application_holder));
-        g_home_has_focus = false;
+        R_TRY(appletApplicationRequestForApplicationToGetForeground(&g_ApplicationHolder));
+        g_DaemonHasFocus = false;
         return ResultSuccess;
     }
 
@@ -64,12 +69,12 @@ namespace am
             appletStorageClose(&st);
         });
         R_TRY(appletStorageWrite(&st, 0, data, size));
-        R_TRY(appletApplicationPushLaunchParameter(&g_application_holder, kind, &st));
+        R_TRY(appletApplicationPushLaunchParameter(&g_ApplicationHolder, kind, &st));
         return ResultSuccess;
     }
 
     u64 ApplicationGetId() {
-        return g_last_app_id;
+        return g_LastApplicationId;
     }
 
     bool ApplicationNeedsUser(u64 app_id) {

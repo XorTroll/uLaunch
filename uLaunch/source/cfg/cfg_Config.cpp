@@ -2,9 +2,7 @@
 #include <os/os_Titles.hpp>
 #include <util/util_Misc.hpp>
 #include <util/util_String.hpp>
-#include <fs/fs_Stdio.hpp>
 #include <db/db_Save.hpp>
-#include <util/util_Convert.hpp>
 
 namespace cfg {
 
@@ -218,8 +216,7 @@ namespace cfg {
         return cfg;
     }
 
-    Config LoadConfig()
-    {
+    Config LoadConfig() {
         // Default constructor sets everything
         Config cfg = {};
         JSON cfgjson;
@@ -248,9 +245,9 @@ namespace cfg {
         return CreateNewAndLoadConfig();
     }
 
-    void SaveConfig(const Config &cfg)
-    {
+    void SaveConfig(const Config &cfg) {
         fs::DeleteFile(CFG_CONFIG_JSON);
+
         auto json = JSON::object();
         json["theme_name"] = cfg.theme_name;
         json["viewer_usb_enabled"] = cfg.viewer_usb_enabled;
@@ -258,13 +255,13 @@ namespace cfg {
         json["menu_program_id"] = util::FormatApplicationId(cfg.menu_program_id);
         json["homebrew_applet_program_id"] = util::FormatApplicationId(cfg.homebrew_applet_program_id);
         json["homebrew_title_application_id"] = util::FormatApplicationId(cfg.homebrew_title_application_id);
+
         std::ofstream ofs(CFG_CONFIG_JSON);
         ofs << std::setw(4) << json;
         ofs.close();
     }
 
-    void SaveRecord(TitleRecord &record)
-    {
+    void SaveRecord(TitleRecord &record) {
         auto entry = JSON::object();
         entry["type"] = record.title_type;
         entry["folder"] = record.sub_folder;
@@ -507,8 +504,7 @@ namespace cfg {
         return title_found;
     }
 
-    TitleFolder &FindFolderByName(TitleList &list, const std::string &name)
-    {
+    TitleFolder &FindFolderByName(TitleList &list, const std::string &name) {
         if(!name.empty()) {
             auto f = STL_FIND_IF(list.folders, fld, (fld.name == name));
             if(STL_FOUND(list.folders, f)) {
@@ -529,9 +525,8 @@ namespace cfg {
         }
     }
 
-    bool ExistsRecord(TitleList &list, TitleRecord record)
-    {
-        bool title_found = false;
+    bool ExistsRecord(TitleList &list, TitleRecord record) {
+        auto title_found = false;
         TitleRecord record_copy = {};
         std::string recjson;
         const auto type = static_cast<TitleType>(record.title_type);
@@ -670,11 +665,6 @@ namespace cfg {
         return list;
     }
 
-    std::string GetTitleCacheIconPath(u64 app_id) {
-        auto strappid = util::FormatApplicationId(app_id);
-        return UL_BASE_SD_DIR "/title/" + strappid + ".jpg";
-    }
-
     std::string GetNROCacheIconPath(const std::string &path) {
         char pathcopy[FS_MAX_PATH] = {0};
         strcpy(pathcopy, path.c_str());
@@ -683,10 +673,12 @@ namespace cfg {
         std::string out = UL_BASE_SD_DIR "/nro/";
         std::stringstream strm;
         strm << out;
-        for(u32 i = 0; i < 0x10; i++) {
+        // Use the first half of the hash, like N does with NCAs.
+        for(u32 i = 0; i < sizeof(hash) / 2; i++) {
             strm << std::setw(2) << std::setfill('0') << std::hex << std::nouppercase << (u32)hash[i];
         }
         strm << ".jpg";
         return strm.str();
     }
+
 }

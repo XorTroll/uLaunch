@@ -48,7 +48,7 @@ namespace net {
     std::string GetConsoleIPAddress() {
         char ipaddr[0x20] = {0};
         auto ip = gethostid();
-        sprintf(ipaddr, "%lu.%lu.%lu.%lu", (ip & 0xff000000) >> 24, (ip & 0x00ff0000) >> 16, (ip & 0x0000ff00) >> 8, (ip & 0x000000ff));
+        sprintf(ipaddr, "%lu.%lu.%lu.%lu", (ip & 0x000000FF), (ip & 0x0000FF00) >> 8, (ip & 0x00FF0000) >> 16, (ip & 0xFF000000) >> 24);
         return ipaddr;
     }
 

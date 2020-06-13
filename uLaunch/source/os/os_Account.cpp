@@ -15,10 +15,11 @@ namespace os {
         s32 acc_count = 0;
         R_TRY(accountListAllUsers(uids, ACC_USER_LIST_SIZE, &acc_count));
         for(s32 i = 0; i < acc_count; i++) {
-            out_accounts.push_back(uids[i]);
+            auto uid = uids[i];
+            out_accounts.push_back(uid);
             if(dump_icon) {
                 AccountProfile prof;
-                auto rc = accountGetProfile(&prof, uids[i]);
+                auto rc = accountGetProfile(&prof, uid);
                 if(R_SUCCEEDED(rc)) {
                     u32 imgsz = 0;
                     rc = accountProfileGetImageSize(&prof, &imgsz);
@@ -27,7 +28,7 @@ namespace os {
                         u32 tmpsz;
                         rc = accountProfileLoadImage(&prof, imgbuf, imgsz, &tmpsz);
                         if(R_SUCCEEDED(rc)) {
-                            auto iconcache = GetIconCacheImagePath(uids[i]);
+                            auto iconcache = GetIconCacheImagePath(uid);
                             fs::WriteFile(iconcache, imgbuf, imgsz, true);
                         }
                         delete[] imgbuf;

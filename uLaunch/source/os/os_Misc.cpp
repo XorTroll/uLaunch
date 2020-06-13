@@ -3,35 +3,39 @@
 
 namespace os {
 
-    static std::vector<std::string> g_lang_names = {
-        "Japanese",
-        "American English",
-        "Français",
-        "Deutsch",
-        "Italiano",
-        "Español",
-        "Chinese",
-        "Korean",
-        "Nederlands",
-        "Português",
-        "Русский",
-        "Taiwanese",
-        "British English",
-        "Français canadien",
-        "Español latino",
-        "Chinese (simplified)",
-        "Chinese (traditional)"
-    };
+    namespace {
 
-    std::string GetLanguageName(u32 idx) {
-        if(idx >= g_lang_names.size()) {
-            return "";
-        }
-        return g_lang_names[idx];
+        const std::vector<std::string> g_LanguageNameList = {
+            "Japanese",
+            "American English",
+            "Français",
+            "Deutsch",
+            "Italiano",
+            "Español",
+            "Chinese",
+            "Korean",
+            "Nederlands",
+            "Português",
+            "Русский",
+            "Taiwanese",
+            "British English",
+            "Français canadien",
+            "Español latino",
+            "Chinese (simplified)",
+            "Chinese (traditional)"
+        };
+
     }
 
-    std::vector<std::string> &GetLanguageNameList() {
-        return g_lang_names;
+    std::string GetLanguageName(u32 idx) {
+        if(idx >= g_LanguageNameList.size()) {
+            return "";
+        }
+        return g_LanguageNameList[idx];
+    }
+
+    const std::vector<std::string> &GetLanguageNameList() {
+        return g_LanguageNameList;
     }
 
     u32 GetBatteryLevel() {
@@ -53,6 +57,7 @@ namespace os {
     }
 
     // Thanks Goldleaf
+    
     std::string GetCurrentTime() {
         auto time_val = time(nullptr);
         auto local_time = localtime(&time_val);
