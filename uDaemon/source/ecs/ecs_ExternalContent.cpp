@@ -8,7 +8,8 @@ namespace ecs {
 
     namespace {
 
-        // fsp-srv's options, since we're hosting FileSystem sessions
+        // fsp-srv's options, since we're hosting IFileSystem sessions
+
         struct ServerOptions {
             static constexpr size_t PointerBufferSize = 0x800;
             static constexpr size_t MaxDomains = 0x40;
@@ -17,42 +18,48 @@ namespace ecs {
 
         constexpr size_t MaxServers = 0;
 
-        bool initialized = false;
-        Thread manager_process_thread;
-        ams::sf::hipc::ServerManager<MaxServers, ServerOptions> manager_instance;
+        bool g_Initialized = false;
+        Thread g_EcsManagerThread;
+        ams::sf::hipc::ServerManager<MaxServers, ServerOptions> g_EcsManager;
 
     }
 
-    static void ECSManagerThread(void *arg) {
-        manager_instance.LoopProcess();
+    static void EcsManagerThread(void *arg) {
+        g_EcsManager.LoopProcess();
     }
 
     Result Initialize() {
-        if(initialized) {
+        if(g_Initialized) {
             return ResultSuccess;
         }
         R_TRY(ldrShellInitialize());
         R_TRY(pmshellInitialize());
         
-        R_TRY(threadCreate(&manager_process_thread, &ECSManagerThread, nullptr, nullptr, 0x8000, 0x2b, -2));
-        R_TRY(threadStart(&manager_process_thread));
+        R_TRY(threadCreate(&g_EcsManagerThread, &EcsManagerThread, nullptr, nullptr, 0x8000, 0x2B, -2));
+        R_TRY(threadStart(&g_EcsManagerThread));
+        
+        g_Initialized = true;
         return ResultSuccess;
     }
 
     void Exit() {
-        threadWaitForExit(&manager_process_thread);
-        pmshellExit();
-        ldrShellExit();
+        if(g_Initialized) {
+            threadWaitForExit(&g_EcsManagerThread);
+            pmshellExit();
+            ldrShellExit();
+
+            g_Initialized = false;
+        }
     }
 
-    static inline Result ldrShellAtmosphereRegisterExternalCode(u64 app_id, Handle *out_h) {
+    inline Result ldrShellAtmosphereRegisterExternalCode(u64 app_id, Handle *out_h) {
         return serviceDispatchIn(ldrShellGetServiceSession(), 65000, app_id,
             .out_handle_attrs = { SfOutHandleAttr_HipcMove },
             .out_handles = out_h,
         );
     }
 
-    static inline Result ldrShellAtmosphereUnregisterExternalCode(u64 app_id) {
+    inline Result ldrShellAtmosphereUnregisterExternalCode(u64 app_id) {
         return serviceDispatchIn(ldrShellGetServiceSession(), 65001, app_id);
     }
 
@@ -61,12 +68,13 @@ namespace ecs {
         ldrShellAtmosphereUnregisterExternalCode(app_id);
         R_TRY(ldrShellAtmosphereRegisterExternalCode(app_id, &move_h));
 
-        // Create a remote access session to SD's filesystem (ams's original remote fs would close it, and we don't want that!)
+        // Create a remote access session to SD's filesystem (ams's original remote filesystem implementation would close it)
+
         std::unique_ptr<ams::fs::fsa::IFileSystem> sd_ifs = std::make_unique<RemoteSdCardFileSystem>();
         auto sd_ifs_ipc = std::make_shared<ams::fssrv::impl::FileSystemInterfaceAdapter>(std::make_shared<ams::fssystem::SubDirectoryFileSystem>(std::move(sd_ifs), exefs_path.c_str()), false);
 
         ams::sf::cmif::ServiceObjectHolder srv_holder(std::move(sd_ifs_ipc));
-        R_TRY(manager_instance.RegisterSession(move_h, std::move(srv_holder)).GetValue());
+        R_TRY(g_EcsManager.RegisterSession(move_h, std::move(srv_holder)).GetValue());
 
         return ResultSuccess;
     }

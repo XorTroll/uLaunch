@@ -160,11 +160,11 @@ static void getIsAutomaticGameplayRecording(void) {
 
             if (R_SUCCEEDED(rc)) {
                 size_t dummy;
-                rc = nsGetApplicationControlData(0x1, cur_tid, &g_applicationControlData, sizeof(g_applicationControlData), &dummy);
+                rc = nsGetApplicationControlData(NsApplicationControlSource_Storage, cur_tid, &g_applicationControlData, sizeof(g_applicationControlData), &dummy);
                 nsExit();
             }
 
-            if (R_SUCCEEDED(rc) && g_applicationControlData.nacp.video_capture_mode == 2) g_isAutomaticGameplayRecording = 1;
+            if (R_SUCCEEDED(rc) && g_applicationControlData.nacp.video_capture == 2) g_isAutomaticGameplayRecording = 1;
             smExit();
         }
     }

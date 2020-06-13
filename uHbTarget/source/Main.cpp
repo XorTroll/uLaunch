@@ -26,9 +26,9 @@ namespace {
 
     namespace impl {
 
-        static Handle g_process_handle = INVALID_HANDLE;
-        static u64 g_process_id = 0;
-        static u64 g_program_id = 0;
+        Handle g_process_handle = INVALID_HANDLE;
+        u64 g_process_id = 0;
+        u64 g_program_id = 0;
 
         Result ProcessInfoReceiverImpl(Handle session) {
             auto base = armGetTls();
@@ -37,7 +37,7 @@ namespace {
             s32 idx = 0;
             R_TRY(svcReplyAndReceive(&idx, &session, 1, INVALID_HANDLE, UINT64_MAX));
 
-            HipcParsedRequest r = hipcParseRequest(base);
+            auto r = hipcParseRequest(base);
             g_process_handle = r.data.copy_handles[0];
             g_process_id = r.pid;
             svcCloseHandle(session);

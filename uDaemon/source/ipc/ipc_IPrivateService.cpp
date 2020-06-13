@@ -2,8 +2,8 @@
 #include <dmi/dmi_DaemonMenuInteraction.hpp>
 #include <am/am_LibraryApplet.hpp>
 
-extern ams::os::Mutex g_last_menu_msg_lock;
-extern dmi::MenuMessage g_last_menu_msg;
+extern ams::os::Mutex g_LastMenuMessageLock;
+extern dmi::MenuMessage g_LastMenuMessage;
 
 namespace ipc {
 
@@ -18,9 +18,9 @@ namespace ipc {
             return RES_VALUE(Daemon, PrivateServiceInvalidProcess);
         }
         
-        std::scoped_lock lk(g_last_menu_msg_lock);
-        out_msg.SetValue(static_cast<u32>(g_last_menu_msg));
-        g_last_menu_msg = dmi::MenuMessage::Invalid;
+        std::scoped_lock lk(g_LastMenuMessageLock);
+        out_msg.SetValue(static_cast<u32>(g_LastMenuMessage));
+        g_LastMenuMessage = dmi::MenuMessage::Invalid;
         return ams::ResultSuccess();
     }
 

@@ -113,6 +113,7 @@ namespace ui::actions {
 
     void ShowAlbumApplet() {
         dmi::MenuMessageWriter writer(dmi::DaemonMessage::OpenAlbum);
+        writer.FinishWrite();
 
         g_menu_app_instance->StopPlayBGM();
         g_menu_app_instance->CloseWithFadeOut();

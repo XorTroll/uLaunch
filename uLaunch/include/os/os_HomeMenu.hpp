@@ -23,13 +23,13 @@ namespace os {
 
         u32 magic;
         u32 unk;
-        u32 general_channel_message;
+        GeneralChannelMessage general_channel_message;
         u8 data[0x3F4];
 
         static inline constexpr SystemAppletMessage Create(GeneralChannelMessage msg) {
             SystemAppletMessage sams = {};
             sams.magic = Magic;
-            sams.general_channel_message = static_cast<u32>(msg);
+            sams.general_channel_message = msg;
             return sams;
         }
 

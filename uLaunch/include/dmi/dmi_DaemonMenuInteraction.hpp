@@ -77,13 +77,9 @@ namespace dmi {
                 this->inner_rc = WriteFn(&this->request, sizeof(this->request), Wait);
             }
 
-            ~CommandWriter() {
-                this->FinishWrite();
-            }
-
             inline void FinishWrite() {
                 if(!this->write_done) {
-                    WriteFn(this->data_block, BlockSize, false);
+                    WriteFn(this->data_block, BlockSize, Wait);
                     if(this->data_block != nullptr) {
                         delete[] this->data_block;
                         this->data_block = nullptr;
@@ -102,8 +98,12 @@ namespace dmi {
 
             template<typename T>
             inline void Write(T t) {
-                memcpy(&this->data_block[this->data_pos], &t, sizeof(T));
-                this->data_pos += sizeof(T);
+                if(!this->write_done) {
+                    if((this->data_pos + sizeof(T)) <= BlockSize) {
+                        memcpy(this->data_block + this->data_pos, &t, sizeof(T));
+                        this->data_pos += sizeof(T);
+                    }
+                }
             }
 
     };
@@ -125,10 +125,6 @@ namespace dmi {
                 if(R_SUCCEEDED(this->inner_rc)) {
                     this->inner_rc = ReadFn(this->data_block, BlockSize, Wait);
                 }
-            }
-
-            ~CommandReader() {
-                this->FinishRead();
             }
 
             inline void FinishRead() {
@@ -155,9 +151,14 @@ namespace dmi {
 
             template<typename T>
             inline T Read() {
-                auto t = *reinterpret_cast<T*>(this->data_block + data_pos);
-                data_pos += sizeof(T);
-                return t;
+                if(!this->read_done) {
+                    if((this->data_pos + sizeof(T)) <= BlockSize) {
+                        auto t = *reinterpret_cast<T*>(this->data_block + this->data_pos);
+                        data_pos += sizeof(T);
+                        return t;
+                    }
+                }
+                return T();
             }
 
     };

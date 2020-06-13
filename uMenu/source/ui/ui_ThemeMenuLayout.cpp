@@ -131,6 +131,7 @@ namespace ui {
                     // g_menu_app_instance->ShowNotification(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_changed"));
 
                     dmi::MenuMessageWriter writer(dmi::DaemonMessage::RestartMenu);
+                    writer.FinishWrite();
                 }
             }
         }
@@ -149,9 +150,10 @@ namespace ui {
 
                     g_menu_app_instance->StopPlayBGM();
                     g_menu_app_instance->CloseWithFadeOut();
-                    // g_menu_app_instance->ShowNotification(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_changed"));
+                    g_menu_app_instance->ShowNotification(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_changed"));
 
                     dmi::MenuMessageWriter writer(dmi::DaemonMessage::RestartMenu);
+                    writer.FinishWrite();
                 }
             }
         }

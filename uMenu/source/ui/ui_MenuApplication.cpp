@@ -186,6 +186,7 @@ namespace ui {
         this->status.selected_user = user_id;
         dmi::MenuMessageWriter writer(dmi::DaemonMessage::SetSelectedUser);
         writer.Write<AccountUid>(user_id);
+        writer.FinishWrite();
     }
 
     AccountUid MenuApplication::GetSelectedUser() {

@@ -46,7 +46,7 @@ namespace ui {
         g_menu_app_instance->ApplyConfigForElement("settings_menu", "info_text", this->infoText);
         this->Add(this->infoText);
 
-        this->settingsMenu = pu::ui::elm::Menu::New(200, 160, 880, menubgclr, 100, 4);
+        this->settingsMenu = pu::ui::elm::Menu::New(50, 160, 1180, menubgclr, 100, 4);
         this->settingsMenu->SetOnFocusColor(menufocusclr);
         g_menu_app_instance->ApplyConfigForElement("settings_menu", "settings_menu_item", this->settingsMenu);
         this->Add(this->settingsMenu);
