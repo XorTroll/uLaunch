@@ -356,7 +356,7 @@ namespace {
     }
 
     void PrepareUsbViewer() {
-        g_UsbViewerBuffer = new (std::align_val_t(0x1000), std::nothrow) u8[UsbPacketSize]();
+        g_UsbViewerBuffer = new (std::align_val_t(0x1000)) u8[UsbPacketSize]();
         g_UsbViewerReadBuffer = g_UsbViewerBuffer + sizeof(u32);
         u64 tmp_size;
         if(R_SUCCEEDED(capsscCaptureJpegScreenShot(&tmp_size, g_UsbViewerReadBuffer, RawRGBAScreenBufferSize, ViLayerStack_Default, UINT64_MAX))) {
@@ -522,7 +522,7 @@ namespace {
             if(g_UsbViewerMode == UsbMode::JPEG) {
                 capsscExit();
             }
-            operator delete[](g_UsbViewerBuffer, std::align_val_t(0x1000), std::nothrow);
+            operator delete[](g_UsbViewerBuffer, std::align_val_t(0x1000));
         }
 
         nsExit();

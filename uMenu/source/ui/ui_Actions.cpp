@@ -12,39 +12,39 @@
 #include <fs/fs_Stdio.hpp>
 #include <net/net_Service.hpp>
 
-extern ui::MenuApplication::Ref g_menu_app_instance;
-extern cfg::Config g_ul_config;
+extern ui::MenuApplication::Ref g_MenuApplication;
+extern cfg::Config g_Config;
 
 namespace ui::actions {
 
     void ShowAboutDialog() {
-        g_menu_app_instance->CreateShowDialog(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "ulaunch_about"), "uLaunch v" + std::string(UL_VERSION) + "\n\n" + cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "ulaunch_desc") + ":\nhttps://github.com/XorTroll/uLaunch", { cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "ok") }, true, "romfs:/LogoLarge.png");
+        g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "ulaunch_about"), "uLaunch v" + std::string(UL_VERSION) + "\n\n" + cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "ulaunch_desc") + ":\nhttps://github.com/XorTroll/uLaunch", { cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "ok") }, true, "romfs:/LogoLarge.png");
     }
 
     void ShowSettingsMenu() {
-        g_menu_app_instance->FadeOut();
-        g_menu_app_instance->LoadSettingsMenu();
-        g_menu_app_instance->FadeIn();
+        g_MenuApplication->FadeOut();
+        g_MenuApplication->LoadSettingsMenu();
+        g_MenuApplication->FadeIn();
     }
 
     void ShowThemesMenu() {
-        g_menu_app_instance->FadeOut();
-        g_menu_app_instance->LoadThemeMenu();
-        g_menu_app_instance->FadeIn();
+        g_MenuApplication->FadeOut();
+        g_MenuApplication->LoadThemeMenu();
+        g_MenuApplication->FadeIn();
     }
 
     void ShowUserMenu() {
-        auto uid = g_menu_app_instance->GetSelectedUser();
+        auto uid = g_MenuApplication->GetSelectedUser();
         std::string name;
         os::GetAccountName(name, uid);
-        auto sopt = g_menu_app_instance->CreateShowDialog(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "user_settings"), cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "user_selected") + ": " + name + "\n" + cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "user_option"), { cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "user_view_page"), cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "user_logoff"), cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "cancel") }, true, os::GetIconCacheImagePath(uid));
+        auto sopt = g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "user_settings"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "user_selected") + ": " + name + "\n" + cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "user_option"), { cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "user_view_page"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "user_logoff"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "cancel") }, true, os::GetIconCacheImagePath(uid));
         if(sopt == 0) {
             friendsLaShowMyProfileForHomeMenu(uid);
         }
         else if(sopt == 1) {
             u32 logoff = 0;
-            if(g_menu_app_instance->IsSuspended()) {
-                auto sopt = g_menu_app_instance->CreateShowDialog(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "suspended_app"), cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "user_logoff_app_suspended"), { cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "yes"), cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "cancel") }, true);
+            if(g_MenuApplication->IsSuspended()) {
+                auto sopt = g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "suspended_app"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "user_logoff_app_suspended"), { cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "yes"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "cancel") }, true);
                 if(sopt == 0) {
                     logoff = 2;
                 }
@@ -53,14 +53,14 @@ namespace ui::actions {
                 logoff = 1;
             }
             if(logoff > 0) {
-                auto &menu_lyt = g_menu_app_instance->GetMenuLayout();
+                auto &menu_lyt = g_MenuApplication->GetMenuLayout();
                 if(logoff == 2) {
                     menu_lyt->DoTerminateApplication();
                 }
-                g_menu_app_instance->FadeOut();
+                g_MenuApplication->FadeOut();
                 menu_lyt->MoveFolder("", false);
-                g_menu_app_instance->LoadStartupMenu();
-                g_menu_app_instance->FadeIn();
+                g_MenuApplication->LoadStartupMenu();
+                g_MenuApplication->FadeIn();
             }
         }
     }
@@ -81,7 +81,7 @@ namespace ui::actions {
         UL_ON_SCOPE_EXIT({
             swkbdClose(&swkbd);
         });
-        swkbdConfigSetGuideText(&swkbd, cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "swkbd_webpage_guide").c_str());
+        swkbdConfigSetGuideText(&swkbd, cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "swkbd_webpage_guide").c_str());
         
         char url[500] = {0};
         swkbdShow(&swkbd, url, 500);
@@ -94,35 +94,35 @@ namespace ui::actions {
         writer.Write<WebCommonConfig>(web);
         writer.FinishWrite();
 
-        g_menu_app_instance->StopPlayBGM();
-        g_menu_app_instance->CloseWithFadeOut();
+        g_MenuApplication->StopPlayBGM();
+        g_MenuApplication->CloseWithFadeOut();
     }
 
     void ShowHelpDialog() {
         std::string msg;
-        msg += " - " + cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "help_launch") + "\n";
-        msg += " - " + cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "help_close") + "\n";
-        msg += " - " + cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "help_quick") + "\n";
-        msg += " - " + cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "help_multiselect") + "\n";
-        msg += " - " + cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "help_back") + "\n";
-        msg += " - " + cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "help_minus") + "\n";
-        msg += " - " + cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "help_plus") + "\n";
+        msg += " - " + cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "help_launch") + "\n";
+        msg += " - " + cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "help_close") + "\n";
+        msg += " - " + cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "help_quick") + "\n";
+        msg += " - " + cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "help_multiselect") + "\n";
+        msg += " - " + cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "help_back") + "\n";
+        msg += " - " + cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "help_minus") + "\n";
+        msg += " - " + cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "help_plus") + "\n";
 
-        g_menu_app_instance->CreateShowDialog(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "help_title"), msg, { cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "ok") }, true);
+        g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "help_title"), msg, { cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "ok") }, true);
     }
 
     void ShowAlbumApplet() {
         dmi::MenuMessageWriter writer(dmi::DaemonMessage::OpenAlbum);
         writer.FinishWrite();
 
-        g_menu_app_instance->StopPlayBGM();
-        g_menu_app_instance->CloseWithFadeOut();
+        g_MenuApplication->StopPlayBGM();
+        g_MenuApplication->CloseWithFadeOut();
     }
 
     void ShowPowerDialog() {
         auto msg = os::GeneralChannelMessage::Invalid;
 
-        auto sopt = g_menu_app_instance->CreateShowDialog(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "power_dialog"), cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "power_dialog_info"), { cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "power_sleep"), cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "power_power_off"), cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "power_reboot"), cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "cancel") }, true);
+        auto sopt = g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "power_dialog"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "power_dialog_info"), { cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "power_sleep"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "power_power_off"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "power_reboot"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "cancel") }, true);
         if(sopt == 0) {
             msg = os::GeneralChannelMessage::Sleep;
         }
@@ -135,14 +135,14 @@ namespace ui::actions {
 
         if(msg != os::GeneralChannelMessage::Invalid) {
             // Fade out on all cases
-            g_menu_app_instance->FadeOut();
+            g_MenuApplication->FadeOut();
             
             auto smsg = os::SystemAppletMessage::Create(msg);
             os::PushSystemAppletMessage(smsg);
             svcSleepThread(1'500'000'000L);
 
             // When we get back after sleep we will do a cool fade in, whereas wuth the other options the console will be already off/rebooted
-            g_menu_app_instance->FadeIn();
+            g_MenuApplication->FadeIn();
         }
     }
 

@@ -47,8 +47,7 @@ namespace dmi {
             _UL_DMI_IMPL_RC(
                 AppletStorage st;
                 rc = appletCreateStorage(&st, size);
-                if(R_SUCCEEDED(rc))
-                {
+                if(R_SUCCEEDED(rc)) {
                     rc = appletStorageWrite(&st, 0, data, size);
                     if(R_SUCCEEDED(rc)) {
                         rc = appletPushOutData(&st);
@@ -64,8 +63,8 @@ namespace dmi {
                 rc = appletPopInData(&st);
                 if(R_SUCCEEDED(rc)) {
                     rc = appletStorageRead(&st, 0, data, size);
+                    appletStorageClose(&st);
                 }
-                appletStorageClose(&st);
             );
         }
 

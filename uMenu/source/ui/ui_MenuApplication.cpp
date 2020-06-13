@@ -1,32 +1,32 @@
 #include <ui/ui_MenuApplication.hpp>
 #include <util/util_Misc.hpp>
 
-extern u8 *g_app_capture_buffer;
-extern cfg::Theme g_ul_theme;
-extern ui::MenuApplication::Ref g_menu_app_instance;
+extern u8 *g_ScreenCaptureBuffer;
+extern cfg::Theme g_Theme;
+extern ui::MenuApplication::Ref g_MenuApplication;
 
 namespace ui {
 
     void UiOnHomeButtonDetection() {
-        switch(g_menu_app_instance->GetCurrentLoadedMenu()) {
+        switch(g_MenuApplication->GetCurrentLoadedMenu()) {
             case MenuType::Startup: {
-                g_menu_app_instance->GetStartupLayout()->DoOnHomeButtonPress();
+                g_MenuApplication->GetStartupLayout()->DoOnHomeButtonPress();
                 break;
             }
             case MenuType::Main: {
-                g_menu_app_instance->GetMenuLayout()->DoOnHomeButtonPress();
+                g_MenuApplication->GetMenuLayout()->DoOnHomeButtonPress();
                 break;
             }
             case MenuType::Settings: {
-                g_menu_app_instance->GetSettingsMenuLayout()->DoOnHomeButtonPress();
+                g_MenuApplication->GetSettingsMenuLayout()->DoOnHomeButtonPress();
                 break;
             }
             case MenuType::Theme: {
-                g_menu_app_instance->GetThemeMenuLayout()->DoOnHomeButtonPress();
+                g_MenuApplication->GetThemeMenuLayout()->DoOnHomeButtonPress();
                 break;
             }
             case MenuType::Languages: {
-                g_menu_app_instance->GetLanguagesMenuLayout()->DoOnHomeButtonPress();
+                g_MenuApplication->GetLanguagesMenuLayout()->DoOnHomeButtonPress();
                 break;
             }
         }
@@ -35,11 +35,11 @@ namespace ui {
     void MenuApplication::OnLoad() {
         if(this->IsSuspended()) {
             bool flag;
-            appletGetLastApplicationCaptureImageEx(g_app_capture_buffer, RawRGBAScreenBufferSize, &flag);
+            appletGetLastApplicationCaptureImageEx(g_ScreenCaptureBuffer, RawRGBAScreenBufferSize, &flag);
         }
 
         auto jbgm = JSON::object();
-        util::LoadJSONFromFile(jbgm, cfg::GetAssetByTheme(g_ul_theme, "sound/BGM.json"));
+        util::LoadJSONFromFile(jbgm, cfg::GetAssetByTheme(g_Theme, "sound/BGM.json"));
         this->bgmjson = jbgm;
         this->bgm_loop = this->bgmjson.value("loop", true);
         this->bgm_fade_in_ms = this->bgmjson.value("fade_in_ms", 1500);
@@ -49,10 +49,10 @@ namespace ui {
         auto toastbaseclr = pu::ui::Color::FromHex(GetUIConfigValue<std::string>("toast_base_color", "#282828ff"));
         this->notifToast = pu::ui::extras::Toast::New("...", "DefaultFont@20", toasttextclr, toastbaseclr);
 
-        this->bgm = pu::audio::Open(cfg::GetAssetByTheme(g_ul_theme, "sound/BGM.mp3"));
+        this->bgm = pu::audio::Open(cfg::GetAssetByTheme(g_Theme, "sound/BGM.mp3"));
 
         this->startupLayout = StartupLayout::New();
-        this->menuLayout = MenuLayout::New(g_app_capture_buffer, this->uijson.value("suspended_final_alpha", 80));
+        this->menuLayout = MenuLayout::New(g_ScreenCaptureBuffer, this->uijson.value("suspended_final_alpha", 80));
         this->themeMenuLayout = ThemeMenuLayout::New();
         this->settingsMenuLayout = SettingsMenuLayout::New();
         this->languagesMenuLayout = LanguagesMenuLayout::New();

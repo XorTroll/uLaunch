@@ -4,74 +4,74 @@
 #include <ui/ui_MenuApplication.hpp>
 #include <fs/fs_Stdio.hpp>
 
-extern ui::MenuApplication::Ref g_menu_app_instance;
-extern cfg::Theme g_ul_theme;
-extern cfg::Config g_ul_config;
+extern ui::MenuApplication::Ref g_MenuApplication;
+extern cfg::Theme g_Theme;
+extern cfg::Config g_Config;
 
 namespace ui {
 
     ThemeMenuLayout::ThemeMenuLayout() {
-        this->SetBackgroundImage(cfg::GetAssetByTheme(g_ul_theme, "ui/Background.png"));
+        this->SetBackgroundImage(cfg::GetAssetByTheme(g_Theme, "ui/Background.png"));
 
-        auto textclr = pu::ui::Color::FromHex(g_menu_app_instance->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
-        auto menufocusclr = pu::ui::Color::FromHex(g_menu_app_instance->GetUIConfigValue<std::string>("menu_focus_color", "#5ebcffff"));
-        auto menubgclr = pu::ui::Color::FromHex(g_menu_app_instance->GetUIConfigValue<std::string>("menu_bg_color", "#0094ffff"));
+        auto textclr = pu::ui::Color::FromHex(g_MenuApplication->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
+        auto menufocusclr = pu::ui::Color::FromHex(g_MenuApplication->GetUIConfigValue<std::string>("menu_focus_color", "#5ebcffff"));
+        auto menubgclr = pu::ui::Color::FromHex(g_MenuApplication->GetUIConfigValue<std::string>("menu_bg_color", "#0094ffff"));
 
-        this->curThemeBanner = pu::ui::elm::Image::New(0, 585, cfg::GetAssetByTheme(g_ul_theme, "ui/BannerTheme.png"));
-        g_menu_app_instance->ApplyConfigForElement("themes_menu", "banner_image", this->curThemeBanner);
+        this->curThemeBanner = pu::ui::elm::Image::New(0, 585, cfg::GetAssetByTheme(g_Theme, "ui/BannerTheme.png"));
+        g_MenuApplication->ApplyConfigForElement("themes_menu", "banner_image", this->curThemeBanner);
         this->Add(this->curThemeBanner);
 
         this->themesMenu = pu::ui::elm::Menu::New(200, 60, 880, menubgclr, 100, 5);
         this->themesMenu->SetOnFocusColor(menufocusclr);
-        g_menu_app_instance->ApplyConfigForElement("themes_menu", "themes_menu_item", this->themesMenu);
+        g_MenuApplication->ApplyConfigForElement("themes_menu", "themes_menu_item", this->themesMenu);
         this->Add(this->themesMenu);
 
-        this->curThemeText = pu::ui::elm::TextBlock::New(20, 540, cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_current") + ":");
+        this->curThemeText = pu::ui::elm::TextBlock::New(20, 540, cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "theme_current") + ":");
         this->curThemeText->SetFont("DefaultFont@30");
         this->curThemeText->SetColor(textclr);
-        g_menu_app_instance->ApplyConfigForElement("themes_menu", "current_theme_text", this->curThemeText);
+        g_MenuApplication->ApplyConfigForElement("themes_menu", "current_theme_text", this->curThemeText);
         this->Add(this->curThemeText);
         
         this->curThemeName = pu::ui::elm::TextBlock::New(40, 610, "");
         this->curThemeName->SetFont("DefaultFont@30");
         this->curThemeName->SetColor(textclr);
-        g_menu_app_instance->ApplyConfigForElement("themes_menu", "current_theme_name_text", this->curThemeName);
+        g_MenuApplication->ApplyConfigForElement("themes_menu", "current_theme_name_text", this->curThemeName);
         this->Add(this->curThemeName);
         this->curThemeAuthor = pu::ui::elm::TextBlock::New(45, 650, "");
         this->curThemeAuthor->SetFont("DefaultFont@20");
         this->curThemeAuthor->SetColor(textclr);
-        g_menu_app_instance->ApplyConfigForElement("themes_menu", "current_theme_author_text", this->curThemeAuthor);
+        g_MenuApplication->ApplyConfigForElement("themes_menu", "current_theme_author_text", this->curThemeAuthor);
         this->Add(this->curThemeAuthor);
         this->curThemeVersion = pu::ui::elm::TextBlock::New(45, 675, "");
         this->curThemeVersion->SetFont("DefaultFont@30");
         this->curThemeVersion->SetColor(textclr);
-        g_menu_app_instance->ApplyConfigForElement("themes_menu", "current_theme_version_text", this->curThemeVersion);
+        g_MenuApplication->ApplyConfigForElement("themes_menu", "current_theme_version_text", this->curThemeVersion);
         this->Add(this->curThemeVersion);
         this->curThemeIcon = pu::ui::elm::Image::New(1000, 605, "");
         this->curThemeIcon->SetWidth(100);
         this->curThemeIcon->SetHeight(100);
-        g_menu_app_instance->ApplyConfigForElement("themes_menu", "current_theme_icon", this->curThemeIcon);
+        g_MenuApplication->ApplyConfigForElement("themes_menu", "current_theme_icon", this->curThemeIcon);
         this->Add(this->curThemeIcon);
     }
 
     void ThemeMenuLayout::OnMenuInput(u64 down, u64 up, u64 held, pu::ui::Touch touch_pos) {
         if(down & KEY_B) {
-            g_menu_app_instance->FadeOut();
-            g_menu_app_instance->LoadMenu();
-            g_menu_app_instance->FadeIn();
+            g_MenuApplication->FadeOut();
+            g_MenuApplication->LoadMenu();
+            g_MenuApplication->FadeIn();
         }
     }
 
     void ThemeMenuLayout::OnHomeButtonPress() {
-        g_menu_app_instance->FadeOut();
-        g_menu_app_instance->LoadMenu();
-        g_menu_app_instance->FadeIn();
+        g_MenuApplication->FadeOut();
+        g_MenuApplication->LoadMenu();
+        g_MenuApplication->FadeIn();
     }
 
     void ThemeMenuLayout::Reload() {
-        auto textclr = pu::ui::Color::FromHex(g_menu_app_instance->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
-        if(cfg::ThemeIsDefault(g_ul_theme)) {
-            this->curThemeText->SetText(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_no_custom"));
+        auto textclr = pu::ui::Color::FromHex(g_MenuApplication->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
+        if(cfg::ThemeIsDefault(g_Theme)) {
+            this->curThemeText->SetText(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "theme_no_custom"));
             this->curThemeName->SetVisible(false);
             this->curThemeAuthor->SetVisible(false);
             this->curThemeVersion->SetVisible(false);
@@ -79,16 +79,16 @@ namespace ui {
             this->curThemeIcon->SetVisible(false);
         }
         else {
-            this->curThemeText->SetText(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_current") + ":");
+            this->curThemeText->SetText(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "theme_current") + ":");
             this->curThemeName->SetVisible(true);
-            this->curThemeName->SetText(g_ul_theme.manifest.name);
+            this->curThemeName->SetText(g_Theme.manifest.name);
             this->curThemeAuthor->SetVisible(true);
-            this->curThemeAuthor->SetText(g_ul_theme.manifest.author);
+            this->curThemeAuthor->SetText(g_Theme.manifest.author);
             this->curThemeVersion->SetVisible(true);
-            this->curThemeVersion->SetText("v" + g_ul_theme.manifest.release);
+            this->curThemeVersion->SetText("v" + g_Theme.manifest.release);
             this->curThemeBanner->SetVisible(true);
             this->curThemeIcon->SetVisible(true);
-            this->curThemeIcon->SetImage(g_ul_theme.path + "/theme/Icon.png");
+            this->curThemeIcon->SetImage(g_Theme.path + "/theme/Icon.png");
             this->curThemeIcon->SetWidth(100);
             this->curThemeIcon->SetHeight(100);
         }
@@ -98,14 +98,14 @@ namespace ui {
         this->loadedThemes.clear();
         this->loadedThemes = cfg::LoadThemes();
 
-        auto ditm = pu::ui::elm::MenuItem::New(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_reset"));
+        auto ditm = pu::ui::elm::MenuItem::New(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "theme_reset"));
         ditm->AddOnClick(std::bind(&ThemeMenuLayout::theme_Click, this));
         ditm->SetColor(textclr);
         ditm->SetIcon("romfs:/Logo.png");
         this->themesMenu->AddItem(ditm);
         
         for(auto &ltheme: this->loadedThemes) {
-            auto itm = pu::ui::elm::MenuItem::New(ltheme.manifest.name + " (v" + ltheme.manifest.release + ", " + cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_by") + " " + ltheme.manifest.author + ")");
+            auto itm = pu::ui::elm::MenuItem::New(ltheme.manifest.name + " (v" + ltheme.manifest.release + ", " + cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "theme_by") + " " + ltheme.manifest.author + ")");
             itm->AddOnClick(std::bind(&ThemeMenuLayout::theme_Click, this));
             itm->SetColor(textclr);
             auto iconpath = ltheme.path + "/theme/Icon.png";
@@ -117,18 +117,18 @@ namespace ui {
     void ThemeMenuLayout::theme_Click() {
         auto idx = this->themesMenu->GetSelectedIndex();
         if(idx == 0) {
-            if(cfg::ThemeIsDefault(g_ul_theme)) {
-                g_menu_app_instance->ShowNotification(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_no_custom"));
+            if(cfg::ThemeIsDefault(g_Theme)) {
+                g_MenuApplication->ShowNotification(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "theme_no_custom"));
             }
             else {
-                auto sopt = g_menu_app_instance->CreateShowDialog(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_reset"), cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_reset_conf"), { cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "yes"), cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "cancel") }, true);
+                auto sopt = g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "theme_reset"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "theme_reset_conf"), { cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "yes"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "cancel") }, true);
                 if(sopt == 0) {
-                    g_ul_config.theme_name = "";
-                    cfg::SaveConfig(g_ul_config);
+                    g_Config.theme_name = "";
+                    cfg::SaveConfig(g_Config);
 
-                    g_menu_app_instance->StopPlayBGM();
-                    g_menu_app_instance->CloseWithFadeOut();
-                    // g_menu_app_instance->ShowNotification(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_changed"));
+                    g_MenuApplication->StopPlayBGM();
+                    g_MenuApplication->CloseWithFadeOut();
+                    // g_MenuApplication->ShowNotification(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "theme_changed"));
 
                     dmi::MenuMessageWriter writer(dmi::DaemonMessage::RestartMenu);
                     writer.FinishWrite();
@@ -139,18 +139,18 @@ namespace ui {
             idx--;
             auto seltheme = this->loadedThemes[idx];
             auto iconpath = seltheme.path + "/theme/Icon.png";
-            if(seltheme.base_name == g_ul_theme.base_name) {
-                g_menu_app_instance->ShowNotification(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_active_this"));
+            if(seltheme.base_name == g_Theme.base_name) {
+                g_MenuApplication->ShowNotification(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "theme_active_this"));
             }
             else {
-                auto sopt = g_menu_app_instance->CreateShowDialog(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_set"), cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_set_conf"), { cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "yes"), cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "cancel") }, true, iconpath);
+                auto sopt = g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "theme_set"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "theme_set_conf"), { cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "yes"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "cancel") }, true, iconpath);
                 if(sopt == 0) {
-                    g_ul_config.theme_name = seltheme.base_name;
-                    cfg::SaveConfig(g_ul_config);
+                    g_Config.theme_name = seltheme.base_name;
+                    cfg::SaveConfig(g_Config);
 
-                    g_menu_app_instance->StopPlayBGM();
-                    g_menu_app_instance->CloseWithFadeOut();
-                    g_menu_app_instance->ShowNotification(cfg::GetLanguageString(g_ul_config.main_lang, g_ul_config.default_lang, "theme_changed"));
+                    g_MenuApplication->StopPlayBGM();
+                    g_MenuApplication->CloseWithFadeOut();
+                    g_MenuApplication->ShowNotification(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "theme_changed"));
 
                     dmi::MenuMessageWriter writer(dmi::DaemonMessage::RestartMenu);
                     writer.FinishWrite();

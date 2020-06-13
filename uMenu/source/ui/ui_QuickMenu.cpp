@@ -3,8 +3,8 @@
 #include <cfg/cfg_Config.hpp>
 #include <am/am_DaemonMessages.hpp>
 
-extern cfg::Theme g_ul_theme;
-extern ui::MenuApplication::Ref g_menu_app_instance;
+extern cfg::Theme g_Theme;
+extern ui::MenuApplication::Ref g_MenuApplication;
 
 namespace ui {
 
@@ -15,58 +15,58 @@ namespace ui {
         this->on = false;
         this->bgalpha = 0;
 
-        auto textclr = pu::ui::Color::FromHex(g_menu_app_instance->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
-        auto menufocusclr = pu::ui::Color::FromHex(g_menu_app_instance->GetUIConfigValue<std::string>("menu_focus_color", "#5ebcffff"));
-        auto menubgclr = pu::ui::Color::FromHex(g_menu_app_instance->GetUIConfigValue<std::string>("menu_bg_color", "#0094ffff"));
+        auto textclr = pu::ui::Color::FromHex(g_MenuApplication->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
+        auto menufocusclr = pu::ui::Color::FromHex(g_MenuApplication->GetUIConfigValue<std::string>("menu_focus_color", "#5ebcffff"));
+        auto menubgclr = pu::ui::Color::FromHex(g_MenuApplication->GetUIConfigValue<std::string>("menu_bg_color", "#0094ffff"));
 
         this->options_menu = pu::ui::elm::Menu::New(200, 115, 880, menubgclr, 60, 8);
         this->options_menu->SetOnFocusColor(menufocusclr);
-        g_menu_app_instance->ApplyConfigForElement("quick_menu", "quick_menu_item", this->options_menu);
+        g_MenuApplication->ApplyConfigForElement("quick_menu", "quick_menu_item", this->options_menu);
         
         auto opt_item = pu::ui::elm::MenuItem::New("Help & information");
-        opt_item->SetIcon(cfg::GetAssetByTheme(g_ul_theme, "ui/HelpIcon.png"));
+        opt_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/HelpIcon.png"));
         opt_item->AddOnClick(&actions::ShowHelpDialog);
         opt_item->SetColor(textclr);
         this->options_menu->AddItem(opt_item);
 
         opt_item = pu::ui::elm::MenuItem::New("Power options");
-        opt_item->SetIcon(cfg::GetAssetByTheme(g_ul_theme, "ui/PowerIcon.png"));
+        opt_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/PowerIcon.png"));
         opt_item->AddOnClick(&actions::ShowPowerDialog);
         opt_item->SetColor(textclr);
         this->options_menu->AddItem(opt_item);
 
         opt_item = pu::ui::elm::MenuItem::New("Controller options");
-        opt_item->SetIcon(cfg::GetAssetByTheme(g_ul_theme, "ui/ControllerIcon.png"));
+        opt_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/ControllerIcon.png"));
         opt_item->AddOnClick(&actions::ShowControllerSupport);
         opt_item->SetColor(textclr);
         this->options_menu->AddItem(opt_item);
 
         opt_item = pu::ui::elm::MenuItem::New("Open album");
-        opt_item->SetIcon(cfg::GetAssetByTheme(g_ul_theme, "ui/AlbumIcon.png"));
+        opt_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/AlbumIcon.png"));
         opt_item->AddOnClick(&actions::ShowAlbumApplet);
         opt_item->SetColor(textclr);
         this->options_menu->AddItem(opt_item);
 
         opt_item = pu::ui::elm::MenuItem::New("Open web-page");
-        opt_item->SetIcon(cfg::GetAssetByTheme(g_ul_theme, "ui/WebIcon.png"));
+        opt_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/WebIcon.png"));
         opt_item->AddOnClick(&actions::ShowWebPage);
         opt_item->SetColor(textclr);
         this->options_menu->AddItem(opt_item);
 
         opt_item = pu::ui::elm::MenuItem::New("User menu");
-        opt_item->SetIcon(cfg::GetAssetByTheme(g_ul_theme, "ui/UserIcon.png"));
+        opt_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/UserIcon.png"));
         opt_item->AddOnClick(&actions::ShowUserMenu);
         opt_item->SetColor(textclr);
         this->options_menu->AddItem(opt_item);
 
         opt_item = pu::ui::elm::MenuItem::New("Themes menu");
-        opt_item->SetIcon(cfg::GetAssetByTheme(g_ul_theme, "ui/ThemesIcon.png"));
+        opt_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/ThemesIcon.png"));
         opt_item->AddOnClick(&actions::ShowThemesMenu);
         opt_item->SetColor(textclr);
         this->options_menu->AddItem(opt_item);
 
         opt_item = pu::ui::elm::MenuItem::New("Settings menu");
-        opt_item->SetIcon(cfg::GetAssetByTheme(g_ul_theme, "ui/SettingsIcon.png"));
+        opt_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/SettingsIcon.png"));
         opt_item->AddOnClick(&actions::ShowSettingsMenu);
         opt_item->SetColor(textclr);
         this->options_menu->AddItem(opt_item);

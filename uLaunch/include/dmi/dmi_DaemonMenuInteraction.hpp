@@ -49,7 +49,7 @@ namespace dmi {
     };
 
     static constexpr u32 Magic = 0x434D4151;
-    static constexpr size_t BlockSize = 0x4000;
+    static constexpr size_t BlockSize = 0x800;
 
     namespace impl {
 
@@ -73,7 +73,7 @@ namespace dmi {
             bool write_done;
 
         public:
-            CommandWriter(V value) : request({ Magic, static_cast<u32>(value) }), data_block(new (std::nothrow) u8[BlockSize]()), data_pos(0), inner_rc(ResultSuccess), write_done(false) {
+            CommandWriter(V value) : request({ Magic, static_cast<u32>(value) }), data_block(new u8[BlockSize]()), data_pos(0), inner_rc(ResultSuccess), write_done(false) {
                 this->inner_rc = WriteFn(&this->request, sizeof(this->request), Wait);
             }
 
@@ -120,7 +120,7 @@ namespace dmi {
             bool read_done;
 
         public:
-            CommandReader() : response(), data_block(new (std::nothrow) u8[BlockSize]()), data_pos(0), inner_rc(ResultSuccess), read_done(false) {
+            CommandReader() : response(), data_block(new u8[BlockSize]()), data_pos(0), inner_rc(ResultSuccess), read_done(false) {
                 this->inner_rc = ReadFn(&this->response, sizeof(this->response), Wait);
                 if(R_SUCCEEDED(this->inner_rc)) {
                     this->inner_rc = ReadFn(this->data_block, BlockSize, Wait);

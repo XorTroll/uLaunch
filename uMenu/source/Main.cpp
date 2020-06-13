@@ -20,20 +20,18 @@ extern "C" {
 
     u32 __nx_applet_type = AppletType_LibraryApplet; // Explicitly declare we're a library applet (need to do so for non-hbloader homebrew)
     TimeServiceType __nx_time_service_type = TimeServiceType_System;
-    size_t __nx_heap_size = 0x10000000; // 0xD000000; // 208MB heap
+    size_t __nx_heap_size = 0xD000000; // 208MB heap
 
 }
 
-#define MENU_ROMFS_BIN UL_BASE_SD_DIR "/bin/uMenu/romfs.bin"
+#define UL_MENU_ROMFS_BIN UL_BASE_SD_DIR "/bin/uMenu/romfs.bin"
 
-// Some global vars
-
-ui::MenuApplication::Ref g_menu_app_instance;
-cfg::TitleList g_entry_list;
-std::vector<cfg::TitleRecord> g_homebrew_records;
-cfg::Config g_ul_config;
-cfg::Theme g_ul_theme;
-u8 *g_app_capture_buffer;
+ui::MenuApplication::Ref g_MenuApplication;
+cfg::TitleList g_EntryList;
+std::vector<cfg::TitleRecord> g_HomebrewRecordList;
+cfg::Config g_Config;
+cfg::Theme g_Theme;
+u8 *g_ScreenCaptureBuffer;
 
 namespace impl {
 
@@ -54,8 +52,8 @@ namespace impl {
         UL_ASSERT(am::InitializeDaemonMessageHandler());
 
         // Load menu config and theme
-        g_ul_config = cfg::EnsureConfig();
-        g_ul_theme = cfg::LoadTheme(g_ul_config.theme_name);
+        g_Config = cfg::EnsureConfig();
+        g_Theme = cfg::LoadTheme(g_Config.theme_name);
     }
 
     void Exit() {
@@ -82,54 +80,54 @@ int main() {
         
         if(smode != dmi::MenuStartMode::Invalid) {
             // Check if our RomFs data exists...
-            if(!fs::ExistsFile(MENU_ROMFS_BIN)) {
+            if(!fs::ExistsFile(UL_MENU_ROMFS_BIN)) {
                 UL_ASSERT(RES_VALUE(Menu, RomfsBinNotFound));
             }
 
             // Try to mount it
-            UL_ASSERT(romfsMountFromFsdev(MENU_ROMFS_BIN, 0, "romfs"));
+            UL_ASSERT(romfsMountFromFsdev(UL_MENU_ROMFS_BIN, 0, "romfs"));
 
             // After initializing RomFs, start initializing the rest of stuff here
-            g_app_capture_buffer = new (std::nothrow) u8[RawRGBAScreenBufferSize]();
+            g_ScreenCaptureBuffer = new u8[RawRGBAScreenBufferSize]();
             impl::Initialize();
 
-            g_entry_list = cfg::LoadTitleList();
+            g_EntryList = cfg::LoadTitleList();
 
             // Get system language and load translations (default one if not present)
             u64 lcode = 0;
             setGetLanguageCode(&lcode);
             std::string syslang = reinterpret_cast<char*>(&lcode);
             auto lpath = cfg::GetLanguageJSONPath(syslang);
-            UL_ASSERT(util::LoadJSONFromFile(g_ul_config.default_lang, CFG_LANG_DEFAULT));
-            g_ul_config.main_lang = g_ul_config.default_lang;
+            UL_ASSERT(util::LoadJSONFromFile(g_Config.default_lang, CFG_LANG_DEFAULT));
+            g_Config.main_lang = g_Config.default_lang;
             if(fs::ExistsFile(lpath)) {
                 auto ljson = JSON::object();
                 UL_ASSERT(util::LoadJSONFromFile(ljson, lpath));
-                g_ul_config.main_lang = ljson;
+                g_Config.main_lang = ljson;
             }
 
             // Get the text sizes to initialize default fonts
             auto uijson = JSON::object();
-            UL_ASSERT(util::LoadJSONFromFile(uijson, cfg::GetAssetByTheme(g_ul_theme, "ui/UI.json")));
+            UL_ASSERT(util::LoadJSONFromFile(uijson, cfg::GetAssetByTheme(g_Theme, "ui/UI.json")));
             auto menu_folder_txt_sz = uijson.value<u32>("menu_folder_text_size", 25);
 
             auto renderer = pu::ui::render::Renderer::New(pu::ui::render::RendererInitOptions(SDL_INIT_EVERYTHING, pu::ui::render::RendererHardwareFlags).WithIMG(pu::ui::render::IMGAllFlags).WithMixer(pu::ui::render::MixerAllFlags).WithTTF().WithDefaultFontSize(menu_folder_txt_sz));
-            g_menu_app_instance = ui::MenuApplication::New(renderer);
+            g_MenuApplication = ui::MenuApplication::New(renderer);
 
-            g_menu_app_instance->SetInformation(smode, status, uijson);
-            g_menu_app_instance->Prepare();
+            g_MenuApplication->SetInformation(smode, status, uijson);
+            g_MenuApplication->Prepare();
             
             if(smode == dmi::MenuStartMode::MenuApplicationSuspended) {
-                g_menu_app_instance->Show();
+                g_MenuApplication->Show();
             }
             else {
-                g_menu_app_instance->ShowWithFadeIn();
+                g_MenuApplication->ShowWithFadeIn();
             }
 
             // Exit RomFs manually, since we also initialized it manually
             romfsExit();
 
-            operator delete[](g_app_capture_buffer, std::nothrow);
+            delete[] g_ScreenCaptureBuffer;
             impl::Exit();
         }
     }
