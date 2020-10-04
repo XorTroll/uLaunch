@@ -7,7 +7,7 @@ extern dmi::MenuMessage g_LastMenuMessage;
 
 namespace ipc {
 
-    ams::Result IPrivateService::GetLatestMessage(const ams::sf::ClientProcessId &client_pid, ams::sf::Out<u32> out_msg) {
+    ams::Result PrivateService::GetLatestMessage(const ams::sf::ClientProcessId &client_pid, ams::sf::Out<u32> out_msg) {
         u64 program_id = 0;
         R_TRY(pminfoGetProgramId(&program_id, client_pid.process_id.value));
         

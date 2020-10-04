@@ -1,6 +1,5 @@
 #include <ecs/ecs_ExternalContent.hpp>
-#include <ipc/ipc_IPrivateService.hpp>
-#include <ipc/ipc_IPublicService.hpp>
+#include <ipc/ipc_GlobalManager.hpp>
 #include <db/db_Save.hpp>
 #include <os/os_Titles.hpp>
 #include <os/os_HomeMenu.hpp>
@@ -43,24 +42,6 @@ dmi::MenuMessage g_LastMenuMessage = dmi::MenuMessage::Invalid;
 
 namespace {
 
-    struct ServerOptions {
-        static const size_t PointerBufferSize = 0x400;
-        static const size_t MaxDomains = 0x40;
-        static const size_t MaxDomainObjects = 0x40;
-    };
-
-    constexpr size_t MaxPrivateSessions = 1;
-    constexpr ams::sm::ServiceName PrivateServiceName = ams::sm::ServiceName::Encode(AM_DAEMON_PRIVATE_SERVICE_NAME);
-
-    constexpr size_t MaxPublicSessions = 0x20;
-    constexpr ams::sm::ServiceName PublicServiceName = ams::sm::ServiceName::Encode(AM_DAEMON_PUBLIC_SERVICE_NAME);
-
-    constexpr size_t NumServers = 2;
-    constexpr size_t MaxSessions = MaxPrivateSessions + MaxPublicSessions + 1;
-
-    
-    ams::sf::hipc::ServerManager<NumServers, ServerOptions, MaxSessions> g_IpcManager;
-
     enum class UsbMode : u32 {
         Invalid,
         RawRGBA,
@@ -80,8 +61,8 @@ namespace {
     u8 *g_UsbViewerBuffer = nullptr;
     u8 *g_UsbViewerReadBuffer = nullptr;
     cfg::Config g_Config = {};
-    Thread g_IpcServerThread;
-    Thread g_UsbViewerThread;
+    ams::os::ThreadType g_UsbViewerThread;
+    alignas(ams::os::ThreadStackAlignment) u8 g_UsbViewerThreadStack[0x4000];
     UsbMode g_UsbViewerMode = UsbMode::Invalid;
 
     // In the USB packet, the first u32 / the first 4 bytes are the USB mode (raw RGBA or JPEG, depending on what the console supports)
@@ -111,7 +92,7 @@ namespace {
     }
 
     Result LaunchMenu(dmi::MenuStartMode stmode, dmi::DaemonStatus status) {
-        R_TRY(ecs::RegisterLaunchAsApplet(g_Config.menu_program_id, static_cast<u32>(stmode), "/ulaunch/bin/uMenu/", &status, sizeof(status)));
+        R_TRY(ecs::RegisterLaunchAsApplet(g_Config.menu_program_id, static_cast<u32>(stmode), "/ulaunch/bin/uMenu", &status, sizeof(status)));
         return ResultSuccess;
     }
 
@@ -169,6 +150,7 @@ namespace {
                     break;
             }
         }
+
         return ResultSuccess;
     }
 
@@ -332,12 +314,6 @@ namespace {
         }
     }
 
-    void IpcServerThread(void *arg) {
-        UL_ASSERT(g_IpcManager.RegisterServer<ipc::IPrivateService>(PrivateServiceName, MaxPrivateSessions).GetValue());
-        UL_ASSERT(g_IpcManager.RegisterServer<ipc::IPublicService>(PublicServiceName, MaxPublicSessions).GetValue());
-        g_IpcManager.LoopProcess();
-    }
-
     void UsbViewerRGBAThread(void *arg) {
         while(true) {
             bool tmp_flag;
@@ -406,7 +382,7 @@ namespace {
             if(!am::LibraryAppletIsActive()) {
                 if(strlen(g_HbTargetApplicationLaunchFlag.nro_path)) {
                     auto params = hb::HbTargetParams::Create(g_HbTargetApplicationLaunchFlag.nro_path, g_HbTargetApplicationLaunchFlag.nro_argv, false);
-                    UL_ASSERT(ecs::RegisterLaunchAsApplication(g_ApplicationLaunchFlag, "/ulaunch/bin/uHbTarget/app/", &params, sizeof(params), g_SelectedUser));
+                    UL_ASSERT(ecs::RegisterLaunchAsApplication(g_ApplicationLaunchFlag, "/ulaunch/bin/uHbTarget/app", &params, sizeof(params), g_SelectedUser));
                     
                     g_HbTargetOpenedAsApplication = true;
                     g_HbTargetApplicationLaunchFlag.nro_path[0] = '\0';
@@ -421,7 +397,7 @@ namespace {
         if(strlen(g_HbTargetLaunchFlag.nro_path)) {
             if(!am::LibraryAppletIsActive()) {
                 auto params = hb::HbTargetParams::Create(g_HbTargetLaunchFlag.nro_path, g_HbTargetLaunchFlag.nro_argv, false);
-                UL_ASSERT(ecs::RegisterLaunchAsApplet(g_Config.homebrew_applet_program_id, 0, "/ulaunch/bin/uHbTarget/applet/", &params, sizeof(params)));
+                UL_ASSERT(ecs::RegisterLaunchAsApplet(g_Config.homebrew_applet_program_id, 0, "/ulaunch/bin/uHbTarget/applet", &params, sizeof(params)));
                 
                 sth_done = true;
                 g_HbTargetLaunchFlag.nro_path[0] = '\0';
@@ -447,43 +423,36 @@ namespace {
         svcSleepThread(10'000'000ul);
     }
 
-    Result LaunchIpcServerThread() {
-        R_TRY(threadCreate(&g_IpcServerThread, &IpcServerThread, nullptr, nullptr, 0x4000, 0x2B, -2));
-        R_TRY(threadStart(&g_IpcServerThread));
-        
-        return ResultSuccess;
-    }
-
     Result LaunchUsbViewerThread() {
+        void(*thread_entry)(void*) = nullptr;
         switch(g_UsbViewerMode) {
             case UsbMode::RawRGBA: {
-                R_TRY(threadCreate(&g_UsbViewerThread, &UsbViewerRGBAThread, nullptr, nullptr, 0x4000, 0x2B, -2));
+                thread_entry = &UsbViewerRGBAThread;
                 break;
             }
             case UsbMode::JPEG: {
-                R_TRY(threadCreate(&g_UsbViewerThread, &UsbViewerJPEGThread, nullptr, nullptr, 0x4000, 0x2B, -2));
+                thread_entry = &UsbViewerJPEGThread;
                 break;
             }
             default:
                 return ResultSuccess;
         }
-        R_TRY(threadStart(&g_UsbViewerThread));
+
+        R_TRY(ams::os::CreateThread(&g_UsbViewerThread, thread_entry, nullptr, g_UsbViewerThreadStack, sizeof(g_UsbViewerThreadStack), 15, -2).GetValue());
+        ams::os::StartThread(&g_UsbViewerThread);
 
         return ResultSuccess;
     }
 
     void Initialize() {
-        UL_ASSERT(setsysInitialize());
-        SetSysFirmwareVersion fwver = {};
-        UL_ASSERT(setsysGetFirmwareVersion(&fwver));
-        hosversionSet(MAKEHOSVERSION(fwver.major, fwver.minor, fwver.micro));
-        setsysExit();
+        ams::hos::InitializeForStratosphere();
 
         UL_ASSERT(nsInitialize());
         UL_ASSERT(pminfoInitialize());
+        UL_ASSERT(ldrShellInitialize());
+        UL_ASSERT(pmshellInitialize());
         UL_ASSERT(appletLoadAndApplyIdlePolicySettings());
         UpdateOperationMode();
-        UL_ASSERT(ecs::Initialize());
         
         UL_ASSERT(db::Mount());
 
@@ -513,7 +482,7 @@ namespace {
             UL_ASSERT(LaunchUsbViewerThread());
         }
 
-        UL_ASSERT(LaunchIpcServerThread());
+        UL_ASSERT(ipc::Initialize());
     }
 
     void Exit() {
@@ -527,7 +496,8 @@ namespace {
 
         nsExit();
         pminfoExit();
-        ecs::Exit();
+        ldrShellExit();
+        pmshellExit();
         db::Unmount();
     }
 
