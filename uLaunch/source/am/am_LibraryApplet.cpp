@@ -82,6 +82,14 @@ namespace am {
         return libappletPopOutData(&g_AppletHolder, data, size, nullptr);
     }
 
+    Result LibraryAppletPush(AppletStorage *st) {
+        return appletHolderPushInData(&g_AppletHolder, st);
+    }
+
+    Result LibraryAppletPop(AppletStorage *st) {
+        return appletHolderPopOutData(&g_AppletHolder, st);
+    }
+
     Result LibraryAppletDaemonLaunchWith(AppletId id, u32 la_version, std::function<void(AppletHolder*)> on_prepare, std::function<void(AppletHolder*)> on_finish, std::function<bool()> on_wait) {
         if(LibraryAppletIsActive()) {
             LibraryAppletTerminate();

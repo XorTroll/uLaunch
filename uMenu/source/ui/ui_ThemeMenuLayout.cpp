@@ -128,10 +128,16 @@ namespace ui {
 
                     g_MenuApplication->StopPlayBGM();
                     g_MenuApplication->CloseWithFadeOut();
-                    // g_MenuApplication->ShowNotification(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "theme_changed"));
+                    g_MenuApplication->ShowNotification(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "theme_changed"));
 
-                    dmi::MenuMessageWriter writer(dmi::DaemonMessage::RestartMenu);
-                    writer.FinishWrite();
+                    UL_ASSERT(dmi::menu::SendCommand(dmi::DaemonMessage::RestartMenu, [&](dmi::menu::MenuScopedStorageWriter &writer) {
+                        // ...
+                        return ResultSuccess;
+                    },
+                    [&](dmi::menu::MenuScopedStorageReader &reader) {
+                        // ...
+                        return ResultSuccess;
+                    }));
                 }
             }
         }
@@ -152,8 +158,14 @@ namespace ui {
                     g_MenuApplication->CloseWithFadeOut();
                     g_MenuApplication->ShowNotification(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "theme_changed"));
 
-                    dmi::MenuMessageWriter writer(dmi::DaemonMessage::RestartMenu);
-                    writer.FinishWrite();
+                    UL_ASSERT(dmi::menu::SendCommand(dmi::DaemonMessage::RestartMenu, [&](dmi::menu::MenuScopedStorageWriter &writer) {
+                        // ...
+                        return ResultSuccess;
+                    },
+                    [&](dmi::menu::MenuScopedStorageReader &reader) {
+                        // ...
+                        return ResultSuccess;
+                    }));
                 }
             }
         }

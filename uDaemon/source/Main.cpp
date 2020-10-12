@@ -13,34 +13,14 @@
 #include <util/util_Convert.hpp>
 #include <cfg/cfg_Config.hpp>
 
-extern "C" {
-
-    u32 __nx_applet_type = AppletType_SystemApplet;
-    TimeServiceType __nx_time_service_type = TimeServiceType_System;
-
-    // uDaemon uses 8MB - while official qlaunch uses 56MB! That's 48 extra MB for other applets!
-    size_t __nx_heap_size = 0x800000;
-
-}
-
-// Needed by libstratosphere
-
-namespace ams {
-
-    ncm::ProgramId CurrentProgramId = ncm::SystemAppletId::Qlaunch;
-    
-    namespace result {
-
-        bool CallFatalOnResultAssertion = true;
-
-    }
-
-}
-
 ams::os::Mutex g_LastMenuMessageLock(false);
 dmi::MenuMessage g_LastMenuMessage = dmi::MenuMessage::Invalid;
 
 namespace {
+
+    // Heap size of 8MB
+    constexpr size_t HeapSize = 0x800000;
+    u8 g_Heap[HeapSize];
 
     enum class UsbMode : u32 {
         Invalid,
@@ -62,12 +42,70 @@ namespace {
     u8 *g_UsbViewerReadBuffer = nullptr;
     cfg::Config g_Config = {};
     ams::os::ThreadType g_UsbViewerThread;
-    alignas(ams::os::ThreadStackAlignment) u8 g_UsbViewerThreadStack[0x4000];
+    alignas(ams::os::ThreadStackAlignment) u8 g_UsbViewerThreadStack[0x8000];
     UsbMode g_UsbViewerMode = UsbMode::Invalid;
 
     // In the USB packet, the first u32 / the first 4 bytes are the USB mode (raw RGBA or JPEG, depending on what the console supports)
 
     constexpr size_t UsbPacketSize = RawRGBAScreenBufferSize + sizeof(u32);
+
+}
+
+// Needed by libstratosphere
+
+namespace ams {
+
+    ncm::ProgramId CurrentProgramId = ncm::SystemAppletId::Qlaunch;
+    
+    namespace result {
+
+        bool CallFatalOnResultAssertion = true;
+
+    }
+
+}
+
+extern "C" {
+
+    u32 __nx_applet_type = AppletType_SystemApplet;
+    u32 __nx_fs_num_sessions = 1;
+
+    void __libnx_initheap();
+    void __appInit();
+    void __appExit();
+}
+
+extern char *fake_heap_start;
+extern char *fake_heap_end;
+
+void __libnx_initheap() {
+    fake_heap_start = reinterpret_cast<char*>(g_Heap);
+    fake_heap_end = fake_heap_start + HeapSize;
+}
+
+void __appInit() {
+    ams::hos::InitializeForStratosphere();
+
+    ams::sm::DoWithSession([]() {
+        UL_ASSERT(appletInitialize());
+        UL_ASSERT(fsInitialize());
+        UL_ASSERT(nsInitialize());
+        UL_ASSERT(pminfoInitialize());
+        UL_ASSERT(ldrShellInitialize());
+        UL_ASSERT(pmshellInitialize());
+    });
+
+    fsdevMountSdmc();
+}
+
+void __appExit() {
+    ((void(*)())0xBEEFBABE)();
+    // qlaunch should not terminate, so this is considered an invalid system state
+    // am would fatal otherwise
+    fatalThrow(0xDEBF);
+}
+
+namespace {
 
     dmi::DaemonStatus CreateStatus() {
         dmi::DaemonStatus status = {};
@@ -196,121 +234,128 @@ namespace {
 
     void HandleMenuMessage() {
         if(am::LibraryAppletIsMenu()) {
-            dmi::DaemonMessageReader reader;
-            if(reader) {
-                switch(reader.GetValue()) {
+            char web_url[500] = {0};
+            u64 app_id = 0;
+            hb::HbTargetParams ipt = {};
+            dmi::daemon::ReceiveCommand([&](dmi::DaemonMessage msg, dmi::daemon::DaemonScopedStorageReader &reader) -> Result {
+                switch(msg) {
                     case dmi::DaemonMessage::SetSelectedUser: {
-                        g_SelectedUser = reader.Read<AccountUid>();
-                        reader.FinishRead();
-
+                        R_TRY(reader.Pop(g_SelectedUser));
                         break;
                     }
                     case dmi::DaemonMessage::LaunchApplication: {
-                        auto app_id = reader.Read<u64>();
-                        reader.FinishRead();
-
-                        if(am::ApplicationIsActive()) {
-                            dmi::DaemonResultWriter rc(RES_VALUE(Daemon, ApplicationActive));
-                            rc.FinishWrite();
-                        }
-                        else if(!accountUidIsValid(&g_SelectedUser)) {
-                            dmi::DaemonResultWriter rc(RES_VALUE(Daemon, InvalidSelectedUser));
-                            rc.FinishWrite();
-                        }
-                        else if(g_ApplicationLaunchFlag > 0) {
-                            dmi::DaemonResultWriter rc(RES_VALUE(Daemon, AlreadyQueued));
-                            rc.FinishWrite();
-                        }
-                        else {
-                            g_ApplicationLaunchFlag = app_id;
-                            dmi::DaemonResultWriter rc(ResultSuccess);
-                            rc.FinishWrite();
-                        }
+                        R_TRY(reader.Pop(app_id));
                         break;
                     }
                     case dmi::DaemonMessage::ResumeApplication: {
-                        reader.FinishRead();
-
-                        if(!am::ApplicationIsActive()) {
-                            dmi::DaemonResultWriter rc(RES_VALUE(Daemon, ApplicationNotActive));
-                            rc.FinishWrite();
-                        }
-                        else {
-                            am::ApplicationSetForeground();
-                            dmi::DaemonResultWriter rc(ResultSuccess);
-                            rc.FinishWrite();
-                        }
+                        // ...
                         break;
                     }
                     case dmi::DaemonMessage::TerminateApplication: {
-                        reader.FinishRead();
+                        // ...
+                        break;
+                    }
+                    case dmi::DaemonMessage::LaunchHomebrewLibraryApplet: {
+                        R_TRY(reader.Pop(g_HbTargetLaunchFlag));
+                        break;
+                    }
+                    case dmi::DaemonMessage::LaunchHomebrewApplication: {
+                        R_TRY(reader.Pop(app_id));
+                        R_TRY(reader.Pop(ipt));
+                        break;
+                    }
+                    case dmi::DaemonMessage::OpenWebPage: {
+                        R_TRY(reader.PopData(web_url, sizeof(web_url)));
+                        break;
+                    }
+                    case dmi::DaemonMessage::OpenAlbum: {
+                        // ...
+                        break;
+                    }
+                    case dmi::DaemonMessage::RestartMenu: {
+                        // ...
+                        break;
+                    }
+                    default: {
+                        // ...
+                        break;
+                    }
+                }
+                return ResultSuccess;
+            },
+            [&](dmi::DaemonMessage msg, dmi::daemon::DaemonScopedStorageWriter &writer) -> Result {
+                switch(msg) {
+                    case dmi::DaemonMessage::SetSelectedUser: {
+                        // ...
+                        break;
+                    }
+                    case dmi::DaemonMessage::LaunchApplication: {
+                        if(am::ApplicationIsActive()) {
+                            return RES_VALUE(Daemon, ApplicationActive);
+                        }
+                        else if(!accountUidIsValid(&g_SelectedUser)) {
+                            return RES_VALUE(Daemon, InvalidSelectedUser);
+                        }
+                        else if(g_ApplicationLaunchFlag > 0) {
+                            return RES_VALUE(Daemon, AlreadyQueued);
+                        }
 
+                        g_ApplicationLaunchFlag = app_id;
+                        break;
+                    }
+                    case dmi::DaemonMessage::ResumeApplication: {
+                        if(!am::ApplicationIsActive()) {
+                            return RES_VALUE(Daemon, ApplicationNotActive);
+                        }
+
+                        am::ApplicationSetForeground();
+                        break;
+                    }
+                    case dmi::DaemonMessage::TerminateApplication: {
                         am::ApplicationTerminate();
                         g_HbTargetOpenedAsApplication = false;
                         break;
                     }
                     case dmi::DaemonMessage::LaunchHomebrewLibraryApplet: {
-                        g_HbTargetLaunchFlag = reader.Read<hb::HbTargetParams>();
-                        reader.FinishRead();
-
+                        // ...
                         break;
                     }
                     case dmi::DaemonMessage::LaunchHomebrewApplication: {
-                        auto app_id = reader.Read<u64>();
-                        auto ipt = reader.Read<hb::HbTargetParams>();
-                        reader.FinishRead();
-
                         if(am::ApplicationIsActive()) {
-                            dmi::DaemonResultWriter rc(RES_VALUE(Daemon, ApplicationActive));
-                            rc.FinishWrite();
+                            return RES_VALUE(Daemon, ApplicationActive);
                         }
                         else if(!accountUidIsValid(&g_SelectedUser)) {
-                            dmi::DaemonResultWriter rc(RES_VALUE(Daemon, InvalidSelectedUser));
-                            rc.FinishWrite();
+                            return RES_VALUE(Daemon, InvalidSelectedUser);
                         }
                         else if(g_ApplicationLaunchFlag > 0) {
-                            dmi::DaemonResultWriter rc(RES_VALUE(Daemon, AlreadyQueued));
-                            rc.FinishWrite();
+                            return RES_VALUE(Daemon, AlreadyQueued);
                         }
-                        else {
-                            g_HbTargetApplicationLaunchFlag = ipt;
-                            g_HbTargetApplicationLaunchFlagCopy = ipt;
-                            g_ApplicationLaunchFlag = app_id;
-                            dmi::DaemonResultWriter rc(ResultSuccess);
-                            rc.FinishWrite();
-                        }
+                        
+                        g_HbTargetApplicationLaunchFlag = ipt;
+                        g_HbTargetApplicationLaunchFlagCopy = ipt;
+                        g_ApplicationLaunchFlag = app_id;
                         break;
                     }
                     case dmi::DaemonMessage::OpenWebPage: {
-                        g_WebAppletLaunchFlag = reader.Read<WebCommonConfig>();
-                        reader.FinishRead();
-
-                        break;
-                    }
-                    case dmi::DaemonMessage::GetSelectedUser: {
-                        reader.FinishRead();
-
-                        dmi::DaemonResultWriter rc(ResultSuccess);
-                        rc.Write<AccountUid>(g_SelectedUser);
-                        rc.FinishWrite();
+                        webPageCreate(&g_WebAppletLaunchFlag, web_url);
+                        webConfigSetWhitelist(&g_WebAppletLaunchFlag, ".*");
                         break;
                     }
                     case dmi::DaemonMessage::OpenAlbum: {
-                        reader.FinishRead();
-
                         g_AlbumAppletLaunchFlag = true;
                         break;
                     }
                     case dmi::DaemonMessage::RestartMenu: {
-                        reader.FinishRead();
-
                         g_MenuRestartFlag = true;
                         break;
                     }
-                    default:
+                    default: {
+                        // ...
                         break;
+                    }
                 }
-            }
+                return ResultSuccess;
+            });
         }
     }
 
@@ -333,7 +378,8 @@ namespace {
 
     void PrepareUsbViewer() {
         g_UsbViewerBuffer = new (std::align_val_t(0x1000)) u8[UsbPacketSize]();
-        g_UsbViewerReadBuffer = g_UsbViewerBuffer + sizeof(u32);
+        // Skip the first u32 of the buffer, since the mode is stored there
+        g_UsbViewerReadBuffer = g_UsbViewerBuffer + sizeof(UsbMode);
         u64 tmp_size;
         if(R_SUCCEEDED(capsscCaptureJpegScreenShot(&tmp_size, g_UsbViewerReadBuffer, RawRGBAScreenBufferSize, ViLayerStack_Default, UINT64_MAX))) {
             g_UsbViewerMode = UsbMode::JPEG;
@@ -342,7 +388,7 @@ namespace {
             g_UsbViewerMode = UsbMode::RawRGBA;
             capsscExit();
         }
-        *reinterpret_cast<u32*>(g_UsbViewerBuffer) = static_cast<u32>(g_UsbViewerMode);
+        *reinterpret_cast<UsbMode*>(g_UsbViewerBuffer) = g_UsbViewerMode;
     }
 
     void MainLoop() {
@@ -438,19 +484,13 @@ namespace {
                 return ResultSuccess;
         }
 
-        R_TRY(ams::os::CreateThread(&g_UsbViewerThread, thread_entry, nullptr, g_UsbViewerThreadStack, sizeof(g_UsbViewerThreadStack), 15, -2).GetValue());
+        R_TRY(ams::os::CreateThread(&g_UsbViewerThread, thread_entry, nullptr, g_UsbViewerThreadStack, sizeof(g_UsbViewerThreadStack), 10).GetValue());
         ams::os::StartThread(&g_UsbViewerThread);
 
         return ResultSuccess;
     }
 
     void Initialize() {
-        ams::hos::InitializeForStratosphere();
-
-        UL_ASSERT(nsInitialize());
-        UL_ASSERT(pminfoInitialize());
-        UL_ASSERT(ldrShellInitialize());
-        UL_ASSERT(pmshellInitialize());
         UL_ASSERT(appletLoadAndApplyIdlePolicySettings());
         UpdateOperationMode();
         
@@ -475,8 +515,10 @@ namespace {
         am::LibraryAppletSetMenuAppletId(am::LibraryAppletGetAppletIdForProgramId(g_Config.menu_program_id));
 
         if(g_Config.viewer_usb_enabled) {
-            UL_ASSERT(usbCommsInitialize());
-            UL_ASSERT(capsscInitialize());
+            ams::sm::DoWithSession([]() {
+                UL_ASSERT(usbCommsInitialize());
+                UL_ASSERT(capsscInitialize());
+            });
 
             PrepareUsbViewer();
             UL_ASSERT(LaunchUsbViewerThread());

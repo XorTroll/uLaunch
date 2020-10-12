@@ -20,7 +20,8 @@ extern "C" {
 
     u32 __nx_applet_type = AppletType_LibraryApplet; // Explicitly declare we're a library applet (need to do so for non-hbloader homebrew)
     TimeServiceType __nx_time_service_type = TimeServiceType_System;
-    size_t __nx_heap_size = 0x10000000; // 208MB heap
+    u32 __nx_fs_num_sessions = 1;
+    size_t __nx_heap_size = 0xD000000; // 208MB heap
 
 }
 

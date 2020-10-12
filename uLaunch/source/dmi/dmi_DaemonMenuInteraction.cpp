@@ -4,68 +4,56 @@
 
 namespace dmi {
 
-    namespace impl {
+    namespace {
 
-        #define _UL_DMI_IMPL_RC_TRY_LOOP(...) ({ \
-            auto rc = ResultSuccess; \
-            do { \
-                __VA_ARGS__ \
-                svcSleepThread(10'000'000); \
-            } while(R_FAILED(rc)); \
-            return rc; \
-        })
-
-        #define _UL_DMI_IMPL_RC_TRY(...) ({ \
-            auto rc = ResultSuccess; \
-            __VA_ARGS__ \
-            return rc; \
-        })
-
-        #define _UL_DMI_IMPL_RC(...) ({ \
-            if(wait) { \
-                _UL_DMI_IMPL_RC_TRY_LOOP( __VA_ARGS__ ); \
-            } \
-            else { \
-                _UL_DMI_IMPL_RC_TRY( __VA_ARGS__ ); \
-            } \
-            return ResultSuccess; \
-        })
-
-        Result DaemonWriteImpl(void *data, size_t size, bool wait) {
-            _UL_DMI_IMPL_RC(
-                rc = am::LibraryAppletSend(data, size);
-            );
-        }
+        constexpr u32 MaxRetryCount = 10000;
         
-        Result DaemonReadImpl(void *data, size_t size, bool wait) {
-            _UL_DMI_IMPL_RC(
-                rc = am::LibraryAppletRead(data, size);
-            );
+        inline Result LoopWait(Result(*cmd_fn)(AppletStorage*), AppletStorage *st, bool wait) {
+            if(!wait) {
+                return cmd_fn(st);
+            }
+
+            u32 count = 0;
+
+            while(true) {
+                auto rc = cmd_fn(st);
+                if(R_SUCCEEDED(rc)) {
+                    break;
+                }
+
+                count++;
+                if(count > MaxRetryCount) {
+                    return 0xCAFA;
+                }
+
+                svcSleepThread(10'000'000);
+            }
+
+            return ResultSuccess;
         }
 
-        Result MenuWriteImpl(void *data, size_t size, bool wait) {
-            _UL_DMI_IMPL_RC(
-                AppletStorage st;
-                rc = appletCreateStorage(&st, size);
-                if(R_SUCCEEDED(rc)) {
-                    rc = appletStorageWrite(&st, 0, data, size);
-                    if(R_SUCCEEDED(rc)) {
-                        rc = appletPushOutData(&st);
-                    }
-                    appletStorageClose(&st);
-                }
-            );
+    }
+
+    namespace daemon {
+
+        Result PushStorage(AppletStorage *st) {
+            return LoopWait(&am::LibraryAppletPush, st, false);
         }
 
-        Result MenuReadImpl(void *data, size_t size, bool wait) {
-            _UL_DMI_IMPL_RC(
-                AppletStorage st;
-                rc = appletPopInData(&st);
-                if(R_SUCCEEDED(rc)) {
-                    rc = appletStorageRead(&st, 0, data, size);
-                    appletStorageClose(&st);
-                }
-            );
+        Result PopStorage(AppletStorage *st, bool wait) {
+            return LoopWait(&am::LibraryAppletPop, st, wait);
+        }
+
+    }
+
+    namespace menu {
+
+        Result PushStorage(AppletStorage *st) {
+            return LoopWait(&appletPushOutData, st, false);
+        }
+
+        Result PopStorage(AppletStorage *st, bool wait) {
+            return LoopWait(&appletPopInData, st, wait);
         }
 
     }

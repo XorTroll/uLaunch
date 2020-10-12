@@ -184,9 +184,15 @@ namespace ui {
     
     void MenuApplication::SetSelectedUser(AccountUid user_id) {
         this->status.selected_user = user_id;
-        dmi::MenuMessageWriter writer(dmi::DaemonMessage::SetSelectedUser);
-        writer.Write<AccountUid>(user_id);
-        writer.FinishWrite();
+
+        UL_ASSERT(dmi::menu::SendCommand(dmi::DaemonMessage::SetSelectedUser, [&](dmi::menu::MenuScopedStorageWriter &writer) {
+            writer.Push(user_id);
+            return ResultSuccess;
+        },
+        [&](dmi::menu::MenuScopedStorageReader &reader) {
+            // ...
+            return ResultSuccess;
+        }));
     }
 
     AccountUid MenuApplication::GetSelectedUser() {

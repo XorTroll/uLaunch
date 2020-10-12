@@ -196,11 +196,15 @@ namespace ui {
             else if(this->mode == 2) {
                 if(this->rawalpha == 0xFF) {
                     this->bgSuspendedRaw->SetAlphaFactor(this->rawalpha);
-                    dmi::MenuMessageWriter writer(dmi::DaemonMessage::ResumeApplication);
-                    writer.FinishWrite();
 
-                    dmi::MenuResultReader reader;
-                    reader.FinishRead();
+                    UL_ASSERT(dmi::menu::SendCommand(dmi::DaemonMessage::ResumeApplication, [&](dmi::menu::MenuScopedStorageWriter &writer) {
+                        // ...
+                        return ResultSuccess;
+                    },
+                    [&](dmi::menu::MenuScopedStorageReader &reader) {
+                        // ...
+                        return ResultSuccess;
+                    }));
                 }
                 else {
                     this->bgSuspendedRaw->SetAlphaFactor(this->rawalpha);
@@ -378,14 +382,20 @@ namespace ui {
             if((index == 0) && this->homebrew_mode) {
                 if(down & KEY_A) {
                     pu::audio::Play(this->sfxTitleLaunch);
-
-                    dmi::MenuMessageWriter writer(dmi::DaemonMessage::LaunchHomebrewLibraryApplet);
+                    
                     hb::HbTargetParams ipt = {};
                     // Launch normal hbmenu
                     strcpy(ipt.nro_path, MENU_HBMENU_NRO);
                     strcpy(ipt.nro_argv, MENU_HBMENU_NRO);
-                    writer.Write<hb::HbTargetParams>(ipt);
-                    writer.FinishWrite();
+
+                    UL_ASSERT(dmi::menu::SendCommand(dmi::DaemonMessage::LaunchHomebrewLibraryApplet, [&](dmi::menu::MenuScopedStorageWriter &writer) {
+                        writer.Push(ipt);
+                        return ResultSuccess;
+                    },
+                    [&](dmi::menu::MenuScopedStorageReader &reader) {
+                        // ...
+                        return ResultSuccess;
+                    }));
 
                     g_MenuApplication->StopPlayBGM();
                     g_MenuApplication->CloseWithFadeOut();
@@ -496,19 +506,22 @@ namespace ui {
                                 }
                                 else {
                                     pu::audio::Play(this->sfxTitleLaunch);
-                                    
-                                    dmi::MenuMessageWriter writer(dmi::DaemonMessage::LaunchApplication);
-                                    writer.Write<u64>(title.app_id);
-                                    writer.FinishWrite();
 
-                                    dmi::MenuResultReader reader;
-                                    if(reader && R_SUCCEEDED(reader.GetValue())) {
+                                    auto rc = dmi::menu::SendCommand(dmi::DaemonMessage::LaunchApplication, [&](dmi::menu::MenuScopedStorageWriter &writer) {
+                                        writer.Push(title.app_id);
+                                        return ResultSuccess;
+                                    },
+                                    [&](dmi::menu::MenuScopedStorageReader &reader) {
+                                        // ...
+                                        return ResultSuccess;
+                                    });
+
+                                    if(R_SUCCEEDED(rc)) {
                                         g_MenuApplication->StopPlayBGM();
                                         g_MenuApplication->CloseWithFadeOut();
                                         return;
                                     }
                                     else {
-                                        auto rc = reader.GetValue();
                                         g_MenuApplication->ShowNotification(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "app_launch_error") + ": " + util::FormatResult(rc));
                                     }
                                 }
@@ -786,9 +799,14 @@ namespace ui {
                 sprintf(ipt.nro_argv, "%s %s", rec.nro_target.nro_path, rec.nro_target.nro_argv);
             }
 
-            dmi::MenuMessageWriter writer(dmi::DaemonMessage::LaunchHomebrewLibraryApplet);
-            writer.Write<hb::HbTargetParams>(ipt);
-            writer.FinishWrite();
+            UL_ASSERT(dmi::menu::SendCommand(dmi::DaemonMessage::LaunchHomebrewLibraryApplet, [&](dmi::menu::MenuScopedStorageWriter &writer) {
+                writer.Push(ipt);
+                return ResultSuccess;
+            },
+            [&](dmi::menu::MenuScopedStorageReader &reader) {
+                // ...
+                return ResultSuccess;
+            }));
 
             g_MenuApplication->StopPlayBGM();
             g_MenuApplication->CloseWithFadeOut();
@@ -814,20 +832,22 @@ namespace ui {
                         sprintf(ipt.nro_argv, "%s %s", rec.nro_target.nro_path, rec.nro_target.nro_argv);
                     }
 
-                    dmi::MenuMessageWriter writer(dmi::DaemonMessage::LaunchHomebrewApplication);
-                    writer.Write<u64>(g_Config.homebrew_title_application_id);
-                    writer.Write<hb::HbTargetParams>(ipt);
-                    writer.FinishWrite();
+                    auto rc = dmi::menu::SendCommand(dmi::DaemonMessage::LaunchHomebrewApplication, [&](dmi::menu::MenuScopedStorageWriter &writer) {
+                        writer.Push(g_Config.homebrew_title_application_id);
+                        writer.Push(ipt);
+                        return ResultSuccess;
+                    },
+                    [&](dmi::menu::MenuScopedStorageReader &reader) {
+                        // ...
+                        return ResultSuccess;
+                    });
 
-                    dmi::MenuResultReader reader;
-                    reader.FinishRead();
-                    if(reader && R_SUCCEEDED(reader.GetValue())) {
+                    if(R_SUCCEEDED(rc)) {
                         g_MenuApplication->StopPlayBGM();
                         g_MenuApplication->CloseWithFadeOut();
                         return;
                     }
                     else {
-                        auto rc = reader.GetValue();
                         g_MenuApplication->ShowNotification(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "app_launch_error") + ": " + util::FormatResult(rc));
                     }
                 }
@@ -867,8 +887,14 @@ namespace ui {
         g_MenuApplication->NotifyEndSuspended();
         this->bgSuspendedRaw->SetAlphaFactor(0);
 
-        dmi::MenuMessageWriter writer(dmi::DaemonMessage::TerminateApplication);
-        writer.FinishWrite();
+        UL_ASSERT(dmi::menu::SendCommand(dmi::DaemonMessage::TerminateApplication, [&](dmi::menu::MenuScopedStorageWriter &writer) {
+            // ...
+            return ResultSuccess;
+        },
+        [&](dmi::menu::MenuScopedStorageReader &reader) {
+            // ...
+            return ResultSuccess;
+        }));
     }
 
 }

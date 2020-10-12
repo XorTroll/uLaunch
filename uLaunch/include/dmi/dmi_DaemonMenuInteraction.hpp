@@ -16,7 +16,7 @@ namespace dmi {
         MenuLaunchFailure
     };
 
-    enum class MenuMessage {
+    enum class MenuMessage : u32 {
         Invalid,
         HomeRequest
     };
@@ -30,7 +30,6 @@ namespace dmi {
         LaunchHomebrewLibraryApplet,
         LaunchHomebrewApplication,
         OpenWebPage,
-        GetSelectedUser,
         OpenAlbum,
         RestartMenu,
     };
@@ -48,143 +47,202 @@ namespace dmi {
         u32 val;
     };
 
-    static constexpr u32 Magic = 0x434D4151;
-    static constexpr size_t BlockSize = 0x800;
+    constexpr u32 CommandMagic = 0x434D4151;
+    constexpr size_t CommandStorageSize = 0x800;
 
     namespace impl {
 
-        Result DaemonWriteImpl(void *data, size_t size, bool wait);
-        Result DaemonReadImpl(void *data, size_t size, bool wait);
+        using PopStorageFunction = Result(*)(AppletStorage*, bool);
+        using PushStorageFunction = Result(*)(AppletStorage*);
 
-        Result MenuWriteImpl(void *data, size_t size, bool wait);
-        Result MenuReadImpl(void *data, size_t size, bool wait);
+        template<PushStorageFunction PushStorageFn>
+        class ScopedStorageWriterBase {
+
+            protected:
+                AppletStorage st;
+                size_t cur_offset;
+
+            public:
+                ScopedStorageWriterBase() : st({}), cur_offset(0) {}
+
+                ~ScopedStorageWriterBase() {
+                    UL_ASSERT(this->PushStorage(&this->st));
+                    appletStorageClose(&this->st);
+                }
+
+                Result PushStorage(AppletStorage *st) {
+                    return PushStorageFn(st);
+                }
+
+                void Initialize(AppletStorage st) {
+                    this->st = st;
+                }
+
+                Result PushData(void *data, size_t size) {
+                    if((cur_offset + size) <= CommandStorageSize) {
+                        R_TRY(appletStorageWrite(&this->st, this->cur_offset, data, size));
+                        this->cur_offset += size;
+                        return ResultSuccess;
+                    }
+                    return 0xBAFF;
+                }
+
+                template<typename T>
+                Result Push(T t) {
+                    return PushData(&t, sizeof(T));
+                }
+
+        };
+
+        template<PopStorageFunction PopStorageFn>
+        class ScopedStorageReaderBase {
+
+            protected:
+                AppletStorage st;
+                size_t cur_offset;
+
+            public:
+                ScopedStorageReaderBase() : st({}), cur_offset(0) {}
+
+                ~ScopedStorageReaderBase() {
+                    appletStorageClose(&this->st);
+                }
+
+                Result PopStorage(AppletStorage *st, bool wait) {
+                    return PopStorageFn(st, wait);
+                }
+
+                void Initialize(AppletStorage st) {
+                    this->st = st;
+                }
+
+                Result PopData(void *out_data, size_t size) {
+                    if((cur_offset + size) <= CommandStorageSize) {
+                        R_TRY(appletStorageRead(&this->st, this->cur_offset, out_data, size));
+                        this->cur_offset += size;
+                        return ResultSuccess;
+                    }
+                    return 0xBAFF;
+                }
+                
+                template<typename T>
+                Result Pop(T &out_t) {
+                    return PopData(&out_t, sizeof(T));
+                }
+
+        };
+
+        template<typename StorageReader>
+        inline Result OpenStorageReader(StorageReader &reader, bool wait) {
+            AppletStorage st = {};
+            R_TRY(reader.PopStorage(&st, wait));
+
+            reader.Initialize(st);
+            return ResultSuccess;
+        }
+
+        template<typename StorageWriter>
+        inline Result OpenStorageWriter(StorageWriter &writer) {
+            AppletStorage st = {};
+            R_TRY(appletCreateStorage(&st, CommandStorageSize));
+            
+            writer.Initialize(st);
+            return ResultSuccess;
+        }
+
+        template<typename StorageWriter, typename StorageReader, typename MessageType>
+        Result SendCommandImpl(MessageType msg_type, std::function<Result(StorageWriter&)> push_fn, std::function<Result(StorageReader&)> pop_fn) {
+            CommandCommonHeader header = { CommandMagic, static_cast<u32>(msg_type) };
+            {
+                StorageWriter writer;
+                R_TRY(OpenStorageWriter(writer));
+                R_TRY(writer.Push(header));
+
+                R_TRY(push_fn(writer));
+            }
+
+            {
+                StorageReader reader;
+                R_TRY(OpenStorageReader(reader, true));
+                R_TRY(reader.Pop(header));
+                if(header.magic != CommandMagic) {
+                    return 0xBAFA;
+                }
+                R_TRY(static_cast<Result>(header.val));
+
+                R_TRY(pop_fn(reader));
+            }
+
+            return ResultSuccess;
+        }
+
+        template<typename StorageWriter, typename StorageReader, typename MessageType>
+        Result ReceiveCommandImpl(std::function<Result(MessageType, StorageReader&)> pop_fn, std::function<Result(MessageType, StorageWriter&)> push_fn) {
+            CommandCommonHeader header = {};
+            auto msg_type = MessageType();
+            {
+                StorageReader reader;
+                R_TRY(OpenStorageReader(reader, false));
+                R_TRY(reader.Pop(header));
+                if(header.magic != CommandMagic) {
+                    return 0xBAFA;
+                }
+                msg_type = static_cast<MessageType>(header.val);
+
+                header.val = pop_fn(msg_type, reader);
+            }
+
+            {
+                StorageWriter writer;
+                R_TRY(OpenStorageWriter(writer));
+                R_TRY(writer.Push(header));
+
+                if(R_SUCCEEDED(header.val)) {
+                    R_TRY(push_fn(msg_type, writer));
+                }
+            }
+
+            return ResultSuccess;
+        }
 
     }
 
-    template<CommandFunction WriteFn, typename V, bool Wait>
-    class CommandWriter {
-        static_assert(sizeof(V) == sizeof(u32), "Invalid value type");
+    namespace daemon {
 
-        private:
-            CommandCommonHeader request;
-            u8 *data_block;
-            size_t data_pos;
-            Result inner_rc;
-            bool write_done;
+        Result PopStorage(AppletStorage *st, bool wait);
+        Result PushStorage(AppletStorage *st);
 
-        public:
-            CommandWriter(V value) : request({ Magic, static_cast<u32>(value) }), data_block(new u8[BlockSize]()), data_pos(0), inner_rc(ResultSuccess), write_done(false) {
-                this->inner_rc = WriteFn(&this->request, sizeof(this->request), Wait);
-            }
+        using DaemonScopedStorageReader = impl::ScopedStorageReaderBase<&PopStorage>;
 
-            inline void FinishWrite() {
-                if(!this->write_done) {
-                    WriteFn(this->data_block, BlockSize, Wait);
-                    if(this->data_block != nullptr) {
-                        delete[] this->data_block;
-                        this->data_block = nullptr;
-                    }
-                    this->write_done = true;
-                }
-            }
+        using DaemonScopedStorageWriter = impl::ScopedStorageWriterBase<&PushStorage>;
 
-            inline Result GetResult() {
-                return this->inner_rc;
-            }
+        inline Result SendCommand(MenuMessage msg, std::function<Result(DaemonScopedStorageWriter&)> push_fn, std::function<Result(DaemonScopedStorageReader&)> pop_fn) {
+            return impl::SendCommandImpl(msg, push_fn, pop_fn);
+        }
 
-            inline operator bool() {
-                return R_SUCCEEDED(this->inner_rc);
-            }
+        inline Result ReceiveCommand(std::function<Result(DaemonMessage, DaemonScopedStorageReader&)> pop_fn, std::function<Result(DaemonMessage, DaemonScopedStorageWriter&)> push_fn) {
+            return impl::ReceiveCommandImpl(pop_fn, push_fn);
+        }
 
-            template<typename T>
-            inline void Write(T t) {
-                if(!this->write_done) {
-                    if((this->data_pos + sizeof(T)) <= BlockSize) {
-                        memcpy(this->data_block + this->data_pos, &t, sizeof(T));
-                        this->data_pos += sizeof(T);
-                    }
-                }
-            }
+    }
 
-    };
+    namespace menu {
 
-    template<CommandFunction ReadFn, typename V, bool Wait>
-    class CommandReader {
-        static_assert(sizeof(V) == sizeof(u32), "Invalid value type");
+        Result PopStorage(AppletStorage *st, bool wait);
+        Result PushStorage(AppletStorage *st);
 
-        private:
-            CommandCommonHeader response;
-            u8 *data_block;
-            size_t data_pos;
-            Result inner_rc;
-            bool read_done;
+        using MenuScopedStorageReader = impl::ScopedStorageReaderBase<&PopStorage>;
 
-        public:
-            CommandReader() : response(), data_block(new u8[BlockSize]()), data_pos(0), inner_rc(ResultSuccess), read_done(false) {
-                this->inner_rc = ReadFn(&this->response, sizeof(this->response), Wait);
-                if(R_SUCCEEDED(this->inner_rc)) {
-                    this->inner_rc = ReadFn(this->data_block, BlockSize, Wait);
-                }
-            }
+        using MenuScopedStorageWriter = impl::ScopedStorageWriterBase<&PushStorage>;
 
-            inline void FinishRead() {
-                if(!this->read_done) {
-                    if(this->data_block != nullptr) {
-                        delete[] this->data_block;
-                        this->data_block = nullptr;
-                    }
-                    this->read_done = true;
-                }
-            }
+        inline Result SendCommand(DaemonMessage msg, std::function<Result(MenuScopedStorageWriter&)> push_fn, std::function<Result(MenuScopedStorageReader&)> pop_fn) {
+            return impl::SendCommandImpl(msg, push_fn, pop_fn);
+        }
 
-            inline V GetValue() {
-                return static_cast<V>(this->response.val);
-            }
+        inline Result ReceiveCommand(std::function<Result(MenuMessage, MenuScopedStorageReader&)> pop_fn, std::function<Result(MenuMessage, MenuScopedStorageWriter&)> push_fn) {
+            return impl::ReceiveCommandImpl(pop_fn, push_fn);
+        }
 
-            inline Result GetResult() {
-                return this->inner_rc;
-            }
-
-            inline operator bool() {
-                return R_SUCCEEDED(this->inner_rc);
-            }
-
-            template<typename T>
-            inline T Read() {
-                if(!this->read_done) {
-                    if((this->data_pos + sizeof(T)) <= BlockSize) {
-                        auto t = *reinterpret_cast<T*>(this->data_block + this->data_pos);
-                        data_pos += sizeof(T);
-                        return t;
-                    }
-                }
-                return T();
-            }
-
-    };
-
-    template<typename V, bool Wait>
-    using DaemonReader = CommandReader<&impl::DaemonReadImpl, V, Wait>;
-
-    template<typename V, bool Wait>
-    using DaemonWriter = CommandWriter<&impl::DaemonWriteImpl, V, Wait>;
-
-    using DaemonMessageReader = DaemonReader<DaemonMessage, false>;
-    using DaemonMessageWriter = DaemonWriter<MenuMessage, false>;
-
-    using DaemonResultReader = DaemonReader<Result, true>;
-    using DaemonResultWriter = DaemonWriter<Result, false>;
-
-    template<typename V, bool Wait>
-    using MenuReader = CommandReader<&impl::MenuReadImpl, V, Wait>;
-
-    template<typename V, bool Wait>
-    using MenuWriter = CommandWriter<&impl::MenuWriteImpl, V, Wait>;
-
-    using MenuMessageReader = MenuReader<MenuMessage, false>;
-    using MenuMessageWriter = MenuWriter<DaemonMessage, false>;
-
-    using MenuResultReader = MenuReader<Result, true>;
-    using MenuResultWriter = MenuWriter<Result, false>;
+    }
 
 }

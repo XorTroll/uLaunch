@@ -7,7 +7,11 @@ extern dmi::MenuMessage g_LastMenuMessage;
 
 namespace ipc {
 
-    ams::Result PrivateService::GetLatestMessage(const ams::sf::ClientProcessId &client_pid, ams::sf::Out<u32> out_msg) {
+    ams::Result PrivateService::Initialize(const ams::sf::ClientProcessId &client_pid) {
+        if(this->initialized) {
+            return ams::ResultSuccess();
+        }
+
         u64 program_id = 0;
         R_TRY(pminfoGetProgramId(&program_id, client_pid.process_id.value));
         
@@ -18,8 +22,17 @@ namespace ipc {
             return RES_VALUE(Daemon, PrivateServiceInvalidProcess);
         }
         
+        this->initialized = true;
+        return ams::ResultSuccess();
+    }
+
+    ams::Result PrivateService::GetMessage(ams::sf::Out<dmi::MenuMessage> out_msg) {
+        if(!this->initialized) {
+            return RES_VALUE(Daemon, PrivateServiceInvalidProcess);
+        }
+
         std::scoped_lock lk(g_LastMenuMessageLock);
-        out_msg.SetValue(static_cast<u32>(g_LastMenuMessage));
+        out_msg.SetValue(g_LastMenuMessage);
         g_LastMenuMessage = dmi::MenuMessage::Invalid;
         return ams::ResultSuccess();
     }

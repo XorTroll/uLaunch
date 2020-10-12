@@ -81,18 +81,20 @@ namespace ui::actions {
         UL_ON_SCOPE_EXIT({
             swkbdClose(&swkbd);
         });
+        
         swkbdConfigSetGuideText(&swkbd, cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "swkbd_webpage_guide").c_str());
         
         char url[500] = {0};
         swkbdShow(&swkbd, url, 500);
-        
-        WebCommonConfig web = {};
-        webPageCreate(&web, url);
-        webConfigSetWhitelist(&web, ".*");
 
-        dmi::MenuMessageWriter writer(dmi::DaemonMessage::OpenWebPage);
-        writer.Write<WebCommonConfig>(web);
-        writer.FinishWrite();
+        UL_ASSERT(dmi::menu::SendCommand(dmi::DaemonMessage::OpenWebPage, [&](dmi::menu::MenuScopedStorageWriter &writer) {
+            R_TRY(writer.PushData(url, sizeof(url)));
+            return ResultSuccess;
+        },
+        [&](dmi::menu::MenuScopedStorageReader &reader) {
+            // ...
+            return ResultSuccess;
+        }));
 
         g_MenuApplication->StopPlayBGM();
         g_MenuApplication->CloseWithFadeOut();
@@ -112,8 +114,14 @@ namespace ui::actions {
     }
 
     void ShowAlbumApplet() {
-        dmi::MenuMessageWriter writer(dmi::DaemonMessage::OpenAlbum);
-        writer.FinishWrite();
+        UL_ASSERT(dmi::menu::SendCommand(dmi::DaemonMessage::OpenAlbum, [&](dmi::menu::MenuScopedStorageWriter &writer) {
+            // ...
+            return ResultSuccess;
+        },
+        [&](dmi::menu::MenuScopedStorageReader &reader) {
+            // ...
+            return ResultSuccess;
+        }));
 
         g_MenuApplication->StopPlayBGM();
         g_MenuApplication->CloseWithFadeOut();
