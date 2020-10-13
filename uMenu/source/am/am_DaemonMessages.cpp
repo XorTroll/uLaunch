@@ -2,8 +2,6 @@
 
 namespace {
 
-    Service g_DaemonPrivateService;
-
     Result daemonPrivateInitialize(Service *srv) {
         u64 pid_placeholder = 0;
         return serviceDispatchIn(srv, 0, pid_placeholder,
@@ -12,8 +10,10 @@ namespace {
     }
 
     Result daemonPrivateGetMessage(Service *srv, dmi::MenuMessage *out_msg) {
-        return serviceDispatchOut(&g_DaemonPrivateService, 1, out_msg);
+        return serviceDispatchOut(srv, 1, *out_msg);
     }
+
+    Service g_DaemonPrivateService;
 
     Result daemonInitializePrivateService() {
         if(serviceIsActive(&g_DaemonPrivateService)) {
@@ -58,11 +58,10 @@ namespace am {
                     break;
                 }
 
-                auto tmp_msg = daemonGetMessage();
-
+                auto last_msg = daemonGetMessage();
                 mutexLock(&g_ReceiverLock);
                 for(auto &[cb, msg] : g_ReceiverCallbackTable) {
-                    if(msg == tmp_msg) {
+                    if(msg == last_msg) {
                         cb();
                     }
                 }
@@ -81,7 +80,7 @@ namespace am {
         R_TRY(daemonInitializePrivateService());
 
         g_ReceiveThreadShouldStop = false;
-        R_TRY(threadCreate(&g_ReceiverThread, &DaemonMessageReceiverThread, nullptr, nullptr, 0x1000, 0x2b, -2));
+        R_TRY(threadCreate(&g_ReceiverThread, &DaemonMessageReceiverThread, nullptr, nullptr, 0x2000, 0x2B, -2));
         R_TRY(threadStart(&g_ReceiverThread));
 
         g_Initialized = true;

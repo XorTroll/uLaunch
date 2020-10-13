@@ -13,6 +13,8 @@
 #include <util/util_Convert.hpp>
 #include <cfg/cfg_Config.hpp>
 
+// Outside of anonymous namespace since these are accessed by IPC
+
 ams::os::Mutex g_LastMenuMessageLock(false);
 dmi::MenuMessage g_LastMenuMessage = dmi::MenuMessage::Invalid;
 
@@ -42,12 +44,12 @@ namespace {
     u8 *g_UsbViewerReadBuffer = nullptr;
     cfg::Config g_Config = {};
     ams::os::ThreadType g_UsbViewerThread;
-    alignas(ams::os::ThreadStackAlignment) u8 g_UsbViewerThreadStack[0x8000];
+    alignas(ams::os::ThreadStackAlignment) u8 g_UsbViewerThreadStack[0x4000];
     UsbMode g_UsbViewerMode = UsbMode::Invalid;
 
-    // In the USB packet, the first u32 / the first 4 bytes are the USB mode (raw RGBA or JPEG, depending on what the console supports)
+    // In the USB packet, the first u32 stores the USB mode (raw RGBA or JPEG, depending on what the console supports)
 
-    constexpr size_t UsbPacketSize = RawRGBAScreenBufferSize + sizeof(u32);
+    constexpr size_t UsbPacketSize = RawRGBAScreenBufferSize + sizeof(UsbMode);
 
 }
 
@@ -69,10 +71,13 @@ extern "C" {
 
     u32 __nx_applet_type = AppletType_SystemApplet;
     u32 __nx_fs_num_sessions = 1;
+    bool __nx_fsdev_support_cwd = false;
+    u32 __nx_fsdev_direntry_cache_size = 0;
 
     void __libnx_initheap();
     void __appInit();
     void __appExit();
+
 }
 
 extern char *fake_heap_start;
@@ -99,10 +104,9 @@ void __appInit() {
 }
 
 void __appExit() {
-    ((void(*)())0xBEEFBABE)();
     // qlaunch should not terminate, so this is considered an invalid system state
     // am would fatal otherwise
-    fatalThrow(0xDEBF);
+    fatalThrow(0xDEADBABE);
 }
 
 namespace {
@@ -129,27 +133,25 @@ namespace {
         appletStartSleepSequence(true);
     }
 
-    Result LaunchMenu(dmi::MenuStartMode stmode, dmi::DaemonStatus status) {
-        R_TRY(ecs::RegisterLaunchAsApplet(g_Config.menu_program_id, static_cast<u32>(stmode), "/ulaunch/bin/uMenu", &status, sizeof(status)));
-        return ResultSuccess;
+    inline Result LaunchMenu(dmi::MenuStartMode stmode, dmi::DaemonStatus status) {
+        return ecs::RegisterLaunchAsApplet(g_Config.menu_program_id, static_cast<u32>(stmode), "/ulaunch/bin/uMenu", &status, sizeof(status));
     }
 
     void HandleHomeButton() {
         if(am::LibraryAppletIsActive() && !am::LibraryAppletIsMenu()) {
+            // An applet is opened (which is not our menu), thus close it and reopen the menu
             am::LibraryAppletTerminate();
             auto status = CreateStatus();
             UL_ASSERT(LaunchMenu(dmi::MenuStartMode::Menu, status));
-            return;
         }
-        if(am::ApplicationIsActive()) {
-            if(am::ApplicationHasForeground()) {
-                am::HomeMenuSetForeground();
-                auto status = CreateStatus();
-                UL_ASSERT(LaunchMenu(dmi::MenuStartMode::MenuApplicationSuspended, status));
-                return;
-            }
+        else if(am::ApplicationIsActive() && am::ApplicationHasForeground()) {
+            // Hide the application currently on focus and open our menu
+            am::HomeMenuSetForeground();
+            auto status = CreateStatus();
+            UL_ASSERT(LaunchMenu(dmi::MenuStartMode::MenuApplicationSuspended, status));
         }
-        if(am::LibraryAppletIsMenu()) {
+        else if(am::LibraryAppletIsMenu()) {
+            // Send a message to our menu to handle itself the home press
             std::scoped_lock lk(g_LastMenuMessageLock);
             g_LastMenuMessage = dmi::MenuMessage::HomeRequest;
         }

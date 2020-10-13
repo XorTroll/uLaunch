@@ -14,12 +14,8 @@
     "filesystem_access": {
         "permissions": "0xFFFFFFFFFFFFFFFF"
     },
-    "service_host": [
-        "*"
-    ],
-    "service_access": [
-        "*"
-    ],
+    "service_host": [ "*" ],
+    "service_access": [ "*" ],
     "kernel_capabilities": [
         {
             "type": "kernel_flags",

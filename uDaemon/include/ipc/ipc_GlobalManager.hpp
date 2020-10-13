@@ -4,6 +4,8 @@
 
 namespace ipc {
 
+    // Note: domains and pointer buffer are required since ECS sessions will make use of them (like normal fs interfaces)
+
     struct ServerOptions {
         static const size_t PointerBufferSize = 0x400;
         static const size_t MaxDomains = 0x40;

@@ -679,6 +679,8 @@ namespace ui {
     }
 
     void MenuLayout::MoveFolder(const std::string &name, bool fade) {
+        this->itemsMenu->SetSelectedItem(0);
+        
         if(fade) {
             g_MenuApplication->FadeOut();
         }
