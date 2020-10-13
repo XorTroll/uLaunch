@@ -70,9 +70,9 @@ namespace ui {
         this->settingsMenu->ClearItems();
         this->settingsMenu->SetSelectedIndex(0);
         
-        SetSysDeviceNickName consolename = {};
-        setsysGetDeviceNickname(&consolename);
-        this->PushSettingItem(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_console_nickname"), EncodeForSettings<std::string>(consolename.nickname), 0);
+        SetSysDeviceNickName console_name = {};
+        setsysGetDeviceNickname(&console_name);
+        this->PushSettingItem(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_console_nickname"), EncodeForSettings<std::string>(console_name.nickname), 0);
         TimeLocationName loc = {};
         timeGetDeviceLocationName(&loc);
         this->PushSettingItem(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_console_timezone"), EncodeForSettings<std::string>(loc.name), -1);
@@ -140,15 +140,15 @@ namespace ui {
                 SwkbdConfig swkbd;
                 swkbdCreate(&swkbd, 0);
                 swkbdConfigSetGuideText(&swkbd, cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "swkbd_console_nick_guide").c_str());
-                SetSysDeviceNickName consolename = {};
-                setsysGetDeviceNickname(&consolename);
-                swkbdConfigSetInitialText(&swkbd, consolename.nickname);
+                SetSysDeviceNickName console_name = {};
+                setsysGetDeviceNickname(&console_name);
+                swkbdConfigSetInitialText(&swkbd, console_name.nickname);
                 swkbdConfigSetStringLenMax(&swkbd, 32);
-                SetSysDeviceNickName name = { {0} };
-                auto rc = swkbdShow(&swkbd, name.nickname, 0x80);
+                SetSysDeviceNickName new_name = {};
+                auto rc = swkbdShow(&swkbd, new_name.nickname, sizeof(new_name.nickname));
                 swkbdClose(&swkbd);
                 if(R_SUCCEEDED(rc)) {
-                    setsysSetDeviceNickname(&name);
+                    setsysSetDeviceNickname(&new_name);
                     reload_need = true;
                 }
                 break;

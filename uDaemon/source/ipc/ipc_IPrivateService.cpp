@@ -32,12 +32,6 @@ namespace ipc {
 
         std::scoped_lock lk(g_LastMenuMessageLock);
         out_msg.SetValue(g_LastMenuMessage);
-        auto f = fopen("sdmc:/udaemon-priv.log", "ab+");
-        if(f) {
-            auto msg = "Sending message: " + std::to_string(static_cast<u32>(g_LastMenuMessage));
-            fwrite(msg.c_str(), msg.length(), 1, f);
-            fclose(f);
-        }
         g_LastMenuMessage = dmi::MenuMessage::Invalid;
         return ams::ResultSuccess();
     }

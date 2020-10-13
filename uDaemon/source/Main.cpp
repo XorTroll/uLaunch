@@ -498,6 +498,9 @@ namespace {
         
         UL_ASSERT(db::Mount());
 
+        // Remove lastt present error report
+        fs::DeleteFile(UL_ASSERTION_LOG_FILE);
+
         // Remove old password files
         fs::DeleteDirectory(UL_BASE_DB_DIR "/user");
         db::Commit();

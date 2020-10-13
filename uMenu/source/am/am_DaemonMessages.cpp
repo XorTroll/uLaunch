@@ -80,7 +80,7 @@ namespace am {
         R_TRY(daemonInitializePrivateService());
 
         g_ReceiveThreadShouldStop = false;
-        R_TRY(threadCreate(&g_ReceiverThread, &DaemonMessageReceiverThread, nullptr, nullptr, 0x2000, 0x2B, -2));
+        R_TRY(threadCreate(&g_ReceiverThread, &DaemonMessageReceiverThread, nullptr, nullptr, 0x1000, 0x2B, -2));
         R_TRY(threadStart(&g_ReceiverThread));
 
         g_Initialized = true;

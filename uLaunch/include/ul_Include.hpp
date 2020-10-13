@@ -58,8 +58,10 @@ static constexpr Mutex EmptyMutex = (Mutex)0;
 
 #include <ul_Results.hpp>
 
+#define UL_ASSERTION_LOG_FILE UL_BASE_SD_DIR "/err.log"
+
 inline __attribute__((noreturn)) void OnAssertionFailed(const char *log_buf, size_t log_buf_len, const Result rc) {
-    auto log_f = fopen("sdmc:/ulaunch/ulaunch-err.log", "wb"); \
+    auto log_f = fopen(UL_ASSERTION_LOG_FILE, "wb"); \
     if(log_f) {
         fwrite(log_buf, 1, log_buf_len, log_f);
         fclose(log_f);

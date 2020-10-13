@@ -795,10 +795,11 @@ namespace ui {
         if(launchmode == 1) {
             pu::audio::Play(this->sfxTitleLaunch);
             hb::HbTargetParams ipt = {};
-            strcpy(ipt.nro_path, rec.nro_target.nro_path);
-            strcpy(ipt.nro_argv, rec.nro_target.nro_argv);
+            strncpy(ipt.nro_path, rec.nro_target.nro_path, sizeof(ipt.nro_path));
+            strncpy(ipt.nro_argv, rec.nro_target.nro_argv, sizeof(ipt.nro_argv));
             if(strlen(rec.nro_target.nro_argv)) {
-                sprintf(ipt.nro_argv, "%s %s", rec.nro_target.nro_path, rec.nro_target.nro_argv);
+                auto new_argv = std::string(rec.nro_target.nro_path) + " " + rec.nro_target.nro_argv;
+                strncpy(ipt.nro_argv, new_argv.c_str(), sizeof(ipt.nro_argv));
             }
 
             UL_ASSERT(dmi::menu::SendCommand(dmi::DaemonMessage::LaunchHomebrewLibraryApplet, [&](dmi::menu::MenuScopedStorageWriter &writer) {
@@ -828,10 +829,11 @@ namespace ui {
                 if(launch) {
                     pu::audio::Play(this->sfxTitleLaunch);
                     hb::HbTargetParams ipt = {};
-                    strcpy(ipt.nro_path, rec.nro_target.nro_path);
-                    strcpy(ipt.nro_argv, rec.nro_target.nro_argv);
+                    strncpy(ipt.nro_path, rec.nro_target.nro_path, sizeof(ipt.nro_path));
+                    strncpy(ipt.nro_argv, rec.nro_target.nro_argv, sizeof(ipt.nro_argv));
                     if(strlen(rec.nro_target.nro_argv)) {
-                        sprintf(ipt.nro_argv, "%s %s", rec.nro_target.nro_path, rec.nro_target.nro_argv);
+                        auto new_argv = std::string(rec.nro_target.nro_path) + " " + rec.nro_target.nro_argv;
+                        strncpy(ipt.nro_argv, new_argv.c_str(), sizeof(ipt.nro_argv));
                     }
 
                     auto rc = dmi::menu::SendCommand(dmi::DaemonMessage::LaunchHomebrewApplication, [&](dmi::menu::MenuScopedStorageWriter &writer) {

@@ -21,7 +21,7 @@ extern "C" {
     u32 __nx_applet_type = AppletType_LibraryApplet; // Explicitly declare we're a library applet (need to do so for non-hbloader homebrew)
     TimeServiceType __nx_time_service_type = TimeServiceType_System;
     u32 __nx_fs_num_sessions = 1;
-    size_t __nx_heap_size = 0xD000000; // 208MB heap
+    size_t __nx_heap_size = 0xC000000;
 
 }
 
@@ -34,7 +34,7 @@ cfg::Config g_Config;
 cfg::Theme g_Theme;
 u8 *g_ScreenCaptureBuffer;
 
-namespace impl {
+namespace {
 
     void Initialize() {
         UL_ASSERT(accountInitialize(AccountServiceType_System));
@@ -69,68 +69,68 @@ namespace impl {
     }
 }
 
+// uMenu procedure: read sent storages, initialize RomFs (in a special way), load config and other stuff, finally create the renderer and start the UI
+
 int main() {
-    // First read sent storages, then init the renderer (UI, which also inits RomFs), then init everything else
     auto smode = dmi::MenuStartMode::Invalid;
+    UL_ASSERT(am::ReadStartMode(smode));
+
+    // Information sent as an extra storage to uMenu
+    dmi::DaemonStatus status = {};
+    UL_ASSERT(am::ReadDataFromStorage(&status, sizeof(status)));
     
-    auto rc = am::ReadStartMode(smode);
-    if(R_SUCCEEDED(rc)) {
-        dmi::DaemonStatus status = {};
-        // Information block sent as an extra storage to uMenu.
-        UL_ASSERT(am::ReadDataFromStorage(&status, sizeof(status)));
-        
-        if(smode != dmi::MenuStartMode::Invalid) {
-            // Check if our RomFs data exists...
-            if(!fs::ExistsFile(UL_MENU_ROMFS_BIN)) {
-                UL_ASSERT(RES_VALUE(Menu, RomfsBinNotFound));
-            }
-
-            // Try to mount it
-            UL_ASSERT(romfsMountFromFsdev(UL_MENU_ROMFS_BIN, 0, "romfs"));
-
-            // After initializing RomFs, start initializing the rest of stuff here
-            g_ScreenCaptureBuffer = new u8[RawRGBAScreenBufferSize]();
-            impl::Initialize();
-
-            g_EntryList = cfg::LoadTitleList();
-
-            // Get system language and load translations (default one if not present)
-            u64 lcode = 0;
-            setGetLanguageCode(&lcode);
-            std::string syslang = reinterpret_cast<char*>(&lcode);
-            auto lpath = cfg::GetLanguageJSONPath(syslang);
-            UL_ASSERT(util::LoadJSONFromFile(g_Config.default_lang, CFG_LANG_DEFAULT));
-            g_Config.main_lang = g_Config.default_lang;
-            if(fs::ExistsFile(lpath)) {
-                auto ljson = JSON::object();
-                UL_ASSERT(util::LoadJSONFromFile(ljson, lpath));
-                g_Config.main_lang = ljson;
-            }
-
-            // Get the text sizes to initialize default fonts
-            auto uijson = JSON::object();
-            UL_ASSERT(util::LoadJSONFromFile(uijson, cfg::GetAssetByTheme(g_Theme, "ui/UI.json")));
-            auto menu_folder_txt_sz = uijson.value<u32>("menu_folder_text_size", 25);
-
-            auto renderer = pu::ui::render::Renderer::New(pu::ui::render::RendererInitOptions(SDL_INIT_EVERYTHING, pu::ui::render::RendererHardwareFlags).WithIMG(pu::ui::render::IMGAllFlags).WithMixer(pu::ui::render::MixerAllFlags).WithTTF().WithDefaultFontSize(menu_folder_txt_sz));
-            g_MenuApplication = ui::MenuApplication::New(renderer);
-
-            g_MenuApplication->SetInformation(smode, status, uijson);
-            g_MenuApplication->Prepare();
-            
-            if(smode == dmi::MenuStartMode::MenuApplicationSuspended) {
-                g_MenuApplication->Show();
-            }
-            else {
-                g_MenuApplication->ShowWithFadeIn();
-            }
-
-            // Exit RomFs manually, since we also initialized it manually
-            romfsExit();
-
-            delete[] g_ScreenCaptureBuffer;
-            impl::Exit();
+    // TODO: better way to handle an invalid mode? maybe directly call UL_ASSERT?
+    if(smode != dmi::MenuStartMode::Invalid) {
+        // Check if our RomFs data exists...
+        if(!fs::ExistsFile(UL_MENU_ROMFS_BIN)) {
+            UL_ASSERT(RES_VALUE(Menu, RomfsBinNotFound));
         }
+
+        // Try to mount it
+        UL_ASSERT(romfsMountFromFsdev(UL_MENU_ROMFS_BIN, 0, "romfs"));
+
+        // After initializing RomFs, start initializing the rest of stuff here
+        g_ScreenCaptureBuffer = new u8[RawRGBAScreenBufferSize]();
+        Initialize();
+
+        g_EntryList = cfg::LoadTitleList();
+
+        // Get system language and load translations (default one if not present)
+        u64 lcode = 0;
+        setGetLanguageCode(&lcode);
+        std::string syslang = reinterpret_cast<char*>(&lcode);
+        auto lpath = cfg::GetLanguageJSONPath(syslang);
+        UL_ASSERT(util::LoadJSONFromFile(g_Config.default_lang, CFG_LANG_DEFAULT));
+        g_Config.main_lang = g_Config.default_lang;
+        if(fs::ExistsFile(lpath)) {
+            auto ljson = JSON::object();
+            UL_ASSERT(util::LoadJSONFromFile(ljson, lpath));
+            g_Config.main_lang = ljson;
+        }
+
+        // Get the text sizes to initialize default fonts
+        auto uijson = JSON::object();
+        UL_ASSERT(util::LoadJSONFromFile(uijson, cfg::GetAssetByTheme(g_Theme, "ui/UI.json")));
+        auto menu_folder_txt_sz = uijson.value<u32>("menu_folder_text_size", 25);
+
+        auto renderer = pu::ui::render::Renderer::New(pu::ui::render::RendererInitOptions(SDL_INIT_EVERYTHING, pu::ui::render::RendererHardwareFlags).WithIMG(pu::ui::render::IMGAllFlags).WithMixer(pu::ui::render::MixerAllFlags).WithTTF().WithDefaultFontSize(menu_folder_txt_sz));
+        g_MenuApplication = ui::MenuApplication::New(renderer);
+
+        g_MenuApplication->SetInformation(smode, status, uijson);
+        g_MenuApplication->Prepare();
+        
+        if(smode == dmi::MenuStartMode::MenuApplicationSuspended) {
+            g_MenuApplication->Show();
+        }
+        else {
+            g_MenuApplication->ShowWithFadeIn();
+        }
+
+        // Exit RomFs manually, since we also initialized it manually
+        romfsExit();
+
+        delete[] g_ScreenCaptureBuffer;
+        Exit();
     }
 
     return 0;
