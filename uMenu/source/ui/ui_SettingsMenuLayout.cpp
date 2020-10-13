@@ -70,9 +70,9 @@ namespace ui {
         this->settingsMenu->ClearItems();
         this->settingsMenu->SetSelectedIndex(0);
         
-        char consolename[SET_MAX_NICKNAME_SIZE] = {};
-        setsysGetDeviceNickname(consolename);
-        this->PushSettingItem(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_console_nickname"), EncodeForSettings<std::string>(consolename), 0);
+        SetSysDeviceNickName consolename = {};
+        setsysGetDeviceNickname(&consolename);
+        this->PushSettingItem(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_console_nickname"), EncodeForSettings<std::string>(consolename.nickname), 0);
         TimeLocationName loc = {};
         timeGetDeviceLocationName(&loc);
         this->PushSettingItem(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_console_timezone"), EncodeForSettings<std::string>(loc.name), -1);
@@ -140,15 +140,15 @@ namespace ui {
                 SwkbdConfig swkbd;
                 swkbdCreate(&swkbd, 0);
                 swkbdConfigSetGuideText(&swkbd, cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "swkbd_console_nick_guide").c_str());
-                char consolename[SET_MAX_NICKNAME_SIZE] = {};
-                setsysGetDeviceNickname(consolename);
-                swkbdConfigSetInitialText(&swkbd, consolename);
+                SetSysDeviceNickName consolename = {};
+                setsysGetDeviceNickname(&consolename);
+                swkbdConfigSetInitialText(&swkbd, consolename.nickname);
                 swkbdConfigSetStringLenMax(&swkbd, 32);
-                char name[SET_MAX_NICKNAME_SIZE] = {0};
-                auto rc = swkbdShow(&swkbd, name, SET_MAX_NICKNAME_SIZE);
+                SetSysDeviceNickName name = { {0} };
+                auto rc = swkbdShow(&swkbd, name.nickname, 0x80);
                 swkbdClose(&swkbd);
                 if(R_SUCCEEDED(rc)) {
-                    setsysSetDeviceNickname(name);
+                    setsysSetDeviceNickname(&name);
                     reload_need = true;
                 }
                 break;
