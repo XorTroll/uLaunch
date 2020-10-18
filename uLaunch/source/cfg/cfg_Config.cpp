@@ -87,6 +87,7 @@ namespace cfg {
                     rec.title_type = (u32)TitleType::Homebrew;
                     strcpy(rec.nro_target.nro_path, path.c_str());
                     nros.push_back(rec);
+                    CacheHomebrew(path);
                 }
             }
         });
