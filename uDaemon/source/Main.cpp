@@ -498,7 +498,7 @@ namespace {
         
         UL_ASSERT(db::Mount());
 
-        // Remove lastt present error report
+        // Remove last present error report
         fs::DeleteFile(UL_ASSERTION_LOG_FILE);
 
         // Remove old password files
@@ -553,19 +553,19 @@ namespace {
 // uDaemon handles basic qlaunch functionality and serves as a back-end for uLaunch, communicating with uMenu front-end when neccessary.
 
 int main() {
+    // Initialize everything
     Initialize();
 
-    // Cache everything on startup
-    cfg::CacheEverything();
-
+    // After having initialized everything, launch our menu
     auto status = CreateStatus();
     UL_ASSERT(LaunchMenu(dmi::MenuStartMode::StartupScreen, status));
 
-    // Loop forever - qlaunch should NEVER terminate (AM will crash otherwise)
+    // Loop forever, since qlaunch should NEVER terminate (AM would crash in that case)
     while(true) {
         MainLoop();
     }
 
+    // We will never reach this anyway...
     Exit();
     return 0;
 }
