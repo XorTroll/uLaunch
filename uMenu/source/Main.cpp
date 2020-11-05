@@ -93,6 +93,9 @@ int main() {
         g_ScreenCaptureBuffer = new u8[RawRGBAScreenBufferSize]();
         Initialize();
 
+        // Cache title and homebrew icons
+        cfg::CacheEverything();
+
         g_EntryList = cfg::LoadTitleList();
 
         // Get system language and load translations (default one if not present)
