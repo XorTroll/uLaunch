@@ -567,12 +567,11 @@ namespace ui {
                         }
                         else if(down & KEY_UP) {
                             if(type == cfg::TitleType::Installed) {
-                                // TODO: strings
-                                auto sopt = g_MenuApplication->CreateShowDialog("Homebrew title take-over", "Would you like to select this title for homebrew launching?\nIf selected, homebrew will be launched as an application over this title.", { "Yes", "Cancel" }, true);
+                                auto sopt = g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "app_launch"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "app_take_over_select") + "\n" + cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "app_take_over_selected"), { "Yes", "Cancel" }, true);
                                 if(sopt == 0) {
                                     g_Config.homebrew_title_application_id = title.app_id;
                                     cfg::SaveConfig(g_Config);
-                                    g_MenuApplication->ShowNotification("Done");
+                                    g_MenuApplication->ShowNotification(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "app_take_over_done"));
                                 }
                             }
                         }
@@ -857,7 +856,7 @@ namespace ui {
                 }
             }
             else {
-                g_MenuApplication->CreateShowDialog("Launch", "There is no title specified for homebrew to take over it.\nSelect one by pressing up over it.", { "Ok" }, true);
+                g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "app_launch"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "app_no_take_over_title") + "\n" + cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "app_take_over_title_select"), { cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "ok") }, true);
             }
         }
     }

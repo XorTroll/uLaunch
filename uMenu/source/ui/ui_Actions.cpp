@@ -147,9 +147,9 @@ namespace ui::actions {
             
             auto smsg = os::SystemAppletMessage::Create(msg);
             os::PushSystemAppletMessage(smsg);
-            svcSleepThread(1'500'000'000L);
+            svcSleepThread(1'500'000'000ul);
 
-            // When we get back after sleep we will do a cool fade in, whereas wuth the other options the console will be already off/rebooted
+            // When we get back after sleep we will do a cool fade in, whereas with the other options the console will be already off/rebooted
             g_MenuApplication->FadeIn();
         }
     }

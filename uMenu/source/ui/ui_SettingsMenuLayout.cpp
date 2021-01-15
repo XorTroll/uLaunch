@@ -179,7 +179,7 @@ namespace ui {
                 LibAppletArgs netargs;
                 libappletArgsCreate(&netargs, 0);
 
-                auto rc = libappletLaunch(AppletId_netConnect, &netargs, in, sizeof(in), out, sizeof(out), nullptr);
+                auto rc = libappletLaunch(AppletId_LibraryAppletNetConnect, &netargs, in, sizeof(in), out, sizeof(out), nullptr);
                 if(R_SUCCEEDED(rc)) {
                     rc = *reinterpret_cast<Result*>(out);
                     if(R_SUCCEEDED(rc)) {

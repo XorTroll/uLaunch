@@ -420,7 +420,7 @@ namespace {
         if(g_AlbumAppletLaunchFlag) {
             if(!am::LibraryAppletIsActive()) {
                 u8 albumflag = 2;
-                UL_ASSERT(am::LibraryAppletStart(AppletId_photoViewer, 0x10000, &albumflag, sizeof(albumflag)));
+                UL_ASSERT(am::LibraryAppletStart(AppletId_LibraryAppletPhotoViewer, 0x10000, &albumflag, sizeof(albumflag)));
 
                 sth_done = true;
                 g_AlbumAppletLaunchFlag = false;
@@ -453,7 +453,7 @@ namespace {
         }
         if(!am::LibraryAppletIsActive()) {
             auto cur_id = am::LibraryAppletGetId();
-            if((cur_id == AppletId_web) || (cur_id == AppletId_photoViewer) || (cur_id == g_Config.homebrew_applet_program_id)) {
+            if((cur_id == AppletId_LibraryAppletWeb) || (cur_id == AppletId_LibraryAppletPhotoViewer) || (cur_id == g_Config.homebrew_applet_program_id)) {
                 auto status = CreateStatus();
                 UL_ASSERT(LaunchMenu(dmi::MenuStartMode::Menu, status));
                 

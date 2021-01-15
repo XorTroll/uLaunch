@@ -16,14 +16,12 @@ namespace am {
     Result LibraryAppletPop(AppletStorage *st);
     
     inline Result WebAppletStart(WebCommonConfig *web) {
-        return LibraryAppletStart(AppletId_web, web->version, &web->arg, sizeof(web->arg));
+        return LibraryAppletStart(AppletId_LibraryAppletWeb, web->version, &web->arg, sizeof(web->arg));
     }
 
     u64 LibraryAppletGetProgramIdForAppletId(AppletId id);
     AppletId LibraryAppletGetAppletIdForProgramId(u64 id);
 
     AppletId LibraryAppletGetId();
-
-    static constexpr AppletId InvalidAppletId = static_cast<AppletId>(0);
 
 }

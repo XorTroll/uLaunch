@@ -5,27 +5,27 @@ namespace am {
     namespace {
 
         AppletHolder g_AppletHolder;
-        AppletId g_MenuAppletId = InvalidAppletId;
-        AppletId g_LastAppletId = InvalidAppletId;
+        AppletId g_MenuAppletId = AppletId_None;
+        AppletId g_LastAppletId = AppletId_None;
 
         const std::map<u64, AppletId> g_AppletIdTable = {
-            { 0x0100000000001001, AppletId_auth },
-            { 0x0100000000001002, AppletId_cabinet },
-            { 0x0100000000001003, AppletId_controller },
-            { 0x0100000000001004, AppletId_dataErase },
-            { 0x0100000000001005, AppletId_error },
-            { 0x0100000000001006, AppletId_netConnect },
-            { 0x0100000000001007, AppletId_playerSelect },
-            { 0x0100000000001008, AppletId_swkbd },
-            { 0x0100000000001009, AppletId_miiEdit },
-            { 0x010000000000100A, AppletId_web },
-            { 0x010000000000100B, AppletId_shop },
-            { 0x010000000000100D, AppletId_photoViewer },
-            { 0x010000000000100E, AppletId_set },
-            { 0x010000000000100F, AppletId_offlineWeb },
-            { 0x0100000000001010, AppletId_loginShare },
-            { 0x0100000000001011, AppletId_wifiWebAuth },
-            { 0x0100000000001013, AppletId_myPage }
+            { 0x0100000000001001, AppletId_LibraryAppletAuth },
+            { 0x0100000000001002, AppletId_LibraryAppletCabinet },
+            { 0x0100000000001003, AppletId_LibraryAppletController },
+            { 0x0100000000001004, AppletId_LibraryAppletDataErase },
+            { 0x0100000000001005, AppletId_LibraryAppletError },
+            { 0x0100000000001006, AppletId_LibraryAppletNetConnect },
+            { 0x0100000000001007, AppletId_LibraryAppletPlayerSelect },
+            { 0x0100000000001008, AppletId_LibraryAppletSwkbd },
+            { 0x0100000000001009, AppletId_LibraryAppletMiiEdit },
+            { 0x010000000000100A, AppletId_LibraryAppletWeb },
+            { 0x010000000000100B, AppletId_LibraryAppletShop },
+            { 0x010000000000100D, AppletId_LibraryAppletPhotoViewer },
+            { 0x010000000000100E, AppletId_LibraryAppletSet },
+            { 0x010000000000100F, AppletId_LibraryAppletOfflineWeb },
+            { 0x0100000000001010, AppletId_LibraryAppletLoginShare },
+            { 0x0100000000001011, AppletId_LibraryAppletWifiWebAuth },
+            { 0x0100000000001013, AppletId_LibraryAppletMyPage }
         };
 
     }
@@ -49,7 +49,7 @@ namespace am {
     }
 
     bool LibraryAppletIsMenu() {
-        return LibraryAppletIsActive() && (g_MenuAppletId != InvalidAppletId) && (LibraryAppletGetId() == g_MenuAppletId);
+        return LibraryAppletIsActive() && (g_MenuAppletId != AppletId_None) && (LibraryAppletGetId() == g_MenuAppletId);
     }
 
     void LibraryAppletTerminate() {
@@ -130,13 +130,13 @@ namespace am {
         if(it != g_AppletIdTable.end()) {
             return it->second;
         }
-        return InvalidAppletId;
+        return AppletId_None;
     }
 
     AppletId LibraryAppletGetId() {
         auto idcopy = g_LastAppletId;
         if(!LibraryAppletIsActive()) {
-            g_LastAppletId = InvalidAppletId;
+            g_LastAppletId = AppletId_None;
         }
         return idcopy;
     }

@@ -45,16 +45,13 @@ namespace am {
         Mutex g_StopLock = EmptyMutex;
         Mutex g_ReceiverLock = EmptyMutex;
         bool g_Initialized = false;
-        bool g_ReceiveThreadShouldStop = false;
+        std::atomic_bool g_ReceiveThreadShouldStop = false;
         Thread g_ReceiverThread;
         std::vector<std::pair<MessageDetectCallback, dmi::MenuMessage>> g_ReceiverCallbackTable;
 
         void DaemonMessageReceiverThread(void*) {
             while(true) {
-                mutexLock(&g_StopLock);
-                auto should_stop = g_ReceiveThreadShouldStop;
-                mutexUnlock(&g_StopLock);
-                if(should_stop) {
+                if(g_ReceiveThreadShouldStop) {
                     break;
                 }
 
@@ -80,7 +77,7 @@ namespace am {
         R_TRY(daemonInitializePrivateService());
 
         g_ReceiveThreadShouldStop = false;
-        R_TRY(threadCreate(&g_ReceiverThread, &DaemonMessageReceiverThread, nullptr, nullptr, 0x1000, 0x2B, -2));
+        R_TRY(threadCreate(&g_ReceiverThread, &DaemonMessageReceiverThread, nullptr, nullptr, 0x1000, 49, -2));
         R_TRY(threadStart(&g_ReceiverThread));
 
         g_Initialized = true;
@@ -92,10 +89,7 @@ namespace am {
             return;
         }
         
-        mutexLock(&g_StopLock);
         g_ReceiveThreadShouldStop = true;
-        mutexUnlock(&g_StopLock);
-
         threadWaitForExit(&g_ReceiverThread);
         threadClose(&g_ReceiverThread);
 

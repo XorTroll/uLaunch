@@ -18,6 +18,8 @@ LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*
 SOURCES		+=	$(UL_COMMON_SOURCES)
 INCLUDES	+=	$(UL_COMMON_INCLUDES)
 
+LIBS	+= -ljpeg
+
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional
 # rules for different file extensions
