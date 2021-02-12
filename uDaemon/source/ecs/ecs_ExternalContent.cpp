@@ -25,7 +25,7 @@ namespace ecs {
         R_TRY(fsOpenSdCardFileSystem(&sd_fs));
         std::unique_ptr<ams::fs::fsa::IFileSystem> remote_sd_fs = std::make_unique<ams::fs::RemoteFileSystem>(sd_fs);
         auto subdir_fs = std::make_shared<ams::fssystem::SubDirectoryFileSystem>(std::move(remote_sd_fs), exefs_path.c_str());
-        auto sd_ifs_ipc = ams::sf::MakeShared<ams::fssrv::sf::IFileSystem, ams::fssrv::impl::FileSystemInterfaceAdapter>(std::move(subdir_fs), false);
+        auto sd_ifs_ipc = ipc::MakeShared<ams::fssrv::sf::IFileSystem, ams::fssrv::impl::FileSystemInterfaceAdapter>(std::move(subdir_fs), false);
 
         R_TRY(ipc::GetGlobalManager().RegisterSession(move_h, ams::sf::cmif::ServiceObjectHolder(std::move(sd_ifs_ipc))).GetValue());
 

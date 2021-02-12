@@ -4,22 +4,15 @@
 #include <ul_Include.hpp>
 #include <dmi/dmi_DaemonMenuInteraction.hpp>
 
+#define IPC_I_PRIVATE_SERVICE_INTERFACE_INFO(C, H) \
+    AMS_SF_METHOD_INFO(C, H, 0, Result, Initialize, (const ClientProcessId &client_pid), (client_pid)) \
+    AMS_SF_METHOD_INFO(C, H, 1, Result, GetMessage, (Out<dmi::MenuMessage> out_msg), (out_msg))
+
+AMS_SF_DEFINE_INTERFACE(ams::sf::ul, IPrivateService, IPC_I_PRIVATE_SERVICE_INTERFACE_INFO)
+
 namespace ipc {
 
-    namespace {
-
-        using namespace ams;
-        namespace os = ams::os; // Solves os:: namespace ambiguity (ams::os and uLaunch's os)
-
-        #define PRIVATE_SERVICE_INTERFACE_INFO(C, H) \
-            AMS_SF_METHOD_INFO(C, H, 0, ams::Result, Initialize, (const ams::sf::ClientProcessId &client_pid)) \
-            AMS_SF_METHOD_INFO(C, H, 1, ams::Result, GetMessage, (ams::sf::Out<dmi::MenuMessage> out_msg))
-
-        AMS_SF_DEFINE_INTERFACE(IPrivateService, PRIVATE_SERVICE_INTERFACE_INFO)
-
-    }
-
-    class PrivateService final {
+    class PrivateService {
         private:
             bool initialized;
         public:
@@ -28,6 +21,6 @@ namespace ipc {
             ams::Result Initialize(const ams::sf::ClientProcessId &client_pid);
             ams::Result GetMessage(ams::sf::Out<dmi::MenuMessage> out_msg);
     };
-    static_assert(IsIPrivateService<PrivateService>);
+    static_assert(ams::sf::ul::IsIPrivateService<PrivateService>);
 
 }
