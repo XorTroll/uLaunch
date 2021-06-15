@@ -27,17 +27,17 @@ namespace os {
         u8 data[0x3F4];
 
         static inline constexpr SystemAppletMessage Create(GeneralChannelMessage msg) {
-            SystemAppletMessage sams = {};
-            sams.magic = Magic;
-            sams.general_channel_message = msg;
-            return sams;
+            return SystemAppletMessage {
+                .magic = Magic,
+                .general_channel_message = msg
+            };
         }
 
     };
     // 1024 bytes are always sent, so let's read it all.
     static_assert(sizeof(SystemAppletMessage) == 0x400, "System applet message");
 
-
+    // TODO: actual names N uses?
     enum class AppletMessage : u32 {
         Invalid,
         Exit = 4,

@@ -45,9 +45,9 @@ namespace os {
     }
 
     bool IsConsoleCharging() {
-        auto cht = ChargerType_None;
-        psmGetChargerType(&cht);
-        return cht > ChargerType_None;
+        auto charger_type = PsmChargerType_Unconnected;
+        psmGetChargerType(&charger_type);
+        return charger_type > PsmChargerType_Unconnected;
     }
 
     std::string GetFirmwareVersion() {
@@ -63,7 +63,7 @@ namespace os {
         auto local_time = localtime(&time_val);
         auto h = local_time->tm_hour;
         auto min = local_time->tm_min;
-        char str[0x10] = {0};
+        char str[0x10] = {};
         sprintf(str, "%02d:%02d", h, min);
         return str;
     }

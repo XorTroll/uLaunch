@@ -43,20 +43,20 @@ namespace util
     }
 
     std::string FormatResultDisplay(Result rc) {
-        char res[0x20] = {0};
+        char res[0x20] = {};
         sprintf(res, "%04d-%04d", R_MODULE(rc) + 2000, R_DESCRIPTION(rc));   
-        return std::string(res);
+        return res;
     }
 
     std::string FormatResultHex(Result rc) {
-        char res[0x20] = {0};
+        char res[0x20] = {};
         sprintf(res, "0x%X", rc);
-        return std::string(res);
+        return res;
     }
 
     std::string FormatResult(Result rc) {
         auto desc = RES_DESCRIPTION(rc);
-        std::string fmt = "(" + FormatResultDisplay(rc) + ")";
+        auto fmt = "(" + FormatResultDisplay(rc) + ")";
         if(!desc.empty()) {
             fmt += " ";
             fmt += desc;

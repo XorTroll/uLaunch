@@ -39,6 +39,7 @@ namespace {
     bool g_AlbumAppletLaunchFlag = false;
     bool g_MenuRestartFlag = false;
     bool g_HbTargetOpenedAsApplication = false;
+    bool g_AppletActive = false;
     AppletOperationMode g_OperationMode;
     u8 *g_UsbViewerBuffer = nullptr;
     u8 *g_UsbViewerReadBuffer = nullptr;
@@ -91,14 +92,14 @@ void __libnx_initheap() {
 void __appInit() {
     ams::hos::InitializeForStratosphere();
 
-    ams::sm::DoWithSession([]() {
-        UL_ASSERT(appletInitialize());
-        UL_ASSERT(fsInitialize());
-        UL_ASSERT(nsInitialize());
-        UL_ASSERT(pminfoInitialize());
-        UL_ASSERT(ldrShellInitialize());
-        UL_ASSERT(pmshellInitialize());
-    });
+    UL_AMS_ASSERT(ams::sm::Initialize());
+
+    UL_ASSERT(appletInitialize());
+    UL_ASSERT(fsInitialize());
+    UL_ASSERT(nsInitialize());
+    UL_ASSERT(pminfoInitialize());
+    UL_ASSERT(ldrShellInitialize());
+    UL_ASSERT(pmshellInitialize());
 
     fsdevMountSdmc();
 }
@@ -133,8 +134,8 @@ namespace {
         appletStartSleepSequence(true);
     }
 
-    inline Result LaunchMenu(dmi::MenuStartMode stmode, dmi::DaemonStatus status) {
-        return ecs::RegisterLaunchAsApplet(g_Config.menu_program_id, static_cast<u32>(stmode), "/ulaunch/bin/uMenu", &status, sizeof(status));
+    inline Result LaunchMenu(dmi::MenuStartMode st_mode, dmi::DaemonStatus status) {
+        return ecs::RegisterLaunchAsApplet(g_Config.menu_program_id, static_cast<u32>(st_mode), "/ulaunch/bin/uMenu", &status, sizeof(status));
     }
 
     void HandleHomeButton() {
@@ -209,7 +210,7 @@ namespace {
         u32 raw_msg = 0;
         R_TRY(appletGetMessage(&raw_msg));
 
-        auto msg = static_cast<os::AppletMessage>(raw_msg);
+        const auto msg = static_cast<os::AppletMessage>(raw_msg);
         switch(msg) {
             case os::AppletMessage::HomeButton: {
                 HandleHomeButton();
@@ -236,7 +237,7 @@ namespace {
 
     void HandleMenuMessage() {
         if(am::LibraryAppletIsMenu()) {
-            char web_url[500] = {0};
+            char web_url[500] = {};
             u64 app_id = 0;
             hb::HbTargetParams ipt = {};
             dmi::daemon::ReceiveCommand([&](dmi::DaemonMessage msg, dmi::daemon::DaemonScopedStorageReader &reader) -> Result {
@@ -361,7 +362,7 @@ namespace {
         }
     }
 
-    void UsbViewerRGBAThread(void *arg) {
+    void UsbViewerRGBAThread(void*) {
         while(true) {
             bool tmp_flag;
             appletGetLastForegroundCaptureImageEx(g_UsbViewerReadBuffer, RawRGBAScreenBufferSize, &tmp_flag);
@@ -370,7 +371,7 @@ namespace {
         }
     }
 
-    void UsbViewerJPEGThread(void *arg) {
+    void UsbViewerJPEGThread(void*) {
         while(true) {
             u64 tmp_size;
             capsscCaptureJpegScreenShot(&tmp_size, g_UsbViewerReadBuffer, RawRGBAScreenBufferSize, ViLayerStack_Default, UINT64_MAX);
@@ -399,7 +400,7 @@ namespace {
         HandleMenuMessage();
 
         bool sth_done = false;
-        // A valid version in this g_Config is always >= 0x20000
+        // A valid version will always be >= 0x20000
         if(g_WebAppletLaunchFlag.version > 0) {
             if(!am::LibraryAppletIsActive()) {
                 UL_ASSERT(am::WebAppletStart(&g_WebAppletLaunchFlag));
@@ -460,7 +461,10 @@ namespace {
                 sth_done = true;
             }
         }
-        if(!sth_done) {
+
+        const auto applet_active_old = g_AppletActive;
+        g_AppletActive = am::LibraryAppletIsActive();
+        if(!sth_done && !applet_active_old) {
             // If nothing was done, but nothing is active... An application or applet might have crashed, terminated, failed to launch...
             // No matter what is it, we reopen Menu in launch-error mode.
             if(!am::ApplicationIsActive() && !am::LibraryAppletIsActive()) {
@@ -520,10 +524,8 @@ namespace {
         am::LibraryAppletSetMenuAppletId(am::LibraryAppletGetAppletIdForProgramId(g_Config.menu_program_id));
 
         if(g_Config.viewer_usb_enabled) {
-            ams::sm::DoWithSession([]() {
-                UL_ASSERT(usbCommsInitialize());
-                UL_ASSERT(capsscInitialize());
-            });
+            UL_ASSERT(usbCommsInitialize());
+            UL_ASSERT(capsscInitialize());
 
             PrepareUsbViewer();
             UL_ASSERT(LaunchUsbViewerThread());

@@ -76,8 +76,10 @@ inline __attribute__((noreturn)) void OnAssertionFailed(const char *log_buf, siz
 #define UL_ASSERT(expr) ({ \
     const auto _tmp_rc = (expr); \
     if(R_FAILED(_tmp_rc)) { \
-        char logbuf[UL_ASSERT_LOG_LEN] = {0}; \
+        char logbuf[UL_ASSERT_LOG_LEN] = {}; \
         sprintf(logbuf, "%s asserted 0x%X...", #expr, _tmp_rc); \
         OnAssertionFailed(logbuf, UL_ASSERT_LOG_LEN, _tmp_rc); \
     } \
 })
+
+#define UL_AMS_ASSERT(expr) UL_ASSERT(ams::Result(expr).GetValue())
