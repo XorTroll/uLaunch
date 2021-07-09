@@ -40,7 +40,7 @@ namespace ui {
 
         public:
             using Application::Application;
-            
+
             ~MenuApplication() {
                 pu::audio::Delete(this->bgm);
             }

@@ -44,11 +44,6 @@ namespace {
         UL_ASSERT(setsysInitialize());
         UL_ASSERT(setInitialize());
 
-        // Register handlers for HOME button press detection
-        am::RegisterLibAppletHomeButtonDetection();
-        ui::MenuApplication::RegisterHomeButtonDetection();
-        ui::QuickMenu::RegisterHomeButtonDetection();
-
         // Initialize uDaemon message handling
         UL_ASSERT(am::InitializeDaemonMessageHandler());
 
@@ -121,6 +116,11 @@ int main() {
 
         g_MenuApplication->SetInformation(smode, status, uijson);
         g_MenuApplication->Prepare();
+
+        // Register handlers for HOME button press detection
+        am::RegisterLibAppletHomeButtonDetection();
+        ui::MenuApplication::RegisterHomeButtonDetection();
+        ui::QuickMenu::RegisterHomeButtonDetection();
         
         if(smode == dmi::MenuStartMode::MenuApplicationSuspended) {
             g_MenuApplication->Show();

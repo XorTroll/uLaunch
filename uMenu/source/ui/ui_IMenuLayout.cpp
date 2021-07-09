@@ -15,9 +15,11 @@ namespace ui {
         if(home_press) {
             this->OnHomeButtonPress();
         }
+        /* TODO
         if(!hidIsControllerConnected(CONTROLLER_HANDHELD) && !hidIsControllerConnected(CONTROLLER_PLAYER_1)) {
             actions::ShowControllerSupport();
         }
+        */
         this->OnMenuInput(down, up, held, touch_pos);
     }
 

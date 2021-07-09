@@ -149,7 +149,9 @@ namespace ui {
             if(this->bgm_fade_in_ms > 0) {
                 pu::audio::PlayWithFadeIn(this->bgm, loops, this->bgm_fade_in_ms);
             }
-            else pu::audio::Play(this->bgm, loops);
+            else {
+                pu::audio::Play(this->bgm, loops);
+            }
         }
     }
 

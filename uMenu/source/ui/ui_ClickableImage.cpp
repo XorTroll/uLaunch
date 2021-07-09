@@ -75,8 +75,6 @@ namespace ui {
             }
         }
         else if(!touch_pos.IsEmpty()) {
-            touchPosition tch;
-            hidTouchRead(&tch, 0);
             if((touch_pos.X >= this->GetProcessedX()) && (touch_pos.X < (this->GetProcessedX() + w)) && (touch_pos.Y >= this->GetProcessedY()) && (touch_pos.Y < (this->GetProcessedY() + h))) {
                 this->touchtp = std::chrono::steady_clock::now();
                 this->touched = true;

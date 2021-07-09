@@ -445,7 +445,7 @@ namespace {
         }
         if(strlen(g_HbTargetLaunchFlag.nro_path)) {
             if(!am::LibraryAppletIsActive()) {
-                auto params = hb::HbTargetParams::Create(g_HbTargetLaunchFlag.nro_path, g_HbTargetLaunchFlag.nro_argv, false);
+                auto params = hb::HbTargetParams::Create(g_HbTargetLaunchFlag.nro_path, g_HbTargetLaunchFlag.nro_argv, true);
                 UL_ASSERT(ecs::RegisterLaunchAsApplet(g_Config.homebrew_applet_program_id, 0, "/ulaunch/bin/uHbTarget/applet", &params, sizeof(params)));
                 
                 sth_done = true;

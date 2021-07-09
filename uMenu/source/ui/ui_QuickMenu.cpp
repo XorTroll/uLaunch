@@ -135,10 +135,10 @@ namespace ui {
             this->options_menu->OnInput(down, up, held, touch_pos);
         }
 
-        if((down & KEY_L) || (down & KEY_R) || (down & KEY_ZL) || (down & KEY_ZR)) {
+        if((down & HidNpadButton_L) || (down & HidNpadButton_R) || (down & HidNpadButton_ZL) || (down & HidNpadButton_ZR)) {
             this->Toggle();
         }
-        else if((down & KEY_B) || (down & KEY_A)) {
+        else if((down & HidNpadButton_B) || (down & HidNpadButton_A)) {
             // B only valid for toggling off
             // A = something selected in the menu
             if(this->on) {

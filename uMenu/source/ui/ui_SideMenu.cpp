@@ -115,10 +115,10 @@ namespace ui
             return;
         }
 
-        if(down & KEY_LEFT) {
+        if(down & HidNpadButton_AnyLeft) {
             HandleMoveLeft();
         }
-        else if(down & KEY_RIGHT) {
+        else if(down & HidNpadButton_AnyRight) {
             HandleMoveRight();
         }
         else if(!touch_pos.IsEmpty()) {
@@ -130,7 +130,7 @@ namespace ui
                     constexpr auto item_size = static_cast<s32>(ItemSize);
                     if((touch_pos.X >= basex) && (touch_pos.X < (basex + item_size)) && (touch_pos.Y >= basey) && (touch_pos.Y < (basey + item_size))) {
                         if((this->baseiconidx + i) == selitm) {
-                            (this->onselect)(KEY_A, this->selitm);
+                            (this->onselect)(HidNpadButton_A, this->selitm);
                         }
                         else {
                             preselitm = selitm;
@@ -148,7 +148,7 @@ namespace ui
             (this->onselect)(down, this->selitm);
         }
 
-        if(held & KEY_LEFT) {
+        if(held & HidNpadButton_AnyLeft) {
             if(this->scrollflag == 1) {
                 auto curtp = std::chrono::steady_clock::now();
                 auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(curtp - this->scrolltp).count();
@@ -176,7 +176,7 @@ namespace ui
                 this->scrolltp = std::chrono::steady_clock::now();
             }
         }
-        else if(held & KEY_RIGHT) {
+        else if(held & HidNpadButton_AnyRight) {
             if(this->scrollflag == 2) {
                 auto curtp = std::chrono::steady_clock::now();
                 auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(curtp - this->scrolltp).count();

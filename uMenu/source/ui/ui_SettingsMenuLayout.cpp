@@ -53,7 +53,7 @@ namespace ui {
     }
 
     void SettingsMenuLayout::OnMenuInput(u64 down, u64 up, u64 held, pu::ui::Touch pos) {
-        if(down & KEY_B) {
+        if(down & HidNpadButton_B) {
             g_MenuApplication->FadeOut();
             g_MenuApplication->LoadMenu();
             g_MenuApplication->FadeIn();

@@ -219,15 +219,15 @@ namespace ui {
             }
         }
 
-        if(down & KEY_B) {
+        if(down & HidNpadButton_B) {
             if(!this->curfolder.empty() && !this->homebrew_mode) {
                 this->MoveFolder("", true);
             }
         }
-        else if(down & KEY_PLUS) {
+        else if(down & HidNpadButton_Plus) {
             actions::ShowAboutDialog();
         }
-        else if(down & KEY_MINUS) {
+        else if(down & HidNpadButton_Minus) {
             this->menuToggle_Click();
         }
     }
@@ -248,14 +248,14 @@ namespace ui {
     }
 
     void MenuLayout::menu_Click(u64 down, u32 index) {
-        if(this->select_on && (down & KEY_A)) {
+        if(this->select_on && (down & HidNpadButton_A)) {
             if(!this->itemsMenu->IsAnyMultiselected()) {
                 this->StopMultiselect();
             }
         }
         if(this->select_on) {
             if(select_dir) {
-                if((down & KEY_A) || (down & KEY_Y)) {
+                if((down & HidNpadButton_A) || (down & HidNpadButton_Y)) {
                     if((!this->homebrew_mode) && this->curfolder.empty()) {
                         if(index < g_EntryList.folders.size()) {
                             auto &folder = g_EntryList.folders[index];
@@ -269,17 +269,17 @@ namespace ui {
                         }
                     }
                 }
-                else if(down & KEY_B) {
+                else if(down & HidNpadButton_B) {
                     this->select_dir = false;
                     g_MenuApplication->ShowNotification(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "menu_move_select_folder_cancel"));
                 }
             }
             else {
-                if(down & KEY_B) {
+                if(down & HidNpadButton_B) {
                     g_MenuApplication->ShowNotification(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "menu_multiselect_cancel"));
                     this->StopMultiselect();
                 }
-                else if(down & KEY_Y) {
+                else if(down & HidNpadButton_Y) {
                     auto selectable = false;
                     if(this->homebrew_mode) {
                         selectable = true;
@@ -296,7 +296,7 @@ namespace ui {
                         this->itemsMenu->SetItemMultiselected(index, !this->itemsMenu->IsItemMultiselected(index));
                     }
                 }
-                else if(down & KEY_A) {
+                else if(down & HidNpadButton_A) {
                     if(this->homebrew_mode) {
                         auto sopt = g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "menu_multiselect"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "hb_mode_entries_add"), { cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "yes"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "no"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "cancel") }, true);
                         if(sopt == 0) {
@@ -380,7 +380,7 @@ namespace ui {
         }
         else {
             if((index == 0) && this->homebrew_mode) {
-                if(down & KEY_A) {
+                if(down & HidNpadButton_A) {
                     pu::audio::Play(this->sfxTitleLaunch);
                     
                     hb::HbTargetParams ipt = {};
@@ -407,7 +407,7 @@ namespace ui {
                 if(this->homebrew_mode) {
                     realidx--;
                     auto hb = g_HomebrewRecordList[realidx];
-                    if(down & KEY_A) {
+                    if(down & HidNpadButton_A) {
                         auto hblaunch = true;
                         if(g_MenuApplication->IsHomebrewSuspended()) {
                             if(g_MenuApplication->EqualsSuspendedHomebrewPath(hb.nro_target.nro_path)) {
@@ -426,14 +426,14 @@ namespace ui {
                             this->HandleHomebrewLaunch(hb);
                         }
                     }
-                    else if(down & KEY_X) {
+                    else if(down & HidNpadButton_X) {
                         if(g_MenuApplication->IsSuspended()) {
                             if(g_MenuApplication->EqualsSuspendedHomebrewPath(hb.nro_target.nro_path)) {
                                 this->HandleCloseSuspended();
                             }
                         }
                     }
-                    else if(down & KEY_Y) {
+                    else if(down & HidNpadButton_Y) {
                         this->select_on = true;
                         this->itemsMenu->SetItemMultiselected(this->itemsMenu->GetSelectedItem(), true);
                     }
@@ -447,10 +447,10 @@ namespace ui {
                         }
                         else {
                             auto &foldr = g_EntryList.folders[realidx];
-                            if(down & KEY_A) {
+                            if(down & HidNpadButton_A) {
                                 this->MoveFolder(foldr.name, true);
                             }
-                            else if(down & KEY_Y) {
+                            else if(down & HidNpadButton_Y) {
                                 auto sopt = g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "menu_rename_folder"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "menu_rename_folder_conf"), { cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "yes"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "no") }, true);
                                 if(sopt == 0) {
                                     SwkbdConfig swkbd;
@@ -471,7 +471,7 @@ namespace ui {
                     if(titleidx >= 0) {
                         auto title = folder.titles[titleidx];
                         const auto type = static_cast<cfg::TitleType>(title.title_type);
-                        if(down & KEY_A) {
+                        if(down & HidNpadButton_A) {
                             bool titlelaunch = true;
 
                             if(g_MenuApplication->IsSuspended()) {
@@ -527,7 +527,7 @@ namespace ui {
                                 }
                             }
                         }
-                        else if(down & KEY_X) {
+                        else if(down & HidNpadButton_X) {
                             if(g_MenuApplication->IsSuspended()) {
                                 if(type == cfg::TitleType::Homebrew) {
                                     if(g_MenuApplication->EqualsSuspendedHomebrewPath(title.nro_target.nro_path)) {
@@ -541,7 +541,7 @@ namespace ui {
                                 }
                             }
                         }
-                        else if(down & KEY_Y) {
+                        else if(down & HidNpadButton_Y) {
                             if(type == cfg::TitleType::Homebrew) {
                                 auto sopt = g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "entry_options"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "entry_action"), { cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "entry_move"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "entry_remove"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "cancel") }, true);
                                 if(sopt == 0) {
@@ -565,7 +565,7 @@ namespace ui {
                                 this->itemsMenu->SetItemMultiselected(this->itemsMenu->GetSelectedItem(), true);
                             }
                         }
-                        else if(down & KEY_UP) {
+                        else if(down & HidNpadButton_AnyUp) {
                             if(type == cfg::TitleType::Installed) {
                                 auto sopt = g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "app_launch"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "app_take_over_select") + "\n" + cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "app_take_over_selected"), { "Yes", "Cancel" }, true);
                                 if(sopt == 0) {
@@ -828,13 +828,14 @@ namespace ui {
                 if(launch) {
                     pu::audio::Play(this->sfxTitleLaunch);
                     hb::HbTargetParams ipt = {};
-                    strncpy(ipt.nro_path, rec.nro_target.nro_path, sizeof(ipt.nro_path));
-                    strncpy(ipt.nro_argv, rec.nro_target.nro_argv, sizeof(ipt.nro_argv));
+                    strncpy(ipt.nro_path, rec.nro_target.nro_path, sizeof(ipt.nro_path) - 1);
                     if(strlen(rec.nro_target.nro_argv)) {
                         auto new_argv = std::string(rec.nro_target.nro_path) + " " + rec.nro_target.nro_argv;
-                        strncpy(ipt.nro_argv, new_argv.c_str(), sizeof(ipt.nro_argv));
+                        strncpy(ipt.nro_argv, new_argv.c_str(), sizeof(ipt.nro_argv) - 1);
                     }
-
+                    else {
+                        strncpy(ipt.nro_argv, rec.nro_target.nro_argv, sizeof(ipt.nro_argv) - 1);
+                    }
                     auto rc = dmi::menu::SendCommand(dmi::DaemonMessage::LaunchHomebrewApplication, [&](dmi::menu::MenuScopedStorageWriter &writer) {
                         writer.Push(g_Config.homebrew_title_application_id);
                         writer.Push(ipt);
