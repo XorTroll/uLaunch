@@ -277,8 +277,6 @@ namespace cfg {
                 }
             }
         }
-        std::string fail = "Bad load 4";
-        OnAssertionFailed(fail.c_str(), fail.length(), 0xbabe);
         return CreateNewAndLoadConfig();
     }
 
