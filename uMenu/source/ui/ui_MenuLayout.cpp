@@ -876,7 +876,6 @@ namespace ui {
             for(u32 i = 0; i < basesz; i++) {
                 auto &title = g_EntryList.root.titles[i - rmvd];
                 if(this->itemsMenu->IsItemMultiselected(basefsz + i)) {
-                    g_MenuApplication->CreateShowDialog("A", "Moving title '" + title.name + "' to folder '" + folder + "'...", { "K" }, true);
                     if(cfg::MoveRecordTo(g_EntryList, title, folder)) {
                         rmvd++;
                     }
