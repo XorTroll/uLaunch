@@ -316,7 +316,7 @@ namespace ui {
                             if(hbidx < 0) {
                                 hbidx = 0;
                             }
-                            auto any = false;
+                            auto all_added = true;
                             for(u32 i = 0; i < g_HomebrewRecordList.size(); i++) {
                                 auto &hb = g_HomebrewRecordList[i];
                                 auto idx = i + 1;
@@ -324,13 +324,18 @@ namespace ui {
                                     if(!cfg::ExistsRecord(g_EntryList, hb)) {
                                         cfg::SaveRecord(hb);
                                         g_EntryList.root.titles.insert(g_EntryList.root.titles.begin() + hbidx, hb);
-                                        any = true;
                                         hbidx++;
+                                    }
+                                    else {
+                                        all_added = false;
                                     }
                                 }
                             }
-                            if(any) {
+                            if(all_added) {
                                 g_MenuApplication->ShowNotification(GetLanguageString("hb_mode_entries_added"));
+                            }
+                            else {
+                                g_MenuApplication->ShowNotification(GetLanguageString("hb_mode_entries_some_added"));
                             }
                             this->StopMultiselect();
                         }
@@ -871,6 +876,7 @@ namespace ui {
             for(u32 i = 0; i < basesz; i++) {
                 auto &title = g_EntryList.root.titles[i - rmvd];
                 if(this->itemsMenu->IsItemMultiselected(basefsz + i)) {
+                    g_MenuApplication->CreateShowDialog("A", "Moving title '" + title.name + "' to folder '" + folder + "'...", { "K" }, true);
                     if(cfg::MoveRecordTo(g_EntryList, title, folder)) {
                         rmvd++;
                     }

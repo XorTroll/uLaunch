@@ -26,6 +26,23 @@ namespace cfg {
         std::string name;
         std::string author;
         std::string version;
+
+        inline bool Equals(const TitleRecord &other) {
+            if(this->title_type == other.title_type) {
+                switch(static_cast<TitleType>(this->title_type)) {
+                    case TitleType::Installed: {
+                        return this->app_id == other.app_id;
+                    }
+                    case TitleType::Homebrew: {
+                        return std::strcmp(this->nro_target.nro_path, other.nro_target.nro_path) == 0;
+                    }
+                    default: {
+                        return false;
+                    }
+                }
+            }
+            return false;
+        }
     };
 
     struct TitleFolder {

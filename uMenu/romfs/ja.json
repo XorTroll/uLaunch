@@ -10,6 +10,7 @@
     "swkbd_rename_folder_guide": "新しいフォルダー名を入力してください",
     "hb_mode_entries_add": "選択したすべてのエントリをメインメニューに追加しますか？",
     "hb_mode_entries_added": "新しいエントリがメインメニューに追加されました。",
+    "hb_mode_entries_some_added": "Some selected entries were added in the main menu, but others already had been added.",
     "menu_move_to_folder": "選択したすべてのエントリを新しいフォルダまたは既存のフォルダ内に移動しますか？",
     "menu_move_new_folder": "新しいフォルダ",
     "menu_move_existing_folder": "既存のフォルダ",

@@ -455,66 +455,34 @@ namespace cfg {
         bool title_found = false;
         TitleRecord record_copy = {};
         std::string recjson;
-        const auto type = static_cast<TitleType>(record.title_type);
 
         // Search in root first
-        if(type == TitleType::Installed) {
-            auto find = STL_FIND_IF(list.root.titles, tit, (tit.title_type == record.title_type) && (tit.app_id == record.app_id));
-            if(STL_FOUND(list.root.titles, find)) {
-                // It is already on root...?
-                if(folder.empty()) {
-                    return true;
-                }
-                recjson = STL_UNWRAP(find).json_name;
-
-                list.root.titles.erase(find);
-                title_found = true;
+        auto find = STL_FIND_IF(list.root.titles, tit, record.Equals(tit));
+        if(STL_FOUND(list.root.titles, find)) {
+            // It is already on root...?
+            if(folder.empty()) {
+                return true;
             }
-        }
-        else {
-            auto find = STL_FIND_IF(list.root.titles, tit, (tit.title_type == record.title_type) && (tit.nro_target.nro_path == record.nro_target.nro_path));
-            if(STL_FOUND(list.root.titles, find)) {
-                // It is already on root...?
-                if(folder.empty()) {
-                    return true;
-                }
-                recjson = STL_UNWRAP(find).json_name;
+            recjson = STL_UNWRAP(find).json_name;
 
-                list.root.titles.erase(find);
-                title_found = true;
-            }
+            list.root.titles.erase(find);
+            title_found = true;
         }
 
         // If not found yet, search on all dirs if the title is present
         if(!title_found) {
             for(auto &fld: list.folders) {
-                if(type == TitleType::Installed) {
-                    auto find = STL_FIND_IF(fld.titles, tit, (tit.title_type == record.title_type) && (tit.app_id == record.app_id));
-                    if(STL_FOUND(fld.titles, find)) {
-                        // It is already on that folder...?
-                        if(fld.name == folder) {
-                            return true;
-                        }
-                        recjson = STL_UNWRAP(find).json_name;
-
-                        fld.titles.erase(find);
-                        title_found = true;
-                        break;
+                auto find = STL_FIND_IF(fld.titles, tit, record.Equals(tit));
+                if(STL_FOUND(fld.titles, find)) {
+                    // It is already on that folder...?
+                    if(fld.name == folder) {
+                        return true;
                     }
-                }
-                else {
-                    auto find = STL_FIND_IF(fld.titles, tit, (tit.title_type == record.title_type) && (tit.nro_target.nro_path == record.nro_target.nro_path));
-                    if(STL_FOUND(fld.titles, find)) {
-                        // It is already on that folder...?
-                        if(fld.name == folder) {
-                            return true;
-                        }
-                        recjson = STL_UNWRAP(find).json_name;
+                    recjson = STL_UNWRAP(find).json_name;
 
-                        fld.titles.erase(find);
-                        title_found = true;
-                        break;
-                    }
+                    fld.titles.erase(find);
+                    title_found = true;
+                    break;
                 }
             }
         }
@@ -573,45 +541,23 @@ namespace cfg {
         auto title_found = false;
         TitleRecord record_copy = {};
         std::string recjson;
-        const auto type = static_cast<TitleType>(record.title_type);
 
         // Search in root first
-        if(type == TitleType::Installed) {
-            auto find = STL_FIND_IF(list.root.titles, tit, (tit.title_type == record.title_type) && (tit.app_id == record.app_id));
-            if(STL_FOUND(list.root.titles, find)) {
-                if(!STL_UNWRAP(find).json_name.empty()) {
-                    title_found = true;
-                }
-            }
-        }
-        else {
-            auto find = STL_FIND_IF(list.root.titles, tit, (tit.title_type == record.title_type) && (tit.nro_target.nro_path == record.nro_target.nro_path));
-            if(STL_FOUND(list.root.titles, find)) {
-                if(!STL_UNWRAP(find).json_name.empty()) {
-                    title_found = true;
-                }
+        auto find = STL_FIND_IF(list.root.titles, tit, record.Equals(tit));
+        if(STL_FOUND(list.root.titles, find)) {
+            if(!STL_UNWRAP(find).json_name.empty()) {
+                title_found = true;
             }
         }
 
         // If not found yet, search on all dirs if the title is present
         if(!title_found) {
             for(auto &fld: list.folders) {
-                if(type == TitleType::Installed) {
-                    auto find = STL_FIND_IF(fld.titles, tit, (tit.title_type == record.title_type) && (tit.app_id == record.app_id));
-                    if(STL_FOUND(fld.titles, find)) {
-                        if(!STL_UNWRAP(find).json_name.empty()) {
-                            title_found = true;
-                            break;
-                        }
-                    }
-                }
-                else {
-                    auto find = STL_FIND_IF(fld.titles, tit, (tit.title_type == record.title_type) && (tit.nro_target.nro_path == record.nro_target.nro_path));
-                    if(STL_FOUND(fld.titles, find)) {
-                        if(!STL_UNWRAP(find).json_name.empty()) {
-                            title_found = true;
-                            break;
-                        }
+                auto find = STL_FIND_IF(fld.titles, tit, record.Equals(tit));
+                if(STL_FOUND(fld.titles, find)) {
+                    if(!STL_UNWRAP(find).json_name.empty()) {
+                        title_found = true;
+                        break;
                     }
                 }
             }
