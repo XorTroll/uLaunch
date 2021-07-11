@@ -59,13 +59,14 @@ namespace ui {
         this->Add(this->controller);
 
         auto curtime = os::GetCurrentTime();
-        this->timeText = pu::ui::elm::TextBlock::New(515, 68, curtime);
+        this->timeText = pu::ui::elm::TextBlock::New(515, 65, curtime);
         this->timeText->SetColor(textclr);
         g_MenuApplication->ApplyConfigForElement("main_menu", "time_text", this->timeText);
         this->Add(this->timeText);
         auto lvl = os::GetBatteryLevel();
         auto lvlstr = std::to_string(lvl) + "%";
         this->batteryText = pu::ui::elm::TextBlock::New(700, 55, lvlstr);
+        this->batteryText->SetFont("DefaultFont@20");
         this->batteryText->SetColor(textclr);
         g_MenuApplication->ApplyConfigForElement("main_menu", "battery_text", this->batteryText);
         this->Add(this->batteryText);
@@ -82,10 +83,14 @@ namespace ui {
         g_MenuApplication->ApplyConfigForElement("main_menu", "themes_icon", this->themes);
         this->Add(this->themes);
 
-        this->fwText = pu::ui::elm::TextBlock::New(1140, 68, os::GetFirmwareVersion());
+        this->fwText = pu::ui::elm::TextBlock::New(1120, 65, os::GetFirmwareVersion());
         this->fwText->SetColor(textclr);
         g_MenuApplication->ApplyConfigForElement("main_menu", "firmware_text", this->fwText);
         this->Add(this->fwText);
+
+        this->guideButtons = pu::ui::elm::Image::New(540, 120, cfg::GetAssetByTheme(g_Theme, "ui/GuideButtons.png"));
+        g_MenuApplication->ApplyConfigForElement("main_menu", "guide_buttons", this->guideButtons);
+        this->Add(this->guideButtons);
 
         this->menuToggle = ClickableImage::New(520, 200, cfg::GetAssetByTheme(g_Theme, "ui/ToggleClick.png"));
         this->menuToggle->SetOnClick(std::bind(&MenuLayout::menuToggle_Click, this));
@@ -171,7 +176,7 @@ namespace ui {
         auto ctp = std::chrono::steady_clock::now();
         if(std::chrono::duration_cast<std::chrono::milliseconds>(ctp - this->tp).count() >= 500) {
             if(g_MenuApplication->LaunchFailed() && !this->warnshown) {
-                g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "app_launch"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "app_unexpected_error"), { cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "ok") }, true);
+                g_MenuApplication->CreateShowDialog(GetLanguageString("app_launch"), GetLanguageString("app_unexpected_error"), { GetLanguageString("ok") }, true);
                 this->warnshown = true;
             }
         }
@@ -259,7 +264,7 @@ namespace ui {
                     if((!this->homebrew_mode) && this->curfolder.empty()) {
                         if(index < g_EntryList.folders.size()) {
                             auto &folder = g_EntryList.folders[index];
-                            auto sopt = g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "menu_multiselect"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "menu_move_existing_folder_conf"), { cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "yes"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "no"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "cancel") }, true);
+                            auto sopt = g_MenuApplication->CreateShowDialog(GetLanguageString("menu_multiselect"), GetLanguageString("menu_move_existing_folder_conf"), { GetLanguageString("yes"), GetLanguageString("no"), GetLanguageString("cancel") }, true);
                             if(sopt == 0) {
                                 this->HandleMultiselectMoveToFolder(folder.name);
                             }
@@ -271,12 +276,12 @@ namespace ui {
                 }
                 else if(down & HidNpadButton_B) {
                     this->select_dir = false;
-                    g_MenuApplication->ShowNotification(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "menu_move_select_folder_cancel"));
+                    g_MenuApplication->ShowNotification(GetLanguageString("menu_move_select_folder_cancel"));
                 }
             }
             else {
                 if(down & HidNpadButton_B) {
-                    g_MenuApplication->ShowNotification(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "menu_multiselect_cancel"));
+                    g_MenuApplication->ShowNotification(GetLanguageString("menu_multiselect_cancel"));
                     this->StopMultiselect();
                 }
                 else if(down & HidNpadButton_Y) {
@@ -298,7 +303,7 @@ namespace ui {
                 }
                 else if(down & HidNpadButton_A) {
                     if(this->homebrew_mode) {
-                        auto sopt = g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "menu_multiselect"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "hb_mode_entries_add"), { cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "yes"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "no"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "cancel") }, true);
+                        auto sopt = g_MenuApplication->CreateShowDialog(GetLanguageString("menu_multiselect"), GetLanguageString("hb_mode_entries_add"), { GetLanguageString("yes"), GetLanguageString("no"), GetLanguageString("cancel") }, true);
                         if(sopt == 0) {
                             // Get the idx of the last g_HomebrewRecordList element.
                             s32 hbidx = 0;
@@ -325,7 +330,7 @@ namespace ui {
                                 }
                             }
                             if(any) {
-                                g_MenuApplication->ShowNotification(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "hb_mode_entries_added"));
+                                g_MenuApplication->ShowNotification(GetLanguageString("hb_mode_entries_added"));
                             }
                             this->StopMultiselect();
                         }
@@ -334,12 +339,12 @@ namespace ui {
                         }
                     }
                     else if(this->curfolder.empty()) {
-                        auto sopt = g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "menu_multiselect"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "menu_move_to_folder"), { cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "menu_move_new_folder"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "menu_move_existing_folder"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "no"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "cancel") }, true);
+                        auto sopt = g_MenuApplication->CreateShowDialog(GetLanguageString("menu_multiselect"), GetLanguageString("menu_move_to_folder"), { GetLanguageString("menu_move_new_folder"), GetLanguageString("menu_move_existing_folder"), GetLanguageString("no"), GetLanguageString("cancel") }, true);
                         if(sopt == 0) {
                             SwkbdConfig swkbd;
                             swkbdCreate(&swkbd, 0);
-                            swkbdConfigSetGuideText(&swkbd, cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "swkbd_new_folder_guide").c_str());
-                            char dir[500] = {0};
+                            swkbdConfigSetGuideText(&swkbd, GetLanguageString("swkbd_new_folder_guide").c_str());
+                            char dir[500] = {};
                             auto rc = swkbdShow(&swkbd, dir, 500);
                             swkbdClose(&swkbd);
                             if(R_SUCCEEDED(rc)) {
@@ -348,14 +353,14 @@ namespace ui {
                         }
                         else if(sopt == 1) {
                             this->select_dir = true;
-                            g_MenuApplication->ShowNotification(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "menu_move_select_folder"));
+                            g_MenuApplication->ShowNotification(GetLanguageString("menu_move_select_folder"));
                         }
                         else if(sopt == 2) {
                             this->StopMultiselect();
                         }
                     }
                     else {
-                        auto sopt = g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "menu_multiselect"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "menu_move_from_folder"), { cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "yes"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "no"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "cancel") }, true);
+                        auto sopt = g_MenuApplication->CreateShowDialog(GetLanguageString("menu_multiselect"), GetLanguageString("menu_move_from_folder"), { GetLanguageString("yes"), GetLanguageString("no"), GetLanguageString("cancel") }, true);
                         if(sopt == 0) {
                             u32 rmvd = 0;
                             auto &folder = cfg::FindFolderByName(g_EntryList, this->curfolder);
@@ -451,11 +456,11 @@ namespace ui {
                                 this->MoveFolder(foldr.name, true);
                             }
                             else if(down & HidNpadButton_Y) {
-                                auto sopt = g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "menu_rename_folder"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "menu_rename_folder_conf"), { cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "yes"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "no") }, true);
+                                auto sopt = g_MenuApplication->CreateShowDialog(GetLanguageString("menu_rename_folder"), GetLanguageString("menu_rename_folder_conf"), { GetLanguageString("yes"), GetLanguageString("no") }, true);
                                 if(sopt == 0) {
                                     SwkbdConfig swkbd;
                                     swkbdCreate(&swkbd, 0);
-                                    swkbdConfigSetGuideText(&swkbd, cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "swkbd_rename_folder_guide").c_str());
+                                    swkbdConfigSetGuideText(&swkbd, GetLanguageString("swkbd_rename_folder_guide").c_str());
                                     char dir[500] = {0};
                                     auto rc = swkbdShow(&swkbd, dir, 500);
                                     swkbdClose(&swkbd);
@@ -522,7 +527,7 @@ namespace ui {
                                         return;
                                     }
                                     else {
-                                        g_MenuApplication->ShowNotification(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "app_launch_error") + ": " + util::FormatResult(rc));
+                                        g_MenuApplication->ShowNotification(GetLanguageString("app_launch_error") + ": " + util::FormatResult(rc));
                                     }
                                 }
                             }
@@ -543,7 +548,7 @@ namespace ui {
                         }
                         else if(down & HidNpadButton_Y) {
                             if(type == cfg::TitleType::Homebrew) {
-                                auto sopt = g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "entry_options"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "entry_action"), { cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "entry_move"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "entry_remove"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "cancel") }, true);
+                                auto sopt = g_MenuApplication->CreateShowDialog(GetLanguageString("entry_options"), GetLanguageString("entry_action"), { GetLanguageString("entry_move"), GetLanguageString("entry_remove"), GetLanguageString("cancel") }, true);
                                 if(sopt == 0) {
                                     if(!this->select_on) {
                                         this->select_on = true;
@@ -551,11 +556,11 @@ namespace ui {
                                     this->itemsMenu->SetItemMultiselected(this->itemsMenu->GetSelectedItem(), true);
                                 }
                                 else if(sopt == 1) {
-                                    auto sopt2 = g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "entry_remove"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "entry_remove_conf"), { cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "yes"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "no") }, true);
+                                    auto sopt2 = g_MenuApplication->CreateShowDialog(GetLanguageString("entry_remove"), GetLanguageString("entry_remove_conf"), { GetLanguageString("yes"), GetLanguageString("no") }, true);
                                     if(sopt2 == 0) {
                                         cfg::RemoveRecord(title);
                                         folder.titles.erase(folder.titles.begin() + titleidx);
-                                        g_MenuApplication->ShowNotification(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "entry_remove_ok"));
+                                        g_MenuApplication->ShowNotification(GetLanguageString("entry_remove_ok"));
                                         this->MoveFolder(this->curfolder, true);
                                     }
                                 }
@@ -567,11 +572,11 @@ namespace ui {
                         }
                         else if(down & HidNpadButton_AnyUp) {
                             if(type == cfg::TitleType::Installed) {
-                                auto sopt = g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "app_launch"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "app_take_over_select") + "\n" + cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "app_take_over_selected"), { "Yes", "Cancel" }, true);
+                                auto sopt = g_MenuApplication->CreateShowDialog(GetLanguageString("app_launch"), GetLanguageString("app_take_over_select") + "\n" + GetLanguageString("app_take_over_selected"), { "Yes", "Cancel" }, true);
                                 if(sopt == 0) {
-                                    g_Config.homebrew_title_application_id = title.app_id;
+                                    UL_ASSERT_TRUE(g_Config.SetEntry(cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, title.app_id));
                                     cfg::SaveConfig(g_Config);
-                                    g_MenuApplication->ShowNotification(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "app_take_over_done"));
+                                    g_MenuApplication->ShowNotification(GetLanguageString("app_take_over_done"));
                                 }
                             }
                         }
@@ -590,7 +595,7 @@ namespace ui {
                 this->itemAuthor->SetVisible(false);
                 this->itemVersion->SetVisible(false);
                 this->bannerImage->SetImage(cfg::GetAssetByTheme(g_Theme, "ui/BannerHomebrew.png"));
-                this->itemName->SetText(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "hbmenu_launch"));
+                this->itemName->SetText(GetLanguageString("hbmenu_launch"));
             }
             else {
                 realidx--;
@@ -598,14 +603,14 @@ namespace ui {
                 auto info = cfg::GetRecordInformation(hb);
 
                 if(info.strings.name.empty()) {
-                    this->itemName->SetText(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "unknown"));
+                    this->itemName->SetText(GetLanguageString("unknown"));
                 }
                 else {
                     this->itemName->SetText(info.strings.name);
                 }
 
                 if(info.strings.author.empty()) {
-                    this->itemAuthor->SetText(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "unknown"));
+                    this->itemAuthor->SetText(GetLanguageString("unknown"));
                 }
                 else {
                     this->itemAuthor->SetText(info.strings.author);
@@ -632,7 +637,7 @@ namespace ui {
                     auto foldr = g_EntryList.folders[realidx];
                     this->bannerImage->SetImage(cfg::GetAssetByTheme(g_Theme, "ui/BannerFolder.png"));
                     auto sz = foldr.titles.size();
-                    this->itemAuthor->SetText(std::to_string(sz) + " " + ((sz == 1) ? cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "folder_entry_single") : cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "folder_entry_mult")));
+                    this->itemAuthor->SetText(std::to_string(sz) + " " + ((sz == 1) ? GetLanguageString("folder_entry_single") : GetLanguageString("folder_entry_mult")));
                     this->itemVersion->SetVisible(false);
                     this->itemName->SetText(foldr.name);
                     titleidx = -1;
@@ -643,14 +648,14 @@ namespace ui {
                 auto info = cfg::GetRecordInformation(title);
 
                 if(info.strings.name.empty()) {
-                    this->itemName->SetText(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "unknown"));
+                    this->itemName->SetText(GetLanguageString("unknown"));
                 }
                 else {
                     this->itemName->SetText(info.strings.name);
                 }
 
                 if(info.strings.author.empty()) {
-                    this->itemAuthor->SetText(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "unknown"));
+                    this->itemAuthor->SetText(GetLanguageString("unknown"));
                 }
                 else {
                     this->itemAuthor->SetText(info.strings.author);
@@ -703,7 +708,7 @@ namespace ui {
         else {
             if(name.empty()) {
                 // Remove empty folders
-                STL_REMOVE_IF(g_EntryList.folders, fldr, (fldr.titles.empty()))
+                STL_REMOVE_IF(g_EntryList.folders, fldr, (fldr.titles.empty()));
                 for(auto folder: g_EntryList.folders) {
                     this->itemsMenu->AddItem(cfg::GetAssetByTheme(g_Theme, "ui/Folder.png"), folder.name);
                 }
@@ -764,14 +769,14 @@ namespace ui {
         pu::audio::Play(this->sfxMenuToggle);
         this->homebrew_mode = !this->homebrew_mode;
         if(this->select_on) {
-            g_MenuApplication->ShowNotification(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "menu_multiselect_cancel"));
+            g_MenuApplication->ShowNotification(GetLanguageString("menu_multiselect_cancel"));
             this->StopMultiselect();
         }
         this->MoveFolder("", true);
     }
 
     void MenuLayout::HandleCloseSuspended() {
-        auto sopt = g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "suspended_app"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "suspended_close"), { cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "yes"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "no") }, true);
+        auto sopt = g_MenuApplication->CreateShowDialog(GetLanguageString("suspended_app"), GetLanguageString("suspended_close"), { GetLanguageString("yes"), GetLanguageString("no") }, true);
         if(sopt == 0) {
             this->DoTerminateApplication();
         }
@@ -779,17 +784,14 @@ namespace ui {
 
     void MenuLayout::HandleHomebrewLaunch(cfg::TitleRecord &rec) {
         u32 launchmode = 0;
-        if(g_Config.system_title_override_enabled) {
-            auto sopt = g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "hb_launch"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "hb_launch_conf"), { cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "hb_applet"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "hb_app"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "cancel") }, true);
-            if(sopt == 0) {
-                launchmode = 1;
-            }
-            else if(sopt == 1) {
-                launchmode = 2;
-            }
-        }
-        else {
+        u64 title_takeover_id;
+        UL_ASSERT_TRUE(g_Config.GetEntry(cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, title_takeover_id));
+        auto sopt = g_MenuApplication->CreateShowDialog(GetLanguageString("hb_launch"), GetLanguageString("hb_launch_conf"), { GetLanguageString("hb_applet"), GetLanguageString("hb_app"), GetLanguageString("cancel") }, true);
+        if(sopt == 0) {
             launchmode = 1;
+        }
+        else if(sopt == 1) {
+            launchmode = 2;
         }
         if(launchmode == 1) {
             pu::audio::Play(this->sfxTitleLaunch);
@@ -815,8 +817,7 @@ namespace ui {
             return;
         }
         else if(launchmode == 2) {
-            if(g_Config.homebrew_title_application_id != 0)
-            {
+            if(title_takeover_id != 0) {
                 bool launch = true;
                 if(g_MenuApplication->IsSuspended()) {
                     launch = false;
@@ -837,7 +838,7 @@ namespace ui {
                         strncpy(ipt.nro_argv, rec.nro_target.nro_argv, sizeof(ipt.nro_argv) - 1);
                     }
                     auto rc = dmi::menu::SendCommand(dmi::DaemonMessage::LaunchHomebrewApplication, [&](dmi::menu::MenuScopedStorageWriter &writer) {
-                        writer.Push(g_Config.homebrew_title_application_id);
+                        writer.Push(title_takeover_id);
                         writer.Push(ipt);
                         return ResultSuccess;
                     },
@@ -852,12 +853,12 @@ namespace ui {
                         return;
                     }
                     else {
-                        g_MenuApplication->ShowNotification(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "app_launch_error") + ": " + util::FormatResult(rc));
+                        g_MenuApplication->ShowNotification(GetLanguageString("app_launch_error") + ": " + util::FormatResult(rc));
                     }
                 }
             }
             else {
-                g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "app_launch"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "app_no_take_over_title") + "\n" + cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "app_take_over_title_select"), { cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "ok") }, true);
+                g_MenuApplication->CreateShowDialog(GetLanguageString("app_launch"), GetLanguageString("app_no_take_over_title") + "\n" + GetLanguageString("app_take_over_title_select"), { GetLanguageString("ok") }, true);
             }
         }
     }

@@ -4,15 +4,21 @@ namespace os {
 
     std::vector<cfg::TitleRecord> QueryInstalledTitles() {
         std::vector<cfg::TitleRecord> titles;
-        UL_OS_FOR_EACH_APP_RECORD(record, {
-            cfg::TitleRecord rec = {};
-            rec.app_id = record.application_id;
-            if(rec.app_id == 0) {
+        auto records_buf = new NsApplicationRecord[MaxTitleCount]();
+        s32 record_count;
+        UL_ASSERT(nsListApplicationRecord(records_buf, MaxTitleCount, 0, &record_count));
+        for(s32 i = 0; i < record_count; i++) {
+            const auto &record = records_buf[i];
+            if(record.application_id == 0) {
                 continue;
             }
-            rec.title_type = static_cast<u32>(cfg::TitleType::Installed);
-            titles.push_back(rec);
-        });
+            const cfg::TitleRecord rec = {
+                .title_type = static_cast<u32>(cfg::TitleType::Installed),
+                .app_id = record.application_id,
+            };
+            titles.push_back(std::move(rec));
+        }
+        delete[] records_buf;
         return titles;
     }
 

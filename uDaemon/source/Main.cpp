@@ -135,7 +135,9 @@ namespace {
     }
 
     inline Result LaunchMenu(dmi::MenuStartMode st_mode, dmi::DaemonStatus status) {
-        return ecs::RegisterLaunchAsApplet(g_Config.menu_program_id, static_cast<u32>(st_mode), "/ulaunch/bin/uMenu", &status, sizeof(status));
+        u64 menu_program_id;
+        UL_ASSERT_TRUE(g_Config.GetEntry(cfg::ConfigEntryId::MenuTakeoverProgramId, menu_program_id));
+        return ecs::RegisterLaunchAsApplet(menu_program_id, static_cast<u32>(st_mode), "/ulaunch/bin/uMenu", &status, sizeof(status));
     }
 
     void HandleHomeButton() {
@@ -445,8 +447,10 @@ namespace {
         }
         if(strlen(g_HbTargetLaunchFlag.nro_path)) {
             if(!am::LibraryAppletIsActive()) {
-                auto params = hb::HbTargetParams::Create(g_HbTargetLaunchFlag.nro_path, g_HbTargetLaunchFlag.nro_argv, true);
-                UL_ASSERT(ecs::RegisterLaunchAsApplet(g_Config.homebrew_applet_program_id, 0, "/ulaunch/bin/uHbTarget/applet", &params, sizeof(params)));
+                auto params = hb::HbTargetParams::Create(g_HbTargetLaunchFlag.nro_path, g_HbTargetLaunchFlag.nro_argv, false);
+                u64 homebrew_applet_program_id;
+                UL_ASSERT_TRUE(g_Config.GetEntry(cfg::ConfigEntryId::HomebrewAppletTakeoverProgramId, homebrew_applet_program_id));
+                UL_ASSERT(ecs::RegisterLaunchAsApplet(homebrew_applet_program_id, 0, "/ulaunch/bin/uHbTarget/applet", &params, sizeof(params)));
                 
                 sth_done = true;
                 g_HbTargetLaunchFlag.nro_path[0] = '\0';
@@ -454,7 +458,9 @@ namespace {
         }
         if(!am::LibraryAppletIsActive()) {
             auto cur_id = am::LibraryAppletGetId();
-            if((cur_id == AppletId_LibraryAppletWeb) || (cur_id == AppletId_LibraryAppletPhotoViewer) || (cur_id == g_Config.homebrew_applet_program_id)) {
+            u64 homebrew_applet_program_id;
+            UL_ASSERT_TRUE(g_Config.GetEntry(cfg::ConfigEntryId::HomebrewAppletTakeoverProgramId, homebrew_applet_program_id));
+            if((cur_id == AppletId_LibraryAppletWeb) || (cur_id == AppletId_LibraryAppletPhotoViewer) || (cur_id == homebrew_applet_program_id)) {
                 auto status = CreateStatus();
                 UL_ASSERT(LaunchMenu(dmi::MenuStartMode::Menu, status));
                 
@@ -462,9 +468,9 @@ namespace {
             }
         }
 
-        const auto applet_active_old = g_AppletActive;
+        const auto prev_applet_active = g_AppletActive;
         g_AppletActive = am::LibraryAppletIsActive();
-        if(!sth_done && !applet_active_old) {
+        if(!sth_done && !prev_applet_active) {
             // If nothing was done, but nothing is active... An application or applet might have crashed, terminated, failed to launch...
             // No matter what is it, we reopen Menu in launch-error mode.
             if(!am::ApplicationIsActive() && !am::LibraryAppletIsActive()) {
@@ -520,10 +526,14 @@ namespace {
         fs::CreateDirectory(UL_BASE_SD_DIR "/nro");
         fs::CreateDirectory(UL_BASE_SD_DIR "/lang");
 
-        g_Config = cfg::EnsureConfig();
-        am::LibraryAppletSetMenuAppletId(am::LibraryAppletGetAppletIdForProgramId(g_Config.menu_program_id));
+        g_Config = cfg::LoadConfig();
+        u64 menu_program_id;
+        UL_ASSERT_TRUE(g_Config.GetEntry(cfg::ConfigEntryId::MenuTakeoverProgramId, menu_program_id));
+        am::LibraryAppletSetMenuAppletId(am::LibraryAppletGetAppletIdForProgramId(menu_program_id));
 
-        if(g_Config.viewer_usb_enabled) {
+        bool viewer_usb_enabled;
+        UL_ASSERT_TRUE(g_Config.GetEntry(cfg::ConfigEntryId::ViewerUsbEnabled, viewer_usb_enabled));
+        if(viewer_usb_enabled) {
             UL_ASSERT(usbCommsInitialize());
             UL_ASSERT(capsscInitialize());
 
@@ -535,7 +545,9 @@ namespace {
     }
 
     void Exit() {
-        if(g_Config.viewer_usb_enabled) {
+        bool viewer_usb_enabled;
+        UL_ASSERT_TRUE(g_Config.GetEntry(cfg::ConfigEntryId::ViewerUsbEnabled, viewer_usb_enabled));
+        if(viewer_usb_enabled) {
             usbCommsExit();
             if(g_UsbViewerMode == UsbMode::JPEG) {
                 capsscExit();

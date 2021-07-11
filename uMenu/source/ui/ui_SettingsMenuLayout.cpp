@@ -15,7 +15,7 @@ namespace ui {
     
     template<typename T>
     inline std::string EncodeForSettings(T t) {
-        return cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_unknown_value");
+        return GetLanguageString("set_unknown_value");
     }
 
     template<>
@@ -30,7 +30,7 @@ namespace ui {
 
     template<>
     inline std::string EncodeForSettings<bool>(bool t) {
-        return t ? cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_true_value") : cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_false_value");
+        return t ? GetLanguageString("set_true_value") : GetLanguageString("set_false_value");
     }
 
     SettingsMenuLayout::SettingsMenuLayout() {
@@ -40,7 +40,7 @@ namespace ui {
         pu::ui::Color menufocusclr = pu::ui::Color::FromHex(g_MenuApplication->GetUIConfigValue<std::string>("menu_focus_color", "#5ebcffff"));
         pu::ui::Color menubgclr = pu::ui::Color::FromHex(g_MenuApplication->GetUIConfigValue<std::string>("menu_bg_color", "#0094ffff"));
 
-        this->infoText = pu::ui::elm::TextBlock::New(0, 100, cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_info_text"));
+        this->infoText = pu::ui::elm::TextBlock::New(0, 100, GetLanguageString("set_info_text"));
         this->infoText->SetColor(textclr);
         this->infoText->SetHorizontalAlign(pu::ui::elm::HorizontalAlign::Center);
         g_MenuApplication->ApplyConfigForElement("settings_menu", "info_text", this->infoText);
@@ -72,53 +72,54 @@ namespace ui {
         
         SetSysDeviceNickName console_name = {};
         setsysGetDeviceNickname(&console_name);
-        this->PushSettingItem(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_console_nickname"), EncodeForSettings<std::string>(console_name.nickname), 0);
+        this->PushSettingItem(GetLanguageString("set_console_nickname"), EncodeForSettings<std::string>(console_name.nickname), 0);
         TimeLocationName loc = {};
         timeGetDeviceLocationName(&loc);
-        this->PushSettingItem(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_console_timezone"), EncodeForSettings<std::string>(loc.name), -1);
-        this->PushSettingItem(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_viewer_enabled"), EncodeForSettings(g_Config.viewer_usb_enabled), 1);
-        this->PushSettingItem(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_flog_enabled"), EncodeForSettings(g_Config.system_title_override_enabled), 2);
-        auto connectednet = cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_wifi_none");
+        this->PushSettingItem(GetLanguageString("set_console_timezone"), EncodeForSettings<std::string>(loc.name), -1);
+        bool viewer_usb_enabled;
+        UL_ASSERT_TRUE(g_Config.GetEntry(cfg::ConfigEntryId::ViewerUsbEnabled, viewer_usb_enabled));
+        this->PushSettingItem(GetLanguageString("set_viewer_enabled"), EncodeForSettings(viewer_usb_enabled), 1);
+        auto connectednet = GetLanguageString("set_wifi_none");
         if(net::HasConnection()) {
             net::NetworkProfileData data = {};
             net::GetCurrentNetworkProfile(&data);
             connectednet = data.wifi_name;
         }
-        this->PushSettingItem(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_wifi_name"), EncodeForSettings(connectednet), 3);
+        this->PushSettingItem(GetLanguageString("set_wifi_name"), EncodeForSettings(connectednet), 2);
 
         u64 lcode = 0;
         auto ilang = SetLanguage_ENUS;
         setGetLanguageCode(&lcode);
         setMakeLanguage(lcode, &ilang);
-        this->PushSettingItem(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_console_lang"), EncodeForSettings(os::GetLanguageName(ilang)), 4);
+        this->PushSettingItem(GetLanguageString("set_console_lang"), EncodeForSettings(os::GetLanguageName(ilang)), 3);
         bool console_info_upload = false;
         setsysGetConsoleInformationUploadFlag(&console_info_upload);
-        this->PushSettingItem(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_console_info_upload"), EncodeForSettings(console_info_upload), 5);
+        this->PushSettingItem(GetLanguageString("set_console_info_upload"), EncodeForSettings(console_info_upload), 4);
         bool auto_titles_dl = false;
         setsysGetAutomaticApplicationDownloadFlag(&auto_titles_dl);
-        this->PushSettingItem(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_auto_titles_dl"), EncodeForSettings(auto_titles_dl), 6);
+        this->PushSettingItem(GetLanguageString("set_auto_titles_dl"), EncodeForSettings(auto_titles_dl), 5);
         bool auto_update = false;
         setsysGetAutoUpdateEnableFlag(&auto_update);
-        this->PushSettingItem(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_auto_update"), EncodeForSettings(auto_update), 7);
+        this->PushSettingItem(GetLanguageString("set_auto_update"), EncodeForSettings(auto_update), 6);
         bool wireless_lan = false;
         setsysGetWirelessLanEnableFlag(&wireless_lan);
-        this->PushSettingItem(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_wireless_lan"), EncodeForSettings(wireless_lan), 8);
+        this->PushSettingItem(GetLanguageString("set_wireless_lan"), EncodeForSettings(wireless_lan), 7);
         bool bluetooth = false;
         setsysGetBluetoothEnableFlag(&bluetooth);
-        this->PushSettingItem(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_bluetooth"), EncodeForSettings(bluetooth), 9);
+        this->PushSettingItem(GetLanguageString("set_bluetooth"), EncodeForSettings(bluetooth), 8);
         bool usb_30 = false;
         setsysGetUsb30EnableFlag(&usb_30);
-        this->PushSettingItem(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_usb_30"), EncodeForSettings(usb_30), 10);
+        this->PushSettingItem(GetLanguageString("set_usb_30"), EncodeForSettings(usb_30), 9);
         bool nfc = false;
         setsysGetNfcEnableFlag(&nfc);
-        this->PushSettingItem(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_nfc"), EncodeForSettings(nfc), 11);
+        this->PushSettingItem(GetLanguageString("set_nfc"), EncodeForSettings(nfc), 10);
         SetSysSerialNumber serial = {};
         setsysGetSerialNumber(&serial);
-        this->PushSettingItem(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_serial_no"), EncodeForSettings<std::string>(serial.number), -1);
+        this->PushSettingItem(GetLanguageString("set_serial_no"), EncodeForSettings<std::string>(serial.number), -1);
         u64 mac = 0;
         net::GetMACAddress(&mac);
         auto strmac = net::FormatMACAddress(mac);
-        this->PushSettingItem(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_mac_addr"), EncodeForSettings(strmac), -1);
+        this->PushSettingItem(GetLanguageString("set_mac_addr"), EncodeForSettings(strmac), -1);
         auto ipstr = net::GetConsoleIPAddress();
         // TODO: strings
         this->PushSettingItem("Console IP address", EncodeForSettings(ipstr), -1);
@@ -139,7 +140,7 @@ namespace ui {
             case 0: {
                 SwkbdConfig swkbd;
                 swkbdCreate(&swkbd, 0);
-                swkbdConfigSetGuideText(&swkbd, cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "swkbd_console_nick_guide").c_str());
+                swkbdConfigSetGuideText(&swkbd, GetLanguageString("swkbd_console_nick_guide").c_str());
                 SetSysDeviceNickName console_name = {};
                 setsysGetDeviceNickname(&console_name);
                 swkbdConfigSetInitialText(&swkbd, console_name.nickname);
@@ -154,23 +155,18 @@ namespace ui {
                 break;
             }
             case 1: {
-                auto sopt = g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_viewer_enabled"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_viewer_info") + "\n" + (g_Config.viewer_usb_enabled ? cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_disable_conf") : cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_enable_conf")), { cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "yes"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "cancel") }, true);
+                bool viewer_usb_enabled;
+                UL_ASSERT_TRUE(g_Config.GetEntry(cfg::ConfigEntryId::ViewerUsbEnabled, viewer_usb_enabled));
+                auto sopt = g_MenuApplication->CreateShowDialog(GetLanguageString("set_viewer_enabled"), GetLanguageString("set_viewer_info") + "\n" + (viewer_usb_enabled ? GetLanguageString("set_disable_conf") : GetLanguageString("set_enable_conf")), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
                 if(sopt == 0) {
-                    g_Config.viewer_usb_enabled = !g_Config.viewer_usb_enabled;
+                    viewer_usb_enabled = !viewer_usb_enabled;
+                    UL_ASSERT_TRUE(g_Config.SetEntry(cfg::ConfigEntryId::ViewerUsbEnabled, viewer_usb_enabled));
                     reload_need = true;
-                    g_MenuApplication->ShowNotification(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_changed_reboot"));
+                    g_MenuApplication->ShowNotification(GetLanguageString("set_changed_reboot"));
                 }
                 break;
             }
             case 2: {
-                auto sopt = g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_flog_enabled"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_flog_info") + "\n" + (g_Config.viewer_usb_enabled ? cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_disable_conf") : cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "set_enable_conf")), { cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "yes"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "cancel") }, true);
-                if(sopt == 0) {
-                    g_Config.system_title_override_enabled = !g_Config.system_title_override_enabled;
-                    reload_need = true;
-                }
-                break;
-            }
-            case 3: {
                 u8 in[28] = {0};
                 // 0 = normal, 1 = qlaunch, 2 = starter...?
                 *reinterpret_cast<u32*>(in) = 1;
@@ -188,14 +184,14 @@ namespace ui {
                 }
                 break;
             }
-            case 4: {
+            case 3: {
                 g_MenuApplication->FadeOut();
                 g_MenuApplication->LoadSettingsLanguagesMenu();
                 g_MenuApplication->FadeIn();
 
                 break;
             }
-            case 5: {
+            case 4: {
                 auto console_info_upload = false;
                 setsysGetConsoleInformationUploadFlag(&console_info_upload);
                 setsysSetConsoleInformationUploadFlag(!console_info_upload);
@@ -203,7 +199,7 @@ namespace ui {
                 reload_need = true;
                 break;
             }
-            case 6: {
+            case 5: {
                 auto auto_titles_dl = false;
                 setsysGetAutomaticApplicationDownloadFlag(&auto_titles_dl);
                 setsysSetAutomaticApplicationDownloadFlag(!auto_titles_dl);
@@ -211,7 +207,7 @@ namespace ui {
                 reload_need = true;
                 break;
             }
-            case 7: {
+            case 6: {
                 auto auto_update = false;
                 setsysGetAutoUpdateEnableFlag(&auto_update);
                 setsysSetAutoUpdateEnableFlag(!auto_update);
@@ -219,7 +215,7 @@ namespace ui {
                 reload_need = true;
                 break;
             }
-            case 8: {
+            case 7: {
                 auto wireless_lan = false;
                 setsysGetWirelessLanEnableFlag(&wireless_lan);
                 setsysSetWirelessLanEnableFlag(!wireless_lan);
@@ -227,7 +223,7 @@ namespace ui {
                 reload_need = true;
                 break;
             }
-            case 9: {
+            case 8: {
                 auto bluetooth = false;
                 setsysGetBluetoothEnableFlag(&bluetooth);
                 setsysSetBluetoothEnableFlag(!bluetooth);
@@ -235,7 +231,7 @@ namespace ui {
                 reload_need = true;
                 break;
             }
-            case 10: {
+            case 9: {
                 auto usb_30 = false;
                 setsysGetUsb30EnableFlag(&usb_30);
                 setsysSetUsb30EnableFlag(!usb_30);
@@ -243,7 +239,7 @@ namespace ui {
                 reload_need = true;
                 break;
             }
-            case 11: {
+            case 10: {
                 auto nfc = false;
                 setsysGetNfcEnableFlag(&nfc);
                 setsysSetNfcEnableFlag(!nfc);

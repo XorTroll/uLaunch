@@ -21,7 +21,7 @@ namespace ui {
         pu::ui::Color menufocusclr = pu::ui::Color::FromHex(g_MenuApplication->GetUIConfigValue<std::string>("menu_focus_color", "#5ebcffff"));
         pu::ui::Color menubgclr = pu::ui::Color::FromHex(g_MenuApplication->GetUIConfigValue<std::string>("menu_bg_color", "#0094ffff"));
 
-        this->infoText = pu::ui::elm::TextBlock::New(0, 100, cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "lang_info_text"));
+        this->infoText = pu::ui::elm::TextBlock::New(0, 100, GetLanguageString("lang_info_text"));
         this->infoText->SetColor(textclr);
         this->infoText->SetHorizontalAlign(pu::ui::elm::HorizontalAlign::Center);
         g_MenuApplication->ApplyConfigForElement("languages_menu", "info_text", this->infoText);
@@ -61,7 +61,7 @@ namespace ui {
         for(auto &lang: os::GetLanguageNameList()) {
             auto name = lang;
             if(static_cast<u32>(ilang) == idx) {
-                name += " " + cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "lang_selected");
+                name += " " + GetLanguageString("lang_selected");
             }
             auto litm = pu::ui::elm::MenuItem::New(name);
             litm->SetColor(textclr);
@@ -78,10 +78,10 @@ namespace ui {
         setMakeLanguage(lcode, &ilang);
 
         if(static_cast<u32>(ilang) == idx) {
-            g_MenuApplication->ShowNotification(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "lang_active_this"));
+            g_MenuApplication->ShowNotification(GetLanguageString("lang_active_this"));
         }
         else {
-            auto sopt = g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "lang_set"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "lang_set_conf"), { cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "yes"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "no") }, true);
+            auto sopt = g_MenuApplication->CreateShowDialog(GetLanguageString("lang_set"), GetLanguageString("lang_set_conf"), { GetLanguageString("yes"), GetLanguageString("no") }, true);
             if(sopt == 0) {
                 u64 codes[16] = {0};
                 s32 tmp;
@@ -89,7 +89,7 @@ namespace ui {
                 auto code = codes[this->langsMenu->GetSelectedIndex()];
 
                 auto rc = setsysSetLanguageCode(code);
-                g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "lang_set"), R_SUCCEEDED(rc) ? cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "lang_set_ok") : cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "lang_set_error") + ": " + util::FormatResult(rc), { cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "ok") }, true);
+                g_MenuApplication->CreateShowDialog(GetLanguageString("lang_set"), R_SUCCEEDED(rc) ? GetLanguageString("lang_set_ok") : GetLanguageString("lang_set_error") + ": " + util::FormatResult(rc), { GetLanguageString("ok") }, true);
                 if(R_SUCCEEDED(rc)) {
                     g_MenuApplication->FadeOut();
 

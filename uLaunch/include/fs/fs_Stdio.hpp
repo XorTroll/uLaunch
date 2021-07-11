@@ -45,7 +45,7 @@ namespace fs {
         remove(path.c_str());
     }
 
-    inline bool WriteFile(const std::string &path, void *data, size_t size, bool overwrite) {
+    inline bool WriteFile(const std::string &path, const void *data, size_t size, bool overwrite) {
         auto f = fopen(path.c_str(), overwrite ? "wb" : "ab+");
         if(f) {
             fwrite(data, 1, size, f);

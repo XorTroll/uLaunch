@@ -63,32 +63,236 @@ namespace cfg {
         std::string icon_path;
     };
 
-    // Take over eShop by default
-    static constexpr u64 DefaultMenuProgramId = 0x010000000000100B;
+    enum class ConfigEntryId : u8 {
+        MenuTakeoverProgramId,
+        HomebrewAppletTakeoverProgramId,
+        HomebrewApplicationTakeoverApplicationId,
+        ViewerUsbEnabled,
+        ActiveThemeName
+    };
 
-    // Take over parental controls applet by default
-    static constexpr u64 DefaultHomebrewAppletProgramId = 0x0100000000001001;
+    enum class ConfigEntryType : u8 {
+        Bool,
+        U64,
+        String
+    };
+
+    struct ConfigEntryHeader {
+        ConfigEntryId id;
+        ConfigEntryType type;
+        u8 size;
+        u8 pad;
+    };
+
+    struct ConfigEntry {
+        ConfigEntryHeader header;
+        bool bool_value;
+        u64 u64_value;
+        std::string str_value;
+
+        template<typename T>
+        bool Get(T &out_t) const {
+            switch(this->header.type) {
+                case ConfigEntryType::Bool: {
+                    if constexpr(std::is_same_v<T, bool>) {
+                        out_t = this->bool_value;
+                        return true;
+                    }
+                    else {
+                        return false;
+                    }
+                }
+                case ConfigEntryType::U64: {
+                    if constexpr(std::is_same_v<T, u64>) {
+                        out_t = this->u64_value;
+                        return true;
+                    }
+                    else {
+                        return false;
+                    }
+                }
+                case ConfigEntryType::String: {
+                    if constexpr(std::is_same_v<T, std::string>) {
+                        out_t = this->str_value;
+                        return true;
+                    }
+                    else {
+                        return false;
+                    }
+                }
+            }
+            return false;
+        }
+
+        template<typename T>
+        bool Set(const T &t) {
+            switch(this->header.type) {
+                case ConfigEntryType::Bool: {
+                    if constexpr(std::is_same_v<T, bool>) {
+                        this->bool_value = t;
+                        return true;
+                    }
+                    else {
+                        return false;
+                    }
+                }
+                case ConfigEntryType::U64: {
+                    if constexpr(std::is_same_v<T, u64>) {
+                        this->u64_value = t;
+                        return true;
+                    }
+                    else {
+                        return false;
+                    }
+                }
+                case ConfigEntryType::String: {
+                    if constexpr(std::is_same_v<T, std::string>) {
+                        this->str_value = t;
+                        this->header.size = this->str_value.length();
+                        return true;
+                    }
+                    else {
+                        return false;
+                    }
+                }
+            }
+            return false;
+        }
+    };
+
+    struct ConfigHeader {
+        u32 magic;
+        u32 entry_count;
+
+        static constexpr u32 Magic = 0x47464355; // "UCFG"
+    };
 
     struct Config {
-        std::string theme_name;
-        bool system_title_override_enabled;
-        bool viewer_usb_enabled;
-        u64 menu_program_id;
-        u64 homebrew_applet_program_id;
-        u64 homebrew_title_application_id;
+        std::vector<ConfigEntry> entries;
 
-        JSON main_lang;
-        JSON default_lang;
-
-        Config() : system_title_override_enabled(false), viewer_usb_enabled(false), menu_program_id(DefaultMenuProgramId), homebrew_applet_program_id(DefaultHomebrewAppletProgramId), homebrew_title_application_id(0) {}
-
+        template<typename T>
+        bool SetEntry(const ConfigEntryId id, const T &t) {
+            for(auto &entry : this->entries) {
+                if(entry.header.id == id) {
+                    return entry.Set(t);
+                }
+            }
+            // Create new entry
+            ConfigEntry new_entry = {
+                .header = {
+                    .id = id
+                }
+            };
+            switch(id) {
+                case ConfigEntryId::MenuTakeoverProgramId:
+                case ConfigEntryId::HomebrewAppletTakeoverProgramId:
+                case ConfigEntryId::HomebrewApplicationTakeoverApplicationId: {
+                    if constexpr(std::is_same_v<T, u64>) {
+                        new_entry.header.type = ConfigEntryType::U64;
+                        new_entry.header.size = sizeof(t);
+                        new_entry.u64_value = t;
+                        break;
+                    }
+                    else {
+                        return false;
+                    }
+                }
+                case ConfigEntryId::ViewerUsbEnabled: {
+                    if constexpr(std::is_same_v<T, bool>) {
+                        new_entry.header.type = ConfigEntryType::Bool;
+                        new_entry.header.size = sizeof(t);
+                        new_entry.bool_value = t;
+                        break;
+                    }
+                    else {
+                        return false;
+                    }
+                }
+                case ConfigEntryId::ActiveThemeName: {
+                    if constexpr(std::is_same_v<T, std::string>) {
+                        new_entry.header.type = ConfigEntryType::String;
+                        new_entry.header.size = t.length();
+                        new_entry.str_value = t;
+                        break;
+                    }
+                    else {
+                        return false;
+                    }
+                }
+            }
+            this->entries.push_back(std::move(new_entry));
+            return true;
+        }
+        
+        template<typename T>
+        bool GetEntry(const ConfigEntryId id, T &out_t) const {
+            for(const auto &entry : this->entries) {
+                if(entry.header.id == id) {
+                    return entry.Get(out_t);
+                }
+            }
+            // Default values
+            switch(id) {
+                case ConfigEntryId::MenuTakeoverProgramId: {
+                    if constexpr(std::is_same_v<T, u64>) {
+                        // Take over eShop by default
+                        out_t = 0x010000000000100B;
+                        return true;
+                    }
+                    else {
+                        return false;
+                    }
+                }
+                case ConfigEntryId::HomebrewAppletTakeoverProgramId: {
+                    if constexpr(std::is_same_v<T, u64>) {
+                        // Take over parental control applet by default
+                        out_t = 0x0100000000001001;
+                        return true;
+                    }
+                    else {
+                        return false;
+                    }
+                }
+                case ConfigEntryId::HomebrewApplicationTakeoverApplicationId: {
+                    if constexpr(std::is_same_v<T, u64>) {
+                        // No donor title by default
+                        out_t = 0;
+                        return true;
+                    }
+                    else {
+                        return false;
+                    }
+                }
+                case ConfigEntryId::ViewerUsbEnabled: {
+                    if constexpr(std::is_same_v<T, bool>) {
+                        // Disabled by default, it might interfer with other homebrews
+                        out_t = false;
+                        return true;
+                    }
+                    else {
+                        return false;
+                    }
+                }
+                case ConfigEntryId::ActiveThemeName: {
+                    if constexpr(std::is_same_v<T, std::string>) {
+                        // Empty by default
+                        out_t = "";
+                        return true;
+                    }
+                    else {
+                        return false;
+                    }
+                }
+            }
+            return false;
+        }
     };
 
     static constexpr u32 CurrentThemeFormatVersion = 1;
 
     #define CFG_THEME_DEFAULT "romfs:/default"
     #define CFG_LANG_DEFAULT "romfs:/LangDefault.json"
-    #define CFG_CONFIG_JSON UL_BASE_SD_DIR "/config.json"
+    #define CFG_CONFIG_FILE UL_BASE_SD_DIR "/config.cfg"
 
     TitleList LoadTitleList();
     std::vector<TitleRecord> QueryAllHomebrew(const std::string &base = "sdmc:/switch");
@@ -112,15 +316,6 @@ namespace cfg {
 
     Config CreateNewAndLoadConfig();
     Config LoadConfig();
-    
-    inline Config EnsureConfig() {
-        if(fs::ExistsFile(CFG_CONFIG_JSON)) {
-            return LoadConfig();
-        }
-        else {
-            return CreateNewAndLoadConfig();
-        }
-    }
 
     void SaveConfig(const Config &cfg);
 

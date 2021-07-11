@@ -6,70 +6,77 @@
 
 namespace cfg {
 
-    static void CacheHomebrew(const std::string &nro_path) {
-        auto nroimg = GetNROCacheIconPath(nro_path);
-        auto f = fopen(nro_path.c_str(), "rb");
-        if(f) {
-            fseek(f, sizeof(NroStart), SEEK_SET);
-            NroHeader hdr = {};
-            if(fread(&hdr, sizeof(NroHeader), 1, f) == 1) {
-                fseek(f, hdr.size, SEEK_SET);
-                NroAssetHeader ahdr = {};
-                if(fread(&ahdr, sizeof(NroAssetHeader), 1, f) == 1) {
-                    if(ahdr.magic == NROASSETHEADER_MAGIC) {
-                        if((ahdr.icon.offset > 0) && (ahdr.icon.size > 0)) {
-                            auto iconbuf = new u8[ahdr.icon.size]();
-                            fseek(f, hdr.size + ahdr.icon.offset, SEEK_SET);
-                            fread(iconbuf, ahdr.icon.size, 1, f);
-                            fs::WriteFile(nroimg, iconbuf, ahdr.icon.size, true);
-                            delete[] iconbuf;
+    namespace {
+
+        void CacheHomebrew(const std::string &nro_path) {
+            auto nroimg = GetNROCacheIconPath(nro_path);
+            auto f = fopen(nro_path.c_str(), "rb");
+            if(f) {
+                fseek(f, sizeof(NroStart), SEEK_SET);
+                NroHeader hdr = {};
+                if(fread(&hdr, sizeof(hdr), 1, f) == 1) {
+                    fseek(f, hdr.size, SEEK_SET);
+                    NroAssetHeader ahdr = {};
+                    if(fread(&ahdr, sizeof(ahdr), 1, f) == 1) {
+                        if(ahdr.magic == NROASSETHEADER_MAGIC) {
+                            if((ahdr.icon.offset > 0) && (ahdr.icon.size > 0)) {
+                                auto iconbuf = new u8[ahdr.icon.size]();
+                                fseek(f, hdr.size + ahdr.icon.offset, SEEK_SET);
+                                fread(iconbuf, ahdr.icon.size, 1, f);
+                                fs::WriteFile(nroimg, iconbuf, ahdr.icon.size, true);
+                                delete[] iconbuf;
+                            }
                         }
                     }
                 }
+                fclose(f);
             }
-            fclose(f);
         }
-    }
 
-    static void CacheInstalledTitles() {
-        UL_OS_FOR_EACH_APP_RECORD(rec, {
-            NsApplicationControlData control = {};
-            rc = nsGetApplicationControlData(NsApplicationControlSource_Storage, rec.application_id, &control, sizeof(control), nullptr);
-            if(R_SUCCEEDED(rc)) {
+        void CacheInstalledTitles() {
+            UL_OS_FOR_EACH_APP_RECORD(rec, {
                 auto fname = cfg::GetTitleCacheIconPath(rec.application_id);
-                fs::WriteFile(fname, control.icon, sizeof(control.icon), true);
-            }
-        });
-    }
-
-    static void CacheAllHomebrew(const std::string &hb_base_path) {
-        UL_FS_FOR(hb_base_path, name, path, {
-            if(dt->d_type & DT_DIR) {
-                CacheAllHomebrew(path);
-            }
-            else if(util::StringEndsWith(name, ".nro")) {
-                CacheHomebrew(path);
-            }
-        });
-    }
-
-    static void ProcessStringsFromNACP(RecordStrings &strs, NacpStruct *nacp) {
-        NacpLanguageEntry *lent = nullptr;
-        nacpGetLanguageEntry(nacp, &lent);
-        if(lent == nullptr) {
-            for(u32 i = 0; i < 16; i++) {
-                lent = &nacp->lang[i];
-                if((strlen(lent->name) > 0) && (strlen(lent->author) > 0)) {
-                    break;
+                if(!fs::ExistsFile(fname)) {
+                    NsApplicationControlData control = {};
+                    rc = nsGetApplicationControlData(NsApplicationControlSource_Storage, rec.application_id, &control, sizeof(control), nullptr);
+                    if(R_SUCCEEDED(rc)) {
+                        auto fname = cfg::GetTitleCacheIconPath(rec.application_id);
+                        fs::WriteFile(fname, control.icon, sizeof(control.icon), true);
+                    }
                 }
-                lent = nullptr;
+            });
+        }
+
+        void CacheAllHomebrew(const std::string &hb_base_path) {
+            UL_FS_FOR(hb_base_path, name, path, {
+                if(dt->d_type & DT_DIR) {
+                    CacheAllHomebrew(path);
+                }
+                else if(util::StringEndsWith(name, ".nro")) {
+                    CacheHomebrew(path);
+                }
+            });
+        }
+
+        void ProcessStringsFromNACP(RecordStrings &strs, NacpStruct *nacp) {
+            NacpLanguageEntry *lent = nullptr;
+            nacpGetLanguageEntry(nacp, &lent);
+            if(lent == nullptr) {
+                for(u32 i = 0; i < 16; i++) {
+                    lent = &nacp->lang[i];
+                    if((strlen(lent->name) > 0) && (strlen(lent->author) > 0)) {
+                        break;
+                    }
+                    lent = nullptr;
+                }
+            }
+            if(lent != nullptr) {
+                strs.name = lent->name;
+                strs.author = lent->author;
+                strs.version = nacp->display_version;
             }
         }
-        if(lent != nullptr) {
-            strs.name = lent->name;
-            strs.author = lent->author;
-            strs.version = nacp->display_version;
-        }
+
     }
 
     std::vector<TitleRecord> QueryAllHomebrew(const std::string &base) {
@@ -210,55 +217,94 @@ namespace cfg {
     }
 
     Config CreateNewAndLoadConfig() {
-        // Default constructor sets everything
-        Config cfg = {};
-        SaveConfig(cfg);
-        return cfg;
+        const Config empty_cfg = {};
+        SaveConfig(empty_cfg);
+        return empty_cfg;
     }
 
     Config LoadConfig() {
-        // Default constructor sets everything
         Config cfg = {};
-        JSON cfgjson;
-        auto rc = util::LoadJSONFromFile(cfgjson, CFG_CONFIG_JSON);
-        if(R_SUCCEEDED(rc)) {
-            cfg.theme_name = cfgjson.value("theme_name", "");
-            cfg.system_title_override_enabled = cfgjson.value("system_title_override_enabled", false);
-            cfg.viewer_usb_enabled = cfgjson.value("viewer_usb_enabled", false);
-            auto menu_id_str = cfgjson.value("menu_program_id", "");
-            if(!menu_id_str.empty()) {
-                cfg.menu_program_id = util::Get64FromString(menu_id_str);
+        const auto cfg_file_size = fs::GetFileSize(CFG_CONFIG_FILE);
+        auto cfg_file_buf = new u8[cfg_file_size]();
+        if(fs::ReadFile(CFG_CONFIG_FILE, cfg_file_buf, cfg_file_size)) {
+            size_t cur_offset = 0;
+            const auto cfg_header = *reinterpret_cast<ConfigHeader*>(cfg_file_buf);
+            if(cfg_header.magic == ConfigHeader::Magic) {
+                cur_offset += sizeof(ConfigHeader);
+                if(cur_offset <= cfg_file_size) {
+                    cfg.entries.reserve(cfg_header.entry_count);
+                    for(u32 i = 0; i < cfg_header.entry_count; i++) {
+                        ConfigEntry ent = {};
+                        ent.header = *reinterpret_cast<ConfigEntryHeader*>(cfg_file_buf + cur_offset);
+                        cur_offset += sizeof(ConfigEntryHeader);
+                        if(cur_offset > cfg_file_size) {
+                            break;
+                        }
+                        switch(ent.header.type) {
+                            case ConfigEntryType::Bool: {
+                                if(ent.header.size != sizeof(bool)) {
+                                    return CreateNewAndLoadConfig();
+                                }
+                                ent.bool_value = *reinterpret_cast<bool*>(cfg_file_buf + cur_offset);
+                                break;
+                            }
+                            case ConfigEntryType::U64: {
+                                if(ent.header.size != sizeof(u64)) {
+                                    return CreateNewAndLoadConfig();
+                                }
+                                ent.u64_value = *reinterpret_cast<u64*>(cfg_file_buf + cur_offset);
+                                break;
+                            }
+                            case ConfigEntryType::String: {
+                                if(ent.header.size == 0) {
+                                    ent.str_value = "";
+                                }
+                                else {
+                                    ent.str_value = std::string(reinterpret_cast<char*>(cfg_file_buf + cur_offset), ent.header.size);
+                                }
+                                break;
+                            }
+                        }
+                        cur_offset += ent.header.size;
+                        if(cur_offset > cfg_file_size) {
+                            break;
+                        }
+                        cfg.entries.push_back(std::move(ent));
+                    }
+                    if(cur_offset <= cfg_file_size) {
+                        return cfg;
+                    }
+                }
             }
-            auto hb_applet_id_str = cfgjson.value("homebrew_applet_program_id", "");
-            if(!hb_applet_id_str.empty()) {
-                cfg.homebrew_applet_program_id = util::Get64FromString(hb_applet_id_str);
-            }
-            auto hb_title_id_str = cfgjson.value("homebrew_title_application_id", "");
-            if(!hb_title_id_str.empty()) {
-                cfg.homebrew_title_application_id = util::Get64FromString(hb_title_id_str);
-            }
-            // Doing this saves any fields not set previously
-            SaveConfig(cfg);
-            return cfg;
         }
-        fs::DeleteFile(CFG_CONFIG_JSON);
+        std::string fail = "Bad load 4";
+        OnAssertionFailed(fail.c_str(), fail.length(), 0xbabe);
         return CreateNewAndLoadConfig();
     }
 
     void SaveConfig(const Config &cfg) {
-        fs::DeleteFile(CFG_CONFIG_JSON);
-
-        auto json = JSON::object();
-        json["theme_name"] = cfg.theme_name;
-        json["viewer_usb_enabled"] = cfg.viewer_usb_enabled;
-        json["system_title_override_enabled"] = cfg.system_title_override_enabled;
-        json["menu_program_id"] = util::FormatApplicationId(cfg.menu_program_id);
-        json["homebrew_applet_program_id"] = util::FormatApplicationId(cfg.homebrew_applet_program_id);
-        json["homebrew_title_application_id"] = util::FormatApplicationId(cfg.homebrew_title_application_id);
-
-        std::ofstream ofs(CFG_CONFIG_JSON);
-        ofs << std::setw(4) << json;
-        ofs.close();
+        const ConfigHeader cfg_header = {
+            .magic = ConfigHeader::Magic,
+            .entry_count = static_cast<u32>(cfg.entries.size())
+        };
+        fs::WriteFile(CFG_CONFIG_FILE, &cfg_header, sizeof(cfg_header), true);
+        for(const auto &entry : cfg.entries) {
+            fs::WriteFile(CFG_CONFIG_FILE, &entry.header, sizeof(entry.header), false);
+            switch(entry.header.type) {
+                case ConfigEntryType::Bool: {
+                    fs::WriteFile(CFG_CONFIG_FILE, &entry.bool_value, sizeof(entry.bool_value), false);
+                    break;
+                }
+                case ConfigEntryType::U64: {
+                    fs::WriteFile(CFG_CONFIG_FILE, &entry.u64_value, sizeof(entry.u64_value), false);
+                    break;
+                }
+                case ConfigEntryType::String: {
+                    fs::WriteFile(CFG_CONFIG_FILE, entry.str_value.c_str(), entry.str_value.length(), false);
+                    break;
+                }
+            }
+        }
     }
 
     void SaveRecord(TitleRecord &record) {

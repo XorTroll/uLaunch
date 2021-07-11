@@ -9,6 +9,8 @@
 
 namespace ui {
 
+    std::string GetLanguageString(const std::string &name);
+
     enum class MenuType {
         Startup,
         Main,

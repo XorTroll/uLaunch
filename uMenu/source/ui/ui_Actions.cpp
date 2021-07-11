@@ -13,12 +13,13 @@
 #include <net/net_Service.hpp>
 
 extern ui::MenuApplication::Ref g_MenuApplication;
+
 extern cfg::Config g_Config;
 
 namespace ui::actions {
 
     void ShowAboutDialog() {
-        g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "ulaunch_about"), "uLaunch v" + std::string(UL_VERSION) + "\n\n" + cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "ulaunch_desc") + ":\nhttps://github.com/XorTroll/uLaunch", { cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "ok") }, true, "romfs:/LogoLarge.png");
+        g_MenuApplication->CreateShowDialog(GetLanguageString("ulaunch_about"), "uLaunch v" + std::string(UL_VERSION) + "\n\n" + GetLanguageString("ulaunch_desc") + ":\nhttps://github.com/XorTroll/uLaunch", { GetLanguageString("ok") }, true, "romfs:/LogoLarge.png");
     }
 
     void ShowSettingsMenu() {
@@ -37,14 +38,14 @@ namespace ui::actions {
         auto uid = g_MenuApplication->GetSelectedUser();
         std::string name;
         os::GetAccountName(name, uid);
-        auto sopt = g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "user_settings"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "user_selected") + ": " + name + "\n" + cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "user_option"), { cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "user_view_page"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "user_logoff"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "cancel") }, true, os::GetIconCacheImagePath(uid));
+        auto sopt = g_MenuApplication->CreateShowDialog(GetLanguageString("user_settings"), GetLanguageString("user_selected") + ": " + name + "\n" + GetLanguageString("user_option"), { GetLanguageString("user_view_page"), GetLanguageString("user_logoff"), GetLanguageString("cancel") }, true, os::GetIconCacheImagePath(uid));
         if(sopt == 0) {
             friendsLaShowMyProfileForHomeMenu(uid);
         }
         else if(sopt == 1) {
             u32 logoff = 0;
             if(g_MenuApplication->IsSuspended()) {
-                auto sopt = g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "suspended_app"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "user_logoff_app_suspended"), { cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "yes"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "cancel") }, true);
+                auto sopt = g_MenuApplication->CreateShowDialog(GetLanguageString("suspended_app"), GetLanguageString("user_logoff_app_suspended"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
                 if(sopt == 0) {
                     logoff = 2;
                 }
@@ -82,7 +83,7 @@ namespace ui::actions {
             swkbdClose(&swkbd);
         });
         
-        swkbdConfigSetGuideText(&swkbd, cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "swkbd_webpage_guide").c_str());
+        swkbdConfigSetGuideText(&swkbd, GetLanguageString("swkbd_webpage_guide").c_str());
         
         char url[500] = {0};
         swkbdShow(&swkbd, url, 500);
@@ -102,15 +103,15 @@ namespace ui::actions {
 
     void ShowHelpDialog() {
         std::string msg;
-        msg += " - " + cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "help_launch") + "\n";
-        msg += " - " + cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "help_close") + "\n";
-        msg += " - " + cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "help_quick") + "\n";
-        msg += " - " + cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "help_multiselect") + "\n";
-        msg += " - " + cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "help_back") + "\n";
-        msg += " - " + cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "help_minus") + "\n";
-        msg += " - " + cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "help_plus") + "\n";
+        msg += " - " + GetLanguageString("help_launch") + "\n";
+        msg += " - " + GetLanguageString("help_close") + "\n";
+        msg += " - " + GetLanguageString("help_quick") + "\n";
+        msg += " - " + GetLanguageString("help_multiselect") + "\n";
+        msg += " - " + GetLanguageString("help_back") + "\n";
+        msg += " - " + GetLanguageString("help_minus") + "\n";
+        msg += " - " + GetLanguageString("help_plus") + "\n";
 
-        g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "help_title"), msg, { cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "ok") }, true);
+        g_MenuApplication->CreateShowDialog(GetLanguageString("help_title"), msg, { GetLanguageString("ok") }, true);
     }
 
     void ShowAlbumApplet() {
@@ -130,7 +131,7 @@ namespace ui::actions {
     void ShowPowerDialog() {
         auto msg = os::GeneralChannelMessage::Invalid;
 
-        auto sopt = g_MenuApplication->CreateShowDialog(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "power_dialog"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "power_dialog_info"), { cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "power_sleep"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "power_power_off"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "power_reboot"), cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "cancel") }, true);
+        auto sopt = g_MenuApplication->CreateShowDialog(GetLanguageString("power_dialog"), GetLanguageString("power_dialog_info"), { GetLanguageString("power_sleep"), GetLanguageString("power_power_off"), GetLanguageString("power_reboot"), GetLanguageString("cancel") }, true);
         if(sopt == 0) {
             msg = os::GeneralChannelMessage::Sleep;
         }

@@ -22,6 +22,8 @@ namespace os {
         } \
     })
 
+    constexpr u32 MaxTitleCount = 64000;
+
     std::vector<cfg::TitleRecord> QueryInstalledTitles();
 
 }

@@ -18,7 +18,7 @@ namespace ui {
         auto menufocusclr = pu::ui::Color::FromHex(g_MenuApplication->GetUIConfigValue<std::string>("menu_focus_color", "#5ebcffff"));
         auto menubgclr = pu::ui::Color::FromHex(g_MenuApplication->GetUIConfigValue<std::string>("menu_bg_color", "#0094ffff"));
 
-        this->infoText = pu::ui::elm::TextBlock::New(35, 635, cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "startup_welcome_info") + "\n" + cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "startup_control_info"));
+        this->infoText = pu::ui::elm::TextBlock::New(35, 650, GetLanguageString("startup_welcome_info"));
         this->infoText->SetColor(textclr);
         g_MenuApplication->ApplyConfigForElement("startup_menu", "info_text", this->infoText);
         this->Add(this->infoText);
@@ -36,7 +36,6 @@ namespace ui {
             g_MenuApplication->FadeOut();
             g_MenuApplication->LoadMenu();
             g_MenuApplication->FadeIn();
-            g_MenuApplication->ShowNotification(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "menu_quick_info"), 3000); // Show for 3s
         }
     }
 
@@ -81,7 +80,7 @@ namespace ui {
             }
         }
 
-        auto citm = pu::ui::elm::MenuItem::New(cfg::GetLanguageString(g_Config.main_lang, g_Config.default_lang, "startup_new_user"));
+        auto citm = pu::ui::elm::MenuItem::New(GetLanguageString("startup_new_user"));
         citm->SetColor(textclr);
         citm->AddOnClick(std::bind(&StartupLayout::create_Click, this));
         this->usersMenu->AddItem(citm);

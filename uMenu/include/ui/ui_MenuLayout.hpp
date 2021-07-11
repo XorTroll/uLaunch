@@ -35,6 +35,7 @@ namespace ui {
             pu::ui::elm::TextBlock::Ref itemAuthor;
             pu::ui::elm::TextBlock::Ref itemVersion;
             pu::ui::elm::Image::Ref bannerImage;
+            pu::ui::elm::Image::Ref guideButtons;
             ClickableImage::Ref menuToggle;
             QuickMenu::Ref quickMenu;
             std::string curfolder;

@@ -1,11 +1,19 @@
 #include <ui/ui_MenuApplication.hpp>
 #include <util/util_Misc.hpp>
 
-extern u8 *g_ScreenCaptureBuffer;
-extern cfg::Theme g_Theme;
 extern ui::MenuApplication::Ref g_MenuApplication;
+extern u8 *g_ScreenCaptureBuffer;
+
+extern cfg::Theme g_Theme;
+
+extern JSON g_DefaultLanguage;
+extern JSON g_MainLanguage;
 
 namespace ui {
+
+    std::string GetLanguageString(const std::string &name) {
+        return cfg::GetLanguageString(g_MainLanguage, g_DefaultLanguage, name);
+    }
 
     void UiOnHomeButtonDetection() {
         switch(g_MenuApplication->GetCurrentLoadedMenu()) {
