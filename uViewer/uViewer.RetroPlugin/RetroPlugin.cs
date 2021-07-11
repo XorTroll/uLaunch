@@ -20,7 +20,6 @@ namespace uViewer.RetroPlugin
             sd_root = sd_path;
 
             if(!Directory.Exists(Path.Combine(sd_path, "retroarch"))) return "RetroArch doesn't seem to be installed in this SD card.";
-            if(!File.Exists(Path.Combine(sd_path, "retroarch", "retroarch.cfg"))) return "RetroArch doesn't seem to be installed in this SD card.";
             if(!Directory.Exists(Path.Combine(sd_path, "retroarch", "cores"))) return "No available cores were found.";
             var cores = Directory.GetFiles(Path.Combine(sd_path, "retroarch", "cores")).Where((file) => file.EndsWith("_libretro_libnx.nro"));
             if(!cores.Any()) return "No available cores were found.";

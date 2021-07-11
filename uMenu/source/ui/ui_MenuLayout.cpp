@@ -20,6 +20,23 @@ extern cfg::Theme g_Theme;
 
 namespace ui {
 
+    namespace {
+
+        inline hb::HbTargetParams CreateLaunchTargetParams(const hb::HbTargetParams &base_params) {
+            hb::HbTargetParams ipt = {};
+            strncpy(ipt.nro_path, base_params.nro_path, sizeof(ipt.nro_path));
+            if(strlen(base_params.nro_argv)) {
+                const auto new_argv = std::string(base_params.nro_path) + " " + base_params.nro_argv;
+                strncpy(ipt.nro_argv, new_argv.c_str(), sizeof(ipt.nro_argv));
+            }
+            else {
+                strncpy(ipt.nro_argv, base_params.nro_path, sizeof(ipt.nro_argv));
+            }
+            return ipt;
+        }
+
+    }
+
     MenuLayout::MenuLayout(void *raw, u8 min_alpha) : susptr(raw), last_hasconn(false), last_batterylvl(0), last_charge(false), warnshown(false), homebrew_mode(false), select_on(false), select_dir(false), minalpha(min_alpha), mode(0), rawalpha(0xFF) {
         auto textclr = pu::ui::Color::FromHex(g_MenuApplication->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
         auto menutextx = g_MenuApplication->GetUIConfigValue<u32>("menu_folder_text_x", 30);
@@ -800,14 +817,8 @@ namespace ui {
         }
         if(launchmode == 1) {
             pu::audio::Play(this->sfxTitleLaunch);
-            hb::HbTargetParams ipt = {};
-            strncpy(ipt.nro_path, rec.nro_target.nro_path, sizeof(ipt.nro_path));
-            strncpy(ipt.nro_argv, rec.nro_target.nro_argv, sizeof(ipt.nro_argv));
-            if(strlen(rec.nro_target.nro_argv)) {
-                auto new_argv = std::string(rec.nro_target.nro_path) + " " + rec.nro_target.nro_argv;
-                strncpy(ipt.nro_argv, new_argv.c_str(), sizeof(ipt.nro_argv));
-            }
-
+            
+            const auto ipt = CreateLaunchTargetParams(rec.nro_target);
             UL_ASSERT(dmi::menu::SendCommand(dmi::DaemonMessage::LaunchHomebrewLibraryApplet, [&](dmi::menu::MenuScopedStorageWriter &writer) {
                 writer.Push(ipt);
                 return ResultSuccess;
@@ -833,15 +844,8 @@ namespace ui {
                 }
                 if(launch) {
                     pu::audio::Play(this->sfxTitleLaunch);
-                    hb::HbTargetParams ipt = {};
-                    strncpy(ipt.nro_path, rec.nro_target.nro_path, sizeof(ipt.nro_path) - 1);
-                    if(strlen(rec.nro_target.nro_argv)) {
-                        auto new_argv = std::string(rec.nro_target.nro_path) + " " + rec.nro_target.nro_argv;
-                        strncpy(ipt.nro_argv, new_argv.c_str(), sizeof(ipt.nro_argv) - 1);
-                    }
-                    else {
-                        strncpy(ipt.nro_argv, rec.nro_target.nro_argv, sizeof(ipt.nro_argv) - 1);
-                    }
+                    
+                    const auto ipt = CreateLaunchTargetParams(rec.nro_target);
                     auto rc = dmi::menu::SendCommand(dmi::DaemonMessage::LaunchHomebrewApplication, [&](dmi::menu::MenuScopedStorageWriter &writer) {
                         writer.Push(title_takeover_id);
                         writer.Push(ipt);

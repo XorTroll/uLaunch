@@ -476,6 +476,7 @@ namespace {
             if(!am::ApplicationIsActive() && !am::LibraryAppletIsActive()) {
                 auto status = CreateStatus();
                 UL_ASSERT(LaunchMenu(dmi::MenuStartMode::MenuLaunchFailure, status));
+                g_HbTargetOpenedAsApplication = false;
             }
         }
         svcSleepThread(10'000'000ul);
