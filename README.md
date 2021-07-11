@@ -1,4 +1,4 @@
-<img width="200" src="uMenu/RomFs/LogoLarge.png">
+<img width="200" src="uMenu/romfs/LogoLarge.png">
 
 > uLaunch is a custom, open-source replacement/reimplementation for the Nintendo Switch's HOME menu (qlaunch), extending it with amazing, homebrew-oriented features!
 
