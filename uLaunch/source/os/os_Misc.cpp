@@ -22,7 +22,8 @@ namespace os {
             "Français canadien",
             "Español latino",
             "Chinese (simplified)",
-            "Chinese (traditional)"
+            "Chinese (traditional)",
+            "Português brasileiro"
         };
 
     }
