@@ -154,44 +154,44 @@ namespace ui {
     }
 
     void MenuLayout::OnMenuInput(u64 down, u64 up, u64 held, pu::ui::Touch touch_pos) {
-        auto quickon = this->quickMenu->IsOn();
-        this->itemsMenu->SetEnabled(!quickon);
-        if(quickon) {
+        const auto quick_menu_on = this->quickMenu->IsOn();
+        this->itemsMenu->SetEnabled(!quick_menu_on);
+        if(quick_menu_on) {
             return;
         }
 
-        auto hasconn = net::HasConnection();
-        if(this->last_hasconn != hasconn) {
-            this->last_hasconn = hasconn;
-            std::string connection_img = "ui/NoConnectionIcon.png";
-            if(hasconn) {
-                connection_img = "ui/ConnectionIcon.png";
+        const auto has_conn = net::HasConnection();
+        if(this->last_hasconn != has_conn) {
+            this->last_hasconn = has_conn;
+            auto conn_img = "ui/NoConnectionIcon.png";
+            if(has_conn) {
+                conn_img = "ui/ConnectionIcon.png";
             }
-            this->connIcon->SetImage(cfg::GetAssetByTheme(g_Theme, connection_img));
+            this->connIcon->SetImage(cfg::GetAssetByTheme(g_Theme, conn_img));
         }
 
-        auto curtime = os::GetCurrentTime();
-        this->timeText->SetText(curtime);
+        const auto cur_time = os::GetCurrentTime();
+        this->timeText->SetText(cur_time);
 
-        auto lvl = os::GetBatteryLevel();
-        if(this->last_batterylvl != lvl) {
-            this->last_batterylvl = lvl;
-            auto lvlstr = std::to_string(lvl) + "%";
-            this->batteryText->SetText(lvlstr);
+        const auto battery_lvl = os::GetBatteryLevel();
+        if(this->last_batterylvl != battery_lvl) {
+            this->last_batterylvl = battery_lvl;
+            const auto battery_str = std::to_string(battery_lvl) + "%";
+            this->batteryText->SetText(battery_str);
         }
 
-        auto ch = os::IsConsoleCharging();
-        if(this->last_charge != ch) {
-            this->last_charge = ch;
-            std::string battery_img = "ui/BatteryNormalIcon.png";
-            if(ch) {
+        const auto is_ch = os::IsConsoleCharging();
+        if(this->last_charge != is_ch) {
+            this->last_charge = is_ch;
+            auto battery_img = "ui/BatteryNormalIcon.png";
+            if(is_ch) {
                 battery_img = "ui/BatteryChargingIcon.png";
             }
             this->batteryIcon->SetImage(cfg::GetAssetByTheme(g_Theme, battery_img));
         }
 
-        auto ctp = std::chrono::steady_clock::now();
-        if(std::chrono::duration_cast<std::chrono::milliseconds>(ctp - this->tp).count() >= 500) {
+        const auto now_tp = std::chrono::steady_clock::now();
+        if(std::chrono::duration_cast<std::chrono::milliseconds>(now_tp - this->tp).count() >= 1000) {
             if(g_MenuApplication->LaunchFailed() && !this->warnshown) {
                 g_MenuApplication->CreateShowDialog(GetLanguageString("app_launch"), GetLanguageString("app_unexpected_error"), { GetLanguageString("ok") }, true);
                 this->warnshown = true;
