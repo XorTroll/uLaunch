@@ -5,6 +5,7 @@
 #include <fs/fs_Stdio.hpp>
 
 extern ui::MenuApplication::Ref g_MenuApplication;
+extern ui::TransitionGuard g_TransitionGuard;
 extern cfg::Theme g_Theme;
 extern cfg::Config g_Config;
 
@@ -56,16 +57,20 @@ namespace ui {
 
     void ThemeMenuLayout::OnMenuInput(u64 down, u64 up, u64 held, pu::ui::Touch touch_pos) {
         if(down & HidNpadButton_B) {
-            g_MenuApplication->FadeOut();
-            g_MenuApplication->LoadMenu();
-            g_MenuApplication->FadeIn();
+            g_TransitionGuard.Run([]() {
+                g_MenuApplication->FadeOut();
+                g_MenuApplication->LoadMenu();
+                g_MenuApplication->FadeIn();
+            });
         }
     }
 
-    void ThemeMenuLayout::OnHomeButtonPress() {
-        g_MenuApplication->FadeOut();
-        g_MenuApplication->LoadMenu();
-        g_MenuApplication->FadeIn();
+    bool ThemeMenuLayout::OnHomeButtonPress() {
+        return g_TransitionGuard.Run([]() {
+            g_MenuApplication->FadeOut();
+            g_MenuApplication->LoadMenu();
+            g_MenuApplication->FadeIn();
+        });
     }
 
     void ThemeMenuLayout::Reload() {

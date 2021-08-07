@@ -5,6 +5,7 @@
 #include <fs/fs_Stdio.hpp>
 
 extern ui::MenuApplication::Ref g_MenuApplication;
+extern ui::TransitionGuard g_TransitionGuard;
 extern cfg::Theme g_Theme;
 extern cfg::Config g_Config;
 
@@ -33,14 +34,17 @@ namespace ui {
         if(this->loadmenu) {
             this->loadmenu = false;
             g_MenuApplication->StartPlayBGM();
-            g_MenuApplication->FadeOut();
-            g_MenuApplication->LoadMenu();
-            g_MenuApplication->FadeIn();
+            g_TransitionGuard.Run([]() {
+                g_MenuApplication->FadeOut();
+                g_MenuApplication->LoadMenu();
+                g_MenuApplication->FadeIn();
+            });
         }
     }
 
-    void StartupLayout::OnHomeButtonPress() {
+    bool StartupLayout::OnHomeButtonPress() {
         // ...
+        return true;
     }
 
     void StartupLayout::user_Click(AccountUid uid) {
@@ -51,9 +55,11 @@ namespace ui {
     void StartupLayout::create_Click() {
         auto rc = pselShowUserCreator();
         if(R_SUCCEEDED(rc)) {
-            g_MenuApplication->FadeOut();
-            this->ReloadMenu();
-            g_MenuApplication->FadeIn();
+            g_TransitionGuard.Run([&]() {
+                g_MenuApplication->FadeOut();
+                this->ReloadMenu();
+                g_MenuApplication->FadeIn();
+            });
         }
     }
 

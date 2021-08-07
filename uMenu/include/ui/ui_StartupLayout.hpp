@@ -19,7 +19,7 @@ namespace ui {
             PU_SMART_CTOR(StartupLayout)
             
             void OnMenuInput(u64 down, u64 up, u64 held, pu::ui::Touch touch_pos) override;
-            void OnHomeButtonPress() override;
+            bool OnHomeButtonPress() override;
 
             void user_Click(AccountUid uid);
             void create_Click();

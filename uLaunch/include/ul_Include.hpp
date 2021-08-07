@@ -53,7 +53,6 @@ static constexpr size_t RawRGBAScreenBufferSize = 1280 * 720 * 4;
 #define STL_REMOVE_IF(stl_item, var_name, cond) stl_item.erase(std::remove_if(stl_item.begin(), stl_item.end(), [&](const auto &var_name){ return (cond); }), stl_item.end())
 
 constexpr Result ResultSuccess = 0;
-constexpr Mutex EmptyMutex = {};
 
 #include <ul_Results.hpp>
 

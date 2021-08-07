@@ -1,5 +1,6 @@
 
 #pragma once
+#include <ui/ui_TransitionGuard.hpp>
 #include <ui/ui_StartupLayout.hpp>
 #include <ui/ui_MenuLayout.hpp>
 #include <ui/ui_ThemeMenuLayout.hpp>

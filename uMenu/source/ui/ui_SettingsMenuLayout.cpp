@@ -8,6 +8,7 @@
 #include <am/am_LibraryApplet.hpp>
 
 extern ui::MenuApplication::Ref g_MenuApplication;
+extern ui::TransitionGuard g_TransitionGuard;
 extern cfg::Theme g_Theme;
 extern cfg::Config g_Config;
 
@@ -54,16 +55,20 @@ namespace ui {
 
     void SettingsMenuLayout::OnMenuInput(u64 down, u64 up, u64 held, pu::ui::Touch pos) {
         if(down & HidNpadButton_B) {
-            g_MenuApplication->FadeOut();
-            g_MenuApplication->LoadMenu();
-            g_MenuApplication->FadeIn();
+            g_TransitionGuard.Run([]() {
+                g_MenuApplication->FadeOut();
+                g_MenuApplication->LoadMenu();
+                g_MenuApplication->FadeIn();
+            });
         }
     }
 
-    void SettingsMenuLayout::OnHomeButtonPress() {
-        g_MenuApplication->FadeOut();
-        g_MenuApplication->LoadMenu();
-        g_MenuApplication->FadeIn();
+    bool SettingsMenuLayout::OnHomeButtonPress() {
+        return g_TransitionGuard.Run([]() {
+            g_MenuApplication->FadeOut();
+            g_MenuApplication->LoadMenu();
+            g_MenuApplication->FadeIn();
+        });
     }
 
     void SettingsMenuLayout::Reload() {
@@ -185,9 +190,11 @@ namespace ui {
                 break;
             }
             case 3: {
-                g_MenuApplication->FadeOut();
-                g_MenuApplication->LoadSettingsLanguagesMenu();
-                g_MenuApplication->FadeIn();
+                g_TransitionGuard.Run([]() {
+                    g_MenuApplication->FadeOut();
+                    g_MenuApplication->LoadSettingsLanguagesMenu();
+                    g_MenuApplication->FadeIn();
+                });
 
                 break;
             }

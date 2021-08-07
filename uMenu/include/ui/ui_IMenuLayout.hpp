@@ -8,8 +8,7 @@ namespace ui {
     class IMenuLayout : public pu::ui::Layout {
 
         private:
-            Mutex home_press_lock;
-            bool home_pressed;
+            std::atomic_bool home_pressed;
 
         public:
             IMenuLayout();
@@ -17,7 +16,7 @@ namespace ui {
             void OnInput(u64 down, u64 up, u64 held, pu::ui::Touch touch_pos);
             virtual void OnMenuInput(u64 down, u64 up, u64 held, pu::ui::Touch touch_pos) = 0;
             void DoOnHomeButtonPress();
-            virtual void OnHomeButtonPress() = 0;
+            virtual bool OnHomeButtonPress() = 0;
 
     };
 

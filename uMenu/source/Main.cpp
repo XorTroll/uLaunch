@@ -28,6 +28,7 @@ extern "C" {
 #define UL_MENU_ROMFS_BIN UL_BASE_SD_DIR "/bin/uMenu/romfs.bin"
 
 ui::MenuApplication::Ref g_MenuApplication;
+ui::TransitionGuard g_TransitionGuard;
 u8 *g_ScreenCaptureBuffer;
 
 cfg::TitleList g_EntryList;

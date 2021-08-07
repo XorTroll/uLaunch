@@ -42,12 +42,12 @@ namespace am {
 
     namespace {
 
-        Mutex g_StopLock = EmptyMutex;
-        Mutex g_ReceiverLock = EmptyMutex;
+        
         bool g_Initialized = false;
         std::atomic_bool g_ReceiveThreadShouldStop = false;
         Thread g_ReceiverThread;
-        std::vector<std::pair<MessageDetectCallback, dmi::MenuMessage>> g_ReceiverCallbackTable;
+        std::vector<std::pair<OnMessageCallback, dmi::MenuMessage>> g_MessageCallbackTable;
+        Mutex g_CallbackTableLock = {};
 
         void DaemonMessageReceiverThread(void*) {
             while(true) {
@@ -55,14 +55,14 @@ namespace am {
                     break;
                 }
 
-                auto last_msg = daemonGetMessage();
-                mutexLock(&g_ReceiverLock);
-                for(auto &[cb, msg] : g_ReceiverCallbackTable) {
+                const auto last_msg = daemonGetMessage();
+                mutexLock(&g_CallbackTableLock);
+                for(auto &[cb, msg] : g_MessageCallbackTable) {
                     if(msg == last_msg) {
                         cb();
                     }
                 }
-                mutexUnlock(&g_ReceiverLock);
+                mutexUnlock(&g_CallbackTableLock);
 
                 svcSleepThread(10'000'000ul);
             }
@@ -97,10 +97,10 @@ namespace am {
         g_Initialized = false;
     }
 
-    void RegisterOnMessageDetect(MessageDetectCallback callback, dmi::MenuMessage desired_msg) {
-        mutexLock(&g_ReceiverLock);
-        g_ReceiverCallbackTable.push_back(std::make_pair(callback, desired_msg));
-        mutexUnlock(&g_ReceiverLock);
+    void RegisterOnMessageDetect(OnMessageCallback callback, dmi::MenuMessage desired_msg) {
+        mutexLock(&g_CallbackTableLock);
+        g_MessageCallbackTable.push_back(std::make_pair(callback, desired_msg));
+        mutexUnlock(&g_CallbackTableLock);
     }
 
 }

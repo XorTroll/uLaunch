@@ -8,8 +8,11 @@ extern ui::MenuApplication::Ref g_MenuApplication;
 
 namespace ui {
 
-    static Mutex g_quick_menu_home_lock = EmptyMutex;
-    static bool g_quick_menu_home_pressed = false;
+    namespace {
+
+        std::atomic_bool g_HomePressed = false;
+
+    }
 
     QuickMenu::QuickMenu(const std::string &main_icon) {
         this->on = false;
@@ -146,22 +149,18 @@ namespace ui {
             }
         }
         else {
-            if(this->on) {
-                mutexLock(&g_quick_menu_home_lock);
-                auto home_pressed = g_quick_menu_home_pressed;
-                g_quick_menu_home_pressed = false;
-                mutexUnlock(&g_quick_menu_home_lock);
-                if(home_pressed) {
+            if(g_HomePressed) {
+                if(this->on) {
                     this->Toggle();
                 }
+                
+                g_HomePressed = false;
             }
         }
     }
 
     void QuickMenuOnHomeButtonDetection() {
-        mutexLock(&g_quick_menu_home_lock);
-        g_quick_menu_home_pressed = true;
-        mutexUnlock(&g_quick_menu_home_lock);
+        g_HomePressed = true;
     }
 
 }

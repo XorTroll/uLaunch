@@ -13,7 +13,7 @@
 #include <net/net_Service.hpp>
 
 extern ui::MenuApplication::Ref g_MenuApplication;
-
+extern ui::TransitionGuard g_TransitionGuard;
 extern cfg::Config g_Config;
 
 namespace ui::actions {
@@ -23,15 +23,19 @@ namespace ui::actions {
     }
 
     void ShowSettingsMenu() {
-        g_MenuApplication->FadeOut();
-        g_MenuApplication->LoadSettingsMenu();
-        g_MenuApplication->FadeIn();
+        g_TransitionGuard.Run([]() {
+            g_MenuApplication->FadeOut();
+            g_MenuApplication->LoadSettingsMenu();
+            g_MenuApplication->FadeIn();
+        });
     }
 
     void ShowThemesMenu() {
-        g_MenuApplication->FadeOut();
-        g_MenuApplication->LoadThemeMenu();
-        g_MenuApplication->FadeIn();
+        g_TransitionGuard.Run([]() {
+            g_MenuApplication->FadeOut();
+            g_MenuApplication->LoadThemeMenu();
+            g_MenuApplication->FadeIn();
+        });
     }
 
     void ShowUserMenu() {
@@ -58,10 +62,13 @@ namespace ui::actions {
                 if(logoff == 2) {
                     menu_lyt->DoTerminateApplication();
                 }
-                g_MenuApplication->FadeOut();
-                menu_lyt->MoveFolder("", false);
-                g_MenuApplication->LoadStartupMenu();
-                g_MenuApplication->FadeIn();
+
+                g_TransitionGuard.Run([&]() {
+                    g_MenuApplication->FadeOut();
+                    menu_lyt->MoveFolder("", false);
+                    g_MenuApplication->LoadStartupMenu();
+                    g_MenuApplication->FadeIn();
+                });
             }
         }
     }

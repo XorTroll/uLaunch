@@ -11,6 +11,7 @@
 #include <net/net_Service.hpp>
 
 extern ui::MenuApplication::Ref g_MenuApplication;
+extern ui::TransitionGuard g_TransitionGuard;
 extern cfg::TitleList g_EntryList;
 extern std::vector<cfg::TitleRecord> g_HomebrewRecordList;
 extern cfg::Config g_Config;
@@ -254,7 +255,7 @@ namespace ui {
         }
     }
 
-    void MenuLayout::OnHomeButtonPress()
+    bool MenuLayout::OnHomeButtonPress()
     {
         if(g_MenuApplication->IsSuspended()) {
             if(this->mode == 1) {
@@ -267,6 +268,7 @@ namespace ui {
                 this->itemsMenu->HandleMoveLeft();
             }
         }
+        return true;
     }
 
     void MenuLayout::menu_Click(u64 down, u32 index) {
@@ -705,78 +707,83 @@ namespace ui {
     }
 
     void MenuLayout::MoveFolder(const std::string &name, bool fade) {
-        this->itemsMenu->SetSelectedItem(0);
-        
-        if(fade) {
-            g_MenuApplication->FadeOut();
-        }
-
-        if(this->homebrew_mode) {
-            if(g_HomebrewRecordList.empty()) {
-                g_HomebrewRecordList = cfg::QueryAllHomebrew();
-            }
-        }
-
-        auto itm_list = g_HomebrewRecordList;
-        if(!this->homebrew_mode) {
-            auto &folder = cfg::FindFolderByName(g_EntryList, name);
-            itm_list = folder.titles;
-        }
-
-        this->itemsMenu->ClearItems();
-        if(this->homebrew_mode) {
-            this->itemsMenu->AddItem(cfg::GetAssetByTheme(g_Theme, "ui/Hbmenu.png"));
-        }
-        else {
-            if(name.empty()) {
-                // Remove empty folders
-                STL_REMOVE_IF(g_EntryList.folders, fldr, (fldr.titles.empty()));
-                for(auto folder: g_EntryList.folders) {
-                    this->itemsMenu->AddItem(cfg::GetAssetByTheme(g_Theme, "ui/Folder.png"), folder.name);
+        auto MoveFolderImpl = [&]() {
+            if(this->homebrew_mode) {
+                if(g_HomebrewRecordList.empty()) {
+                    g_HomebrewRecordList = cfg::QueryAllHomebrew();
                 }
             }
-        }
 
-        u32 tmpidx = 0;
-        for(auto &itm: itm_list) {
-            bool set_susp = false;
-            if(static_cast<cfg::TitleType>(itm.title_type) == cfg::TitleType::Installed) {
-                if(g_MenuApplication->IsTitleSuspended()) {
-                    if(g_MenuApplication->GetSuspendedApplicationId() == itm.app_id) {
-                        set_susp = true;
-                    }
-                }
+            auto itm_list = g_HomebrewRecordList;
+            if(!this->homebrew_mode) {
+                auto &folder = cfg::FindFolderByName(g_EntryList, name);
+                itm_list = folder.titles;
+            }
+
+            this->itemsMenu->ClearItems();
+            if(this->homebrew_mode) {
+                this->itemsMenu->AddItem(cfg::GetAssetByTheme(g_Theme, "ui/Hbmenu.png"));
             }
             else {
-                if(g_MenuApplication->IsHomebrewSuspended()) {
-                    if(g_MenuApplication->EqualsSuspendedHomebrewPath(itm.nro_target.nro_path)) {
-                        set_susp = true;
+                if(name.empty()) {
+                    // Remove empty folders
+                    STL_REMOVE_IF(g_EntryList.folders, fldr, (fldr.titles.empty()));
+                    for(auto folder: g_EntryList.folders) {
+                        this->itemsMenu->AddItem(cfg::GetAssetByTheme(g_Theme, "ui/Folder.png"), folder.name);
                     }
                 }
             }
-            this->itemsMenu->AddItem(cfg::GetRecordIconPath(itm));
-            if(set_susp) {
-                u32 suspidx = tmpidx;
-                // Skip initial item if homebrew mode
-                if(this->homebrew_mode) {
-                    suspidx++;
-                }
-                // Ignore front folders from main menu
-                else if(name.empty()) {
-                    suspidx += g_EntryList.folders.size();
-                }
-                this->itemsMenu->SetSuspendedItem(suspidx);
-            }
-            tmpidx++;
-        }
 
-        this->itemsMenu->UpdateBorderIcons();
-        if(!this->homebrew_mode) {
-            this->curfolder = name;
-        }
+            u32 tmpidx = 0;
+            for(auto &itm: itm_list) {
+                bool set_susp = false;
+                if(static_cast<cfg::TitleType>(itm.title_type) == cfg::TitleType::Installed) {
+                    if(g_MenuApplication->IsTitleSuspended()) {
+                        if(g_MenuApplication->GetSuspendedApplicationId() == itm.app_id) {
+                            set_susp = true;
+                        }
+                    }
+                }
+                else {
+                    if(g_MenuApplication->IsHomebrewSuspended()) {
+                        if(g_MenuApplication->EqualsSuspendedHomebrewPath(itm.nro_target.nro_path)) {
+                            set_susp = true;
+                        }
+                    }
+                }
+                this->itemsMenu->AddItem(cfg::GetRecordIconPath(itm));
+                if(set_susp) {
+                    u32 suspidx = tmpidx;
+                    // Skip initial item if homebrew mode
+                    if(this->homebrew_mode) {
+                        suspidx++;
+                    }
+                    // Ignore front folders from main menu
+                    else if(name.empty()) {
+                        suspidx += g_EntryList.folders.size();
+                    }
+                    this->itemsMenu->SetSuspendedItem(suspidx);
+                }
+                tmpidx++;
+            }
+
+            this->itemsMenu->UpdateBorderIcons();
+            if(!this->homebrew_mode) {
+                this->curfolder = name;
+            }
+        };
+
+        this->itemsMenu->SetSelectedItem(0);
 
         if(fade) {
-            g_MenuApplication->FadeIn();
+            g_TransitionGuard.Run([&]() {
+                g_MenuApplication->FadeOut();
+                MoveFolderImpl();
+                g_MenuApplication->FadeIn();
+            });
+        }
+        else {
+            MoveFolderImpl();
         }
     }
 

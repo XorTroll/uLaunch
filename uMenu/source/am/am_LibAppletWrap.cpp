@@ -4,7 +4,7 @@
 
 namespace {
 
-    Mutex g_LibAppletWrapLock = EmptyMutex;
+    Mutex g_LibAppletWrapLock = {};
     bool g_IsAppletRunning = false;
     bool g_DetectionHomePressed = false;
 

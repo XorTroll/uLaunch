@@ -5,10 +5,10 @@
 
 namespace am {
 
-    using MessageDetectCallback = std::function<void()>;
+    using OnMessageCallback = std::function<void()>;
 
     Result InitializeDaemonMessageHandler();
     void ExitDaemonMessageHandler();
-    void RegisterOnMessageDetect(MessageDetectCallback callback, dmi::MenuMessage desired_msg);
+    void RegisterOnMessageDetect(OnMessageCallback callback, dmi::MenuMessage desired_msg);
 
 }

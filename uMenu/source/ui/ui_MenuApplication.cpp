@@ -2,6 +2,7 @@
 #include <util/util_Misc.hpp>
 
 extern ui::MenuApplication::Ref g_MenuApplication;
+extern ui::TransitionGuard g_TransitionGuard;
 extern u8 *g_ScreenCaptureBuffer;
 
 extern cfg::Theme g_Theme;
@@ -16,28 +17,7 @@ namespace ui {
     }
 
     void UiOnHomeButtonDetection() {
-        switch(g_MenuApplication->GetCurrentLoadedMenu()) {
-            case MenuType::Startup: {
-                g_MenuApplication->GetStartupLayout()->DoOnHomeButtonPress();
-                break;
-            }
-            case MenuType::Main: {
-                g_MenuApplication->GetMenuLayout()->DoOnHomeButtonPress();
-                break;
-            }
-            case MenuType::Settings: {
-                g_MenuApplication->GetSettingsMenuLayout()->DoOnHomeButtonPress();
-                break;
-            }
-            case MenuType::Theme: {
-                g_MenuApplication->GetThemeMenuLayout()->DoOnHomeButtonPress();
-                break;
-            }
-            case MenuType::Languages: {
-                g_MenuApplication->GetLanguagesMenuLayout()->DoOnHomeButtonPress();
-                break;
-            }
-        }
+        g_MenuApplication->GetLayout<IMenuLayout>()->DoOnHomeButtonPress();
     }
 
     void MenuApplication::OnLoad() {

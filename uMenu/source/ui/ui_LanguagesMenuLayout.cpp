@@ -9,6 +9,7 @@
 #include <am/am_LibraryApplet.hpp>
 
 extern ui::MenuApplication::Ref g_MenuApplication;
+extern ui::TransitionGuard g_TransitionGuard;
 extern cfg::Theme g_Theme;
 extern cfg::Config g_Config;
 
@@ -35,16 +36,20 @@ namespace ui {
 
     void LanguagesMenuLayout::OnMenuInput(u64 down, u64 up, u64 held, pu::ui::Touch touch_pos) {
         if(down & HidNpadButton_B) {
-            g_MenuApplication->FadeOut();
-            g_MenuApplication->LoadSettingsMenu();
-            g_MenuApplication->FadeIn();
+            g_TransitionGuard.Run([]() {
+                g_MenuApplication->FadeOut();
+                g_MenuApplication->LoadSettingsMenu();
+                g_MenuApplication->FadeIn();
+            });
         }
     }
 
-    void LanguagesMenuLayout::OnHomeButtonPress() {
-        g_MenuApplication->FadeOut();
-        g_MenuApplication->LoadMenu();
-        g_MenuApplication->FadeIn();
+    bool LanguagesMenuLayout::OnHomeButtonPress() {
+        return g_TransitionGuard.Run([]() {
+            g_MenuApplication->FadeOut();
+            g_MenuApplication->LoadMenu();
+            g_MenuApplication->FadeIn();
+        });
     }
 
     void LanguagesMenuLayout::Reload() {
@@ -91,11 +96,13 @@ namespace ui {
                 auto rc = setsysSetLanguageCode(code);
                 g_MenuApplication->CreateShowDialog(GetLanguageString("lang_set"), R_SUCCEEDED(rc) ? GetLanguageString("lang_set_ok") : GetLanguageString("lang_set_error") + ": " + util::FormatResult(rc), { GetLanguageString("ok") }, true);
                 if(R_SUCCEEDED(rc)) {
-                    g_MenuApplication->FadeOut();
+                    g_TransitionGuard.Run([]() {
+                        g_MenuApplication->FadeOut();
 
-                    auto smsg = os::SystemAppletMessage::Create(os::GeneralChannelMessage::Reboot);
-                    os::PushSystemAppletMessage(smsg);
-                    svcSleepThread(1'500'000'000ul);
+                        const auto sams = os::SystemAppletMessage::Create(os::GeneralChannelMessage::Reboot);
+                        os::PushSystemAppletMessage(sams);
+                        svcSleepThread(1'500'000'000ul);
+                    });
                 }
             }
         }
