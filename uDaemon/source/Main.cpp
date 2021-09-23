@@ -107,7 +107,7 @@ void __appInit() {
 void __appExit() {
     // qlaunch should not terminate, so this is considered an invalid system state
     // am would fatal otherwise
-    fatalThrow(0xDEADBABE);
+    UL_ASSERT(0xDEADBABE);
 }
 
 namespace {

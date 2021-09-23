@@ -12,22 +12,30 @@ namespace am {
     extern bool g_DaemonHasFocus;
 
     bool ApplicationIsActive() {
-        if(g_ApplicationHolder.StateChangedEvent.revent == INVALID_HANDLE) {
+        if(!eventActive(&g_ApplicationHolder.StateChangedEvent)) {
             return false;
         }
         if(!serviceIsActive(&g_ApplicationHolder.s)) {
             return false;
         }
+
         return !appletApplicationCheckFinished(&g_ApplicationHolder);
     }
 
     void ApplicationTerminate() {
         appletApplicationRequestExit(&g_ApplicationHolder);
+
+        // Wait until it's actually exited
+        while(ApplicationIsActive()) {
+            svcSleepThread(10'000'000);
+        }
+
         g_DaemonHasFocus = true;
     }
 
     Result ApplicationStart(u64 app_id, bool system, AccountUid user_id, void *data, size_t size) {
         appletApplicationClose(&g_ApplicationHolder);
+
         if(system) {
             R_TRY(appletCreateSystemApplication(&g_ApplicationHolder, app_id));
         }
