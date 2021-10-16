@@ -13,15 +13,14 @@
 #include <util/util_Convert.hpp>
 #include <cfg/cfg_Config.hpp>
 
-// Outside of anonymous namespace since these are accessed by IPC
+// Note: these are placed outside of an anonymous namespace since they are accessed by IPC
 
 ams::os::Mutex g_LastMenuMessageLock(false);
 dmi::MenuMessage g_LastMenuMessage = dmi::MenuMessage::Invalid;
 
 namespace {
 
-    // Heap size of 8MB
-    constexpr size_t HeapSize = 0x800000;
+    constexpr size_t HeapSize = 10_MB;
     u8 g_Heap[HeapSize];
 
     enum class UsbMode : u32 {
@@ -47,6 +46,7 @@ namespace {
     ams::os::ThreadType g_UsbViewerThread;
     alignas(ams::os::ThreadStackAlignment) u8 g_UsbViewerThreadStack[0x4000];
     UsbMode g_UsbViewerMode = UsbMode::Invalid;
+    SetSysFirmwareVersion g_FwVersion = {};
 
     // In the USB packet, the first u32 stores the USB mode (raw RGBA or JPEG, depending on what the console supports)
 
@@ -100,6 +100,7 @@ void __appInit() {
     UL_ASSERT(pminfoInitialize());
     UL_ASSERT(ldrShellInitialize());
     UL_ASSERT(pmshellInitialize());
+    UL_ASSERT(setsysInitialize());
 
     fsdevMountSdmc();
 }
@@ -115,6 +116,8 @@ namespace {
     dmi::DaemonStatus CreateStatus() {
         dmi::DaemonStatus status = {};
         status.selected_user = g_SelectedUser;
+
+        memcpy(status.fw_version, g_FwVersion.display_version, sizeof(status.fw_version));
 
         if(am::ApplicationIsActive()) {
             if(g_HbTargetOpenedAsApplication) {
@@ -439,6 +442,24 @@ namespace {
                     g_HbTargetApplicationLaunchFlag.nro_path[0] = '\0';
                 }
                 else {
+                    // Test
+                    auto verify_buf = new (std::align_val_t(0x1000)) u8[0x100000]();
+                    NsProgressAsyncResult async_rc;
+                    UL_ASSERT(nsRequestVerifyApplication(&async_rc, g_ApplicationLaunchFlag, 0x7, verify_buf, 0x100000));
+                    const auto async_rc_rc = nsProgressAsyncResultGet(&async_rc);
+                    const auto async_rc_det_rc = nsProgressAsyncResultGetDetailResult(&async_rc);
+                    nsProgressAsyncResultClose(&async_rc);
+
+                    auto f = fopen(("sdmc:/" + std::to_string(g_ApplicationLaunchFlag) + ".verify.bin").c_str(), "wb");
+                    if(f) {
+                        fwrite(verify_buf, 1, 0x100000, f);
+                        fclose(f);
+                    }
+
+                    delete[] verify_buf;
+                    UL_ASSERT(async_rc_rc);
+                    UL_ASSERT(async_rc_det_rc);
+
                     UL_ASSERT(am::ApplicationStart(g_ApplicationLaunchFlag, false, g_SelectedUser));
                 }
                 sth_done = true;
@@ -506,6 +527,8 @@ namespace {
     void Initialize() {
         UL_ASSERT(appletLoadAndApplyIdlePolicySettings());
         UpdateOperationMode();
+
+        UL_ASSERT(setsysGetFirmwareVersion(&g_FwVersion));
         
         UL_ASSERT(db::Mount());
 

@@ -50,14 +50,6 @@ namespace os {
         psmGetChargerType(&charger_type);
         return charger_type > PsmChargerType_Unconnected;
     }
-
-    std::string GetFirmwareVersion() {
-        SetSysFirmwareVersion fwver;
-        setsysGetFirmwareVersion(&fwver);
-        return fwver.display_version;
-    }
-
-    // Thanks Goldleaf
     
     std::string GetCurrentTime() {
         auto time_val = time(nullptr);

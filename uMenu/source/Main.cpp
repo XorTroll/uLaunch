@@ -21,7 +21,7 @@ extern "C" {
     u32 __nx_applet_type = AppletType_LibraryApplet; // Explicitly declare we're a library applet (need to do so for non-hbloader homebrew)
     TimeServiceType __nx_time_service_type = TimeServiceType_System;
     u32 __nx_fs_num_sessions = 1;
-    size_t __nx_heap_size = 0xB000000;
+    size_t __nx_heap_size = 176_MB;
 
 }
 
@@ -39,6 +39,7 @@ cfg::Theme g_Theme;
 
 JSON g_DefaultLanguage;
 JSON g_MainLanguage;
+char g_FwVersion[0x18] = {};
 
 namespace {
 
@@ -72,7 +73,7 @@ namespace {
     }
 }
 
-// uMenu procedure: read sent storages, initialize RomFs (in a special way), load config and other stuff, finally create the renderer and start the UI
+// uMenu procedure: read sent storages, initialize RomFs (externally), load config and other stuff, finally create the renderer and start the UI
 
 int main() {
     auto start_mode = dmi::MenuStartMode::Invalid;
@@ -82,6 +83,8 @@ int main() {
     // Information sent as an extra storage to uMenu
     dmi::DaemonStatus status = {};
     UL_ASSERT(am::ReadDataFromStorage(&status, sizeof(status)));
+
+    memcpy(g_FwVersion, status.fw_version, sizeof(g_FwVersion));
     
     // Check if our RomFs data exists...
     if(!fs::ExistsFile(UL_MENU_ROMFS_BIN)) {

@@ -13,7 +13,7 @@ namespace ipc {
             R_TRY(pminfoGetProgramId(&program_id, client_pid.process_id.value));
             
             const auto last_menu_program_id = am::LibraryAppletGetProgramIdForAppletId(am::LibraryAppletGetMenuAppletId());
-            // If Menu hasn't been launched it's program ID will be 0/invalid, thus a != check wouldn't be enough
+            // If Menu hasn't been launched it's program ID will be 0 (invalid), thus a single (program_id != last_menu_program_id) check isn't enough
             // If any of the IDs is invalid, something unexpected is happening...
             if((last_menu_program_id == 0) || (program_id == 0) || (program_id != last_menu_program_id)) {
                 return RES_VALUE(Daemon, PrivateServiceInvalidProcess);

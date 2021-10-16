@@ -56,6 +56,18 @@ constexpr Result ResultSuccess = 0;
 
 #include <ul_Results.hpp>
 
+inline constexpr size_t operator ""_KB(unsigned long long n) {
+    return n * 0x400;
+}
+
+inline constexpr size_t operator ""_MB(unsigned long long n) {
+    return operator ""_KB(n) * 0x400;
+}
+
+inline constexpr size_t operator ""_GB(unsigned long long n) {
+    return operator ""_MB(n) * 0x400;
+}
+
 #define UL_ASSERTION_LOG_FILE UL_BASE_SD_DIR "/err.log"
 
 inline void NORETURN OnAssertionFailed(const char *log_buf, size_t log_buf_len, const Result rc) {

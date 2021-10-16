@@ -36,8 +36,9 @@ namespace dmi {
 
     struct DaemonStatus {
         AccountUid selected_user;
-        hb::HbTargetParams params; // Set if homebrew (via flog takeover) is suspended
-        u64 app_id; // Set if any title (other than flog) is suspended
+        hb::HbTargetParams params; // Set if homebrew (launched as an application) is suspended
+        u64 app_id; // Set if any normal application is suspended
+        char fw_version[0x18]; // System version (sent by uDaemon so that it contains Atmosphere/EmuMMC info)
     };
 
     using CommandFunction = Result(*)(void*, size_t, bool);
@@ -47,7 +48,7 @@ namespace dmi {
         u32 val;
     };
 
-    constexpr u32 CommandMagic = 0x434D4151;
+    constexpr u32 CommandMagic = 0x444D4930;
     constexpr size_t CommandStorageSize = 0x800;
 
     namespace impl {
@@ -57,7 +58,6 @@ namespace dmi {
 
         template<PushStorageFunction PushStorageFn>
         class ScopedStorageWriterBase {
-
             protected:
                 AppletStorage st;
                 size_t cur_offset;
@@ -91,12 +91,10 @@ namespace dmi {
                 Result Push(T t) {
                     return PushData(&t, sizeof(T));
                 }
-
         };
 
         template<PopStorageFunction PopStorageFn>
         class ScopedStorageReaderBase {
-
             protected:
                 AppletStorage st;
                 size_t cur_offset;
@@ -129,7 +127,6 @@ namespace dmi {
                 Result Pop(T &out_t) {
                     return PopData(&out_t, sizeof(T));
                 }
-
         };
 
         template<typename StorageReader>
@@ -166,9 +163,10 @@ namespace dmi {
                 R_TRY(OpenStorageReader(reader, true));
                 R_TRY(reader.Pop(header));
                 if(header.magic != CommandMagic) {
-                    return 0xBAFA;
+                    return 0xB0FA;
                 }
-                R_TRY(static_cast<Result>(header.val));
+
+                R_TRY(header.val);
 
                 R_TRY(pop_fn(reader));
             }

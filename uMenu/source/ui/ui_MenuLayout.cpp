@@ -16,6 +16,7 @@ extern cfg::TitleList g_EntryList;
 extern std::vector<cfg::TitleRecord> g_HomebrewRecordList;
 extern cfg::Config g_Config;
 extern cfg::Theme g_Theme;
+extern char g_FwVersion[0x18];
 
 #define MENU_HBMENU_NRO "sdmc:/hbmenu.nro"
 
@@ -92,16 +93,16 @@ namespace ui {
         g_MenuApplication->ApplyConfigForElement("main_menu", "battery_icon", this->batteryIcon);
         this->Add(this->batteryIcon);
 
-        this->settings = ClickableImage::New(880, 53, cfg::GetAssetByTheme(g_Theme, "ui/SettingsIcon.png"));
+        this->settings = ClickableImage::New(810, 53, cfg::GetAssetByTheme(g_Theme, "ui/SettingsIcon.png"));
         this->settings->SetOnClick(&actions::ShowSettingsMenu);
         g_MenuApplication->ApplyConfigForElement("main_menu", "settings_icon", this->settings);
         this->Add(this->settings);
-        this->themes = ClickableImage::New(950, 53, cfg::GetAssetByTheme(g_Theme, "ui/ThemesIcon.png"));
+        this->themes = ClickableImage::New(880, 53, cfg::GetAssetByTheme(g_Theme, "ui/ThemesIcon.png"));
         this->themes->SetOnClick(&actions::ShowThemesMenu);
         g_MenuApplication->ApplyConfigForElement("main_menu", "themes_icon", this->themes);
         this->Add(this->themes);
 
-        this->fwText = pu::ui::elm::TextBlock::New(1120, 65, os::GetFirmwareVersion());
+        this->fwText = pu::ui::elm::TextBlock::New(970, 65, g_FwVersion);
         this->fwText->SetColor(textclr);
         g_MenuApplication->ApplyConfigForElement("main_menu", "firmware_text", this->fwText);
         this->Add(this->fwText);
