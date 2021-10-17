@@ -8,7 +8,12 @@ namespace am {
         AppletId g_MenuAppletId = AppletId_None;
         AppletId g_LastAppletId = AppletId_None;
 
-        const std::map<u64, AppletId> g_AppletIdTable = {
+        struct AppletInfo {
+            u64 program_id;
+            AppletId applet_id;
+        };
+
+        constexpr AppletInfo g_AppletTable[] = {
             { 0x0100000000001001, AppletId_LibraryAppletAuth },
             { 0x0100000000001002, AppletId_LibraryAppletCabinet },
             { 0x0100000000001003, AppletId_LibraryAppletController },
@@ -27,6 +32,7 @@ namespace am {
             { 0x0100000000001011, AppletId_LibraryAppletWifiWebAuth },
             { 0x0100000000001013, AppletId_LibraryAppletMyPage }
         };
+        constexpr size_t AppletCount = sizeof(g_AppletTable) / sizeof(AppletInfo);
 
     }
 
@@ -57,7 +63,7 @@ namespace am {
         appletHolderRequestExitOrTerminate(&g_AppletHolder, 15'000'000'000ul);
     }
 
-    Result LibraryAppletStart(AppletId id, u32 la_version, void *in_data, size_t in_size) {
+    Result LibraryAppletStart(const AppletId id, const u32 la_version, const void *in_data, const size_t in_size) {
         if(LibraryAppletIsActive()) {
             LibraryAppletTerminate();
         }
@@ -74,11 +80,11 @@ namespace am {
         return ResultSuccess;
     }
 
-    Result LibraryAppletSend(void *data, size_t size) {
+    Result LibraryAppletSend(const void *data, const size_t size) {
         return libappletPushInData(&g_AppletHolder, data, size);
     }
 
-    Result LibraryAppletRead(void *data, size_t size) {
+    Result LibraryAppletRead(void *data, const size_t size) {
         return libappletPopOutData(&g_AppletHolder, data, size, nullptr);
     }
 
@@ -90,46 +96,25 @@ namespace am {
         return appletHolderPopOutData(&g_AppletHolder, st);
     }
 
-    Result LibraryAppletDaemonLaunchWith(AppletId id, u32 la_version, std::function<void(AppletHolder*)> on_prepare, std::function<void(AppletHolder*)> on_finish, std::function<bool()> on_wait) {
-        if(LibraryAppletIsActive()) {
-            LibraryAppletTerminate();
-        }
-        appletHolderClose(&g_AppletHolder);
-        LibAppletArgs largs;
-        libappletArgsCreate(&largs, la_version);
-        R_TRY(appletCreateLibraryApplet(&g_AppletHolder, id, LibAppletMode_AllForeground));
-        R_TRY(libappletArgsPush(&largs, &g_AppletHolder));
-        on_prepare(&g_AppletHolder);
-        R_TRY(appletHolderStart(&g_AppletHolder));
-        while(true) {
-            if(!LibraryAppletIsActive()) {
-                break;
+    u64 LibraryAppletGetProgramIdForAppletId(const AppletId id) {
+        for(u32 i = 0; i < AppletCount; i++) {
+            const auto info = g_AppletTable[i];
+            if(info.applet_id == id) {
+                return info.program_id;
             }
-            if(!on_wait()) {
-                LibraryAppletTerminate();
-                break;
-            }
-            svcSleepThread(10'000'000ul);
         }
-        on_finish(&g_AppletHolder);
-        appletHolderClose(&g_AppletHolder);
-        return ResultSuccess;
-    }
 
-    u64 LibraryAppletGetProgramIdForAppletId(AppletId id) {
-        for(auto &[program_id, applet_id] : g_AppletIdTable) {
-            if(applet_id == id) {
-                return program_id;
-            }
-        }
         return 0;
     }
 
-    AppletId LibraryAppletGetAppletIdForProgramId(u64 id) {
-        auto it = g_AppletIdTable.find(id);
-        if(it != g_AppletIdTable.end()) {
-            return it->second;
+    AppletId LibraryAppletGetAppletIdForProgramId(const u64 id) {
+        for(u32 i = 0; i < AppletCount; i++) {
+            const auto info = g_AppletTable[i];
+            if(info.program_id == id) {
+                return info.applet_id;
+            }
         }
+
         return AppletId_None;
     }
 

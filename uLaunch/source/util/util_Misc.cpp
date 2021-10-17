@@ -1,8 +1,8 @@
 #include <util/util_Misc.hpp>
 #include <fs/fs_Stdio.hpp>
 
-namespace util
-{
+namespace util {
+
     Result LoadJSONFromFile(JSON &out_json, const std::string &path) {
         if(fs::ExistsFile(path)) {
             try {
@@ -12,7 +12,8 @@ namespace util
             }
             catch(...) {}
         }
-        return RES_VALUE(Misc, InvalidJSONFile);
+
+        return misc::ResultInvalidJsonFile;
     }
 
 }

@@ -96,7 +96,7 @@ namespace ui {
         auto ilang = SetLanguage_ENUS;
         setGetLanguageCode(&lcode);
         setMakeLanguage(lcode, &ilang);
-        this->PushSettingItem(GetLanguageString("set_console_lang"), EncodeForSettings(os::GetLanguageName(ilang)), 3);
+        this->PushSettingItem(GetLanguageString("set_console_lang"), EncodeForSettings(os::LanguageNameList[ilang]), 3);
         bool console_info_upload = false;
         setsysGetConsoleInformationUploadFlag(&console_info_upload);
         this->PushSettingItem(GetLanguageString("set_console_info_upload"), EncodeForSettings(console_info_upload), 4);

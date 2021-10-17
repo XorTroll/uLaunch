@@ -20,7 +20,7 @@ namespace {
             return ResultSuccess;
         }
 
-        R_TRY(smGetService(&g_DaemonPrivateService, AM_DAEMON_PRIVATE_SERVICE_NAME));
+        R_TRY(smGetService(&g_DaemonPrivateService, PrivateServiceName));
         R_TRY(daemonPrivateInitialize(&g_DaemonPrivateService));
 
         return ResultSuccess;

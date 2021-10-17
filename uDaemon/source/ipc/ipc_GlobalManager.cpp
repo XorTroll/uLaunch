@@ -10,7 +10,7 @@ namespace {
     ams::os::Mutex g_ServerAllocatorLock(false);
 
     void GlobalManagerThread(void*) {
-        UL_AMS_ASSERT(g_GlobalManager.RegisterServer(ipc::PortIndex_PrivateService, ipc::PrivateServiceName, ipc::MaxPrivateSessions));
+        UL_AMS_ASSERT(g_GlobalManager.RegisterServer(ipc::Port_PrivateService, ipc::PrivateServiceName, ipc::MaxPrivateSessions));
         // UL_ASSERT(g_GlobalManager.RegisterServer<ipc::IPublicService>(PublicServiceName, MaxPublicSessions).GetValue());
 
         g_GlobalManager.LoopProcess();
@@ -31,7 +31,7 @@ namespace ipc {
 
     ams::Result ServerManager::OnNeedsToAccept(int port_index, Server *server) {
         switch(port_index) {
-            case PortIndex_PrivateService: {
+            case Port_PrivateService: {
                 return this->AcceptImpl(server, MakeShared<ams::sf::ul::IPrivateService, ipc::PrivateService>());
             }
             AMS_UNREACHABLE_DEFAULT_CASE();

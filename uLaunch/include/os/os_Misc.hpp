@@ -24,8 +24,27 @@ namespace os {
         TraditionalChinese
     };
 
-    std::string GetLanguageName(u32 idx);
-    const std::vector<std::string> &GetLanguageNameList();
+    constexpr const char *LanguageNameList[] = {
+        "Japanese",
+        "American English",
+        "Français",
+        "Deutsch",
+        "Italiano",
+        "Español",
+        "Chinese",
+        "Korean",
+        "Nederlands",
+        "Português",
+        "Русский",
+        "Taiwanese",
+        "British English",
+        "Français canadien",
+        "Español latino",
+        "Chinese (simplified)",
+        "Chinese (traditional)",
+        "Português brasileiro"
+    };
+    constexpr size_t LanguageNameCount = sizeof(LanguageNameList) / sizeof(const char*);
 
     u32 GetBatteryLevel();
     bool IsConsoleCharging();

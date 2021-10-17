@@ -10,32 +10,32 @@ namespace ipc {
     using ObjectFactory = ams::sf::ObjectFactory<ams::sf::ExpHeapAllocator::Policy>;
 
     struct ServerOptions {
-        static const size_t PointerBufferSize = 0x800;
-        static const size_t MaxDomains = 0x40;
-        static const size_t MaxDomainObjects = 0x100;
+        static constexpr size_t PointerBufferSize = 0x800;
+        static constexpr size_t MaxDomains = 0x40;
+        static constexpr size_t MaxDomainObjects = 0x100;
+        static constexpr bool CanDeferInvokeRequest = false;
+        static constexpr bool CanManageMitmServers = false;
     };
 
-    enum PortIndex {
-        PortIndex_PrivateService,
-        /*
-        PortIndex_PublicService,
-        */
+    enum Port {
+        Port_PrivateService,
+        /* Port_PublicService, */
 
-        PortIndex_Count
+        Port_Count
     };
 
     constexpr size_t MaxPrivateSessions = 1;
-    constexpr ams::sm::ServiceName PrivateServiceName = ams::sm::ServiceName::Encode(AM_DAEMON_PRIVATE_SERVICE_NAME);
+    constexpr ams::sm::ServiceName PrivateServiceName = ams::sm::ServiceName::Encode(::PrivateServiceName);
 
     /*
     constexpr size_t MaxPublicSessions = 0x20;
-    constexpr ams::sm::ServiceName PublicServiceName = ams::sm::ServiceName::Encode(AM_DAEMON_PUBLIC_SERVICE_NAME);
+    constexpr ams::sm::ServiceName PublicServiceName = ams::sm::ServiceName::Encode(::PublicServiceName);
     */
 
     constexpr size_t MaxEcsExtraSessions = 5;
     constexpr size_t MaxSessions = MaxPrivateSessions + MaxEcsExtraSessions;
 
-    class ServerManager final : public ams::sf::hipc::ServerManager<PortIndex_Count, ServerOptions, MaxSessions> {
+    class ServerManager final : public ams::sf::hipc::ServerManager<Port_Count, ServerOptions, MaxSessions> {
         private:
             virtual ams::Result OnNeedsToAccept(int port_index, Server *server) override;
     };

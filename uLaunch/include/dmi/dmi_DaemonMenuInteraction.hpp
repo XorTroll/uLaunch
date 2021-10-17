@@ -3,8 +3,8 @@
 #include <ul_Include.hpp>
 #include <hb/hb_Target.hpp>
 
-#define AM_DAEMON_PRIVATE_SERVICE_NAME "qdmnsrv"
-#define AM_DAEMON_PUBLIC_SERVICE_NAME "ulaunch"
+constexpr const char PrivateServiceName[] = "ulsf:p";
+/* constexpr const char PublicServiceName[] = "ulsf:u"; */
 
 namespace dmi {
 
@@ -205,7 +205,7 @@ namespace dmi {
 
     }
 
-    namespace daemon {
+    namespace dmn {
 
         Result PopStorage(AppletStorage *st, bool wait);
         Result PushStorage(AppletStorage *st);

@@ -3,42 +3,6 @@
 
 namespace os {
 
-    namespace {
-
-        const std::vector<std::string> g_LanguageNameList = {
-            "Japanese",
-            "American English",
-            "Français",
-            "Deutsch",
-            "Italiano",
-            "Español",
-            "Chinese",
-            "Korean",
-            "Nederlands",
-            "Português",
-            "Русский",
-            "Taiwanese",
-            "British English",
-            "Français canadien",
-            "Español latino",
-            "Chinese (simplified)",
-            "Chinese (traditional)",
-            "Português brasileiro"
-        };
-
-    }
-
-    std::string GetLanguageName(u32 idx) {
-        if(idx >= g_LanguageNameList.size()) {
-            return "";
-        }
-        return g_LanguageNameList[idx];
-    }
-
-    const std::vector<std::string> &GetLanguageNameList() {
-        return g_LanguageNameList;
-    }
-
     u32 GetBatteryLevel() {
         u32 lvl = 0;
         psmGetBatteryChargePercentage(&lvl);

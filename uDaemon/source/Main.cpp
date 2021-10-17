@@ -13,15 +13,20 @@
 #include <util/util_Convert.hpp>
 #include <cfg/cfg_Config.hpp>
 
+extern "C" {
+
+    extern u32 __nx_applet_type;
+    bool __nx_fsdev_support_cwd = false;
+    u32 __nx_fsdev_direntry_cache_size = 0;
+
+}
+
 // Note: these are placed outside of an anonymous namespace since they are accessed by IPC
 
 ams::os::Mutex g_LastMenuMessageLock(false);
 dmi::MenuMessage g_LastMenuMessage = dmi::MenuMessage::Invalid;
 
 namespace {
-
-    constexpr size_t HeapSize = 10_MB;
-    u8 g_Heap[HeapSize];
 
     enum class UsbMode : u32 {
         Invalid,
@@ -52,63 +57,8 @@ namespace {
 
     constexpr size_t UsbPacketSize = RawRGBAScreenBufferSize + sizeof(UsbMode);
 
-}
+    alignas(ams::os::MemoryPageSize) constinit u8 g_HeapBuffer[10_MB];
 
-// Needed by libstratosphere
-
-namespace ams {
-
-    ncm::ProgramId CurrentProgramId = ncm::SystemAppletId::Qlaunch;
-    
-    namespace result {
-
-        bool CallFatalOnResultAssertion = true;
-
-    }
-
-}
-
-extern "C" {
-
-    u32 __nx_applet_type = AppletType_SystemApplet;
-    u32 __nx_fs_num_sessions = 1;
-    bool __nx_fsdev_support_cwd = false;
-    u32 __nx_fsdev_direntry_cache_size = 0;
-
-    void __libnx_initheap();
-    void __appInit();
-    void __appExit();
-
-}
-
-extern char *fake_heap_start;
-extern char *fake_heap_end;
-
-void __libnx_initheap() {
-    fake_heap_start = reinterpret_cast<char*>(g_Heap);
-    fake_heap_end = fake_heap_start + HeapSize;
-}
-
-void __appInit() {
-    ams::hos::InitializeForStratosphere();
-
-    UL_AMS_ASSERT(ams::sm::Initialize());
-
-    UL_ASSERT(appletInitialize());
-    UL_ASSERT(fsInitialize());
-    UL_ASSERT(nsInitialize());
-    UL_ASSERT(pminfoInitialize());
-    UL_ASSERT(ldrShellInitialize());
-    UL_ASSERT(pmshellInitialize());
-    UL_ASSERT(setsysInitialize());
-
-    fsdevMountSdmc();
-}
-
-void __appExit() {
-    // qlaunch should not terminate, so this is considered an invalid system state
-    // am would fatal otherwise
-    UL_ASSERT(0xDEADBABE);
 }
 
 namespace {
@@ -245,7 +195,7 @@ namespace {
             char web_url[500] = {};
             u64 app_id = 0;
             hb::HbTargetParams ipt = {};
-            dmi::daemon::ReceiveCommand([&](dmi::DaemonMessage msg, dmi::daemon::DaemonScopedStorageReader &reader) -> Result {
+            dmi::dmn::ReceiveCommand([&](dmi::DaemonMessage msg, dmi::dmn::DaemonScopedStorageReader &reader) -> Result {
                 switch(msg) {
                     case dmi::DaemonMessage::SetSelectedUser: {
                         R_TRY(reader.Pop(g_SelectedUser));
@@ -291,7 +241,7 @@ namespace {
                 }
                 return ResultSuccess;
             },
-            [&](dmi::DaemonMessage msg, dmi::daemon::DaemonScopedStorageWriter &writer) -> Result {
+            [&](dmi::DaemonMessage msg, dmi::dmn::DaemonScopedStorageWriter &writer) -> Result {
                 switch(msg) {
                     case dmi::DaemonMessage::SetSelectedUser: {
                         // ...
@@ -299,13 +249,13 @@ namespace {
                     }
                     case dmi::DaemonMessage::LaunchApplication: {
                         if(am::ApplicationIsActive()) {
-                            return RES_VALUE(Daemon, ApplicationActive);
+                            return dmn::ResultApplicationActive;
                         }
                         else if(!accountUidIsValid(&g_SelectedUser)) {
-                            return RES_VALUE(Daemon, InvalidSelectedUser);
+                            return dmn::ResultInvalidSelectedUser;
                         }
                         else if(g_ApplicationLaunchFlag > 0) {
-                            return RES_VALUE(Daemon, AlreadyQueued);
+                            return dmn::ResultAlreadyQueued;
                         }
 
                         g_ApplicationLaunchFlag = app_id;
@@ -313,7 +263,7 @@ namespace {
                     }
                     case dmi::DaemonMessage::ResumeApplication: {
                         if(!am::ApplicationIsActive()) {
-                            return RES_VALUE(Daemon, ApplicationNotActive);
+                            return dmn::ResultApplicationActive;
                         }
 
                         am::ApplicationSetForeground();
@@ -330,13 +280,13 @@ namespace {
                     }
                     case dmi::DaemonMessage::LaunchHomebrewApplication: {
                         if(am::ApplicationIsActive()) {
-                            return RES_VALUE(Daemon, ApplicationActive);
+                            return dmn::ResultApplicationActive;
                         }
                         else if(!accountUidIsValid(&g_SelectedUser)) {
-                            return RES_VALUE(Daemon, InvalidSelectedUser);
+                            return dmn::ResultInvalidSelectedUser;
                         }
                         else if(g_ApplicationLaunchFlag > 0) {
-                            return RES_VALUE(Daemon, AlreadyQueued);
+                            return dmn::ResultAlreadyQueued;
                         }
                         
                         g_HbTargetApplicationLaunchFlag = ipt;
@@ -442,6 +392,7 @@ namespace {
                     g_HbTargetApplicationLaunchFlag.nro_path[0] = '\0';
                 }
                 else {
+                    /*
                     // Test
                     auto verify_buf = new (std::align_val_t(0x1000)) u8[0x100000]();
                     NsProgressAsyncResult async_rc;
@@ -459,6 +410,7 @@ namespace {
                     delete[] verify_buf;
                     UL_ASSERT(async_rc_rc);
                     UL_ASSERT(async_rc_det_rc);
+                    */
 
                     UL_ASSERT(am::ApplicationStart(g_ApplicationLaunchFlag, false, g_SelectedUser));
                 }
@@ -568,7 +520,7 @@ namespace {
         UL_ASSERT(ipc::Initialize());
     }
 
-    void Exit() {
+    void Finalize() {
         bool viewer_usb_enabled;
         UL_ASSERT_TRUE(g_Config.GetEntry(cfg::ConfigEntryId::ViewerUsbEnabled, viewer_usb_enabled));
         if(viewer_usb_enabled) {
@@ -588,22 +540,60 @@ namespace {
 
 }
 
-// uDaemon handles basic qlaunch functionality and serves as a back-end for uLaunch, communicating with uMenu front-end when neccessary.
+// TODO: consider stopping using Atmosphere-libs?
 
-int main() {
-    // Initialize everything
-    Initialize();
+namespace ams {
 
-    // After having initialized everything, launch our menu
-    auto status = CreateStatus();
-    UL_ASSERT(LaunchMenu(dmi::MenuStartMode::StartupScreen, status));
+    namespace init {
 
-    // Loop forever, since qlaunch should NEVER terminate (AM would crash in that case)
-    while(true) {
-        MainLoop();
+        void InitializeSystemModule() {
+            __nx_applet_type = AppletType_SystemApplet;
+            UL_AMS_ASSERT(sm::Initialize());
+
+            UL_ASSERT(appletInitialize());
+            UL_ASSERT(fsInitialize());
+            UL_ASSERT(nsInitialize());
+            UL_ASSERT(pminfoInitialize());
+            UL_ASSERT(ldrShellInitialize());
+            UL_ASSERT(pmshellInitialize());
+            UL_ASSERT(setsysInitialize());
+
+            fsdevMountSdmc();
+
+            /* ams::CheckApiVersion(); */
+        }
+
+        void FinalizeSystemModule() { /* ... */ }
+
+        void Startup() {
+            /* Initialize the global malloc allocator. */
+            init::InitializeAllocator(g_HeapBuffer, sizeof(g_HeapBuffer));
+        }
+
     }
 
-    // We will never reach this anyway...
-    Exit();
-    return 0;
+    void NORETURN Exit(int rc) {
+        AMS_UNUSED(rc);
+        AMS_ABORT("Exit called by qlaunch (uDaemon)");
+    }
+
+    // uDaemon handles basic qlaunch functionality and serves as a back-end for uLaunch, communicating with uMenu front-end when neccessary.
+
+    void Main() {
+        // Initialize everything
+        Initialize();
+
+        // After having initialized everything, launch our menu
+        auto status = CreateStatus();
+        UL_ASSERT(LaunchMenu(dmi::MenuStartMode::StartupScreen, status));
+
+        // Loop forever, since qlaunch should NEVER terminate (AM would crash in that case)
+        while(true) {
+            MainLoop();
+        }
+
+        // We will never reach this anyway...
+        Finalize();
+    }
+
 }

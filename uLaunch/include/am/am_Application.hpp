@@ -15,7 +15,7 @@ namespace am {
         AccountUid uid;
         u8 unk2[0x3E8];
 
-        static inline constexpr ApplicationSelectedUserArgument Create(AccountUid uid) {
+        static inline constexpr ApplicationSelectedUserArgument Create(const AccountUid uid) {
             ApplicationSelectedUserArgument arg = {};
             arg.magic = SelectedUserMagic;
             arg.unk_1 = 1;
@@ -28,12 +28,12 @@ namespace am {
 
     bool ApplicationIsActive();
     void ApplicationTerminate();
-    Result ApplicationStart(u64 app_id, bool system, AccountUid user_id, void *data = nullptr, size_t size = 0);
+    Result ApplicationStart(const u64 app_id, const bool system, const AccountUid user_id, const void *data = nullptr, const size_t size = 0);
     bool ApplicationHasForeground();
     Result ApplicationSetForeground();
-    Result ApplicationSend(void *data, size_t size, AppletLaunchParameterKind kind = AppletLaunchParameterKind_UserChannel);
+    Result ApplicationSend(const void *data, const size_t size, const AppletLaunchParameterKind kind = AppletLaunchParameterKind_UserChannel);
     u64 ApplicationGetId();
 
-    bool ApplicationNeedsUser(u64 app_id);
+    bool ApplicationNeedsUser(const u64 app_id);
 
 }

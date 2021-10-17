@@ -16,24 +16,24 @@ namespace ipc {
             // If Menu hasn't been launched it's program ID will be 0 (invalid), thus a single (program_id != last_menu_program_id) check isn't enough
             // If any of the IDs is invalid, something unexpected is happening...
             if((last_menu_program_id == 0) || (program_id == 0) || (program_id != last_menu_program_id)) {
-                return RES_VALUE(Daemon, PrivateServiceInvalidProcess);
+                return ipc::ResultInvalidProcess;
             }
             
             this->initialized = true;
         }
         
-        return ams::ResultSuccess();
+        return ResultSuccess;
     }
 
     ams::Result PrivateService::GetMessage(ams::sf::Out<dmi::MenuMessage> out_msg) {
         if(!this->initialized) {
-            return RES_VALUE(Daemon, PrivateServiceInvalidProcess);
+            return ipc::ResultInvalidProcess;
         }
 
         std::scoped_lock lk(g_LastMenuMessageLock);
         out_msg.SetValue(g_LastMenuMessage);
         g_LastMenuMessage = dmi::MenuMessage::Invalid;
-        return ams::ResultSuccess();
+        return ResultSuccess;
     }
 
 }

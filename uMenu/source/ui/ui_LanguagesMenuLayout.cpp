@@ -62,17 +62,15 @@ namespace ui {
         setGetLanguageCode(&lcode);
         setMakeLanguage(lcode, &ilang);
         
-        u32 idx = 0;
-        for(auto &lang: os::GetLanguageNameList()) {
-            auto name = lang;
-            if(static_cast<u32>(ilang) == idx) {
+        for(u32 i = 0; i < os::LanguageNameCount; i++) {
+            std::string name = os::LanguageNameList[i];
+            if(static_cast<u32>(ilang) == i) {
                 name += " " + GetLanguageString("lang_selected");
             }
             auto litm = pu::ui::elm::MenuItem::New(name);
             litm->SetColor(textclr);
-            litm->AddOnClick(std::bind(&LanguagesMenuLayout::lang_Click, this, idx));
+            litm->AddOnClick(std::bind(&LanguagesMenuLayout::lang_Click, this, i));
             this->langsMenu->AddItem(litm);
-            idx++;
         }
     }
 

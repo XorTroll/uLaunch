@@ -5,13 +5,13 @@
 namespace am {
 
     bool LibraryAppletIsActive();
-    void LibraryAppletSetMenuAppletId(AppletId id);
+    void LibraryAppletSetMenuAppletId(const AppletId id);
     AppletId LibraryAppletGetMenuAppletId();
     bool LibraryAppletIsMenu();
     void LibraryAppletTerminate();
-    Result LibraryAppletStart(AppletId id, u32 la_version, void *in_data, size_t in_size);
-    Result LibraryAppletSend(void *data, size_t size);
-    Result LibraryAppletRead(void *data, size_t size);
+    Result LibraryAppletStart(const AppletId id, const u32 la_version, const void *in_data, const size_t in_size);
+    Result LibraryAppletSend(const void *data, const size_t size);
+    Result LibraryAppletRead(void *data, const size_t size);
     Result LibraryAppletPush(AppletStorage *st);
     Result LibraryAppletPop(AppletStorage *st);
     
@@ -19,8 +19,8 @@ namespace am {
         return LibraryAppletStart(AppletId_LibraryAppletWeb, web->version, &web->arg, sizeof(web->arg));
     }
 
-    u64 LibraryAppletGetProgramIdForAppletId(AppletId id);
-    AppletId LibraryAppletGetAppletIdForProgramId(u64 id);
+    u64 LibraryAppletGetProgramIdForAppletId(const AppletId id);
+    AppletId LibraryAppletGetAppletIdForProgramId(const u64 id);
 
     AppletId LibraryAppletGetId();
 

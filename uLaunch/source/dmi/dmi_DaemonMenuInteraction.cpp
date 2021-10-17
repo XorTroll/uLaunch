@@ -34,7 +34,7 @@ namespace dmi {
 
     }
 
-    namespace daemon {
+    namespace dmn {
 
         Result PushStorage(AppletStorage *st) {
             return LoopWait(&am::LibraryAppletPush, st, false);

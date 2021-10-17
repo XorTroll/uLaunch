@@ -33,7 +33,7 @@ namespace am {
         g_DaemonHasFocus = true;
     }
 
-    Result ApplicationStart(u64 app_id, bool system, AccountUid user_id, void *data, size_t size) {
+    Result ApplicationStart(const u64 app_id, const bool system, const AccountUid user_id, const void *data, const size_t size) {
         appletApplicationClose(&g_ApplicationHolder);
 
         if(system) {
@@ -70,7 +70,7 @@ namespace am {
         return ResultSuccess;
     }
 
-    Result ApplicationSend(void *data, size_t size, AppletLaunchParameterKind kind) {
+    Result ApplicationSend(const void *data, const size_t size, const AppletLaunchParameterKind kind) {
         AppletStorage st;
         R_TRY(appletCreateStorage(&st, size));
         UL_ON_SCOPE_EXIT({
@@ -85,7 +85,7 @@ namespace am {
         return g_LastApplicationId;
     }
 
-    bool ApplicationNeedsUser(u64 app_id) {
+    bool ApplicationNeedsUser(const u64 app_id) {
         NsApplicationControlData ctdata = {};
         nsGetApplicationControlData(NsApplicationControlSource_Storage, app_id, &ctdata, sizeof(ctdata), nullptr);
         return ctdata.nacp.startup_user_account > 0;

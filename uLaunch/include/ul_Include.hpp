@@ -36,25 +36,12 @@ using JSON = nlohmann::json;
 
 static constexpr size_t RawRGBAScreenBufferSize = 1280 * 720 * 4;
 
-#ifndef R_TRY
-
-#define R_TRY(res_expr) ({ \
-    const auto _tmp_r_try_rc = static_cast<Result>(res_expr); \
-    if (R_FAILED(_tmp_r_try_rc)) { \
-        return _tmp_r_try_rc; \
-    } \
-})
-
-#endif
-
 #define STL_FIND_IF(stl_item, var_name, cond) std::find_if(stl_item.begin(), stl_item.end(), [&](const auto &var_name){ return (cond); })
 #define STL_FOUND(stl_item, find_ret) (find_ret != stl_item.end())
 #define STL_UNWRAP(find_ret) (*find_ret)
 #define STL_REMOVE_IF(stl_item, var_name, cond) stl_item.erase(std::remove_if(stl_item.begin(), stl_item.end(), [&](const auto &var_name){ return (cond); }), stl_item.end())
 
-constexpr Result ResultSuccess = 0;
-
-#include <ul_Results.hpp>
+#include <ul_Result.hpp>
 
 inline constexpr size_t operator ""_KB(unsigned long long n) {
     return n * 0x400;

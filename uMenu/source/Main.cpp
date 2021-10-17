@@ -88,7 +88,7 @@ int main() {
     
     // Check if our RomFs data exists...
     if(!fs::ExistsFile(UL_MENU_ROMFS_BIN)) {
-        UL_ASSERT(RES_VALUE(Menu, RomfsBinNotFound));
+        UL_ASSERT(menu::ResultRomfsFileNotFound);
     }
 
     // Try to mount it
