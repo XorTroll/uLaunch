@@ -68,10 +68,10 @@ namespace am {
             LibraryAppletTerminate();
         }
         appletHolderClose(&g_AppletHolder);
-        LibAppletArgs largs;
-        libappletArgsCreate(&largs, la_version);
+        LibAppletArgs la_args;
+        libappletArgsCreate(&la_args, la_version);
         R_TRY(appletCreateLibraryApplet(&g_AppletHolder, id, LibAppletMode_AllForeground));
-        R_TRY(libappletArgsPush(&largs, &g_AppletHolder));
+        R_TRY(libappletArgsPush(&la_args, &g_AppletHolder));
         if(in_size > 0) {
             R_TRY(LibraryAppletSend(in_data, in_size));
         }
@@ -119,10 +119,10 @@ namespace am {
     }
 
     AppletId LibraryAppletGetId() {
-        auto idcopy = g_LastAppletId;
+        auto last_id_copy = g_LastAppletId;
         if(!LibraryAppletIsActive()) {
             g_LastAppletId = AppletId_None;
         }
-        return idcopy;
+        return last_id_copy;
     }
 }

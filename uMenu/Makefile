@@ -27,7 +27,7 @@ EXEFS_SRC	:=	exefs_src
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
-ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE $(UL_APM_WRAPS) -Wl,-wrap,libappletStart -Wl,-wrap,libappletLaunch
+ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE -Wl,-wrap,libappletStart -Wl,-wrap,libappletLaunch
 
 CFLAGS	:=	-g -Wall -O2 -ffunction-sections \
 			$(ARCH) $(DEFINES)

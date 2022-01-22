@@ -16,8 +16,21 @@
 extern "C" {
 
     extern u32 __nx_applet_type;
-    bool __nx_fsdev_support_cwd = false;
     u32 __nx_fsdev_direntry_cache_size = 0;
+
+    // Needed by libnx's usbcomms to allocate internal buffers...
+
+    void *__libnx_alloc(size_t size) {
+        return operator new(size);
+    }
+
+    void *__libnx_aligned_alloc(size_t align, size_t size) {
+        return operator new(size, std::align_val_t(align));
+    }
+
+    void __libnx_free(void *ptr) {
+        return operator delete(ptr);
+    }
 
 }
 
@@ -57,7 +70,8 @@ namespace {
 
     constexpr size_t UsbPacketSize = RawRGBAScreenBufferSize + sizeof(UsbMode);
 
-    alignas(ams::os::MemoryPageSize) constinit u8 g_HeapBuffer[10_MB];
+    constexpr size_t HeapSize = 10_MB;
+    alignas(ams::os::MemoryPageSize) constinit u8 g_HeapBuffer[HeapSize];
 
 }
 
@@ -116,9 +130,7 @@ namespace {
     Result HandleGeneralChannel() {
         AppletStorage sams_st;
         R_TRY(appletPopFromGeneralChannel(&sams_st));
-        UL_ON_SCOPE_EXIT({
-            appletStorageClose(&sams_st);
-        });
+        UL_ON_SCOPE_EXIT({ appletStorageClose(&sams_st); });
 
         os::SystemAppletMessage sams = {};
         R_TRY(appletStorageRead(&sams_st, 0, &sams, sizeof(sams)));
@@ -173,6 +185,7 @@ namespace {
             }
             case os::AppletMessage::SdCardOut: {
                 // Power off, since uMenu's UI relies on the SD card, so trying to use uMenu without the SD is quite risky...
+                // TODO: handle this in a better way?
                 appletStartShutdownSequence();
                 break;
             }
@@ -358,6 +371,7 @@ namespace {
         // A valid version will always be >= 0x20000
         if(g_WebAppletLaunchFlag.version > 0) {
             if(!am::LibraryAppletIsActive()) {
+                // TODO: applet startup sound?
                 UL_ASSERT(am::WebAppletStart(&g_WebAppletLaunchFlag));
 
                 sth_done = true;
@@ -375,8 +389,11 @@ namespace {
         }
         if(g_AlbumAppletLaunchFlag) {
             if(!am::LibraryAppletIsActive()) {
-                u8 albumflag = 2;
-                UL_ASSERT(am::LibraryAppletStart(AppletId_LibraryAppletPhotoViewer, 0x10000, &albumflag, sizeof(albumflag)));
+                const struct {
+                    u8 album_arg;
+                } album_data = { AlbumLaArg_ShowAllAlbumFilesForHomeMenu };
+                // TODO: applet startup sound?
+                UL_ASSERT(am::LibraryAppletStart(AppletId_LibraryAppletPhotoViewer, 0x10000, &album_data, sizeof(album_data)));
 
                 sth_done = true;
                 g_AlbumAppletLaunchFlag = false;
@@ -392,26 +409,8 @@ namespace {
                     g_HbTargetApplicationLaunchFlag.nro_path[0] = '\0';
                 }
                 else {
-                    /*
-                    // Test
-                    auto verify_buf = new (std::align_val_t(0x1000)) u8[0x100000]();
-                    NsProgressAsyncResult async_rc;
-                    UL_ASSERT(nsRequestVerifyApplication(&async_rc, g_ApplicationLaunchFlag, 0x7, verify_buf, 0x100000));
-                    const auto async_rc_rc = nsProgressAsyncResultGet(&async_rc);
-                    const auto async_rc_det_rc = nsProgressAsyncResultGetDetailResult(&async_rc);
-                    nsProgressAsyncResultClose(&async_rc);
-
-                    auto f = fopen(("sdmc:/" + std::to_string(g_ApplicationLaunchFlag) + ".verify.bin").c_str(), "wb");
-                    if(f) {
-                        fwrite(verify_buf, 1, 0x100000, f);
-                        fclose(f);
-                    }
-
-                    delete[] verify_buf;
-                    UL_ASSERT(async_rc_rc);
-                    UL_ASSERT(async_rc_det_rc);
-                    */
-
+                    // Ensure the application is launchable
+                    UL_ASSERT(nsTouchApplication(g_ApplicationLaunchFlag));
                     UL_ASSERT(am::ApplicationStart(g_ApplicationLaunchFlag, false, g_SelectedUser));
                 }
                 sth_done = true;
@@ -444,9 +443,15 @@ namespace {
         const auto prev_applet_active = g_AppletActive;
         g_AppletActive = am::LibraryAppletIsActive();
         if(!sth_done && !prev_applet_active) {
-            // If nothing was done, but nothing is active... An application or applet might have crashed, terminated, failed to launch...
-            // No matter what is it, we reopen Menu in launch-error mode.
+            // If nothing was done but nothing is active. an application or applet might have crashed, terminated, failed to launch...
             if(!am::ApplicationIsActive() && !am::LibraryAppletIsActive()) {
+                // Throw the application's result if it actually ended with a result
+                auto terminate_rc = ResultSuccess;
+                if(R_SUCCEEDED(nsGetApplicationTerminateResult(am::ApplicationGetId(), &terminate_rc))) {
+                    UL_ASSERT(terminate_rc);
+                }
+
+                // Reopen uMenu in launch-error mode
                 auto status = CreateStatus();
                 UL_ASSERT(LaunchMenu(dmi::MenuStartMode::MenuLaunchFailure, status));
                 g_HbTargetOpenedAsApplication = false;
@@ -560,14 +565,15 @@ namespace ams {
 
             fsdevMountSdmc();
 
+            // TODO: disabling this doesn't really avoid ams aborting with new fws, shall we try to avoid that in a different way?
             /* ams::CheckApiVersion(); */
         }
 
-        void FinalizeSystemModule() { /* ... */ }
+        void FinalizeSystemModule() {}
 
         void Startup() {
-            /* Initialize the global malloc allocator. */
-            init::InitializeAllocator(g_HeapBuffer, sizeof(g_HeapBuffer));
+            // Initialize the global malloc-free/new-delete allocator
+            init::InitializeAllocator(g_HeapBuffer, HeapSize);
         }
 
     }
