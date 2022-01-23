@@ -15,22 +15,22 @@ extern cfg::Config g_Config;
 namespace ui {
     
     template<typename T>
-    inline std::string EncodeForSettings(T t) {
+    inline std::string EncodeForSettings(const T &t) {
         return GetLanguageString("set_unknown_value");
     }
 
     template<>
-    inline std::string EncodeForSettings<std::string>(std::string t) {
+    inline std::string EncodeForSettings<std::string>(const std::string &t) {
         return "\"" + t + "\"";
     }
     
     template<>
-    inline std::string EncodeForSettings<u32>(u32 t) {
+    inline std::string EncodeForSettings<u32>(const u32 &t) {
         return "\"" + std::to_string(t) + "\"";
     }
 
     template<>
-    inline std::string EncodeForSettings<bool>(bool t) {
+    inline std::string EncodeForSettings<bool>(const bool &t) {
         return t ? GetLanguageString("set_true_value") : GetLanguageString("set_false_value");
     }
 
@@ -72,6 +72,7 @@ namespace ui {
     }
 
     void SettingsMenuLayout::Reload() {
+        // TODO: more settings
         this->settingsMenu->ClearItems();
         this->settingsMenu->SetSelectedIndex(0);
         
@@ -84,38 +85,39 @@ namespace ui {
         bool viewer_usb_enabled;
         UL_ASSERT_TRUE(g_Config.GetEntry(cfg::ConfigEntryId::ViewerUsbEnabled, viewer_usb_enabled));
         this->PushSettingItem(GetLanguageString("set_viewer_enabled"), EncodeForSettings(viewer_usb_enabled), 1);
-        auto connectednet = GetLanguageString("set_wifi_none");
+        auto connected_wifi_name = GetLanguageString("set_wifi_none");
         if(net::HasConnection()) {
             net::NetworkProfileData data = {};
             net::GetCurrentNetworkProfile(&data);
-            connectednet = data.wifi_name;
+            connected_wifi_name = data.wifi_name;
         }
-        this->PushSettingItem(GetLanguageString("set_wifi_name"), EncodeForSettings(connectednet), 2);
+        this->PushSettingItem(GetLanguageString("set_wifi_name"), EncodeForSettings(connected_wifi_name), 2);
 
-        u64 lcode = 0;
-        auto ilang = SetLanguage_ENUS;
-        setGetLanguageCode(&lcode);
-        setMakeLanguage(lcode, &ilang);
-        this->PushSettingItem(GetLanguageString("set_console_lang"), EncodeForSettings(os::LanguageNameList[ilang]), 3);
-        bool console_info_upload = false;
+        u64 lang_code = 0;
+        auto lang_val = SetLanguage_ENUS;
+        setGetSystemLanguage(&lang_code);
+        setMakeLanguage(lang_code, &lang_val);
+        const std::string lang_str = os::LanguageNameList[static_cast<u32>(lang_val)];
+        this->PushSettingItem(GetLanguageString("set_console_lang"), EncodeForSettings(lang_str), 3);
+        auto console_info_upload = false;
         setsysGetConsoleInformationUploadFlag(&console_info_upload);
         this->PushSettingItem(GetLanguageString("set_console_info_upload"), EncodeForSettings(console_info_upload), 4);
-        bool auto_titles_dl = false;
+        auto auto_titles_dl = false;
         setsysGetAutomaticApplicationDownloadFlag(&auto_titles_dl);
         this->PushSettingItem(GetLanguageString("set_auto_titles_dl"), EncodeForSettings(auto_titles_dl), 5);
-        bool auto_update = false;
+        auto auto_update = false;
         setsysGetAutoUpdateEnableFlag(&auto_update);
         this->PushSettingItem(GetLanguageString("set_auto_update"), EncodeForSettings(auto_update), 6);
-        bool wireless_lan = false;
+        auto wireless_lan = false;
         setsysGetWirelessLanEnableFlag(&wireless_lan);
         this->PushSettingItem(GetLanguageString("set_wireless_lan"), EncodeForSettings(wireless_lan), 7);
-        bool bluetooth = false;
+        auto bluetooth = false;
         setsysGetBluetoothEnableFlag(&bluetooth);
         this->PushSettingItem(GetLanguageString("set_bluetooth"), EncodeForSettings(bluetooth), 8);
-        bool usb_30 = false;
+        auto usb_30 = false;
         setsysGetUsb30EnableFlag(&usb_30);
         this->PushSettingItem(GetLanguageString("set_usb_30"), EncodeForSettings(usb_30), 9);
-        bool nfc = false;
+        auto nfc = false;
         setsysGetNfcEnableFlag(&nfc);
         this->PushSettingItem(GetLanguageString("set_nfc"), EncodeForSettings(nfc), 10);
         SetSysSerialNumber serial = {};
@@ -123,11 +125,10 @@ namespace ui {
         this->PushSettingItem(GetLanguageString("set_serial_no"), EncodeForSettings<std::string>(serial.number), -1);
         u64 mac = 0;
         net::GetMACAddress(&mac);
-        auto strmac = net::FormatMACAddress(mac);
-        this->PushSettingItem(GetLanguageString("set_mac_addr"), EncodeForSettings(strmac), -1);
-        auto ipstr = net::GetConsoleIPAddress();
-        // TODO: strings
-        this->PushSettingItem("Console IP address", EncodeForSettings(ipstr), -1);
+        const auto mac_addr_str = net::FormatMACAddress(mac);
+        this->PushSettingItem(GetLanguageString("set_mac_addr"), EncodeForSettings(mac_addr_str), -1);
+        const auto ip_str = net::GetConsoleIPAddress();
+        this->PushSettingItem("Console IP address", EncodeForSettings(ip_str), -1);
     }
 
     void SettingsMenuLayout::PushSettingItem(const std::string &name, const std::string &value_display, int id) {
