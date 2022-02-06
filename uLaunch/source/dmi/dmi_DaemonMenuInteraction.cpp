@@ -8,22 +8,20 @@ namespace dmi {
 
         constexpr u32 MaxRetryCount = 10000;
         
-        inline Result LoopWait(Result(*cmd_fn)(AppletStorage*), AppletStorage *st, bool wait) {
+        inline Result LoopWait(Result(*cmd_fn)(AppletStorage*), AppletStorage *st, const bool wait) {
             if(!wait) {
                 return cmd_fn(st);
             }
 
             u32 count = 0;
-
             while(true) {
-                auto rc = cmd_fn(st);
-                if(R_SUCCEEDED(rc)) {
+                if(R_SUCCEEDED(cmd_fn(st))) {
                     break;
                 }
 
                 count++;
                 if(count > MaxRetryCount) {
-                    return 0xCAFA;
+                    return ResultWaitTimeout;
                 }
 
                 svcSleepThread(10'000'000);
@@ -40,7 +38,7 @@ namespace dmi {
             return LoopWait(&am::LibraryAppletPush, st, false);
         }
 
-        Result PopStorage(AppletStorage *st, bool wait) {
+        Result PopStorage(AppletStorage *st, const bool wait) {
             return LoopWait(&am::LibraryAppletPop, st, wait);
         }
 
@@ -52,7 +50,7 @@ namespace dmi {
             return LoopWait(&appletPushOutData, st, false);
         }
 
-        Result PopStorage(AppletStorage *st, bool wait) {
+        Result PopStorage(AppletStorage *st, const bool wait) {
             return LoopWait(&appletPopInData, st, wait);
         }
 

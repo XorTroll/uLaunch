@@ -10,15 +10,15 @@ namespace ipc {
     ams::Result PrivateService::Initialize(const ams::sf::ClientProcessId &client_pid) {
         if(!this->initialized) {
             u64 program_id = 0;
-            R_TRY(pminfoGetProgramId(&program_id, client_pid.process_id.value));
-            
-            const auto last_menu_program_id = am::LibraryAppletGetProgramIdForAppletId(am::LibraryAppletGetMenuAppletId());
+            UL_RC_TRY(pminfoGetProgramId(&program_id, client_pid.process_id.value));
+
+            const auto last_menu_program_id = am::LibraryAppletGetMenuProgramId();
             // If Menu hasn't been launched it's program ID will be 0 (invalid), thus a single (program_id != last_menu_program_id) check isn't enough
             // If any of the IDs is invalid, something unexpected is happening...
             if((last_menu_program_id == 0) || (program_id == 0) || (program_id != last_menu_program_id)) {
                 return ipc::ResultInvalidProcess;
             }
-            
+
             this->initialized = true;
         }
         

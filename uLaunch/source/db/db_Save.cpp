@@ -8,7 +8,7 @@ namespace db {
         attr.system_save_data_id = HomeMenuSaveDataId;
         attr.save_data_type = FsSaveDataType_System;
 
-        R_TRY(fsOpenSaveDataFileSystemBySystemSaveDataId(&savefs, FsSaveDataSpaceId_System, &attr));
+        UL_RC_TRY(fsOpenSaveDataFileSystemBySystemSaveDataId(&savefs, FsSaveDataSpaceId_System, &attr));
         fsdevMountDevice(UL_DB_MOUNT_NAME, savefs);
         
         return ResultSuccess;

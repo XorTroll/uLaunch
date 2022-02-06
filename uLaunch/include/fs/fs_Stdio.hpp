@@ -10,7 +10,9 @@ namespace fs {
         if(stat(path.c_str(), &st) == 0) {
             return st.st_mode & Mode;
         }
-        return false;
+        else {
+            return false;
+        }
     }
 
     inline bool ExistsFile(const std::string &path) {
@@ -45,24 +47,33 @@ namespace fs {
         remove(path.c_str());
     }
 
-    inline bool WriteFile(const std::string &path, const void *data, size_t size, bool overwrite) {
+    inline void CleanDirectory(const std::string &path) {
+        DeleteDirectory(path);
+        CreateDirectory(path);
+    }
+
+    inline bool WriteFile(const std::string &path, const void *data, const size_t size, const bool overwrite) {
         auto f = fopen(path.c_str(), overwrite ? "wb" : "ab+");
         if(f) {
             fwrite(data, 1, size, f);
             fclose(f);
             return true;
         }
-        return false;
+        else {
+            return false;
+        }
     }
 
-    inline bool ReadFile(const std::string &path, void *data, size_t size) {
+    inline bool ReadFile(const std::string &path, void *data, const size_t size) {
         auto f = fopen(path.c_str(), "rb");
         if(f) {
             fread(data, 1, size, f);
             fclose(f);
             return true;
         }
-        return false;
+        else {
+            return false;
+        }
     }
 
     inline size_t GetFileSize(const std::string &path) {
@@ -70,19 +81,22 @@ namespace fs {
         if(stat(path.c_str(), &st) == 0) {
             return st.st_size;
         }
-        return 0;
+        else {
+            return 0;
+        }
     }
 
     #define UL_FS_FOR(dir, name_var, path_var, ...) ({ \
-        auto dp = opendir(dir.c_str()); \
+        const std::string dir_str = dir; \
+        auto dp = opendir(dir_str.c_str()); \
         if(dp) { \
             while(true) { \
                 auto dt = readdir(dp); \
                 if(dt == nullptr) { \
                     break; \
                 } \
-                std::string name_var = dt->d_name; \
-                std::string path_var = dir + "/" + dt->d_name; \
+                const std::string name_var = dt->d_name; \
+                const std::string path_var = dir_str + "/" + dt->d_name; \
                 __VA_ARGS__ \
             } \
             closedir(dp); \

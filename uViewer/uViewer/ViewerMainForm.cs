@@ -22,7 +22,7 @@ namespace uViewer
         private Thread USBThread = null;
 
         private ToolboxForm Toolbox = null;
-        private static MemoryStream BaseStream = new MemoryStream((int)RawRGBAScreenBufferSize);
+        private static MemoryStream BaseStream = new MemoryStream((int)PlainRgbaScreenBufferSize);
         private static USBMode Mode = USBMode.Invalid;
 
         public delegate void ApplyTypeImplDelegate(PictureBox Box, byte[] Data);
@@ -56,12 +56,12 @@ namespace uViewer
         private static void ApplyJPEG(PictureBox Box, byte[] JPEG)
         {
             BaseStream.Position = 0;
-            BaseStream.Write(JPEG, 4, (int)RawRGBAScreenBufferSize);
+            BaseStream.Write(JPEG, 4, (int)PlainRgbaScreenBufferSize);
             Box.Image = Image.FromStream(BaseStream);
         }
 
-        public const long RawRGBAScreenBufferSize = 1280 * 720 * 4;
-        public const long USBPacketSize = RawRGBAScreenBufferSize + 4;
+        public const long PlainRgbaScreenBufferSize = 1280 * 720 * 4;
+        public const long USBPacketSize = PlainRgbaScreenBufferSize + 4;
 
         public byte[][] CaptureBlocks = new byte[][]
         {

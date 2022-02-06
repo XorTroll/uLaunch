@@ -8,7 +8,7 @@ constexpr const char PrivateServiceName[] = "ulsf:p";
 
 namespace dmi {
 
-    enum class MenuStartMode {
+    enum class MenuStartMode : u32 {
         Invalid,
         StartupScreen,
         Menu,
@@ -21,7 +21,7 @@ namespace dmi {
         HomeRequest
     };
 
-    enum class DaemonMessage {
+    enum class DaemonMessage : u32 {
         Invalid,
         SetSelectedUser,
         LaunchApplication,
@@ -31,7 +31,7 @@ namespace dmi {
         LaunchHomebrewApplication,
         OpenWebPage,
         OpenAlbum,
-        RestartMenu,
+        RestartMenu
     };
 
     struct DaemonStatus {
@@ -41,7 +41,7 @@ namespace dmi {
         char fw_version[0x18]; // System version (sent by uDaemon so that it contains Atmosphere/EmuMMC info)
     };
 
-    using CommandFunction = Result(*)(void*, size_t, bool);
+    using CommandFunction = Result(*)(void*, const size_t, const bool);
 
     struct CommandCommonHeader {
         u32 magic;
@@ -53,7 +53,7 @@ namespace dmi {
 
     namespace impl {
 
-        using PopStorageFunction = Result(*)(AppletStorage*, bool);
+        using PopStorageFunction = Result(*)(AppletStorage*, const bool);
         using PushStorageFunction = Result(*)(AppletStorage*);
 
         template<PushStorageFunction PushStorageFn>
@@ -63,33 +63,35 @@ namespace dmi {
                 size_t cur_offset;
 
             public:
-                ScopedStorageWriterBase() : st({}), cur_offset(0) {}
+                ScopedStorageWriterBase() : st(), cur_offset(0) {}
 
                 ~ScopedStorageWriterBase() {
-                    UL_ASSERT(this->PushStorage(&this->st));
+                    UL_RC_ASSERT(PushStorage(&this->st));
                     appletStorageClose(&this->st);
                 }
 
-                Result PushStorage(AppletStorage *st) {
+                static inline Result PushStorage(AppletStorage *st) {
                     return PushStorageFn(st);
                 }
 
-                void Initialize(AppletStorage st) {
+                inline void Initialize(const AppletStorage &st) {
                     this->st = st;
                 }
 
-                Result PushData(void *data, size_t size) {
+                inline Result PushData(const void *data, const size_t size) {
                     if((cur_offset + size) <= CommandStorageSize) {
-                        R_TRY(appletStorageWrite(&this->st, this->cur_offset, data, size));
+                        UL_RC_TRY(appletStorageWrite(&this->st, this->cur_offset, data, size));
                         this->cur_offset += size;
                         return ResultSuccess;
                     }
-                    return 0xBAFF;
+                    else {
+                        return ResultOutOfPushSpace;
+                    }
                 }
 
                 template<typename T>
-                Result Push(T t) {
-                    return PushData(&t, sizeof(T));
+                inline Result Push(const T t) {
+                    return this->PushData(&t, sizeof(T));
                 }
         };
 
@@ -100,39 +102,41 @@ namespace dmi {
                 size_t cur_offset;
 
             public:
-                ScopedStorageReaderBase() : st({}), cur_offset(0) {}
+                ScopedStorageReaderBase() : st(), cur_offset(0) {}
 
                 ~ScopedStorageReaderBase() {
                     appletStorageClose(&this->st);
                 }
 
-                Result PopStorage(AppletStorage *st, bool wait) {
+                static inline Result PopStorage(AppletStorage *st, const bool wait) {
                     return PopStorageFn(st, wait);
                 }
 
-                void Initialize(AppletStorage st) {
+                inline void Initialize(const AppletStorage &st) {
                     this->st = st;
                 }
 
-                Result PopData(void *out_data, size_t size) {
+                inline Result PopData(void *out_data, const size_t size) {
                     if((cur_offset + size) <= CommandStorageSize) {
-                        R_TRY(appletStorageRead(&this->st, this->cur_offset, out_data, size));
+                        UL_RC_TRY(appletStorageRead(&this->st, this->cur_offset, out_data, size));
                         this->cur_offset += size;
                         return ResultSuccess;
                     }
-                    return 0xBAFF;
+                    else {
+                        return ResultOutOfPopSpace;
+                    }
                 }
                 
                 template<typename T>
-                Result Pop(T &out_t) {
-                    return PopData(&out_t, sizeof(T));
+                inline Result Pop(T &out_t) {
+                    return this->PopData(std::addressof(out_t), sizeof(T));
                 }
         };
 
         template<typename StorageReader>
-        inline Result OpenStorageReader(StorageReader &reader, bool wait) {
+        inline Result OpenStorageReader(StorageReader &reader, const bool wait) {
             AppletStorage st = {};
-            R_TRY(reader.PopStorage(&st, wait));
+            UL_RC_TRY(StorageReader::PopStorage(&st, wait));
 
             reader.Initialize(st);
             return ResultSuccess;
@@ -141,62 +145,69 @@ namespace dmi {
         template<typename StorageWriter>
         inline Result OpenStorageWriter(StorageWriter &writer) {
             AppletStorage st = {};
-            R_TRY(appletCreateStorage(&st, CommandStorageSize));
+            UL_RC_TRY(appletCreateStorage(&st, CommandStorageSize));
             
             writer.Initialize(st);
             return ResultSuccess;
         }
 
         template<typename StorageWriter, typename StorageReader, typename MessageType>
-        Result SendCommandImpl(MessageType msg_type, std::function<Result(StorageWriter&)> push_fn, std::function<Result(StorageReader&)> pop_fn) {
-            CommandCommonHeader header = { CommandMagic, static_cast<u32>(msg_type) };
+        inline Result SendCommandImpl(const MessageType msg_type, std::function<Result(StorageWriter&)> push_fn, std::function<Result(StorageReader&)> pop_fn) {
             {
-                StorageWriter writer;
-                R_TRY(OpenStorageWriter(writer));
-                R_TRY(writer.Push(header));
+                const CommandCommonHeader in_header = {
+                    .magic = CommandMagic,
+                    .val = static_cast<u32>(msg_type)
+                };
 
-                R_TRY(push_fn(writer));
+                StorageWriter writer;
+                UL_RC_TRY(OpenStorageWriter(writer));
+                UL_RC_TRY(writer.Push(in_header));
+
+                UL_RC_TRY(push_fn(writer));
             }
 
             {
+                CommandCommonHeader out_header = {};
+
                 StorageReader reader;
-                R_TRY(OpenStorageReader(reader, true));
-                R_TRY(reader.Pop(header));
-                if(header.magic != CommandMagic) {
-                    return 0xB0FA;
+                UL_RC_TRY(OpenStorageReader(reader, true));
+                UL_RC_TRY(reader.Pop(out_header));
+                if(out_header.magic != CommandMagic) {
+                    return ResultInvalidOutHeaderMagic;
                 }
 
-                R_TRY(header.val);
+                UL_RC_TRY(out_header.val);
 
-                R_TRY(pop_fn(reader));
+                UL_RC_TRY(pop_fn(reader));
             }
 
             return ResultSuccess;
         }
 
         template<typename StorageWriter, typename StorageReader, typename MessageType>
-        Result ReceiveCommandImpl(std::function<Result(MessageType, StorageReader&)> pop_fn, std::function<Result(MessageType, StorageWriter&)> push_fn) {
-            CommandCommonHeader header = {};
+        inline Result ReceiveCommandImpl(std::function<Result(const MessageType, StorageReader&)> pop_fn, std::function<Result(const MessageType, StorageWriter&)> push_fn) {
+            CommandCommonHeader in_out_header = {};
             auto msg_type = MessageType();
+
             {
                 StorageReader reader;
-                R_TRY(OpenStorageReader(reader, false));
-                R_TRY(reader.Pop(header));
-                if(header.magic != CommandMagic) {
-                    return 0xBAFA;
+                UL_RC_TRY(OpenStorageReader(reader, false));
+                UL_RC_TRY(reader.Pop(in_out_header));
+                if(in_out_header.magic != CommandMagic) {
+                    return dmi::ResultInvalidInHeaderMagic;
                 }
-                msg_type = static_cast<MessageType>(header.val);
 
-                header.val = pop_fn(msg_type, reader);
+                msg_type = static_cast<MessageType>(in_out_header.val);
+                in_out_header.val = pop_fn(msg_type, reader);
             }
 
             {
                 StorageWriter writer;
-                R_TRY(OpenStorageWriter(writer));
-                R_TRY(writer.Push(header));
+                UL_RC_TRY(OpenStorageWriter(writer));
+                UL_RC_TRY(writer.Push(in_out_header));
 
-                if(R_SUCCEEDED(header.val)) {
-                    R_TRY(push_fn(msg_type, writer));
+                if(R_SUCCEEDED(in_out_header.val)) {
+                    UL_RC_TRY(push_fn(msg_type, writer));
                 }
             }
 
@@ -207,18 +218,15 @@ namespace dmi {
 
     namespace dmn {
 
-        Result PopStorage(AppletStorage *st, bool wait);
+        Result PopStorage(AppletStorage *st, const bool wait);
         Result PushStorage(AppletStorage *st);
 
         using DaemonScopedStorageReader = impl::ScopedStorageReaderBase<&PopStorage>;
-
         using DaemonScopedStorageWriter = impl::ScopedStorageWriterBase<&PushStorage>;
 
-        inline Result SendCommand(MenuMessage msg, std::function<Result(DaemonScopedStorageWriter&)> push_fn, std::function<Result(DaemonScopedStorageReader&)> pop_fn) {
-            return impl::SendCommandImpl(msg, push_fn, pop_fn);
-        }
+        // Daemon only receives commands from Menu
 
-        inline Result ReceiveCommand(std::function<Result(DaemonMessage, DaemonScopedStorageReader&)> pop_fn, std::function<Result(DaemonMessage, DaemonScopedStorageWriter&)> push_fn) {
+        inline Result ReceiveCommand(std::function<Result(const DaemonMessage, DaemonScopedStorageReader&)> pop_fn, std::function<Result(const DaemonMessage, DaemonScopedStorageWriter&)> push_fn) {
             return impl::ReceiveCommandImpl(pop_fn, push_fn);
         }
 
@@ -226,19 +234,16 @@ namespace dmi {
 
     namespace menu {
 
-        Result PopStorage(AppletStorage *st, bool wait);
+        Result PopStorage(AppletStorage *st, const bool wait);
         Result PushStorage(AppletStorage *st);
 
         using MenuScopedStorageReader = impl::ScopedStorageReaderBase<&PopStorage>;
-
         using MenuScopedStorageWriter = impl::ScopedStorageWriterBase<&PushStorage>;
 
-        inline Result SendCommand(DaemonMessage msg, std::function<Result(MenuScopedStorageWriter&)> push_fn, std::function<Result(MenuScopedStorageReader&)> pop_fn) {
-            return impl::SendCommandImpl(msg, push_fn, pop_fn);
-        }
+        // Menu only sends commands to Daemon
 
-        inline Result ReceiveCommand(std::function<Result(MenuMessage, MenuScopedStorageReader&)> pop_fn, std::function<Result(MenuMessage, MenuScopedStorageWriter&)> push_fn) {
-            return impl::ReceiveCommandImpl(pop_fn, push_fn);
+        inline Result SendCommand(const DaemonMessage msg, std::function<Result(MenuScopedStorageWriter&)> push_fn, std::function<Result(MenuScopedStorageReader&)> pop_fn) {
+            return impl::SendCommandImpl(msg, push_fn, pop_fn);
         }
 
     }

@@ -27,7 +27,7 @@ EXEFS_SRC	:=	exefs_src
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
-ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE -Wl,-wrap,libappletStart -Wl,-wrap,libappletLaunch
+ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE -Wl,-wrap,libappletLaunch -Wl,-wrap,libappletStart
 
 CFLAGS	:=	-g -Wall -O2 -ffunction-sections \
 			$(ARCH) $(DEFINES)
@@ -45,7 +45,7 @@ LIBS	:= -lpu -lfreetype -lSDL2_mixer -lopusfile -lopus -lmodplug -lmpg123 -lvorb
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS	:= $(PORTLIBS) $(LIBNX) $(TOPDIR)/../Plutonium/Plutonium/out
+LIBDIRS	:= $(PORTLIBS) $(LIBNX) $(CURDIR)/../Plutonium/Plutonium
 
 
 #---------------------------------------------------------------------------------

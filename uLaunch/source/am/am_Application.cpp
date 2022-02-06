@@ -37,24 +37,24 @@ namespace am {
         appletApplicationClose(&g_ApplicationHolder);
 
         if(system) {
-            R_TRY(appletCreateSystemApplication(&g_ApplicationHolder, app_id));
+            UL_RC_TRY(appletCreateSystemApplication(&g_ApplicationHolder, app_id));
         }
         else {
-            R_TRY(appletCreateApplication(&g_ApplicationHolder, app_id));
+            UL_RC_TRY(appletCreateApplication(&g_ApplicationHolder, app_id));
         }
         
         if(accountUidIsValid(&user_id)) {
-            auto selected_user_arg = ApplicationSelectedUserArgument::Create(user_id);
-            R_TRY(ApplicationSend(&selected_user_arg, sizeof(selected_user_arg), AppletLaunchParameterKind_PreselectedUser));
+            const auto selected_user_arg = ApplicationSelectedUserArgument::Create(user_id);
+            UL_RC_TRY(ApplicationSend(&selected_user_arg, sizeof(selected_user_arg), AppletLaunchParameterKind_PreselectedUser));
         }
 
         if(size > 0) {
-            R_TRY(ApplicationSend(data, size));
+            UL_RC_TRY(ApplicationSend(data, size));
         }
 
-        R_TRY(appletUnlockForeground());
-        R_TRY(appletApplicationStart(&g_ApplicationHolder));
-        R_TRY(ApplicationSetForeground());
+        UL_RC_TRY(appletUnlockForeground());
+        UL_RC_TRY(appletApplicationStart(&g_ApplicationHolder));
+        UL_RC_TRY(ApplicationSetForeground());
 
         g_LastApplicationId = app_id;
         return 0;
@@ -65,19 +65,18 @@ namespace am {
     }
 
     Result ApplicationSetForeground() {
-        R_TRY(appletApplicationRequestForApplicationToGetForeground(&g_ApplicationHolder));
+        UL_RC_TRY(appletApplicationRequestForApplicationToGetForeground(&g_ApplicationHolder));
         g_DaemonHasFocus = false;
         return ResultSuccess;
     }
 
     Result ApplicationSend(const void *data, const size_t size, const AppletLaunchParameterKind kind) {
         AppletStorage st;
-        R_TRY(appletCreateStorage(&st, size));
-        UL_ON_SCOPE_EXIT({
-            appletStorageClose(&st);
-        });
-        R_TRY(appletStorageWrite(&st, 0, data, size));
-        R_TRY(appletApplicationPushLaunchParameter(&g_ApplicationHolder, kind, &st));
+        UL_RC_TRY(appletCreateStorage(&st, size));
+        UL_ON_SCOPE_EXIT({ appletStorageClose(&st); });
+
+        UL_RC_TRY(appletStorageWrite(&st, 0, data, size));
+        UL_RC_TRY(appletApplicationPushLaunchParameter(&g_ApplicationHolder, kind, &st));
         return ResultSuccess;
     }
 
@@ -86,8 +85,11 @@ namespace am {
     }
 
     bool ApplicationNeedsUser(const u64 app_id) {
-        NsApplicationControlData ctdata = {};
-        nsGetApplicationControlData(NsApplicationControlSource_Storage, app_id, &ctdata, sizeof(ctdata), nullptr);
-        return ctdata.nacp.startup_user_account > 0;
+        auto control_data = new NsApplicationControlData();
+        nsGetApplicationControlData(NsApplicationControlSource_Storage, app_id, control_data, sizeof(NsApplicationControlData), nullptr);
+
+        const auto needs_user = control_data->nacp.startup_user_account > 0;
+        delete control_data;
+        return needs_user;
     }
 }

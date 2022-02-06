@@ -5,59 +5,70 @@
 
 namespace ui {
 
-    enum class QuickMenuDirection {
-        Up,
-        Down,
-        Left,
-        Right,
-        UpLeft,
-        UpRight,
-        DownLeft,
-        DownRight,
-        None
-    };
-
-    struct QuickMenuSubItem {
-        std::function<void()> on_select;
-        pu::sdl2::Texture nicon;
-    };
-
-    void QuickMenuOnHomeButtonDetection();
-
     class QuickMenu : public pu::ui::elm::Element {
-
         public:
             static constexpr s32 MainItemSize = 300;
             static constexpr s32 SubItemsSize = 150;
             static constexpr s32 CommonAreaSize = 50;
 
-            static constexpr s32 MainItemX = (1280 - MainItemSize) / 2;
-            static constexpr s32 MainItemY = (720 - MainItemSize) / 2;
+            static constexpr s32 MainItemX = (pu::ui::render::ScreenWidth - MainItemSize) / 2;
+            static constexpr s32 MainItemY = (pu::ui::render::ScreenHeight - MainItemSize) / 2;
+
+            static constexpr u8 BackgroundAlphaMax = 0xDC;
+            static constexpr u8 BackgroundAlphaIncrement = 20;
+
+            static constexpr u32 MenuMargin = 200;
+            static constexpr u32 MenuX = MenuMargin;
+            static constexpr u32 MenuY = 115;
+            static constexpr u32 MenuWidth = pu::ui::render::ScreenWidth - 2 * MenuMargin;
+            static constexpr u32 MenuItemHeight = 60;
+            static constexpr u32 MenuItemsToShow = 8;
+
+            static inline constexpr pu::ui::Color MakeBackgroundColor(const u8 alpha) {
+                return { 50, 50, 50, alpha };
+            }
 
         private:
             bool on;
-            s32 bgalpha;
+            s32 bg_alpha;
             pu::ui::elm::Menu::Ref options_menu;
+
+            static void OnHomeButtonDetection();
 
         public:
             QuickMenu(const std::string &main_icon);
             PU_SMART_CTOR(QuickMenu)
 
-            static inline void RegisterHomeButtonDetection() {
-                am::RegisterOnMessageDetect(&QuickMenuOnHomeButtonDetection, dmi::MenuMessage::HomeRequest);
+            inline constexpr s32 GetX() override {
+                return 0;
             }
 
-            s32 GetX();
-            s32 GetY();
-            s32 GetWidth();
-            s32 GetHeight();
+            inline constexpr s32 GetY() override {
+                return 0;
+            }
+
+            inline constexpr s32 GetWidth() override {
+                return pu::ui::render::ScreenWidth;
+            }
+
+            inline constexpr s32 GetHeight() override {
+                return pu::ui::render::ScreenHeight;
+            }
             
-            void Toggle(); // Off if on, on if off (just change to the opposite state)
-            bool IsOn();
+            inline void Toggle() {
+                this->on = !this->on;
+            }
 
-            void OnRender(pu::ui::render::Renderer::Ref &Drawer, s32 X, s32 Y);
-            void OnInput(u64 Down, u64 Up, u64 Held, pu::ui::Touch Pos);
+            inline constexpr bool IsOn() {
+                return this->on && (this->bg_alpha > 0);
+            }
 
+            void OnRender(pu::ui::render::Renderer::Ref &drawer, const s32 x, const s32 y) override;
+            void OnInput(const u64 keys_down, const u64 keys_up, const u64 keys_held, const pu::ui::TouchPoint touch_pos) override;
+
+            static inline void RegisterHomeButtonDetection() {
+                am::RegisterOnMessageDetect(&OnHomeButtonDetection, dmi::MenuMessage::HomeRequest);
+            }
     };
 
 }

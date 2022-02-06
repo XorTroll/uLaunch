@@ -16,10 +16,11 @@ namespace os {
     }
     
     std::string GetCurrentTime() {
-        auto time_val = time(nullptr);
-        auto local_time = localtime(&time_val);
-        auto h = local_time->tm_hour;
-        auto min = local_time->tm_min;
+        const auto time_val = time(nullptr);
+        const auto local_time = localtime(&time_val);
+        const auto h = local_time->tm_hour;
+        const auto min = local_time->tm_min;
+
         char str[0x10] = {};
         sprintf(str, "%02d:%02d", h, min);
         return str;

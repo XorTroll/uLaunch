@@ -5,33 +5,31 @@
 
 namespace os {
 
-    std::string GetIconCacheImagePath(AccountUid user_id) {
-        auto uidstr = util::Format128NintendoStyle(user_id);
-        return UL_BASE_SD_DIR "/user/" + uidstr + ".jpg";
+    std::string GetIconCacheImagePath(const AccountUid user_id) {
+        const auto uid_str = util::Format128NintendoStyle(user_id);
+        return UL_BASE_SD_DIR "/user/" + uid_str + ".jpg";
     }
 
-    Result QuerySystemAccounts(std::vector<AccountUid> &out_accounts, bool dump_icon) {
+    Result QuerySystemAccounts(const bool dump_icon, std::vector<AccountUid> &out_accounts) {
         AccountUid uids[ACC_USER_LIST_SIZE] = {};
         s32 acc_count = 0;
-        R_TRY(accountListAllUsers(uids, ACC_USER_LIST_SIZE, &acc_count));
+        UL_RC_TRY(accountListAllUsers(uids, ACC_USER_LIST_SIZE, &acc_count));
         for(s32 i = 0; i < acc_count; i++) {
-            auto uid = uids[i];
+            const auto uid = uids[i];
             out_accounts.push_back(uid);
             if(dump_icon) {
                 AccountProfile prof;
-                auto rc = accountGetProfile(&prof, uid);
-                if(R_SUCCEEDED(rc)) {
-                    u32 imgsz = 0;
-                    rc = accountProfileGetImageSize(&prof, &imgsz);
-                    if(imgsz > 0) {
-                        auto imgbuf = new u8[imgsz]();
-                        u32 tmpsz;
-                        rc = accountProfileLoadImage(&prof, imgbuf, imgsz, &tmpsz);
-                        if(R_SUCCEEDED(rc)) {
-                            auto iconcache = GetIconCacheImagePath(uid);
-                            fs::WriteFile(iconcache, imgbuf, imgsz, true);
+                if(R_SUCCEEDED(accountGetProfile(&prof, uid))) {
+                    u32 img_size = 0;
+                    accountProfileGetImageSize(&prof, &img_size);
+                    if(img_size > 0) {
+                        auto img_buf = new u8[img_size]();
+                        u32 tmp_size;
+                        if(R_SUCCEEDED(accountProfileLoadImage(&prof, img_buf, img_size, &tmp_size))) {
+                            const auto cache_icon_path = GetIconCacheImagePath(uid);
+                            fs::WriteFile(cache_icon_path, img_buf, img_size, true);
                         }
-                        delete[] imgbuf;
+                        delete[] img_buf;
                     }
                     accountProfileClose(&prof);
                 }
@@ -40,16 +38,15 @@ namespace os {
         return ResultSuccess;
     }
 
-    Result GetAccountName(std::string &out_name, AccountUid user_id) {
-        std::string name;
+    Result GetAccountName(const AccountUid user_id, std::string &out_name) {
         AccountProfile prof;
-        R_TRY(accountGetProfile(&prof, user_id));
-        UL_ON_SCOPE_EXIT({
-            accountProfileClose(&prof);
-        });
+        UL_RC_TRY(accountGetProfile(&prof, user_id));
+        UL_ON_SCOPE_EXIT({ accountProfileClose(&prof); });
+    
         AccountProfileBase pbase;
         AccountUserData udata;
-        R_TRY(accountProfileGet(&prof, &udata, &pbase));
+        UL_RC_TRY(accountProfileGet(&prof, &udata, &pbase));
+
         out_name = pbase.nickname;
         return ResultSuccess;
     }

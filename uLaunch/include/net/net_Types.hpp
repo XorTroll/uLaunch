@@ -4,6 +4,7 @@
 
 namespace net {
 
+    // TODO: use libnx's nifm stuff?
     struct NetworkProfileData {
         u8 unk[0x117];
         char wifi_name[0x20 + 1];

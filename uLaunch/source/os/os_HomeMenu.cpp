@@ -2,14 +2,13 @@
 
 namespace os {
 
-    Result PushSystemAppletMessage(SystemAppletMessage msg) {
+    Result PushSystemAppletMessage(const SystemAppletMessage msg) {
         AppletStorage st;
-        R_TRY(appletCreateStorage(&st, sizeof(msg)));
-        UL_ON_SCOPE_EXIT({
-            appletStorageClose(&st);
-        });
-        R_TRY(appletStorageWrite(&st, 0, &msg, sizeof(msg)));
-        R_TRY(appletPushToGeneralChannel(&st));
+        UL_RC_TRY(appletCreateStorage(&st, sizeof(msg)));
+        UL_ON_SCOPE_EXIT({ appletStorageClose(&st); });
+
+        UL_RC_TRY(appletStorageWrite(&st, 0, &msg, sizeof(msg)));
+        UL_RC_TRY(appletPushToGeneralChannel(&st));
         return ResultSuccess;
     }
 }

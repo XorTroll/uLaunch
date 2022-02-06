@@ -6,80 +6,40 @@
 
 namespace ui {
 
-    s32 ClickableImage::GetX() {
-        return this->x;
-    }
-
-    void ClickableImage::SetX(s32 x) {
-        this->x = x;
-    }
-
-    s32 ClickableImage::GetY() {
-        return this->y;
-    }
-
-    void ClickableImage::SetY(s32 y) {
-        this->y = y;
-    }
-
-    s32 ClickableImage::GetWidth() {
-        return this->w;
-    }
-
-    void ClickableImage::SetWidth(s32 w) {
-        this->w = w;
-    }
-
-    s32 ClickableImage::GetHeight() {
-        return this->h;
-    }
-
-    void ClickableImage::SetHeight(s32 h) {
-        this->h = h;
-    }
-
-    std::string ClickableImage::GetImage() {
-        return this->img;
+    ClickableImage::~ClickableImage() {
+        pu::ui::render::DeleteTexture(this->img_tex);
     }
 
     void ClickableImage::SetImage(const std::string &img) {
-        this->Dispose();
+        pu::ui::render::DeleteTexture(this->img_tex);
         if(fs::ExistsFile(img)) {
             this->img = img;
-            this->ntex = pu::ui::render::LoadImage(img);
-            this->w = pu::ui::render::GetTextureWidth(this->ntex);
-            this->h = pu::ui::render::GetTextureHeight(this->ntex);
+            this->img_tex = pu::ui::render::LoadImage(img);
+            this->w = pu::ui::render::GetTextureWidth(this->img_tex);
+            this->h = pu::ui::render::GetTextureHeight(this->img_tex);
         }
     }
 
-    bool ClickableImage::IsImageValid() {
-        return (ntex != nullptr) && !this->img.empty();
+    void ClickableImage::OnRender(pu::ui::render::Renderer::Ref &drawer, const s32 x, const s32 y) {
+        drawer->RenderTexture(this->img_tex, x, y, pu::ui::render::TextureRenderOptions::WithCustomDimensions(this->w, this->h));
     }
 
-    void ClickableImage::SetOnClick(std::function<void()> cb) {
-        this->cb = cb;
-    }
-
-    void ClickableImage::OnRender(pu::ui::render::Renderer::Ref &drawer, s32 x, s32 y) {
-        drawer->RenderTexture(this->ntex, x, y, { -1, w, h, -1 });
-    }
-
-    void ClickableImage::OnInput(u64 down, u64 up, u64 held, pu::ui::Touch touch_pos) {
+    void ClickableImage::OnInput(const u64 keys_down, const u64 keys_up, const u64 keys_held, const pu::ui::TouchPoint touch_pos) {
         if(this->touched) {
-            auto tpnow = std::chrono::steady_clock::now();
-            auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(tpnow - this->touchtp).count();
-            if(diff >= 200) {
+            const auto tp_now = std::chrono::steady_clock::now();
+            const u64 diff = std::chrono::duration_cast<std::chrono::milliseconds>(tp_now - this->touch_tp).count();
+            if(diff >= TouchActionTimeMilliseconds) {
                 this->touched = false;
-                (this->cb)();
-                SDL_SetTextureColorMod(this->ntex, 255, 255, 255);
+                if(this->cb) {
+                    (this->cb)();
+                }
+                SDL_SetTextureColorMod(this->img_tex, 0xFF, 0xFF, 0xFF);
             }
         }
-        else if(!touch_pos.IsEmpty()) {
-            if((touch_pos.X >= this->GetProcessedX()) && (touch_pos.X < (this->GetProcessedX() + w)) && (touch_pos.Y >= this->GetProcessedY()) && (touch_pos.Y < (this->GetProcessedY() + h))) {
-                this->touchtp = std::chrono::steady_clock::now();
-                this->touched = true;
-                SDL_SetTextureColorMod(this->ntex, 200, 200, 255);
-            }
+        else if(touch_pos.HitsRegion(this->GetProcessedX(), this->GetProcessedY(), this->w, this->h)) {
+            this->touch_tp = std::chrono::steady_clock::now();
+            this->touched = true;
+            SDL_SetTextureColorMod(this->img_tex, RedColorMod, GreenColorMod, BlueColorMod);
         }
     }
 

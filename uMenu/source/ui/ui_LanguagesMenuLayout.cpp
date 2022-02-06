@@ -18,24 +18,19 @@ namespace ui {
     LanguagesMenuLayout::LanguagesMenuLayout() {
         this->SetBackgroundImage(cfg::GetAssetByTheme(g_Theme, "ui/Background.png"));
 
-        pu::ui::Color textclr = pu::ui::Color::FromHex(g_MenuApplication->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
-        pu::ui::Color menufocusclr = pu::ui::Color::FromHex(g_MenuApplication->GetUIConfigValue<std::string>("menu_focus_color", "#5ebcffff"));
-        pu::ui::Color menubgclr = pu::ui::Color::FromHex(g_MenuApplication->GetUIConfigValue<std::string>("menu_bg_color", "#0094ffff"));
+        this->info_text = pu::ui::elm::TextBlock::New(0, 100, GetLanguageString("lang_info_text"));
+        this->info_text->SetColor(g_MenuApplication->GetTextColor());
+        this->info_text->SetHorizontalAlign(pu::ui::elm::HorizontalAlign::Center);
+        g_MenuApplication->ApplyConfigForElement("languages_menu", "info_text", this->info_text);
+        this->Add(this->info_text);
 
-        this->infoText = pu::ui::elm::TextBlock::New(0, 100, GetLanguageString("lang_info_text"));
-        this->infoText->SetColor(textclr);
-        this->infoText->SetHorizontalAlign(pu::ui::elm::HorizontalAlign::Center);
-        g_MenuApplication->ApplyConfigForElement("languages_menu", "info_text", this->infoText);
-        this->Add(this->infoText);
-
-        this->langsMenu = pu::ui::elm::Menu::New(200, 160, 880, menubgclr, 100, 4);
-        this->langsMenu->SetOnFocusColor(menufocusclr);
-        g_MenuApplication->ApplyConfigForElement("languages_menu", "languages_menu_item", this->langsMenu);
-        this->Add(this->langsMenu);
+        this->langs_menu = pu::ui::elm::Menu::New(200, 160, 880, g_MenuApplication->GetMenuBackgroundColor(), g_MenuApplication->GetMenuFocusColor(), 100, 4);
+        g_MenuApplication->ApplyConfigForElement("languages_menu", "languages_menu_item", this->langs_menu);
+        this->Add(this->langs_menu);
     }
 
-    void LanguagesMenuLayout::OnMenuInput(u64 down, u64 up, u64 held, pu::ui::Touch touch_pos) {
-        if(down & HidNpadButton_B) {
+    void LanguagesMenuLayout::OnMenuInput(const u64 keys_down, const u64 keys_up, const u64 keys_held, const pu::ui::TouchPoint touch_pos) {
+        if(keys_down & HidNpadButton_B) {
             g_TransitionGuard.Run([]() {
                 g_MenuApplication->FadeOut();
                 g_MenuApplication->LoadSettingsMenu();
@@ -53,45 +48,39 @@ namespace ui {
     }
 
     void LanguagesMenuLayout::Reload() {
-        this->langsMenu->ClearItems();
-        this->langsMenu->SetSelectedIndex(0);
+        this->langs_menu->ClearItems();
 
-        auto textclr = pu::ui::Color::FromHex(g_MenuApplication->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
-        u64 lcode = 0;
-        auto ilang = SetLanguage_ENUS;
-        setGetLanguageCode(&lcode);
-        setMakeLanguage(lcode, &ilang);
-        
+        const auto sys_lang = os::GetSystemLanguage();
         for(u32 i = 0; i < os::LanguageNameCount; i++) {
             std::string name = os::LanguageNameList[i];
-            if(static_cast<u32>(ilang) == i) {
+            if(static_cast<u32>(sys_lang) == i) {
                 name += " " + GetLanguageString("lang_selected");
             }
-            auto litm = pu::ui::elm::MenuItem::New(name);
-            litm->SetColor(textclr);
-            litm->AddOnClick(std::bind(&LanguagesMenuLayout::lang_Click, this, i));
-            this->langsMenu->AddItem(litm);
+
+            auto lang_item = pu::ui::elm::MenuItem::New(name);
+            lang_item->SetColor(g_MenuApplication->GetTextColor());
+            lang_item->AddOnKey(std::bind(&LanguagesMenuLayout::lang_DefaultKey, this, i));
+            this->langs_menu->AddItem(lang_item);
         }
+
+        this->langs_menu->SetSelectedIndex(0);
     }
 
-    void LanguagesMenuLayout::lang_Click(u32 idx) {
-        u64 lcode = 0;
-        SetLanguage ilang = SetLanguage_ENUS;
-        setGetLanguageCode(&lcode);
-        setMakeLanguage(lcode, &ilang);
-
-        if(static_cast<u32>(ilang) == idx) {
+    void LanguagesMenuLayout::lang_DefaultKey(const u32 idx) {
+        // TODO: cache system language...
+        const auto sys_lang = os::GetSystemLanguage();
+        if(static_cast<u32>(sys_lang) == idx) {
             g_MenuApplication->ShowNotification(GetLanguageString("lang_active_this"));
         }
         else {
-            auto sopt = g_MenuApplication->CreateShowDialog(GetLanguageString("lang_set"), GetLanguageString("lang_set_conf"), { GetLanguageString("yes"), GetLanguageString("no") }, true);
-            if(sopt == 0) {
-                u64 codes[16] = {0};
+            const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("lang_set"), GetLanguageString("lang_set_conf"), { GetLanguageString("yes"), GetLanguageString("no") }, true);
+            if(option == 0) {
+                u64 lang_codes[os::LanguageNameCount] = {};
                 s32 tmp;
-                setGetAvailableLanguageCodes(&tmp, codes, 16);
-                auto code = codes[this->langsMenu->GetSelectedIndex()];
+                setGetAvailableLanguageCodes(&tmp, lang_codes, os::LanguageNameCount);
+                const auto lang_code = lang_codes[this->langs_menu->GetSelectedIndex()];
 
-                auto rc = setsysSetLanguageCode(code);
+                const auto rc = setsysSetLanguageCode(lang_code);
                 g_MenuApplication->CreateShowDialog(GetLanguageString("lang_set"), R_SUCCEEDED(rc) ? GetLanguageString("lang_set_ok") : GetLanguageString("lang_set_error") + ": " + util::FormatResult(rc), { GetLanguageString("ok") }, true);
                 if(R_SUCCEEDED(rc)) {
                     g_TransitionGuard.Run([]() {

@@ -37,24 +37,19 @@ namespace ui {
     SettingsMenuLayout::SettingsMenuLayout() {
         this->SetBackgroundImage(cfg::GetAssetByTheme(g_Theme, "ui/Background.png"));
 
-        pu::ui::Color textclr = pu::ui::Color::FromHex(g_MenuApplication->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
-        pu::ui::Color menufocusclr = pu::ui::Color::FromHex(g_MenuApplication->GetUIConfigValue<std::string>("menu_focus_color", "#5ebcffff"));
-        pu::ui::Color menubgclr = pu::ui::Color::FromHex(g_MenuApplication->GetUIConfigValue<std::string>("menu_bg_color", "#0094ffff"));
+        this->info_text = pu::ui::elm::TextBlock::New(0, 25, GetLanguageString("set_info_text"));
+        this->info_text->SetColor(g_MenuApplication->GetTextColor());
+        this->info_text->SetHorizontalAlign(pu::ui::elm::HorizontalAlign::Center);
+        g_MenuApplication->ApplyConfigForElement("settings_menu", "info_text", this->info_text);
+        this->Add(this->info_text);
 
-        this->infoText = pu::ui::elm::TextBlock::New(0, 100, GetLanguageString("set_info_text"));
-        this->infoText->SetColor(textclr);
-        this->infoText->SetHorizontalAlign(pu::ui::elm::HorizontalAlign::Center);
-        g_MenuApplication->ApplyConfigForElement("settings_menu", "info_text", this->infoText);
-        this->Add(this->infoText);
-
-        this->settingsMenu = pu::ui::elm::Menu::New(50, 160, 1180, menubgclr, 100, 4);
-        this->settingsMenu->SetOnFocusColor(menufocusclr);
-        g_MenuApplication->ApplyConfigForElement("settings_menu", "settings_menu_item", this->settingsMenu);
-        this->Add(this->settingsMenu);
+        this->settings_menu = pu::ui::elm::Menu::New(50, 80, 1180, g_MenuApplication->GetMenuBackgroundColor(), g_MenuApplication->GetMenuFocusColor(), 100, 6);
+        g_MenuApplication->ApplyConfigForElement("settings_menu", "settings_menu_item", this->settings_menu);
+        this->Add(this->settings_menu);
     }
 
-    void SettingsMenuLayout::OnMenuInput(u64 down, u64 up, u64 held, pu::ui::Touch pos) {
-        if(down & HidNpadButton_B) {
+    void SettingsMenuLayout::OnMenuInput(const u64 keys_down, const u64 keys_up, const u64 keys_held, const pu::ui::TouchPoint touch_pos) {
+        if(keys_down & HidNpadButton_B) {
             g_TransitionGuard.Run([]() {
                 g_MenuApplication->FadeOut();
                 g_MenuApplication->LoadMenu();
@@ -71,20 +66,22 @@ namespace ui {
         });
     }
 
-    void SettingsMenuLayout::Reload() {
+    void SettingsMenuLayout::Reload(const bool reset_idx) {
         // TODO: more settings
-        this->settingsMenu->ClearItems();
-        this->settingsMenu->SetSelectedIndex(0);
+        this->settings_menu->ClearItems();
         
         SetSysDeviceNickName console_name = {};
         setsysGetDeviceNickname(&console_name);
         this->PushSettingItem(GetLanguageString("set_console_nickname"), EncodeForSettings<std::string>(console_name.nickname), 0);
+        
         TimeLocationName loc = {};
         timeGetDeviceLocationName(&loc);
         this->PushSettingItem(GetLanguageString("set_console_timezone"), EncodeForSettings<std::string>(loc.name), -1);
+        
         bool viewer_usb_enabled;
         UL_ASSERT_TRUE(g_Config.GetEntry(cfg::ConfigEntryId::ViewerUsbEnabled, viewer_usb_enabled));
         this->PushSettingItem(GetLanguageString("set_viewer_enabled"), EncodeForSettings(viewer_usb_enabled), 1);
+        
         auto connected_wifi_name = GetLanguageString("set_wifi_none");
         if(net::HasConnection()) {
             net::NetworkProfileData data = {};
@@ -99,48 +96,64 @@ namespace ui {
         setMakeLanguage(lang_code, &lang_val);
         const std::string lang_str = os::LanguageNameList[static_cast<u32>(lang_val)];
         this->PushSettingItem(GetLanguageString("set_console_lang"), EncodeForSettings(lang_str), 3);
+
         auto console_info_upload = false;
         setsysGetConsoleInformationUploadFlag(&console_info_upload);
         this->PushSettingItem(GetLanguageString("set_console_info_upload"), EncodeForSettings(console_info_upload), 4);
+        
         auto auto_titles_dl = false;
         setsysGetAutomaticApplicationDownloadFlag(&auto_titles_dl);
         this->PushSettingItem(GetLanguageString("set_auto_titles_dl"), EncodeForSettings(auto_titles_dl), 5);
+        
         auto auto_update = false;
         setsysGetAutoUpdateEnableFlag(&auto_update);
         this->PushSettingItem(GetLanguageString("set_auto_update"), EncodeForSettings(auto_update), 6);
+        
         auto wireless_lan = false;
         setsysGetWirelessLanEnableFlag(&wireless_lan);
         this->PushSettingItem(GetLanguageString("set_wireless_lan"), EncodeForSettings(wireless_lan), 7);
+        
         auto bluetooth = false;
         setsysGetBluetoothEnableFlag(&bluetooth);
         this->PushSettingItem(GetLanguageString("set_bluetooth"), EncodeForSettings(bluetooth), 8);
+        
         auto usb_30 = false;
         setsysGetUsb30EnableFlag(&usb_30);
         this->PushSettingItem(GetLanguageString("set_usb_30"), EncodeForSettings(usb_30), 9);
+        
         auto nfc = false;
         setsysGetNfcEnableFlag(&nfc);
         this->PushSettingItem(GetLanguageString("set_nfc"), EncodeForSettings(nfc), 10);
+        
         SetSysSerialNumber serial = {};
         setsysGetSerialNumber(&serial);
         this->PushSettingItem(GetLanguageString("set_serial_no"), EncodeForSettings<std::string>(serial.number), -1);
+        
         u64 mac = 0;
         net::GetMACAddress(&mac);
         const auto mac_addr_str = net::FormatMACAddress(mac);
         this->PushSettingItem(GetLanguageString("set_mac_addr"), EncodeForSettings(mac_addr_str), -1);
+
         const auto ip_str = net::GetConsoleIPAddress();
         this->PushSettingItem("Console IP address", EncodeForSettings(ip_str), -1);
+
+        if(reset_idx) {
+            this->settings_menu->SetSelectedIndex(0);
+        }
     }
 
     void SettingsMenuLayout::PushSettingItem(const std::string &name, const std::string &value_display, int id) {
-        auto textclr = pu::ui::Color::FromHex(g_MenuApplication->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
-        auto itm = pu::ui::elm::MenuItem::New(name + ": " + value_display);
-        itm->AddOnClick(std::bind(&SettingsMenuLayout::setting_Click, this, id));
-        itm->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/Setting" + std::string((id < 0) ? "No" : "") + "Editable.png"));
-        itm->SetColor(textclr);
-        this->settingsMenu->AddItem(itm);
+        const auto is_editable = id >= 0;
+        auto setting_item = pu::ui::elm::MenuItem::New(name + ": " + value_display);
+        if(is_editable) {
+            setting_item->AddOnKey(std::bind(&SettingsMenuLayout::setting_DefaultKey, this, id));
+        }
+        setting_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/Setting" + std::string(is_editable ? "" : "No") + "Editable.png"));
+        setting_item->SetColor(g_MenuApplication->GetTextColor());
+        this->settings_menu->AddItem(setting_item);
     }
 
-    void SettingsMenuLayout::setting_Click(u32 id) {
+    void SettingsMenuLayout::setting_DefaultKey(const u32 id) {
         bool reload_need = false;
         switch(id) {
             case 0: {
@@ -256,9 +269,10 @@ namespace ui {
                 break;
             }
         }
+
         if(reload_need) {
             cfg::SaveConfig(g_Config);
-            this->Reload();
+            this->Reload(false);
         }
     }
 

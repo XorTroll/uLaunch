@@ -11,23 +11,30 @@ namespace res {
             const char *name;
         };
 
-        #define _RES_INFO_DEFINE(mod, name) { mod::Result ## name, #mod, #name }
+        #define _UL_RC_INFO_DEFINE(mod, name) { mod::Result ## name, #mod, #name }
+        constexpr ResultInfoImpl g_ResultInfoTableImpl[] = {
+            _UL_RC_INFO_DEFINE(misc, AssertionFailed),
+            _UL_RC_INFO_DEFINE(misc, UnexpectedTransform),
+            _UL_RC_INFO_DEFINE(misc, InvalidJsonFile),
 
-        static ResultInfoImpl g_ResultInfoTableImpl[] = {
-            _RES_INFO_DEFINE(misc, InvalidJsonFile),
+            _UL_RC_INFO_DEFINE(dmn, ApplicationActive),
+            _UL_RC_INFO_DEFINE(dmn, InvalidSelectedUser),
+            _UL_RC_INFO_DEFINE(dmn, AlreadyQueued),
+            _UL_RC_INFO_DEFINE(dmn, ApplicationNotActive),
 
-            _RES_INFO_DEFINE(dmn, ApplicationActive),
-            _RES_INFO_DEFINE(dmn, InvalidSelectedUser),
-            _RES_INFO_DEFINE(dmn, AlreadyQueued),
-            _RES_INFO_DEFINE(dmn, ApplicationNotActive),
+            _UL_RC_INFO_DEFINE(menu, RomfsFileNotFound),
 
-            _RES_INFO_DEFINE(menu, RomfsFileNotFound),
+            _UL_RC_INFO_DEFINE(ipc, InvalidProcess),
 
-            _RES_INFO_DEFINE(ipc, InvalidProcess),
+            _UL_RC_INFO_DEFINE(dmi, OutOfPushSpace),
+            _UL_RC_INFO_DEFINE(dmi, OutOfPopSpace),
+            _UL_RC_INFO_DEFINE(dmi, InvalidInHeaderMagic),
+            _UL_RC_INFO_DEFINE(dmi, InvalidOutHeaderMagic),
         };
+        #undef _UL_RC_INFO_DEFINE
         constexpr size_t ResultInfoTableImplCount = sizeof(g_ResultInfoTableImpl) / sizeof(ResultInfoImpl);
 
-        inline constexpr ResultInfoImpl &GetResultInfo(const u32 idx) {
+        inline constexpr ResultInfoImpl GetResultInfo(const u32 idx) {
             return g_ResultInfoTableImpl[idx];
         }
 
@@ -53,7 +60,7 @@ namespace res {
             }
         }
 
-        return "Unknown module";
+        return "";
     }
 
     std::string GetNameByResult(const Result rc) {
@@ -64,7 +71,7 @@ namespace res {
             }
         }
 
-        return "Unknown name";
+        return "";
     }
 
 }

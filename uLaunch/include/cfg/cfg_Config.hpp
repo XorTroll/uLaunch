@@ -15,21 +15,21 @@ namespace cfg {
 
     struct TitleRecord {
         std::string json_name; // Empty for non-SD, normal title records
-        u32 title_type;
+        TitleType title_type; // Title type
         std::string sub_folder; // Empty for root, name for a certain folder
         std::string icon; // Custom icon, if specified
 
-        u64 app_id; // TitleType::Installed
-        hb::HbTargetParams nro_target; // TitleType::Homebrew
+        u64 app_id; // For TitleType::Installed
+        hb::HbTargetParams nro_target; // For TitleType::Homebrew
 
         // Optional NACP params
         std::string name;
         std::string author;
         std::string version;
 
-        inline bool Equals(const TitleRecord &other) {
+        inline bool Equals(const TitleRecord &other) const {
             if(this->title_type == other.title_type) {
-                switch(static_cast<TitleType>(this->title_type)) {
+                switch(this->title_type) {
                     case TitleType::Installed: {
                         return this->app_id == other.app_id;
                     }
@@ -67,6 +67,10 @@ namespace cfg {
         std::string base_name;
         std::string path;
         ThemeManifest manifest;
+
+        inline bool IsDefault() {
+            return this->base_name.empty();
+        }
     };
 
     struct RecordStrings {
@@ -108,7 +112,7 @@ namespace cfg {
         std::string str_value;
 
         template<typename T>
-        bool Get(T &out_t) const {
+        inline bool Get(T &out_t) const {
             switch(this->header.type) {
                 case ConfigEntryType::Bool: {
                     if constexpr(std::is_same_v<T, bool>) {
@@ -142,7 +146,7 @@ namespace cfg {
         }
 
         template<typename T>
-        bool Set(const T &t) {
+        inline bool Set(const T &t) {
             switch(this->header.type) {
                 case ConfigEntryType::Bool: {
                     if constexpr(std::is_same_v<T, bool>) {
@@ -188,7 +192,7 @@ namespace cfg {
         std::vector<ConfigEntry> entries;
 
         template<typename T>
-        bool SetEntry(const ConfigEntryId id, const T &t) {
+        inline bool SetEntry(const ConfigEntryId id, const T &t) {
             for(auto &entry : this->entries) {
                 if(entry.header.id == id) {
                     return entry.Set(t);
@@ -242,12 +246,13 @@ namespace cfg {
         }
         
         template<typename T>
-        bool GetEntry(const ConfigEntryId id, T &out_t) const {
+        inline bool GetEntry(const ConfigEntryId id, T &out_t) const {
             for(const auto &entry : this->entries) {
                 if(entry.header.id == id) {
                     return entry.Get(out_t);
                 }
             }
+
             // Default values
             switch(id) {
                 case ConfigEntryId::MenuTakeoverProgramId: {
@@ -305,7 +310,7 @@ namespace cfg {
         }
     };
 
-    static constexpr u32 CurrentThemeFormatVersion = 1;
+    constexpr u32 CurrentThemeFormatVersion = 1;
 
     #define CFG_THEME_DEFAULT "romfs:/default"
     #define CFG_LANG_DEFAULT "romfs:/LangDefault.json"
@@ -314,16 +319,14 @@ namespace cfg {
     TitleList LoadTitleList();
     std::vector<TitleRecord> QueryAllHomebrew(const std::string &base = "sdmc:/switch");
     void CacheEverything(const std::string &hb_base_path = "sdmc:/switch");
-    std::string GetRecordIconPath(TitleRecord record);
-    RecordInformation GetRecordInformation(TitleRecord record);
+
+    std::string GetRecordIconPath(const TitleRecord &record);
+    std::string GetRecordJsonPath(const TitleRecord &record);
+    RecordInformation GetRecordInformation(const TitleRecord &record);
 
     Theme LoadTheme(const std::string &base_name);
     std::vector<Theme> LoadThemes();
     std::string GetAssetByTheme(const Theme &base, const std::string &resource_base);
-
-    inline bool ThemeIsDefault(const Theme &base) {
-        return base.base_name.empty();
-    }
 
     inline std::string GetLanguageJSONPath(const std::string &lang) {
         return UL_BASE_SD_DIR "/lang/" + lang + ".json";
@@ -336,17 +339,21 @@ namespace cfg {
 
     void SaveConfig(const Config &cfg);
 
-    void SaveRecord(TitleRecord &record);
-    void RemoveRecord(TitleRecord &record);
-    bool MoveRecordTo(TitleList &list, TitleRecord record, const std::string &folder);
-    TitleFolder &FindFolderByName(TitleList &list, const std::string &name);
-    void RenameFolder(TitleList &list, const std::string &old_name, const std::string &new_name);
-    bool ExistsRecord(TitleList &list, TitleRecord record);
-
-    inline std::string GetTitleCacheIconPath(u64 app_id) {
-        return UL_BASE_SD_DIR "/title/" + util::FormatApplicationId(app_id) + ".jpg";
+    void SaveRecord(const TitleRecord &record);
+    
+    inline void RemoveRecord(const TitleRecord &record) {
+        fs::DeleteFile(cfg::GetRecordJsonPath(record));
     }
 
-    std::string GetNROCacheIconPath(const std::string &path);
+    bool MoveRecordTo(TitleList &list, const TitleRecord &record, const std::string &folder);
+    TitleFolder &FindFolderByName(TitleList &list, const std::string &name);
+    void RenameFolder(TitleList &list, const std::string &old_name, const std::string &new_name);
+    bool ExistsRecord(const TitleList &list, const TitleRecord &record);
+
+    inline std::string GetTitleCacheIconPath(const u64 app_id) {
+        return UL_TITLE_CACHE_PATH "/" + util::FormatApplicationId(app_id) + ".jpg";
+    }
+
+    std::string GetNroCacheIconPath(const std::string &path);
 
 }

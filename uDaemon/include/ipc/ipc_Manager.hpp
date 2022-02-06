@@ -1,6 +1,5 @@
 #include <stratosphere.hpp>
 #include <dmi/dmi_DaemonMenuInteraction.hpp>
-#include <functional>
 
 namespace ipc {
 
@@ -41,12 +40,13 @@ namespace ipc {
     };
 
     Result Initialize();
-    ServerManager &GetGlobalManager();
-    Allocator &GetServerAllocator();
+    Allocator &GetManagerAllocator();
+
+    ams::Result RegisterSession(const ams::os::NativeHandle session_handle, ams::sf::cmif::ServiceObjectHolder &&obj);
 
     template<typename Impl, typename T, typename ...Args>
     inline auto MakeShared(Args ...args) {
-        return ObjectFactory::CreateSharedEmplaced<Impl, T>(std::addressof(GetServerAllocator()), args...);
+        return ObjectFactory::CreateSharedEmplaced<Impl, T>(std::addressof(GetManagerAllocator()), args...);
     }
 
 }

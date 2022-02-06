@@ -1,5 +1,4 @@
 #include <am/am_HomeMenu.hpp>
-#include <am/am_LibraryApplet.hpp>
 
 namespace am {
 
@@ -10,7 +9,7 @@ namespace am {
     }
 
     Result HomeMenuSetForeground() {
-        R_TRY(appletRequestToGetForeground());
+        UL_RC_TRY(appletRequestToGetForeground());
         g_DaemonHasFocus = true;
         return ResultSuccess;
     }

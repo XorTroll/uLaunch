@@ -8,52 +8,82 @@
 namespace ui {
 
     class ClickableImage : public pu::ui::elm::Element {
+        public:
+            using OnClickCallback = std::function<void()>;
 
-        private:
-            inline void Dispose() {
-                if(this->ntex != nullptr) {
-                    pu::ui::render::DeleteTexture(this->ntex);
-                    this->ntex = nullptr;
-                }
-            }
+            static constexpr u64 TouchActionTimeMilliseconds = 200;
+
+            static constexpr u8 RedColorMod = 0xC8;
+            static constexpr u8 GreenColorMod = 0xC8;
+            static constexpr u8 BlueColorMod = 0xFF;
 
         protected:
             std::string img;
-            pu::sdl2::Texture ntex;
+            pu::sdl2::Texture img_tex;
             s32 x;
             s32 y;
             s32 w;
             s32 h;
-            std::function<void()> cb;
-            std::chrono::steady_clock::time_point touchtp;
+            OnClickCallback cb;
+            std::chrono::steady_clock::time_point touch_tp;
             bool touched;
 
         public:
-            ClickableImage(s32 x, s32 y, const std::string &img) : Element(), ntex(nullptr), x(x), y(y), w(0), h(0), cb([&](){}), touched(false) {
+            ClickableImage(const s32 x, const s32 y, const std::string &img) : Element(), img_tex(nullptr), x(x), y(y), w(0), h(0), cb(), touched(false) {
                 this->SetImage(img);
             }
-
-            ~ClickableImage() {
-                this->Dispose();
-            }
-
             PU_SMART_CTOR(ClickableImage)
 
-            s32 GetX();
-            void SetX(s32 x);
-            s32 GetY();
-            void SetY(s32 y);
-            s32 GetWidth();
-            void SetWidth(s32 w);
-            s32 GetHeight();
-            void SetHeight(s32 h);
-            std::string GetImage();
-            void SetImage(const std::string &img);
-            bool IsImageValid();
-            void SetOnClick(std::function<void()> cb);
-            void OnRender(pu::ui::render::Renderer::Ref &drawer, s32 x, s32 y);
-            void OnInput(u64 down, u64 up, u64 held, pu::ui::Touch touch_pos);
+            ~ClickableImage();
 
+            inline s32 GetX() override {
+                return this->x;
+            }
+
+            inline void SetX(const s32 x) {
+                this->x = x;
+            }
+
+            inline s32 GetY() override {
+                return this->y;
+            }
+
+            inline void SetY(const s32 y) {
+                this->y = y;
+            }
+
+            inline s32 GetWidth() override {
+                return this->w;
+            }
+
+            inline void SetWidth(const s32 w) {
+                this->w = w;
+            }
+
+            inline s32 GetHeight() override {
+                return this->h;
+            }
+
+            inline void SetHeight(const s32 h) {
+                this->h = h;
+            }
+
+            inline std::string GetImage() {
+                return this->img;
+            }
+            
+            void SetImage(const std::string &img);
+            
+            inline bool IsImageValid() {
+                return this->img_tex != nullptr;
+            }
+            
+            inline void SetOnClick(OnClickCallback cb) {
+                this->cb = cb;
+            }
+
+            void OnRender(pu::ui::render::Renderer::Ref &drawer, const s32 x, const s32 y) override;
+            void OnInput(const u64 keys_down, const u64 keys_up, const u64 keys_held, const pu::ui::TouchPoint touch_pos) override;
     };
 
 }

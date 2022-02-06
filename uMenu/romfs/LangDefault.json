@@ -43,7 +43,7 @@
     "app_take_over_done": "This title was selected to be used for homebrew launching.",
     "app_unexpected_error": "A title failed to start, crashed or unexpectedly terminated.\n(Could it be corrupted? If it is a gamecard title, do you have it inserted?)",
     "ulaunch_about": "About uLaunch",
-    "ulaunch_desc": "uLaunch is a free, open source, extended and homebrew-oriented HOME menu replacement.\nNote that some original HOME menu functionalities aren't implemented yet.\n\nIf you're looking for new uLaunch themes, check r/uLaunchThemes subreddit.\nIf you would like to contribute, check uLaunch's GitHub repository",
+    "ulaunch_desc": "uLaunch is an extended, homebrew-oriented, FOSS HOME menu replacement.\nNote that some original HOME menu functionalities aren't implemented yet.\n\nIf you're looking for new uLaunch themes, check the r/uLaunchThemes subreddit.\nIf you would like to contribute, check uLaunch's GitHub repository",
     "control_minus": "Swap the main menu",
     "suspended_app": "Suspended title",
     "suspended_close": "Would you like to close this title? All unsaved data will be lost.",

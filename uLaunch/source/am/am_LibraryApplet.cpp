@@ -46,18 +46,6 @@ namespace am {
         return !appletHolderCheckFinished(&g_AppletHolder);
     }
 
-    void LibraryAppletSetMenuAppletId(AppletId id) {
-        g_MenuAppletId = id;
-    }
-
-    AppletId LibraryAppletGetMenuAppletId() {
-        return g_MenuAppletId;
-    }
-
-    bool LibraryAppletIsMenu() {
-        return LibraryAppletIsActive() && (g_MenuAppletId != AppletId_None) && (LibraryAppletGetId() == g_MenuAppletId);
-    }
-
     void LibraryAppletTerminate() {
         // Give it 15 seconds
         appletHolderRequestExitOrTerminate(&g_AppletHolder, 15'000'000'000ul);
@@ -68,14 +56,15 @@ namespace am {
             LibraryAppletTerminate();
         }
         appletHolderClose(&g_AppletHolder);
+
         LibAppletArgs la_args;
         libappletArgsCreate(&la_args, la_version);
-        R_TRY(appletCreateLibraryApplet(&g_AppletHolder, id, LibAppletMode_AllForeground));
-        R_TRY(libappletArgsPush(&la_args, &g_AppletHolder));
+        UL_RC_TRY(appletCreateLibraryApplet(&g_AppletHolder, id, LibAppletMode_AllForeground));
+        UL_RC_TRY(libappletArgsPush(&la_args, &g_AppletHolder));
         if(in_size > 0) {
-            R_TRY(LibraryAppletSend(in_data, in_size));
+            UL_RC_TRY(LibraryAppletSend(in_data, in_size));
         }
-        R_TRY(appletHolderStart(&g_AppletHolder));
+        UL_RC_TRY(appletHolderStart(&g_AppletHolder));
         g_LastAppletId = id;
         return ResultSuccess;
     }
@@ -125,4 +114,17 @@ namespace am {
         }
         return last_id_copy;
     }
+
+    bool LibraryAppletIsMenu() {
+        return LibraryAppletIsActive() && (g_MenuAppletId != AppletId_None) && (LibraryAppletGetId() == g_MenuAppletId);
+    }
+
+    void LibraryAppletSetMenuAppletId(const AppletId id) {
+        g_MenuAppletId = id;
+    }
+
+    AppletId LibraryAppletGetMenuAppletId() {
+        return g_MenuAppletId;
+    }
+
 }

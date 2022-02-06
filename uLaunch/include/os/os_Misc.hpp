@@ -46,6 +46,14 @@ namespace os {
     };
     constexpr size_t LanguageNameCount = sizeof(LanguageNameList) / sizeof(const char*);
 
+    inline SetLanguage GetSystemLanguage() {
+        u64 lang_code = 0;
+        auto lang = SetLanguage_ENUS;
+        setGetLanguageCode(&lang_code);
+        setMakeLanguage(lang_code, &lang);
+        return lang;
+    }
+
     u32 GetBatteryLevel();
     bool IsConsoleCharging();
     std::string GetCurrentTime();

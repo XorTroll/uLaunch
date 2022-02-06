@@ -6,25 +6,23 @@
 namespace am {
 
     struct ApplicationSelectedUserArgument {
-
-        static constexpr u32 SelectedUserMagic = 0xC79497CA;
+        static constexpr u32 Magic = 0xC79497CA;
 
         u32 magic;
         u8 unk_1;
         u8 pad[3];
         AccountUid uid;
-        u8 unk2[0x3E8];
+        u8 unk_2[0x3E8];
 
         static inline constexpr ApplicationSelectedUserArgument Create(const AccountUid uid) {
-            ApplicationSelectedUserArgument arg = {};
-            arg.magic = SelectedUserMagic;
-            arg.unk_1 = 1;
-            arg.uid = uid;
-            return arg;
+            return {
+                .magic = Magic,
+                .unk_1 = 1,
+                .uid = uid
+            };
         }
-
     };
-    static_assert(sizeof(ApplicationSelectedUserArgument) == 0x400, "ApplicationSelectedUserArgument");
+    static_assert(sizeof(ApplicationSelectedUserArgument) == 0x400);
 
     bool ApplicationIsActive();
     void ApplicationTerminate();

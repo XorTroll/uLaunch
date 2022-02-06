@@ -29,20 +29,21 @@ namespace hb {
             std::string nro_argv_copy = this->nro_argv;
             std::replace(nro_argv_copy.begin(), nro_argv_copy.end(), ' ', (char)0xFF);
             argv += " " + nro_argv_copy;
-            u32 num_val = this->target_once ? 1 : 0;
-            argv += " " + std::to_string(num_val);
+            const auto target_once_num = this->target_once ? 1 : 0;
+            argv += " " + std::to_string(target_once_num);
             return argv;
         }
 
-        static inline HbTargetParams Create(const std::string &nro_path, const std::string &nro_argv, bool target_once) {
-            HbTargetParams params = {};
-            params.magic = UL_HB_HBTARGET_MAGIC_U32;
+        static inline HbTargetParams Create(const std::string &nro_path, const std::string &nro_argv, const bool target_once) {
+            HbTargetParams params = {
+                .magic = UL_HB_HBTARGET_MAGIC_U32,
+                .target_once = target_once
+            };
+
             strcpy(params.nro_path, nro_path.c_str());
             strcpy(params.nro_argv, nro_argv.c_str());
-            params.target_once = target_once;
             return params;
         }
-
     };
 
 }

@@ -4,7 +4,7 @@
 
 namespace am {
 
-    Result ReadDataFromStorage(void *data, size_t data_size);
+    Result ReadDataFromStorage(void *out_data, const size_t data_size);
     Result ReadStartMode(dmi::MenuStartMode &out_start_mode);
 
 }

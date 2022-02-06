@@ -4,8 +4,8 @@
 namespace net {
 
     Result Initialize() {
-        R_TRY(nifmInitialize(NifmServiceType_System));
-        R_TRY(wlaninfInitialize());
+        UL_RC_TRY(nifmInitialize(NifmServiceType_System));
+        UL_RC_TRY(wlaninfInitialize());
         return ResultSuccess;
     }
 

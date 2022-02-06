@@ -14,134 +14,107 @@ namespace ui {
 
     }
 
+    void QuickMenu::OnHomeButtonDetection() {
+        g_HomePressed = true;
+    }
+
     QuickMenu::QuickMenu(const std::string &main_icon) {
         this->on = false;
-        this->bgalpha = 0;
+        this->bg_alpha = 0;
 
-        auto textclr = pu::ui::Color::FromHex(g_MenuApplication->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
-        auto menufocusclr = pu::ui::Color::FromHex(g_MenuApplication->GetUIConfigValue<std::string>("menu_focus_color", "#5ebcffff"));
-        auto menubgclr = pu::ui::Color::FromHex(g_MenuApplication->GetUIConfigValue<std::string>("menu_bg_color", "#0094ffff"));
-
-        this->options_menu = pu::ui::elm::Menu::New(200, 115, 880, menubgclr, 60, 8);
-        this->options_menu->SetOnFocusColor(menufocusclr);
+        this->options_menu = pu::ui::elm::Menu::New(MenuX, MenuY, MenuWidth, g_MenuApplication->GetMenuBackgroundColor(), g_MenuApplication->GetMenuFocusColor(), MenuItemHeight, MenuItemsToShow);
         g_MenuApplication->ApplyConfigForElement("quick_menu", "quick_menu_item", this->options_menu);
         
-        auto opt_item = pu::ui::elm::MenuItem::New("Help & information");
-        opt_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/HelpIcon.png"));
-        opt_item->AddOnClick(&actions::ShowHelpDialog);
-        opt_item->SetColor(textclr);
-        this->options_menu->AddItem(opt_item);
+        auto help_item = pu::ui::elm::MenuItem::New("Help & information");
+        help_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/HelpIcon.png"));
+        help_item->AddOnKey(&actions::ShowHelpDialog);
+        help_item->SetColor(g_MenuApplication->GetTextColor());
+        this->options_menu->AddItem(help_item);
 
-        opt_item = pu::ui::elm::MenuItem::New("Power options");
-        opt_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/PowerIcon.png"));
-        opt_item->AddOnClick(&actions::ShowPowerDialog);
-        opt_item->SetColor(textclr);
-        this->options_menu->AddItem(opt_item);
+        auto power_item = pu::ui::elm::MenuItem::New("Power options");
+        power_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/PowerIcon.png"));
+        power_item->AddOnKey(&actions::ShowPowerDialog);
+        power_item->SetColor(g_MenuApplication->GetTextColor());
+        this->options_menu->AddItem(power_item);
 
-        opt_item = pu::ui::elm::MenuItem::New("Controller options");
-        opt_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/ControllerIcon.png"));
-        opt_item->AddOnClick(&actions::ShowControllerSupport);
-        opt_item->SetColor(textclr);
-        this->options_menu->AddItem(opt_item);
+        auto controller_item = pu::ui::elm::MenuItem::New("Controller options");
+        controller_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/ControllerIcon.png"));
+        controller_item->AddOnKey(&actions::ShowControllerSupport);
+        controller_item->SetColor(g_MenuApplication->GetTextColor());
+        this->options_menu->AddItem(controller_item);
 
-        opt_item = pu::ui::elm::MenuItem::New("Open album");
-        opt_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/AlbumIcon.png"));
-        opt_item->AddOnClick(&actions::ShowAlbumApplet);
-        opt_item->SetColor(textclr);
-        this->options_menu->AddItem(opt_item);
+        auto album_item = pu::ui::elm::MenuItem::New("Open album");
+        album_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/AlbumIcon.png"));
+        album_item->AddOnKey(&actions::ShowAlbumApplet);
+        album_item->SetColor(g_MenuApplication->GetTextColor());
+        this->options_menu->AddItem(album_item);
 
-        opt_item = pu::ui::elm::MenuItem::New("Open web-page");
-        opt_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/WebIcon.png"));
-        opt_item->AddOnClick(&actions::ShowWebPage);
-        opt_item->SetColor(textclr);
-        this->options_menu->AddItem(opt_item);
+        auto web_item = pu::ui::elm::MenuItem::New("Open web-page");
+        web_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/WebIcon.png"));
+        web_item->AddOnKey(&actions::ShowWebPage);
+        web_item->SetColor(g_MenuApplication->GetTextColor());
+        this->options_menu->AddItem(web_item);
 
-        opt_item = pu::ui::elm::MenuItem::New("User menu");
-        opt_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/UserIcon.png"));
-        opt_item->AddOnClick(&actions::ShowUserMenu);
-        opt_item->SetColor(textclr);
-        this->options_menu->AddItem(opt_item);
+        auto user_item = pu::ui::elm::MenuItem::New("User menu");
+        user_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/UserIcon.png"));
+        user_item->AddOnKey(&actions::ShowUserMenu);
+        user_item->SetColor(g_MenuApplication->GetTextColor());
+        this->options_menu->AddItem(user_item);
 
-        opt_item = pu::ui::elm::MenuItem::New("Themes menu");
-        opt_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/ThemesIcon.png"));
-        opt_item->AddOnClick(&actions::ShowThemesMenu);
-        opt_item->SetColor(textclr);
-        this->options_menu->AddItem(opt_item);
+        auto themes_item = pu::ui::elm::MenuItem::New("Themes menu");
+        themes_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/ThemesIcon.png"));
+        themes_item->AddOnKey(&actions::ShowThemesMenu);
+        themes_item->SetColor(g_MenuApplication->GetTextColor());
+        this->options_menu->AddItem(themes_item);
 
-        opt_item = pu::ui::elm::MenuItem::New("Settings menu");
-        opt_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/SettingsIcon.png"));
-        opt_item->AddOnClick(&actions::ShowSettingsMenu);
-        opt_item->SetColor(textclr);
-        this->options_menu->AddItem(opt_item);
+        auto settings_item = pu::ui::elm::MenuItem::New("Settings menu");
+        settings_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/SettingsIcon.png"));
+        settings_item->AddOnKey(&actions::ShowSettingsMenu);
+        settings_item->SetColor(g_MenuApplication->GetTextColor());
+        this->options_menu->AddItem(settings_item);
     }
 
-    s32 QuickMenu::GetX() {
-        return 0;
-    }
-
-    s32 QuickMenu::GetY() {
-        return 0;
-    }
-
-    s32 QuickMenu::GetWidth() {
-        return 1280;
-    }
-
-    s32 QuickMenu::GetHeight() {
-        return 720;
-    }
-
-    void QuickMenu::Toggle() {
-        this->on = !this->on;
-    }
-    
-    bool QuickMenu::IsOn() {
-        return this->on && (this->bgalpha > 0);
-    }
-
-    void QuickMenu::OnRender(pu::ui::render::Renderer::Ref &drawer, s32 x, s32 y) {
+    void QuickMenu::OnRender(pu::ui::render::Renderer::Ref &drawer, const s32 x, const s32 y) {
         if(!this->on) {
-            if(this->bgalpha > 0) {
-                this->bgalpha -= 20;
-                if(this->bgalpha < 0) {
-                    this->bgalpha = 0;
+            if(this->bg_alpha > 0) {
+                this->bg_alpha -= BackgroundAlphaIncrement;
+                if(this->bg_alpha < 0) {
+                    this->bg_alpha = 0;
                 }
             }
         }
         else {
-            if(this->bgalpha < 220) {
-                this->bgalpha += 20;
-                if(this->bgalpha > 220) {
-                    this->bgalpha = 220;
+            if(this->bg_alpha < BackgroundAlphaMax) {
+                this->bg_alpha += BackgroundAlphaIncrement;
+                if(this->bg_alpha > BackgroundAlphaMax) {
+                    this->bg_alpha = BackgroundAlphaMax;
                 }
             }
         }
-        this->options_menu->SetVisible(this->bgalpha != 0);
+        this->options_menu->SetVisible(this->bg_alpha != 0);
 
-        auto bgalphau8 = static_cast<u8>(this->bgalpha);
+        drawer->RenderRectangleFill(MakeBackgroundColor(static_cast<u8>(this->bg_alpha)), this->GetX(), this->GetY(), this->GetWidth(), this->GetHeight());
 
-        drawer->RenderRectangleFill({ 50, 50, 50, bgalphau8 }, 0, 0, 1280, 720);
-
-        if(this->bgalpha > 0) {
-            if(this->bgalpha < 220) {
-                drawer->SetBaseRenderAlpha(bgalphau8);
+        if(this->bg_alpha > 0) {
+            if(this->bg_alpha < BackgroundAlphaMax) {
+                drawer->SetBaseRenderAlpha(static_cast<u8>(this->bg_alpha));
             }
             this->options_menu->OnRender(drawer, this->options_menu->GetProcessedX(), this->options_menu->GetProcessedY());
-            if(this->bgalpha < 220) {
-                drawer->UnsetBaseRenderAlpha();
+            if(this->bg_alpha < BackgroundAlphaMax) {
+                drawer->ResetBaseRenderAlpha();
             }
         }
     }
 
-    void QuickMenu::OnInput(u64 down, u64 up, u64 held, pu::ui::Touch touch_pos) {
+    void QuickMenu::OnInput(const u64 keys_down, const u64 keys_up, const u64 keys_held, const pu::ui::TouchPoint touch_pos) {
         if(this->on) {
-            this->options_menu->OnInput(down, up, held, touch_pos);
+            this->options_menu->OnInput(keys_down, keys_up, keys_held, touch_pos);
         }
 
-        if((down & HidNpadButton_L) || (down & HidNpadButton_R) || (down & HidNpadButton_ZL) || (down & HidNpadButton_ZR)) {
+        if((keys_down & HidNpadButton_L) || (keys_down & HidNpadButton_R) || (keys_down & HidNpadButton_ZL) || (keys_down & HidNpadButton_ZR)) {
             this->Toggle();
         }
-        else if((down & HidNpadButton_B) || (down & HidNpadButton_A)) {
+        else if((keys_down & HidNpadButton_B) || (keys_down & HidNpadButton_A)) {
             // B only valid for toggling off
             // A = something selected in the menu
             if(this->on) {
@@ -157,10 +130,6 @@ namespace ui {
                 g_HomePressed = false;
             }
         }
-    }
-
-    void QuickMenuOnHomeButtonDetection() {
-        g_HomePressed = true;
     }
 
 }

@@ -20,8 +20,8 @@ namespace {
             return ResultSuccess;
         }
 
-        R_TRY(smGetService(&g_DaemonPrivateService, PrivateServiceName));
-        R_TRY(daemonPrivateInitialize(&g_DaemonPrivateService));
+        UL_RC_TRY(smGetService(&g_DaemonPrivateService, PrivateServiceName));
+        UL_RC_TRY(daemonPrivateInitialize(&g_DaemonPrivateService));
 
         return ResultSuccess;
     }
@@ -30,9 +30,9 @@ namespace {
         serviceClose(&g_DaemonPrivateService);
     }
 
-    dmi::MenuMessage daemonGetMessage() {
+    dmi::MenuMessage daemonPrivateServiceGetMessage() {
         auto msg = dmi::MenuMessage::Invalid;
-        UL_ASSERT(daemonPrivateGetMessage(&g_DaemonPrivateService, &msg));
+        UL_RC_ASSERT(daemonPrivateGetMessage(&g_DaemonPrivateService, &msg));
         return msg;
     }
 
@@ -42,7 +42,6 @@ namespace am {
 
     namespace {
 
-        
         bool g_Initialized = false;
         std::atomic_bool g_ReceiveThreadShouldStop = false;
         Thread g_ReceiverThread;
@@ -55,14 +54,16 @@ namespace am {
                     break;
                 }
 
-                const auto last_msg = daemonGetMessage();
-                mutexLock(&g_CallbackTableLock);
-                for(auto &[cb, msg] : g_MessageCallbackTable) {
-                    if(msg == last_msg) {
-                        cb();
+                {
+                    const auto last_msg = daemonPrivateServiceGetMessage();
+                    ScopedLock lk(g_CallbackTableLock);
+
+                    for(const auto &[cb, msg] : g_MessageCallbackTable) {
+                        if(msg == last_msg) {
+                            cb();
+                        }
                     }
                 }
-                mutexUnlock(&g_CallbackTableLock);
 
                 svcSleepThread(10'000'000ul);
             }
@@ -74,11 +75,11 @@ namespace am {
         if(g_Initialized) {
             return ResultSuccess;
         }
-        R_TRY(daemonInitializePrivateService());
+        UL_RC_TRY(daemonInitializePrivateService());
 
         g_ReceiveThreadShouldStop = false;
-        R_TRY(threadCreate(&g_ReceiverThread, &DaemonMessageReceiverThread, nullptr, nullptr, 0x1000, 49, -2));
-        R_TRY(threadStart(&g_ReceiverThread));
+        UL_RC_TRY(threadCreate(&g_ReceiverThread, &DaemonMessageReceiverThread, nullptr, nullptr, 0x1000, 49, -2));
+        UL_RC_TRY(threadStart(&g_ReceiverThread));
 
         g_Initialized = true;
         return ResultSuccess;
@@ -97,10 +98,10 @@ namespace am {
         g_Initialized = false;
     }
 
-    void RegisterOnMessageDetect(OnMessageCallback callback, dmi::MenuMessage desired_msg) {
-        mutexLock(&g_CallbackTableLock);
-        g_MessageCallbackTable.push_back(std::make_pair(callback, desired_msg));
-        mutexUnlock(&g_CallbackTableLock);
+    void RegisterOnMessageDetect(OnMessageCallback callback, const dmi::MenuMessage desired_msg) {
+        ScopedLock lk(g_CallbackTableLock);
+
+        g_MessageCallbackTable.push_back({ callback, desired_msg });
     }
 
 }

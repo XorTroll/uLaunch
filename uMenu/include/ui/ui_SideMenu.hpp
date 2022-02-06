@@ -1,13 +1,12 @@
 
 #pragma once
 #include <pu/Plutonium>
-#include <map>
 
 namespace ui {
 
     class SideMenu : public pu::ui::elm::Element {
-
         public:
+            static constexpr u32 BaseX = 98;
             static constexpr u32 ItemSize = 256;
             static constexpr u32 Margin = 20;
             static constexpr u32 ItemCount = 4;
@@ -15,77 +14,156 @@ namespace ui {
             static constexpr u32 FocusMargin = 5;
             static constexpr u32 ExtraIconSize = ItemSize + (Margin * 2);
 
+            static constexpr u8 MoveAlphaIncrement = 30;
+
+            static constexpr u64 ScrollBaseWaitTimeMs = 50;
+            static constexpr u64 ScrollMoveWaitTimeMs = 200;
+
+            using OnSelectCallback = std::function<void(const u64, const u32)>;
+            using OnSelectionChangedCallback = std::function<void(const u32)>;
+
         private:
             s32 y;
-            u32 selitm;
-            u32 preselitm;
-            int suspitm;
-            u32 baseiconidx;
-            u8 movalpha;
-            u32 textx;
-            u32 texty;
+            u32 selected_item_idx;
+            u32 prev_selected_item_idx;
+            s32 suspended_item_idx;
+            u32 base_icon_idx;
+            u8 move_alpha;
+            u32 text_x;
+            u32 text_y;
             bool enabled;
-            pu::ui::Color suspclr;
-            pu::ui::Color textclr;
-            std::vector<std::string> icons;
-            std::vector<std::string> icons_texts;
-            std::vector<bool> icons_mselected;
-            std::function<void(u64, u32)> onselect;
-            std::function<void(u32)> onselch;
-            std::vector<pu::sdl2::Texture> ricons;
-            std::vector<pu::sdl2::Texture> ricons_texts;
-            pu::sdl2::Texture cursoricon;
-            pu::sdl2::Texture suspicon;
-            pu::sdl2::Texture leftbicon;
-            pu::sdl2::Texture rightbicon;
-            pu::sdl2::Texture mselicon;
-            pu::String textfont;
-            std::chrono::steady_clock::time_point scrolltp;
-            bool scrollmoveflag;
-            std::chrono::steady_clock::time_point scrollmovetp;
-            u32 scrollflag;
-            u32 scrolltpvalue;
-            u32 scrollcount;
+            pu::ui::Color text_clr;
+            std::vector<std::string> items_icon_paths;
+            std::vector<std::string> items_icon_texts;
+            std::vector<bool> items_multiselected;
+            OnSelectCallback on_select_cb;
+            OnSelectionChangedCallback on_selection_changed_cb;
+            std::vector<pu::sdl2::Texture> rendered_icons;
+            std::vector<pu::sdl2::Texture> rendered_texts;
+            pu::sdl2::Texture cursor_icon;
+            pu::sdl2::Texture suspended_icon;
+            pu::sdl2::Texture left_border_icon;
+            pu::sdl2::Texture right_border_icon;
+            pu::sdl2::Texture multiselect_icon;
+            std::string text_font;
+            std::chrono::steady_clock::time_point scroll_tp;
+            bool scroll_move_flag;
+            std::chrono::steady_clock::time_point scroll_move_tp;
+            u32 scroll_flag;
+            u32 scroll_tp_value;
+            u32 scroll_count;
+
+            inline void DoOnItemSelected(const u64 keys) {
+                if(this->on_select_cb) {
+                    (this->on_select_cb)(keys, this->selected_item_idx);
+                }
+            }
+
+            inline void DoOnSelectionChanged() {
+                if(this->on_selection_changed_cb) {
+                    (this->on_selection_changed_cb)(this->selected_item_idx);
+                }
+            }
+
+            inline void ClearBorderIcons() {
+                pu::ui::render::DeleteTexture(this->left_border_icon);
+                pu::ui::render::DeleteTexture(this->right_border_icon);
+            }
+
+            inline void ClearRenderedItems() {
+                for(auto &icon_tex: this->rendered_icons) {
+                    pu::ui::render::DeleteTexture(icon_tex);
+                }
+                this->rendered_icons.clear();
+
+                for(auto &text_tex: this->rendered_texts) {
+                    pu::ui::render::DeleteTexture(text_tex);
+                }
+                this->rendered_texts.clear();
+
+                this->ClearBorderIcons();
+            }
 
             bool IsLeftFirst();
             bool IsRightLast();
-            void ReloadIcons(u32 dir);
+            void MoveReloadIcons(const bool moving_right);
 
         public:
-            SideMenu(pu::ui::Color suspended_clr, std::string cursor_path, std::string suspended_img_path, std::string multiselect_img_path, u32 txt_x, u32 txt_y, pu::String font_name, pu::ui::Color txt_clr, s32 y);
+            SideMenu(const pu::ui::Color suspended_clr, const std::string &cursor_path, const std::string &suspended_img_path, const std::string &multiselect_img_path, const s32 txt_x, const s32 txt_y, const std::string &font_name, const pu::ui::Color txt_clr, const s32 y);
             PU_SMART_CTOR(SideMenu)
             ~SideMenu();
 
-            s32 GetX() override;
-            s32 GetY() override;
-            void SetX(s32 x); // Stubbed
-            void SetY(s32 y);
-            s32 GetWidth() override;
-            s32 GetHeight() override;
-            void OnRender(pu::ui::render::Renderer::Ref &drawer, s32 x, s32 y) override;
-            void OnInput(u64 down, u64 up, u64 held, pu::ui::Touch touch_pos) override;
-            void SetOnItemSelected(std::function<void(u64, u32)> fn);
-            void SetOnSelectionChanged(std::function<void(u32)> fn);
+            inline constexpr s32 GetX() override {
+                return BaseX;
+            }
+
+            inline s32 GetY() override {
+                return this->y;
+            }
+
+            // Note: stubbed for ApplyConfigForElement to work with this element
+            inline void SetX(const s32 x) {}
+
+            inline void SetY(const s32 y) {
+                this->y = y;
+            }
+
+            inline constexpr s32 GetWidth() override {
+                return pu::ui::render::ScreenWidth;
+            }
+
+            inline constexpr s32 GetHeight() override {
+                return ItemSize + FocusSize + FocusMargin;
+            }
+
+            void OnRender(pu::ui::render::Renderer::Ref &drawer, const s32 x, const s32 y) override;
+            void OnInput(const u64 keys_down, const u64 keys_up, const u64 keys_held, const pu::ui::TouchPoint touch_pos) override;
+            
+            inline void SetOnItemSelected(OnSelectCallback cb) {
+                this->on_select_cb = cb;
+            }
+            
+            inline void SetOnSelectionChanged(OnSelectionChangedCallback cb) {
+                this->on_selection_changed_cb = cb;
+            }
+            
             void ClearItems();
             void AddItem(const std::string &icon, const std::string &txt = "");
-            void SetSuspendedItem(u32 idx);
-            void UnsetSuspendedItem();
-            void SetSelectedItem(u32 idx);
+            
+            inline void SetSuspendedItem(const u32 idx) {
+                if(idx < this->items_icon_paths.size()) {
+                    this->suspended_item_idx = idx;
+                }
+            }
+
+            inline void ResetSuspendedItem() {
+                this->suspended_item_idx = -1;
+            }
+
+            inline void Rewind() {
+                this->ClearRenderedItems();
+
+                this->selected_item_idx = 0;
+                this->scroll_count = 0;
+                this->base_icon_idx = 0;
+            }
+
             void HandleMoveLeft();
             void HandleMoveRight();
-            int GetSuspendedItem();
-            u32 GetSelectedItem();
-            u32 GetBaseItemIndex();
-            void SetBaseItemIndex(u32 idx);
-            void SetBasePositions(u32 selected_idx, u32 base_idx);
-            void ClearBorderIcons();
+
+            inline u32 GetSelectedItem() {
+                return this->selected_item_idx;
+            }
+
             void UpdateBorderIcons();
             void ResetMultiselections();
-            void SetItemMultiselected(u32 idx, bool selected);
-            bool IsItemMultiselected(u32 idx);
+            void SetItemMultiselected(const u32 idx, const bool selected);
+            bool IsItemMultiselected(const u32 idx);
             bool IsAnyMultiselected();
-            void SetEnabled(bool enabled);
-
+            
+            inline void SetEnabled(const bool enabled) {
+                this->enabled = enabled;
+            }
     };
 
 }

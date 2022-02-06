@@ -1,30 +1,26 @@
 
 #pragma once
-#include <ul_Include.hpp>
-#include <dmi/dmi_DaemonMenuInteraction.hpp>
-#include <db/db_Save.hpp>
 #include <ui/ui_IMenuLayout.hpp>
 
 namespace ui {
 
     class StartupLayout : public IMenuLayout {
-
         private:
-            bool loadmenu;
-            pu::ui::elm::TextBlock::Ref infoText;
-            pu::ui::elm::Menu::Ref usersMenu;
+            bool load_menu;
+            pu::ui::elm::TextBlock::Ref info_text;
+            pu::ui::elm::Menu::Ref users_menu;
+
+            void user_DefaultKey(const AccountUid uid);
+            void create_DefaultKey();
 
         public:
             StartupLayout();
             PU_SMART_CTOR(StartupLayout)
             
-            void OnMenuInput(u64 down, u64 up, u64 held, pu::ui::Touch touch_pos) override;
+            void OnMenuInput(const u64 keys_down, const u64 keys_up, const u64 keys_held, const pu::ui::TouchPoint touch_pos) override;
             bool OnHomeButtonPress() override;
 
-            void user_Click(AccountUid uid);
-            void create_Click();
             void ReloadMenu();
-
     };
 
 }

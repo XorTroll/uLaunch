@@ -7,7 +7,7 @@ namespace ui {
         this->SetOnInput(std::bind(&IMenuLayout::OnInput, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
     }
 
-    void IMenuLayout::OnInput(u64 down, u64 up, u64 held, pu::ui::Touch touch_pos) {
+    void IMenuLayout::OnInput(const u64 keys_down, const u64 keys_up, const u64 keys_held, const pu::ui::TouchPoint touch_pos) {
         if(this->home_pressed) {
             if(this->OnHomeButtonPress()) {
                 // Input consumed
@@ -21,7 +21,7 @@ namespace ui {
         }
         */
 
-        this->OnMenuInput(down, up, held, touch_pos);
+        this->OnMenuInput(keys_down, keys_up, keys_held, touch_pos);
     }
 
     void IMenuLayout::DoOnHomeButtonPress() {

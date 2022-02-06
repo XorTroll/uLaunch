@@ -3,7 +3,6 @@
 
 extern ui::MenuApplication::Ref g_MenuApplication;
 extern ui::TransitionGuard g_TransitionGuard;
-extern u8 *g_ScreenCaptureBuffer;
 
 extern cfg::Theme g_Theme;
 
@@ -21,31 +20,37 @@ namespace ui {
     }
 
     void MenuApplication::OnLoad() {
+        u8 *screen_capture_buf = nullptr;
         if(this->IsSuspended()) {
+            screen_capture_buf = new u8[PlainRgbaScreenBufferSize]();
             bool flag;
-            appletGetLastApplicationCaptureImageEx(g_ScreenCaptureBuffer, RawRGBAScreenBufferSize, &flag);
+            appletGetLastApplicationCaptureImageEx(screen_capture_buf, PlainRgbaScreenBufferSize, &flag);
         }
 
-        auto jbgm = JSON::object();
-        util::LoadJSONFromFile(jbgm, cfg::GetAssetByTheme(g_Theme, "sound/BGM.json"));
-        this->bgmjson = jbgm;
-        this->bgm_loop = this->bgmjson.value("loop", true);
-        this->bgm_fade_in_ms = this->bgmjson.value("fade_in_ms", 1500);
-        this->bgm_fade_out_ms = this->bgmjson.value("fade_out_ms", 500);
+        this->bgm_json = JSON::object();
+        util::LoadJSONFromFile(this->bgm_json, cfg::GetAssetByTheme(g_Theme, "sound/BGM.json"));
+        this->bgm_loop = this->bgm_json.value("loop", true);
+        this->bgm_fade_in_ms = this->bgm_json.value("fade_in_ms", 1500);
+        this->bgm_fade_out_ms = this->bgm_json.value("fade_out_ms", 500);
 
-        auto toasttextclr = pu::ui::Color::FromHex(GetUIConfigValue<std::string>("toast_text_color", "#e1e1e1ff"));
-        auto toastbaseclr = pu::ui::Color::FromHex(GetUIConfigValue<std::string>("toast_base_color", "#282828ff"));
-        this->notifToast = pu::ui::extras::Toast::New("...", "DefaultFont@20", toasttextclr, toastbaseclr);
+        const auto toast_text_clr = pu::ui::Color::FromHex(GetUIConfigValue<std::string>("toast_text_color", "#e1e1e1ff"));
+        const auto toast_base_clr = pu::ui::Color::FromHex(GetUIConfigValue<std::string>("toast_base_color", "#282828ff"));
+        this->notif_toast = pu::ui::extras::Toast::New("...", pu::ui::GetDefaultFont(pu::ui::DefaultFontSize::Medium), toast_text_clr, toast_base_clr);
 
-        this->bgm = pu::audio::Open(cfg::GetAssetByTheme(g_Theme, "sound/BGM.mp3"));
+        this->bgm = pu::audio::OpenMusic(cfg::GetAssetByTheme(g_Theme, "sound/BGM.mp3"));
 
-        this->startupLayout = StartupLayout::New();
-        this->menuLayout = MenuLayout::New(g_ScreenCaptureBuffer, this->uijson.value("suspended_final_alpha", 80));
-        this->themeMenuLayout = ThemeMenuLayout::New();
-        this->settingsMenuLayout = SettingsMenuLayout::New();
-        this->languagesMenuLayout = LanguagesMenuLayout::New();
+        this->text_clr = pu::ui::Color::FromHex(this->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
+        this->menu_focus_clr = pu::ui::Color::FromHex(this->GetUIConfigValue<std::string>("menu_focus_color", "#5ebcffff"));
+        this->menu_bg_clr = pu::ui::Color::FromHex(this->GetUIConfigValue<std::string>("menu_bg_color", "#0094ffff"));
 
-        switch(this->stmode) {
+        const u8 suspended_final_alpha = this->ui_json.value("suspended_final_alpha", 80);
+        this->startup_lyt = StartupLayout::New();
+        this->menu_lyt = MenuLayout::New(screen_capture_buf, suspended_final_alpha);
+        this->theme_menu_lyt = ThemeMenuLayout::New();
+        this->settings_menu_lyt = SettingsMenuLayout::New();
+        this->languages_menu_lyt = LanguagesMenuLayout::New();
+
+        switch(this->start_mode) {
             case dmi::MenuStartMode::StartupScreen: {
                 this->LoadStartupMenu();
                 break;
@@ -58,124 +63,37 @@ namespace ui {
         }
     }
 
-    void MenuApplication::SetInformation(dmi::MenuStartMode mode, dmi::DaemonStatus status, JSON ui_json) {
-        this->stmode = mode;
-        this->status = status;
-        this->uijson = ui_json;
-    }
-
-    void MenuApplication::LoadMenu() {
-        this->menuLayout->SetUser(this->status.selected_user);
-        this->LoadLayout(this->menuLayout);
-        this->loaded_menu = MenuType::Main;
-    }
-
-    void MenuApplication::LoadStartupMenu() {
-        this->StopPlayBGM();
-        this->startupLayout->ReloadMenu();
-        this->LoadLayout(this->startupLayout);
-        this->loaded_menu = MenuType::Startup;
-    }
-
-    void MenuApplication::LoadThemeMenu() {
-        this->themeMenuLayout->Reload();
-        this->LoadLayout(this->themeMenuLayout);
-        this->loaded_menu = MenuType::Theme;
-    }
-
-    void MenuApplication::LoadSettingsMenu() {
-        this->settingsMenuLayout->Reload();
-        this->LoadLayout(this->settingsMenuLayout);
-        this->loaded_menu = MenuType::Settings;
-    }
-
-    void MenuApplication::LoadSettingsLanguagesMenu() {
-        this->languagesMenuLayout->Reload();
-        this->LoadLayout(this->languagesMenuLayout);
-        this->loaded_menu = MenuType::Languages;
-    }
-
-    bool MenuApplication::IsSuspended() {
-        return this->IsTitleSuspended() || this->IsHomebrewSuspended();
-    }
-
-    bool MenuApplication::IsTitleSuspended() {
-        return this->status.app_id > 0;
-    }
-
-    bool MenuApplication::IsHomebrewSuspended() {
-        return strlen(this->status.params.nro_path);
-    }
-
-    bool MenuApplication::EqualsSuspendedHomebrewPath(const std::string &path) {
-        return this->status.params.nro_path == path;
-    }
-
-    u64 MenuApplication::GetSuspendedApplicationId() {
-        return this->status.app_id;
-    }
-
-    void MenuApplication::NotifyEndSuspended() {
-        // Blanking the whole status would also blank the selected user...
-        this->status.params = {};
-        this->status.app_id = 0;
-    }
-
-    bool MenuApplication::LaunchFailed() {
-        return this->stmode == dmi::MenuStartMode::MenuLaunchFailure;
-    }
-
-    void MenuApplication::ShowNotification(const std::string &text, u64 timeout) {
+    void MenuApplication::ShowNotification(const std::string &text, const u64 timeout) {
         this->EndOverlay();
-        this->notifToast->SetText(text);
-        this->StartOverlayWithTimeout(this->notifToast, timeout);
+        this->notif_toast->SetText(text);
+        this->StartOverlayWithTimeout(this->notif_toast, timeout);
     }
 
     void MenuApplication::StartPlayBGM() {
         if(this->bgm != nullptr) {
-            int loops = this->bgm_loop ? -1 : 1;
+            const int loops = this->bgm_loop ? -1 : 1;
             if(this->bgm_fade_in_ms > 0) {
-                pu::audio::PlayWithFadeIn(this->bgm, loops, this->bgm_fade_in_ms);
+                pu::audio::PlayMusicWithFadeIn(this->bgm, loops, this->bgm_fade_in_ms);
             }
             else {
-                pu::audio::Play(this->bgm, loops);
+                pu::audio::PlayMusic(this->bgm, loops);
             }
         }
     }
 
     void MenuApplication::StopPlayBGM() {
         if(this->bgm_fade_out_ms > 0) {
-            pu::audio::FadeOut(this->bgm_fade_out_ms);
+            pu::audio::FadeOutMusic(this->bgm_fade_out_ms);
         }
         else {
-            pu::audio::Stop();
+            pu::audio::StopMusic();
         }
     }
-
-    StartupLayout::Ref &MenuApplication::GetStartupLayout() {
-        return this->startupLayout;
-    }
-
-    MenuLayout::Ref &MenuApplication::GetMenuLayout() {
-        return this->menuLayout;
-    }
-
-    ThemeMenuLayout::Ref &MenuApplication::GetThemeMenuLayout() {
-        return this->themeMenuLayout;
-    }
-
-    SettingsMenuLayout::Ref &MenuApplication::GetSettingsMenuLayout() {
-        return this->settingsMenuLayout;
-    }
-
-    LanguagesMenuLayout::Ref &MenuApplication::GetLanguagesMenuLayout() {
-        return this->languagesMenuLayout;
-    }
     
-    void MenuApplication::SetSelectedUser(AccountUid user_id) {
-        this->status.selected_user = user_id;
+    void MenuApplication::SetSelectedUser(const AccountUid user_id) {
+        this->daemon_status.selected_user = user_id;
 
-        UL_ASSERT(dmi::menu::SendCommand(dmi::DaemonMessage::SetSelectedUser, [&](dmi::menu::MenuScopedStorageWriter &writer) {
+        UL_RC_ASSERT(dmi::menu::SendCommand(dmi::DaemonMessage::SetSelectedUser, [&](dmi::menu::MenuScopedStorageWriter &writer) {
             writer.Push(user_id);
             return ResultSuccess;
         },
@@ -183,14 +101,6 @@ namespace ui {
             // ...
             return ResultSuccess;
         }));
-    }
-
-    AccountUid MenuApplication::GetSelectedUser() {
-        return this->status.selected_user;
-    }
-
-    MenuType MenuApplication::GetCurrentLoadedMenu() {
-        return this->loaded_menu;
     }
 
 }

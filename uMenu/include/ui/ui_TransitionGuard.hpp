@@ -4,6 +4,8 @@
 
 namespace ui {
 
+    // Note: this guard ensures that certain code won't run again while we're already inside its invokation (which would happen when calling render loops)
+
     class TransitionGuard {
         private:
             bool on_transition;
@@ -11,7 +13,7 @@ namespace ui {
         public:
             TransitionGuard() : on_transition(false) {}
 
-            bool Run(std::function<void()> fn) {
+            inline bool Run(std::function<void()> fn) {
                 if(this->on_transition) {
                     return false;
                 }

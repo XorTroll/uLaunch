@@ -1,9 +1,9 @@
 
 #pragma once
+#include <switch.h>
 #include <functional>
 
 class OnScopeExit {
-
     public:
         using Fn = std::function<void()>;
 
@@ -16,7 +16,6 @@ class OnScopeExit {
         ~OnScopeExit() {
             (this->exit_fn)();
         }
-
 };
 
 #define UL_CONCAT_IMPL(x,y) x##y
@@ -24,3 +23,17 @@ class OnScopeExit {
 #define UL_UNIQUE_VAR_NAME(prefix) UL_CONCAT(prefix ## _, __COUNTER__)
 
 #define UL_ON_SCOPE_EXIT(...) OnScopeExit UL_UNIQUE_VAR_NAME(on_scope_exit) ([&]() { __VA_ARGS__ })
+
+class ScopedLock {
+    private:
+        Mutex &lock;
+    
+    public:
+        ScopedLock(Mutex &lock) : lock(lock) {
+            mutexLock(std::addressof(lock));
+        }
+
+        ~ScopedLock() {
+            mutexUnlock(std::addressof(this->lock));
+        }
+};

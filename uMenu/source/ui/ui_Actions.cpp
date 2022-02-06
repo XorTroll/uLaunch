@@ -39,27 +39,28 @@ namespace ui::actions {
     }
 
     void ShowUserMenu() {
-        auto uid = g_MenuApplication->GetSelectedUser();
+        const auto uid = g_MenuApplication->GetSelectedUser();
         std::string name;
-        os::GetAccountName(name, uid);
-        auto sopt = g_MenuApplication->CreateShowDialog(GetLanguageString("user_settings"), GetLanguageString("user_selected") + ": " + name + "\n" + GetLanguageString("user_option"), { GetLanguageString("user_view_page"), GetLanguageString("user_logoff"), GetLanguageString("cancel") }, true, os::GetIconCacheImagePath(uid));
-        if(sopt == 0) {
+        os::GetAccountName(uid, name);
+        const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("user_settings"), GetLanguageString("user_selected") + ": " + name + "\n" + GetLanguageString("user_option"), { GetLanguageString("user_view_page"), GetLanguageString("user_logoff"), GetLanguageString("cancel") }, true, os::GetIconCacheImagePath(uid));
+        if(option == 0) {
             friendsLaShowMyProfileForHomeMenu(uid);
         }
-        else if(sopt == 1) {
-            u32 logoff = 0;
+        else if(option == 1) {
+            auto log_off = false;
             if(g_MenuApplication->IsSuspended()) {
-                auto sopt = g_MenuApplication->CreateShowDialog(GetLanguageString("suspended_app"), GetLanguageString("user_logoff_app_suspended"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
-                if(sopt == 0) {
-                    logoff = 2;
+                const auto option_2 = g_MenuApplication->CreateShowDialog(GetLanguageString("suspended_app"), GetLanguageString("user_logoff_app_suspended"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
+                if(option_2 == 0) {
+                    log_off = true;
                 }
             }
             else {
-                logoff = 1;
+                log_off = true;
             }
-            if(logoff > 0) {
+
+            if(log_off) {
                 auto &menu_lyt = g_MenuApplication->GetMenuLayout();
-                if(logoff == 2) {
+                if(g_MenuApplication->IsSuspended()) {
                     menu_lyt->DoTerminateApplication();
                 }
 
@@ -95,8 +96,8 @@ namespace ui::actions {
         char url[500] = {0};
         swkbdShow(&swkbd, url, 500);
 
-        UL_ASSERT(dmi::menu::SendCommand(dmi::DaemonMessage::OpenWebPage, [&](dmi::menu::MenuScopedStorageWriter &writer) {
-            R_TRY(writer.PushData(url, sizeof(url)));
+        UL_RC_ASSERT(dmi::menu::SendCommand(dmi::DaemonMessage::OpenWebPage, [&](dmi::menu::MenuScopedStorageWriter &writer) {
+            UL_RC_TRY(writer.PushData(url, sizeof(url)));
             return ResultSuccess;
         },
         [&](dmi::menu::MenuScopedStorageReader &reader) {
@@ -122,7 +123,7 @@ namespace ui::actions {
     }
 
     void ShowAlbumApplet() {
-        UL_ASSERT(dmi::menu::SendCommand(dmi::DaemonMessage::OpenAlbum, [&](dmi::menu::MenuScopedStorageWriter &writer) {
+        UL_RC_ASSERT(dmi::menu::SendCommand(dmi::DaemonMessage::OpenAlbum, [&](dmi::menu::MenuScopedStorageWriter &writer) {
             // ...
             return ResultSuccess;
         },

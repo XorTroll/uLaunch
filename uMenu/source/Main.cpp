@@ -1,8 +1,3 @@
-#include <pu/Plutonium>
-#include <ctime>
-#include <chrono>
-#include <sstream>
-#include <thread>
 #include <db/db_Save.hpp>
 #include <fs/fs_Stdio.hpp>
 #include <cfg/cfg_Config.hpp>
@@ -13,7 +8,7 @@
 #include <util/util_Convert.hpp>
 #include <am/am_LibraryApplet.hpp>
 #include <am/am_DaemonMessages.hpp>
-#include <am/am_LibAppletWrap.hpp>
+#include <am/am_LibnxLibappletWrap.hpp>
 #include <am/am_LibraryAppletUtils.hpp>
 
 extern "C" {
@@ -29,7 +24,6 @@ extern "C" {
 
 ui::MenuApplication::Ref g_MenuApplication;
 ui::TransitionGuard g_TransitionGuard;
-u8 *g_ScreenCaptureBuffer;
 
 cfg::TitleList g_EntryList;
 std::vector<cfg::TitleRecord> g_HomebrewRecordList;
@@ -44,15 +38,15 @@ char g_FwVersion[0x18] = {};
 namespace {
 
     void Initialize() {
-        UL_ASSERT(accountInitialize(AccountServiceType_System));
-        UL_ASSERT(nsInitialize());
-        UL_ASSERT(net::Initialize());
-        UL_ASSERT(psmInitialize());
-        UL_ASSERT(setsysInitialize());
-        UL_ASSERT(setInitialize());
+        UL_RC_ASSERT(accountInitialize(AccountServiceType_System));
+        UL_RC_ASSERT(nsInitialize());
+        UL_RC_ASSERT(net::Initialize());
+        UL_RC_ASSERT(psmInitialize());
+        UL_RC_ASSERT(setsysInitialize());
+        UL_RC_ASSERT(setInitialize());
 
         // Initialize uDaemon message handling
-        UL_ASSERT(am::InitializeDaemonMessageHandler());
+        UL_RC_ASSERT(am::InitializeDaemonMessageHandler());
 
         // Load menu config and theme
         g_Config = cfg::LoadConfig();
@@ -77,25 +71,24 @@ namespace {
 
 int main() {
     auto start_mode = dmi::MenuStartMode::Invalid;
-    UL_ASSERT(am::ReadStartMode(start_mode));
+    UL_RC_ASSERT(am::ReadStartMode(start_mode));
     UL_ASSERT_TRUE(start_mode != dmi::MenuStartMode::Invalid);
 
     // Information sent as an extra storage to uMenu
     dmi::DaemonStatus status = {};
-    UL_ASSERT(am::ReadDataFromStorage(&status, sizeof(status)));
+    UL_RC_ASSERT(am::ReadDataFromStorage(&status, sizeof(status)));
 
     memcpy(g_FwVersion, status.fw_version, sizeof(g_FwVersion));
     
     // Check if our RomFs data exists...
     if(!fs::ExistsFile(UL_MENU_ROMFS_BIN)) {
-        UL_ASSERT(menu::ResultRomfsFileNotFound);
+        UL_RC_ASSERT(menu::ResultRomfsFileNotFound);
     }
 
     // Try to mount it
-    UL_ASSERT(romfsMountFromFsdev(UL_MENU_ROMFS_BIN, 0, "romfs"));
+    UL_RC_ASSERT(romfsMountFromFsdev(UL_MENU_ROMFS_BIN, 0, "romfs"));
 
     // After initializing RomFs, start initializing the rest of stuff here
-    g_ScreenCaptureBuffer = new u8[RawRGBAScreenBufferSize]();
     Initialize();
 
     // Cache title and homebrew icons
@@ -105,34 +98,38 @@ int main() {
 
     // Get system language and load translations (default one if not present)
     u64 lang_code = 0;
-    UL_ASSERT(setGetLanguageCode(&lang_code));
-    std::string sys_lang = reinterpret_cast<char*>(&lang_code);
-    auto lang_path = cfg::GetLanguageJSONPath(sys_lang);
-    UL_ASSERT(util::LoadJSONFromFile(g_DefaultLanguage, CFG_LANG_DEFAULT));
+    UL_RC_ASSERT(setGetLanguageCode(&lang_code));
+    const auto lang_path = cfg::GetLanguageJSONPath(reinterpret_cast<char*>(&lang_code));
+    UL_RC_ASSERT(util::LoadJSONFromFile(g_DefaultLanguage, CFG_LANG_DEFAULT));
     g_MainLanguage = g_DefaultLanguage;
     if(fs::ExistsFile(lang_path)) {
         auto lang_json = JSON::object();
-        UL_ASSERT(util::LoadJSONFromFile(lang_json, lang_path));
+        UL_RC_ASSERT(util::LoadJSONFromFile(lang_json, lang_path));
         g_MainLanguage = lang_json;
     }
 
     // Get the text sizes to initialize default fonts
-    auto uijson = JSON::object();
-    UL_ASSERT(util::LoadJSONFromFile(uijson, cfg::GetAssetByTheme(g_Theme, "ui/UI.json")));
-    const auto menu_folder_txt_sz = uijson.value<u32>("menu_folder_text_size", 25);
-
+    auto ui_json = JSON::object();
+    UL_RC_ASSERT(util::LoadJSONFromFile(ui_json, cfg::GetAssetByTheme(g_Theme, "ui/UI.json")));
+    const auto menu_folder_text_size = ui_json.value<u32>("menu_folder_text_size", 25);
     const auto default_font_path = cfg::GetAssetByTheme(g_Theme, "ui/Font.ttf");
-    auto renderer = pu::ui::render::Renderer::New(pu::ui::render::RendererInitOptions(SDL_INIT_EVERYTHING, pu::ui::render::RendererHardwareFlags).WithIMG(pu::ui::render::IMGAllFlags).WithMixer(pu::ui::render::MixerAllFlags).WithTTF(default_font_path).WithDefaultFontSize(menu_folder_txt_sz));
+
+    auto renderer_opts = pu::ui::render::RendererInitOptions(SDL_INIT_EVERYTHING, pu::ui::render::RendererHardwareFlags);
+    renderer_opts.UseTTF(default_font_path);
+    renderer_opts.UseImage(pu::ui::render::IMGAllFlags);
+    renderer_opts.UseAudio(pu::ui::render::MixerAllFlags);
+    renderer_opts.SetExtraDefaultFontSize(menu_folder_text_size);
+    auto renderer = pu::ui::render::Renderer::New(renderer_opts);
     g_MenuApplication = ui::MenuApplication::New(renderer);
 
-    g_MenuApplication->SetInformation(start_mode, status, uijson);
+    g_MenuApplication->SetInformation(start_mode, status, ui_json);
     g_MenuApplication->Prepare();
 
     // Register handlers for HOME button press detection
-    am::RegisterLibAppletHomeButtonDetection();
+    am::RegisterLibnxLibappletHomeButtonDetection();
     ui::MenuApplication::RegisterHomeButtonDetection();
     ui::QuickMenu::RegisterHomeButtonDetection();
-    
+
     if(start_mode == dmi::MenuStartMode::MenuApplicationSuspended) {
         g_MenuApplication->Show();
     }
@@ -143,7 +140,6 @@ int main() {
     // Exit RomFs manually, since we also initialized it manually
     romfsExit();
 
-    delete[] g_ScreenCaptureBuffer;
     Exit();
     return 0;
 }
