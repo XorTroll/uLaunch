@@ -12,19 +12,23 @@ namespace cfg {
             const auto cache_nro_icon_path = GetNroCacheIconPath(nro_path);
             auto f = fopen(nro_path.c_str(), "rb");
             if(f) {
-                fseek(f, sizeof(NroStart), SEEK_SET);
-                NroHeader nro_header = {};
-                if(fread(&nro_header, sizeof(nro_header), 1, f) == 1) {
-                    fseek(f, nro_header.size, SEEK_SET);
-                    NroAssetHeader asset_header = {};
-                    if(fread(&asset_header, sizeof(asset_header), 1, f) == 1) {
-                        if(asset_header.magic == NROASSETHEADER_MAGIC) {
-                            if((asset_header.icon.offset > 0) && (asset_header.icon.size > 0)) {
-                                auto icon_buf = new u8[asset_header.icon.size]();
-                                fseek(f, nro_header.size + asset_header.icon.offset, SEEK_SET);
-                                fread(icon_buf, asset_header.icon.size, 1, f);
-                                fs::WriteFile(cache_nro_icon_path, icon_buf, asset_header.icon.size, true);
-                                delete[] icon_buf;
+                if(fseek(f, sizeof(NroStart), SEEK_SET) == 0) {
+                    NroHeader header = {};
+                    if(fread(&header, sizeof(header), 1, f) == 1) {
+                        if(fseek(f, header.size, SEEK_SET) == 0) {
+                            NroAssetHeader asset_header = {};
+                            if(fread(&asset_header, sizeof(asset_header), 1, f) == 1) {
+                                if(asset_header.magic == NROASSETHEADER_MAGIC) {
+                                    if((asset_header.icon.offset > 0) && (asset_header.icon.size > 0)) {
+                                        auto icon_buf = new u8[asset_header.icon.size]();
+                                        if(fseek(f, header.size + asset_header.icon.offset, SEEK_SET) == 0) {
+                                            if(fread(icon_buf, asset_header.icon.size, 1, f) == 1) {
+                                                fs::WriteFile(cache_nro_icon_path, icon_buf, asset_header.icon.size, true);
+                                            }
+                                        }
+                                        delete[] icon_buf;
+                                    }
+                                }
                             }
                         }
                     }
@@ -90,10 +94,25 @@ namespace cfg {
             }
             else {
                 if(util::StringEndsWith(name, ".nro")) {
-                    TitleRecord rec = {};
-                    rec.title_type = TitleType::Homebrew;
-                    strcpy(rec.nro_target.nro_path, path.c_str());
-                    nros.push_back(rec);
+                    auto f = fopen(path.c_str(), "rb");
+                    if(f) {
+                        fseek(f, 0, SEEK_END);
+                        const auto f_size = ftell(f);
+                        rewind(f);
+
+                        if(fseek(f, sizeof(NroStart), SEEK_SET) == 0) {
+                            NroHeader header;
+                            if(fread(&header, sizeof(header), 1, f) == 1) {
+                                if((header.magic == NROHEADER_MAGIC) && (f_size >= header.size)) {
+                                    TitleRecord rec = {};
+                                    rec.title_type = TitleType::Homebrew;
+                                    strcpy(rec.nro_target.nro_path, path.c_str());
+                                    nros.push_back(rec);
+                                }
+                            }
+                        }
+                        fclose(f);
+                    }
                 }
             }
         });
