@@ -34,10 +34,9 @@ make_hbtarget:
 hbtarget: base make_hbtarget
 
 make_daemon:
-	@$(MAKE) -C Atmosphere-libs/libstratosphere/
 	@$(MAKE) -C uDaemon/
 	@mkdir -p SdOut/atmosphere/contents/0100000000001000
-	@cp uDaemon/uDaemon.nsp SdOut/atmosphere/contents/0100000000001000/exefs.nsp
+	@cp uDaemon/out/nintendo_nx_arm64_armv8a/release/uDaemon.nsp SdOut/atmosphere/contents/0100000000001000/exefs.nsp
 
 daemon: base make_daemon
 

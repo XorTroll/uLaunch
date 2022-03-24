@@ -15,14 +15,19 @@ namespace {
 
 namespace ecs {
 
-    Result RegisterExternalContent(const u64 app_id, const std::string &exefs_path) {
+    Result RegisterExternalContent(const u64 program_id, const std::string &exefs_path) {
         auto move_h = INVALID_HANDLE;
-        UL_RC_TRY(ldrShellAtmosphereRegisterExternalCode(app_id, &move_h));
+        UL_RC_TRY(ldrShellAtmosphereRegisterExternalCode(program_id, &move_h));
 
         FsFileSystem sd_fs;
         UL_RC_TRY(fsOpenSdCardFileSystem(&sd_fs));
-        std::unique_ptr<ams::fs::fsa::IFileSystem> remote_sd_fs = std::make_unique<ams::fs::RemoteFileSystem>(sd_fs);
-        auto subdir_fs = std::make_shared<ams::fssystem::SubDirectoryFileSystem>(std::move(remote_sd_fs), exefs_path.c_str());
+        std::shared_ptr<ams::fs::fsa::IFileSystem> remote_sd_fs = std::make_shared<ams::fs::RemoteFileSystem>(sd_fs);
+        auto subdir_fs = std::make_shared<ams::fssystem::SubDirectoryFileSystem>(std::move(remote_sd_fs));
+        ams::fs::Path exefs_fs_path;
+        UL_RC_TRY(exefs_fs_path.Initialize(exefs_path.c_str(), exefs_path.length()));
+        UL_RC_TRY(exefs_fs_path.Normalize(ams::fs::PathFlags{}));
+        UL_RC_TRY(subdir_fs->Initialize(exefs_fs_path));
+
         auto sd_ifs_ipc = ipc::MakeShared<ams::fssrv::sf::IFileSystem, ams::fssrv::impl::FileSystemInterfaceAdapter>(std::move(subdir_fs), false);
 
         UL_RC_TRY(ipc::RegisterSession(move_h, ams::sf::cmif::ServiceObjectHolder(std::move(sd_ifs_ipc))));
