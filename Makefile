@@ -1,7 +1,7 @@
 
 export UL_MAJOR	:=	0
 export UL_MINOR	:=	3
-export UL_MICRO :=	2
+export UL_MICRO :=	4
 export UL_VERSION	:=	$(UL_MAJOR).$(UL_MINOR).$(UL_MICRO)
 
 export UL_DEFS	:=	-DUL_MAJOR=$(UL_MAJOR) -DUL_MINOR=$(UL_MINOR) -DUL_MICRO=$(UL_MICRO) -DUL_VERSION=\"$(UL_VERSION)\"
