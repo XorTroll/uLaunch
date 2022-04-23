@@ -412,8 +412,6 @@ namespace {
                     g_HbTargetApplicationLaunchFlag.nro_path[0] = '\0';
                 }
                 else {
-                    // Ensure the application is launchable
-                    UL_RC_ASSERT(nsTouchApplication(g_ApplicationLaunchFlag));
                     UL_RC_ASSERT(am::ApplicationStart(g_ApplicationLaunchFlag, false, g_SelectedUser));
                 }
                 sth_done = true;

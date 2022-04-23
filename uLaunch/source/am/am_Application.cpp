@@ -40,6 +40,49 @@ namespace am {
             UL_RC_TRY(appletCreateSystemApplication(&g_ApplicationHolder, app_id));
         }
         else {
+            // Ensure it's launchable
+            UL_RC_TRY(nsTouchApplication(app_id));
+
+            auto ct_data = new NsApplicationControlData;
+            UL_ON_SCOPE_EXIT({ delete[] ct_data; });
+
+            size_t dummy_size;
+            UL_RC_TRY(nsGetApplicationControlData(NsApplicationControlSource_Storage, app_id, ct_data, sizeof(NsApplicationControlData), &dummy_size));
+
+            // Note: why isn't TemporaryStorage automatically created with nsTouchApplication like regular savedata?
+            // Let's create it ourselves if it doesn't exist yet
+            if(ct_data->nacp.temporary_storage_size > 0) {
+                const FsSaveDataAttribute attr = {
+                    .application_id = app_id,
+                    .system_save_data_id = 0,
+                    .save_data_type = FsSaveDataType_Temporary,
+                    .save_data_rank = FsSaveDataRank_Primary,
+                    .save_data_index = 0
+                };
+                constexpr auto space_id = FsSaveDataSpaceId_Temporary;
+                const FsSaveDataCreationInfo cr_info = {
+                    .save_data_size = ct_data->nacp.temporary_storage_size,
+                    .journal_size = 0,
+                    .available_size = 0x4000,
+                    .owner_id = app_id,
+                    .flags = 0,
+                    .save_data_space_id = space_id
+                };
+                const FsSaveDataMetaInfo meta_info = {
+                    .size = 0,
+                    .type = FsSaveDataMetaType_None
+                };
+
+                FsFileSystem dummy_fs;
+                if(R_SUCCEEDED(fsOpenSaveDataFileSystem(&dummy_fs, space_id, &attr))) {
+                    fsFsClose(&dummy_fs);
+                }
+                else {
+                    // Not yet created, create it then
+                    UL_RC_TRY(fsCreateSaveDataFileSystem(&attr, &cr_info, &meta_info));
+                }
+            }
+
             UL_RC_TRY(appletCreateApplication(&g_ApplicationHolder, app_id));
         }
         
