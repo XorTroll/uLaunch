@@ -23,8 +23,7 @@ jobs:
     
     - name: Compile
       run: |
-        make -C libnx/
-        make -j$(nproc) LIBNX=libnx/nx/
+        make -j$(nproc) LIBNX=$PWD/libnx/nx/
         zip -r SdOut.zip SdOut
         
     - uses: actions/upload-artifact@master
