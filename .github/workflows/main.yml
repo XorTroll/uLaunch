@@ -1,0 +1,26 @@
+
+name: Build uLaunch
+
+on: [push]
+jobs:
+  uLaunch:
+    runs-on: ubuntu-latest
+
+    container:
+      image: devkitpro/devkita64
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Update repository
+      run: |
+        git submodule update --init --recursive
+        
+    - name: Compile
+      run: |
+        make -j$(nproc)
+        zip -r SdOut.zip SdOut
+        
+    - uses: actions/upload-artifact@master
+      with:
+        name: uLaunch
+        path: SdOut.zip
