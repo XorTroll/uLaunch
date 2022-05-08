@@ -14,10 +14,17 @@ jobs:
     - name: Update repository
       run: |
         git submodule update --init --recursive
-        
+    
+    - name: Prepare master libnx
+      run: |
+        git clone https://github.com/switchbrew/libnx
+        make -C libnx/
+        cp -r libnx/nx/external/bsd/include libnx/nx
+    
     - name: Compile
       run: |
-        make -j$(nproc)
+        make -C libnx/
+        make -j$(nproc) LIBNX=libnx/nx/
         zip -r SdOut.zip SdOut
         
     - uses: actions/upload-artifact@master
