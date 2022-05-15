@@ -112,6 +112,8 @@ In order to only build a certain subproject, you can run `make` plus the subproj
 
 - C4Phoenix for the amazing design of this project's logo.
 
+- [takoyaki](https://github.com/takoyaki99) for Google Forms-based issues support.
+
 - [Icons8](https://icons8.com/) website for a big part of the icons used by the default style.
 
 - Several scene developers for their help with small issues or features.
