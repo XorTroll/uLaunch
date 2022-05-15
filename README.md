@@ -16,6 +16,8 @@ uLaunch is a project which aims to replace the console's **HOME menu** with a cu
 
 ## Get it from [here](https://github.com/XorTroll/uLaunch/releases/latest)!
 
+### For support regarding this project, please use this [Google Form](https://forms.gle/wzovMN1ghfJhSswHA)!
+
 ### Want to create **custom forwarders** (eg. RetroArch ones)? check **uViewer** tool in [latest releases](https://github.com/XorTroll/uLaunch/releases/latest)!
 
 ### Want to find **themes** for uLaunch? Check the [r/uLaunchThemes subreddit](https://www.reddit.com/r/uLaunchThemes/)!
