@@ -84,9 +84,9 @@ namespace ui {
         
         auto connected_wifi_name = GetLanguageString("set_wifi_none");
         if(net::HasConnection()) {
-            net::NetworkProfileData data = {};
-            net::GetCurrentNetworkProfile(&data);
-            connected_wifi_name = data.wifi_name;
+            net::NetworkProfileData prof_data = {};
+            net::GetCurrentNetworkProfile(prof_data);
+            connected_wifi_name = prof_data.wifi_name;
         }
         this->PushSettingItem(GetLanguageString("set_wifi_name"), EncodeForSettings(connected_wifi_name), 2);
 
@@ -129,12 +129,12 @@ namespace ui {
         setsysGetSerialNumber(&serial);
         this->PushSettingItem(GetLanguageString("set_serial_no"), EncodeForSettings<std::string>(serial.number), -1);
         
-        u64 mac = 0;
-        net::GetMACAddress(&mac);
-        const auto mac_addr_str = net::FormatMACAddress(mac);
+        net::WlanMacAddress mac_addr = {};
+        net::GetMacAddress(mac_addr);
+        const auto mac_addr_str = net::FormatMacAddress(mac_addr);
         this->PushSettingItem(GetLanguageString("set_mac_addr"), EncodeForSettings(mac_addr_str), -1);
 
-        const auto ip_str = net::GetConsoleIPAddress();
+        const auto ip_str = net::GetConsoleIpAddress();
         this->PushSettingItem("Console IP address", EncodeForSettings(ip_str), -1);
 
         if(reset_idx) {

@@ -3,14 +3,63 @@
 
 namespace net {
 
+    namespace {
+
+        Service g_WlanService;
+        Service g_WlanWirelessCommunicationService;
+
+        Result wlanInitialize() {
+            if(serviceIsActive(&g_WlanService)) {
+                return ResultSuccess;
+            }
+
+            UL_RC_TRY(smGetService(&g_WlanService, "wlan"));
+
+            // https://switchbrew.org/wiki/WLAN_services#CreateWirelessCommunicationService
+            UL_RC_TRY(serviceDispatch(&g_WlanService, 0, 
+                .out_num_objects = 1,
+                .out_objects = &g_WlanWirelessCommunicationService
+            ));
+
+            return ResultSuccess;
+        }
+
+        void wlanExit() {
+            serviceClose(&g_WlanWirelessCommunicationService);
+            serviceClose(&g_WlanService);
+        }
+
+        Result wlaninfGetMacAddress(WlanMacAddress *out_addr) {
+            return serviceDispatchOut(wlaninfGetServiceSession(), 2, *out_addr);
+        }
+
+        Result wlanGetMacAddress(WlanMacAddress *out_addr) {
+            return serviceDispatchOut(&g_WlanWirelessCommunicationService, 33, *out_addr);
+        }
+
+    }
+
     Result Initialize() {
         UL_RC_TRY(nifmInitialize(NifmServiceType_System));
-        UL_RC_TRY(wlaninfInitialize());
+
+        if(hosversionAtLeast(15,0,0)) {
+            UL_RC_TRY(wlanInitialize());
+        }
+        else {
+            UL_RC_TRY(wlaninfInitialize());
+        }
+
         return ResultSuccess;
     }
 
     void Finalize() {
-        wlaninfExit();
+        if(hosversionAtLeast(15,0,0)) {
+            wlanExit();
+        }
+        else {
+            wlaninfExit();
+        }
+        
         nifmExit();
     }
 
@@ -20,36 +69,40 @@ namespace net {
         return status == NifmInternetConnectionStatus_Connected;
     }
 
-    Result GetCurrentNetworkProfile(NetworkProfileData *data) {
+    Result GetCurrentNetworkProfile(NetworkProfileData &out_prof_data) {
         return serviceDispatch(nifmGetServiceSession_GeneralService(), 5,
             .buffer_attrs = { SfBufferAttr_FixedSize | SfBufferAttr_Out | SfBufferAttr_HipcPointer },
-            .buffers = { { data, sizeof(NetworkProfileData) } }
+            .buffers = { { std::addressof(out_prof_data), sizeof(out_prof_data) } }
         );
     }
 
-    Result GetMACAddress(u64 *out) {
-        return serviceDispatchOut(wlaninfGetServiceSession(), 2, *out);
+    Result GetMacAddress(WlanMacAddress &out_addr) {
+        if(hosversionAtLeast(15,0,0)) {
+            UL_RC_TRY(wlanGetMacAddress(std::addressof(out_addr)));
+        }
+        else {
+            UL_RC_TRY(wlaninfGetMacAddress(std::addressof(out_addr)));
+        }
+        return 0;
     }
 
-    std::string FormatMACAddress(u64 addr) {
+    std::string FormatMacAddress(const WlanMacAddress &addr) {
         std::stringstream strm;
-        strm << std::hex << std::uppercase << addr;
-        std::string str;
-        auto sstrm = strm.str();
-        for(u32 i = 1; i < 7; i++) {
-            str += sstrm.substr((6 - i) * 2, 2);
-            if(i < 6) {
-                str += ":";
+        strm << std::hex << std::uppercase;
+        for(u32 i = 0; i < sizeof(WlanMacAddress); i++) {
+            strm << static_cast<u32>(addr.mac[i]);
+            if((i + 1) < sizeof(WlanMacAddress)) {
+                strm << ':';
             }
         }
-        return str;
+        return strm.str();
     }
 
-    std::string GetConsoleIPAddress() {
-        char ipaddr[0x20] = {0};
+    std::string GetConsoleIpAddress() {
+        char ip_addr[0x20] = {0};
         auto ip = gethostid();
-        sprintf(ipaddr, "%lu.%lu.%lu.%lu", (ip & 0x000000FF), (ip & 0x0000FF00) >> 8, (ip & 0x00FF0000) >> 16, (ip & 0xFF000000) >> 24);
-        return ipaddr;
+        sprintf(ip_addr, "%lu.%lu.%lu.%lu", ip & 0x000000FF, (ip & 0x0000FF00) >> 8, (ip & 0x00FF0000) >> 16, (ip & 0xFF000000) >> 24);
+        return ip_addr;
     }
 
 }
