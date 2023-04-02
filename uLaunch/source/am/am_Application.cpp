@@ -61,7 +61,7 @@ namespace am {
                 };
                 constexpr auto space_id = FsSaveDataSpaceId_Temporary;
                 const FsSaveDataCreationInfo cr_info = {
-                    .save_data_size = ct_data->nacp.temporary_storage_size,
+                    .save_data_size = (s64)ct_data->nacp.temporary_storage_size,
                     .journal_size = 0,
                     .available_size = 0x4000,
                     .owner_id = app_id,
