@@ -79,7 +79,7 @@ namespace ui::actions {
         hidLaCreateControllerSupportArg(&arg);
         arg.enable_explain_text = true;
         for(u32 i = 0; i < 8; i++) {
-            strcpy(arg.explain_text[i], "Test explain text");
+            strcpy(arg.explain_text[i], ""); //Controller explain test here
         }
         hidLaShowControllerSupportForSystem(nullptr, &arg, true);
     }
