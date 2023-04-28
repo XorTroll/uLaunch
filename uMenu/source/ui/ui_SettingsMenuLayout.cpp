@@ -46,19 +46,33 @@ namespace ui {
         this->settings_menu = pu::ui::elm::Menu::New(50, 80, 1180, g_MenuApplication->GetMenuBackgroundColor(), g_MenuApplication->GetMenuFocusColor(), 100, 6);
         g_MenuApplication->ApplyConfigForElement("settings_menu", "settings_menu_item", this->settings_menu);
         this->Add(this->settings_menu);
+
+        this->settings_scroll_sfx = pu::audio::LoadSfx(cfg::GetAssetByTheme(g_Theme, "sound/SettingsScroll.wav"));
+        this->settings_back_sfx = pu::audio::LoadSfx(cfg::GetAssetByTheme(g_Theme, "sound/SettingsBack.wav"));
+
+        this->settings_back_sfx_played=false;
+
     }
 
     void SettingsMenuLayout::OnMenuInput(const u64 keys_down, const u64 keys_up, const u64 keys_held, const pu::ui::TouchPoint touch_pos) {
         if(keys_down & HidNpadButton_B) {
+            this->settings_back_sfx_played=true;
+            pu::audio::PlaySfx(this->settings_back_sfx); //When i am going back to the main menu from the settings menu i want to play the sfx
             g_TransitionGuard.Run([]() {
                 g_MenuApplication->FadeOut();
                 g_MenuApplication->LoadMenu();
                 g_MenuApplication->FadeIn();
             });
+        }else if(keys_down & HidNpadButton_AnyUp || keys_down & HidNpadButton_AnyDown){
+            pu::audio::PlaySfx(this->settings_scroll_sfx); //When scrolling the settings i want to play the sfx
         }
     }
 
     bool SettingsMenuLayout::OnHomeButtonPress() {
+        if(!this->settings_back_sfx_played){
+            this->settings_back_sfx_played=true;
+            pu::audio::PlaySfx(this->settings_back_sfx); //When i am going back to the main menu from the themes menu i want to play the sfx
+        }
         return g_TransitionGuard.Run([]() {
             g_MenuApplication->FadeOut();
             g_MenuApplication->LoadMenu();
@@ -68,6 +82,8 @@ namespace ui {
 
     void SettingsMenuLayout::Reload(const bool reset_idx) {
         // TODO: more settings
+
+        this->settings_back_sfx_played=false; //Need to re-enable the previously deactivated sfx
         this->settings_menu->ClearItems();
         
         SetSysDeviceNickName console_name = {};
