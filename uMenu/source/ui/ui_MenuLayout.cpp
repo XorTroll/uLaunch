@@ -607,7 +607,6 @@ namespace ui {
 
                 this->banner_img->SetImage(cfg::GetAssetByTheme(g_Theme, "ui/BannerHomebrew.png"));
             }
-            pu::audio::PlaySfx(this->title_select_sfx);
         }
         else {
             auto &folder = cfg::FindFolderByName(g_EntryList, this->cur_folder);
@@ -657,7 +656,6 @@ namespace ui {
                 else {
                     this->banner_img->SetImage(cfg::GetAssetByTheme(g_Theme, "ui/BannerInstalled.png"));
                 }
-                pu::audio::PlaySfx(this->title_select_sfx);
             }
             if(!this->cur_folder.empty()) {
                 // This way we know we're inside a folder
@@ -760,6 +758,8 @@ namespace ui {
         }
         else if(keys_down & HidNpadButton_Minus) {
             this->menuToggle_Click();
+        }else if(keys_down & HidNpadButton_AnyLeft || keys_down & HidNpadButton_AnyRight){
+            pu::audio::PlaySfx(this->title_select_sfx); //If i am moving to left or right i want to play the sfx
         }
     }
 
