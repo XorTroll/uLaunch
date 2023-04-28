@@ -36,6 +36,10 @@ namespace ui {
             static void OnHomeButtonDetection();
 
         public:
+            pu::audio::Sfx menu_open_sfx; //Used when opening the quick menu
+            pu::audio::Sfx menu_scroll_sfx; //Used when scrolling the quick menu
+            pu::audio::Sfx menu_close_sfx; //Used when closing the quick menu
+
             QuickMenu(const std::string &main_icon);
             PU_SMART_CTOR(QuickMenu)
 

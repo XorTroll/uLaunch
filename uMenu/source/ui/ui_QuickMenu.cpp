@@ -72,6 +72,11 @@ namespace ui {
         settings_item->AddOnKey(&actions::ShowSettingsMenu);
         settings_item->SetColor(g_MenuApplication->GetTextColor());
         this->options_menu->AddItem(settings_item);
+
+        this->menu_open_sfx = pu::audio::LoadSfx(cfg::GetAssetByTheme(g_Theme, "sound/QuickMenuOpen.wav"));
+        this->menu_close_sfx = pu::audio::LoadSfx(cfg::GetAssetByTheme(g_Theme, "sound/QuickMenuClose.wav"));
+        this->menu_scroll_sfx = pu::audio::LoadSfx(cfg::GetAssetByTheme(g_Theme, "sound/QuickMenuScroll.wav"));
+
     }
 
     void QuickMenu::OnRender(pu::ui::render::Renderer::Ref &drawer, const s32 x, const s32 y) {
@@ -110,23 +115,33 @@ namespace ui {
         if(this->on) {
             this->options_menu->OnInput(keys_down, keys_up, keys_held, touch_pos);
         }
-
         if((keys_down & HidNpadButton_L) || (keys_down & HidNpadButton_R) || (keys_down & HidNpadButton_ZL) || (keys_down & HidNpadButton_ZR)) {
+            if(!this->on){ //Play menu opening
+                pu::audio::PlaySfx(this->menu_open_sfx);
+            }else{ //Play menu closing if i am closing the menu with L R ZL ZR
+                pu::audio::PlaySfx(this->menu_close_sfx);
+            }
             this->Toggle();
+            
         }
         else if((keys_down & HidNpadButton_B) || (keys_down & HidNpadButton_A)) {
             // B only valid for toggling off
             // A = something selected in the menu
             if(this->on) {
+                if((keys_down & HidNpadButton_B)){ //Pressing B means closing the menu
+                    pu::audio::PlaySfx(this->menu_close_sfx);
+                }
                 this->Toggle();
             }
+        }else if((keys_down & HidNpadButton_AnyUp || keys_down & HidNpadButton_AnyDown)){
+            pu::audio::PlaySfx(this->menu_scroll_sfx); //Playing sfx on menu scroll
         }
         else {
-            if(g_HomePressed) {
+            if(g_HomePressed) { //The input is the home button
                 if(this->on) {
+                    pu::audio::PlaySfx(this->menu_close_sfx); //Plays the close sfx if home button is pressed and menu is open
                     this->Toggle();
                 }
-                
                 g_HomePressed = false;
             }
         }

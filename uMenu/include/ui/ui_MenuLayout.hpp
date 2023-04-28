@@ -52,8 +52,9 @@ namespace ui {
             u8 min_alpha;
             u32 mode;
             s32 suspended_screen_alpha;
-            pu::audio::Sfx title_launch_sfx;
-            pu::audio::Sfx menu_toggle_sfx;
+            pu::audio::Sfx title_launch_sfx; //When launching a title
+            pu::audio::Sfx menu_toggle_sfx; //When toggling HB menu and default menu and viceversa
+            pu::audio::Sfx title_select_sfx; //When scrolling titles
 
             void DoMoveFolder(const std::string &name);
 

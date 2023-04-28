@@ -442,102 +442,6 @@ namespace ui {
         }
     }
 
-    void MenuLayout::menu_OnSelected(const u32 idx) {
-        this->selected_item_author_text->SetVisible(true);
-        this->selected_item_version_text->SetVisible(true);
-        u32 actual_idx = idx;
-        if(this->homebrew_mode) {
-            if(idx == 0) {
-                this->selected_item_author_text->SetVisible(false);
-                this->selected_item_version_text->SetVisible(false);
-                this->banner_img->SetImage(cfg::GetAssetByTheme(g_Theme, "ui/BannerHomebrew.png"));
-                this->selected_item_name_text->SetText(GetLanguageString("hbmenu_launch"));
-            }
-            else {
-                actual_idx--;
-                const auto &hb = g_HomebrewRecordList.at(actual_idx);
-                const auto info = cfg::GetRecordInformation(hb);
-
-                if(info.strings.name.empty()) {
-                    this->selected_item_name_text->SetText(GetLanguageString("unknown"));
-                }
-                else {
-                    this->selected_item_name_text->SetText(info.strings.name);
-                }
-
-                if(info.strings.author.empty()) {
-                    this->selected_item_author_text->SetText(GetLanguageString("unknown"));
-                }
-                else {
-                    this->selected_item_author_text->SetText(info.strings.author);
-                }
-
-                if(info.strings.version.empty()) {
-                    this->selected_item_version_text->SetText(GetLanguageString("unknown"));
-                }
-                else {
-                    this->selected_item_version_text->SetText(info.strings.version);
-                }
-
-                this->banner_img->SetImage(cfg::GetAssetByTheme(g_Theme, "ui/BannerHomebrew.png"));
-            }
-        }
-        else {
-            auto &folder = cfg::FindFolderByName(g_EntryList, this->cur_folder);
-            s32 title_idx = actual_idx;
-            if(this->cur_folder.empty()) {
-                if(actual_idx >= g_EntryList.folders.size()) {
-                    title_idx -= g_EntryList.folders.size();
-                }
-                else {
-                    const auto &selected_folder = g_EntryList.folders.at(actual_idx);
-                    this->banner_img->SetImage(cfg::GetAssetByTheme(g_Theme, "ui/BannerFolder.png"));
-                    const auto folder_entry_count = selected_folder.titles.size();
-                    this->selected_item_author_text->SetText(std::to_string(folder_entry_count) + " " + ((folder_entry_count == 1) ? GetLanguageString("folder_entry_single") : GetLanguageString("folder_entry_mult")));
-                    this->selected_item_version_text->SetVisible(false);
-                    this->selected_item_name_text->SetText(selected_folder.name);
-                    title_idx = -1;
-                }
-            }
-            if(title_idx >= 0) {
-                const auto &title = folder.titles.at(title_idx);
-                const auto info = cfg::GetRecordInformation(title);
-
-                if(info.strings.name.empty()) {
-                    this->selected_item_name_text->SetText(GetLanguageString("unknown"));
-                }
-                else {
-                    this->selected_item_name_text->SetText(info.strings.name);
-                }
-
-                if(info.strings.author.empty()) {
-                    this->selected_item_author_text->SetText(GetLanguageString("unknown"));
-                }
-                else {
-                    this->selected_item_author_text->SetText(info.strings.author);
-                }
-
-                if(info.strings.version.empty()) {
-                    this->selected_item_version_text->SetText("0");
-                }
-                else {
-                    this->selected_item_version_text->SetText(info.strings.version);
-                }
-
-                if(title.title_type == cfg::TitleType::Homebrew) {
-                    this->banner_img->SetImage(cfg::GetAssetByTheme(g_Theme, "ui/BannerHomebrew.png"));
-                }
-                else {
-                    this->banner_img->SetImage(cfg::GetAssetByTheme(g_Theme, "ui/BannerInstalled.png"));
-                }
-            }
-            if(!this->cur_folder.empty()) {
-                // This way we know we're inside a folder
-                this->banner_img->SetImage(cfg::GetAssetByTheme(g_Theme, "ui/BannerFolder.png"));
-            }
-        }
-    }
-
     MenuLayout::MenuLayout(const u8 *captured_screen_buf, const u8 min_alpha) : last_has_connection(false), last_battery_lvl(0), last_is_charging(false), launch_fail_warn_shown(false), homebrew_mode(false), select_on(false), select_dir(false), min_alpha(min_alpha), mode(0), suspended_screen_alpha(0xFF) {
         const auto menu_text_x = g_MenuApplication->GetUIConfigValue<u32>("menu_folder_text_x", 30);
         const auto menu_text_y = g_MenuApplication->GetUIConfigValue<u32>("menu_folder_text_y", 200);
@@ -653,6 +557,7 @@ namespace ui {
 
         this->title_launch_sfx = pu::audio::LoadSfx(cfg::GetAssetByTheme(g_Theme, "sound/TitleLaunch.wav"));
         this->menu_toggle_sfx = pu::audio::LoadSfx(cfg::GetAssetByTheme(g_Theme, "sound/MenuToggle.wav"));
+        this->title_select_sfx = pu::audio::LoadSfx(cfg::GetAssetByTheme(g_Theme, "sound/TitleSelect.wav"));
 
         this->SetBackgroundImage(cfg::GetAssetByTheme(g_Theme, "ui/Background.png"));
     }
@@ -660,6 +565,105 @@ namespace ui {
     MenuLayout::~MenuLayout() {
         pu::audio::DestroySfx(this->title_launch_sfx);
         pu::audio::DestroySfx(this->menu_toggle_sfx);
+        pu::audio::DestroySfx(this->title_select_sfx);
+    }
+
+    void MenuLayout::menu_OnSelected(const u32 idx) {
+        this->selected_item_author_text->SetVisible(true);
+        this->selected_item_version_text->SetVisible(true);
+        u32 actual_idx = idx;
+        if(this->homebrew_mode) {
+            if(idx == 0) {
+                this->selected_item_author_text->SetVisible(false);
+                this->selected_item_version_text->SetVisible(false);
+                this->banner_img->SetImage(cfg::GetAssetByTheme(g_Theme, "ui/BannerHomebrew.png"));
+                this->selected_item_name_text->SetText(GetLanguageString("hbmenu_launch"));
+            }
+            else {
+                actual_idx--;
+                const auto &hb = g_HomebrewRecordList.at(actual_idx);
+                const auto info = cfg::GetRecordInformation(hb);
+
+                if(info.strings.name.empty()) {
+                    this->selected_item_name_text->SetText(GetLanguageString("unknown"));
+                }
+                else {
+                    this->selected_item_name_text->SetText(info.strings.name);
+                }
+
+                if(info.strings.author.empty()) {
+                    this->selected_item_author_text->SetText(GetLanguageString("unknown"));
+                }
+                else {
+                    this->selected_item_author_text->SetText(info.strings.author);
+                }
+
+                if(info.strings.version.empty()) {
+                    this->selected_item_version_text->SetText(GetLanguageString("unknown"));
+                }
+                else {
+                    this->selected_item_version_text->SetText(info.strings.version);
+                }
+
+                this->banner_img->SetImage(cfg::GetAssetByTheme(g_Theme, "ui/BannerHomebrew.png"));
+            }
+            pu::audio::PlaySfx(this->title_select_sfx);
+        }
+        else {
+            auto &folder = cfg::FindFolderByName(g_EntryList, this->cur_folder);
+            s32 title_idx = actual_idx;
+            if(this->cur_folder.empty()) {
+                if(actual_idx >= g_EntryList.folders.size()) {
+                    title_idx -= g_EntryList.folders.size();
+                }
+                else {
+                    const auto &selected_folder = g_EntryList.folders.at(actual_idx);
+                    this->banner_img->SetImage(cfg::GetAssetByTheme(g_Theme, "ui/BannerFolder.png"));
+                    const auto folder_entry_count = selected_folder.titles.size();
+                    this->selected_item_author_text->SetText(std::to_string(folder_entry_count) + " " + ((folder_entry_count == 1) ? GetLanguageString("folder_entry_single") : GetLanguageString("folder_entry_mult")));
+                    this->selected_item_version_text->SetVisible(false);
+                    this->selected_item_name_text->SetText(selected_folder.name);
+                    title_idx = -1;
+                }
+            }
+            if(title_idx >= 0) {
+                const auto &title = folder.titles.at(title_idx);
+                const auto info = cfg::GetRecordInformation(title);
+
+                if(info.strings.name.empty()) {
+                    this->selected_item_name_text->SetText(GetLanguageString("unknown"));
+                }
+                else {
+                    this->selected_item_name_text->SetText(info.strings.name);
+                }
+
+                if(info.strings.author.empty()) {
+                    this->selected_item_author_text->SetText(GetLanguageString("unknown"));
+                }
+                else {
+                    this->selected_item_author_text->SetText(info.strings.author);
+                }
+
+                if(info.strings.version.empty()) {
+                    this->selected_item_version_text->SetText("0");
+                }
+                else {
+                    this->selected_item_version_text->SetText(info.strings.version);
+                }
+
+                if(title.title_type == cfg::TitleType::Homebrew) {
+                    this->banner_img->SetImage(cfg::GetAssetByTheme(g_Theme, "ui/BannerHomebrew.png"));
+                }
+                else {
+                    this->banner_img->SetImage(cfg::GetAssetByTheme(g_Theme, "ui/BannerInstalled.png"));
+                }
+                pu::audio::PlaySfx(this->title_select_sfx);
+            }
+            if(!this->cur_folder.empty()) {
+                // This way we know we're inside a folder
+                this->banner_img->SetImage(cfg::GetAssetByTheme(g_Theme, "ui/BannerFolder.png"));
+            }
+        }
     }
 
     void MenuLayout::OnMenuInput(const u64 keys_down, const u64 keys_up, const u64 keys_held, const pu::ui::TouchPoint touch_pos) {
