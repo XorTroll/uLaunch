@@ -15,7 +15,9 @@ namespace ui {
             pu::ui::elm::Image::Ref cur_theme_icon;
             pu::ui::elm::Image::Ref cur_theme_banner;
             std::vector<cfg::Theme> loaded_themes;
-
+            pu::audio::Sfx theme_scroll_sfx; //When scrolling themes
+            pu::audio::Sfx theme_back_sfx; //When going back to the main menu
+            bool theme_back_sfx_played; //When pressing the home button the sfx may be played multiple times
             void theme_DefaultKey();
 
         public:

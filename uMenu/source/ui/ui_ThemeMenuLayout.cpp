@@ -51,19 +51,33 @@ namespace ui {
         this->cur_theme_icon->SetHeight(100);
         g_MenuApplication->ApplyConfigForElement("themes_menu", "current_theme_icon", this->cur_theme_icon);
         this->Add(this->cur_theme_icon);
+
+        this->theme_scroll_sfx = pu::audio::LoadSfx(cfg::GetAssetByTheme(g_Theme, "sound/ThemeScroll.wav"));
+        this->theme_back_sfx = pu::audio::LoadSfx(cfg::GetAssetByTheme(g_Theme, "sound/ThemeBack.wav"));
+
+        this->theme_back_sfx_played=false;
+
     }
 
     void ThemeMenuLayout::OnMenuInput(const u64 keys_down, const u64 keys_up, const u64 keys_held, const pu::ui::TouchPoint touch_pos) {
         if(keys_down & HidNpadButton_B) {
+            this->theme_back_sfx_played=true;
+            pu::audio::PlaySfx(this->theme_back_sfx); //When i am going back to the main menu from the themes menu i want to play the sfx
             g_TransitionGuard.Run([]() {
                 g_MenuApplication->FadeOut();
                 g_MenuApplication->LoadMenu();
                 g_MenuApplication->FadeIn();
             });
+        }else if(keys_down & HidNpadButton_AnyUp || keys_down & HidNpadButton_AnyDown){
+            pu::audio::PlaySfx(this->theme_scroll_sfx); //When scrolling the themes i want to play the sfx
         }
     }
 
     bool ThemeMenuLayout::OnHomeButtonPress() {
+        if(!this->theme_back_sfx_played){
+            this->theme_back_sfx_played=true;
+            pu::audio::PlaySfx(this->theme_back_sfx); //When i am going back to the main menu from the themes menu i want to play the sfx
+        }
         return g_TransitionGuard.Run([]() {
             g_MenuApplication->FadeOut();
             g_MenuApplication->LoadMenu();
@@ -72,6 +86,7 @@ namespace ui {
     }
 
     void ThemeMenuLayout::Reload() {
+        this->theme_back_sfx_played=false; //Need to re-enable the previously deactivated sfx
         if(g_Theme.IsDefault()) {
             this->cur_theme_text->SetText(GetLanguageString("theme_no_custom"));
             this->cur_theme_name_text->SetVisible(false);
