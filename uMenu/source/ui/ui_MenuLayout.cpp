@@ -39,26 +39,25 @@ namespace ui {
 
     }
 
-    void MenuLayout::DoMoveFolder(const std::string &name) {
-        if(this->homebrew_mode) {
-            if(g_HomebrewRecordList.empty()) {
+    void MenuLayout::DoMoveFolder(const std::string &name) { //This function displays the content of a folder
+        if(this->homebrew_mode) { 
+            if(g_HomebrewRecordList.empty()) { //If i am in homebrew mode and i have no elements i am going to query for my hb.
                 g_HomebrewRecordList = cfg::QueryAllHomebrew();
             }
         }
 
-        auto item_list = g_HomebrewRecordList;
-        if(!this->homebrew_mode) {
+        auto item_list = g_HomebrewRecordList; //Declaring a variable containing a list of items
+        if(!this->homebrew_mode) { //If i am in the main menu (titles) my item list will be the content of that specific folder (of course :D)
             const auto &folder = cfg::FindFolderByName(g_EntryList, name);
             item_list = folder.titles;
         }
 
-        this->items_menu->ClearItems();
-        if(this->homebrew_mode) {
+        this->items_menu->ClearItems(); //Graphics operations only...
+        if(this->homebrew_mode) { //In homebrew mode the first element will always be the HBmenu so i am adding the graphics for this element
             this->items_menu->AddItem(cfg::GetAssetByTheme(g_Theme, "ui/Hbmenu.png"));
         }
-        else {
-            if(name.empty()) {
-                // Remove empty folders
+        else { //In titles mode i need to distinguish 2 cases
+            if(name.empty()) { //If the folder is empty then i will remove it
                 STL_REMOVE_IF(g_EntryList.folders, folder, folder.titles.empty());
                 for(const auto &folder: g_EntryList.folders) {
                     this->items_menu->AddItem(cfg::GetAssetByTheme(g_Theme, "ui/Folder.png"), folder.name);
@@ -105,21 +104,21 @@ namespace ui {
         }
     }
 
-    void MenuLayout::menu_Click(const u64 keys_down, const u32 idx) {
+    void MenuLayout::menu_Click(const u64 keys_down, const u32 idx) { //This function handles the menu options when selecting one or more titles
         if(this->select_on && (keys_down & HidNpadButton_A)) {
             if(!this->items_menu->IsAnyMultiselected()) {
                 this->StopMultiselect();
             }
         }
-        if(this->select_on) {
-            if(select_dir) {
+        if(this->select_on) { 
+            if(select_dir) { //Operations performed when i have to select a folder (after selecting items)
                 if((keys_down & HidNpadButton_A) || (keys_down & HidNpadButton_Y)) {
-                    if((!this->homebrew_mode) && this->cur_folder.empty()) {
+                    if((!this->homebrew_mode) && this->cur_folder.empty()) { 
                         if(idx < g_EntryList.folders.size()) {
-                            auto &folder = g_EntryList.folders.at(idx);
+                            auto &folder = g_EntryList.folders.at(idx); //Retrieving the folder where i will move my items
                             const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("menu_multiselect"), GetLanguageString("menu_move_existing_folder_conf"), { GetLanguageString("yes"), GetLanguageString("no"), GetLanguageString("cancel") }, true);
                             if(option == 0) {
-                                this->HandleMultiselectMoveToFolder(folder.name);
+                                this->HandleMultiselectMoveToFolder(folder.name); //Calling multiselect function to "process" items (move process is done here!)
                             }
                             else if(option == 1) {
                                 this->StopMultiselect();
@@ -132,19 +131,19 @@ namespace ui {
                     g_MenuApplication->ShowNotification(GetLanguageString("menu_move_select_folder_cancel"));
                 }
             }
-            else {
+            else { //Operations performed on the items
                 if(keys_down & HidNpadButton_B) {
                     g_MenuApplication->ShowNotification(GetLanguageString("menu_multiselect_cancel"));
                     this->StopMultiselect();
                 }
-                else if(keys_down & HidNpadButton_Y) {
+                else if(keys_down & HidNpadButton_Y) { //Pressing Y selects the items
                     auto selectable = false;
-                    if(this->homebrew_mode) {
+                    if(this->homebrew_mode) { //In homebrew mode items are always selectable
                         selectable = true;
                     }
-                    else {
+                    else { //In title mode i have to check if an item is selectable
                         if(this->cur_folder.empty()) {
-                            selectable = idx >= g_EntryList.folders.size();
+                            selectable = idx >= g_EntryList.folders.size(); //Item will be selectable only id its idx is bigger than folder size
                         }
                         else {
                             selectable = true;
@@ -154,8 +153,8 @@ namespace ui {
                         this->items_menu->SetItemMultiselected(idx, !this->items_menu->IsItemMultiselected(idx));
                     }
                 }
-                else if(keys_down & HidNpadButton_A) {
-                    if(this->homebrew_mode) {
+                else if(keys_down & HidNpadButton_A) { //Pressing A triggers an operation
+                    if(this->homebrew_mode) { //In homebrew mode the big operation is the shortcut to the title menu
                         const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("menu_multiselect"), GetLanguageString("hb_mode_entries_add"), { GetLanguageString("yes"), GetLanguageString("no"), GetLanguageString("cancel") }, true);
                         if(option == 0) {
                             // Get the idx of the last g_HomebrewRecordList element.
@@ -196,9 +195,9 @@ namespace ui {
                             this->StopMultiselect();
                         }
                     }
-                    else if(this->cur_folder.empty()) {
+                    else if(this->cur_folder.empty()) { //If i am into the title menu i want to move items into a folder
                         const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("menu_multiselect"), GetLanguageString("menu_move_to_folder"), { GetLanguageString("menu_move_new_folder"), GetLanguageString("menu_move_existing_folder"), GetLanguageString("no"), GetLanguageString("cancel") }, true);
-                        if(option == 0) {
+                        if(option == 0) { //Creating a new folder
                             SwkbdConfig cfg;
                             swkbdCreate(&cfg, 0);
                             swkbdConfigSetGuideText(&cfg, GetLanguageString("swkbd_new_folder_guide").c_str());
@@ -206,29 +205,30 @@ namespace ui {
                             const auto rc = swkbdShow(&cfg, dir, sizeof(dir));
                             swkbdClose(&cfg);
                             if(R_SUCCEEDED(rc)) {
-                                this->HandleMultiselectMoveToFolder(dir);
+                                this->HandleMultiselectMoveToFolder(dir); //Multiselect op done here
                             }
                         }
-                        else if(option == 1) {
+                        else if(option == 1) { //Selecting an existing folder
                             this->select_dir = true;
                             g_MenuApplication->ShowNotification(GetLanguageString("menu_move_select_folder"));
                         }
-                        else if(option == 2) {
+                        else if(option == 2) { //Abort
                             this->StopMultiselect();
                         }
                     }
-                    else {
+                    else { //If i am into the folder i want to move items back to the title menu
                         auto sopt = g_MenuApplication->CreateShowDialog(GetLanguageString("menu_multiselect"), GetLanguageString("menu_move_from_folder"), { GetLanguageString("yes"), GetLanguageString("no"), GetLanguageString("cancel") }, true);
                         if(sopt == 0) {
                             u32 removed_idx = 0;
-                            auto &folder = cfg::FindFolderByName(g_EntryList, this->cur_folder);
-                            for(u32 i = 0; i < folder.titles.size(); i++) {
-                                auto &title = folder.titles.at(i - removed_idx);
-                                if(this->items_menu->IsItemMultiselected(i)) {
-                                    if(cfg::MoveRecordTo(g_EntryList, title, "")) {
-                                        removed_idx++;
-                                    }
+                            auto &folder = cfg::FindFolderByName(g_EntryList, this->cur_folder); //Getting current folder details
+                            std::vector<cfg::TitleRecord> titles_to_move;
+                            for(int i=0;i<folder.titles.size();i++){ //Collecting items to move
+                                if(this->items_menu->IsItemMultiselected(i)){
+                                    titles_to_move.push_back(folder.titles.at(i));
                                 }
+                            }
+                            for(int i=0;i<titles_to_move.size();i++){ //Actually moving the items
+                                cfg::MoveRecordTo(g_EntryList, titles_to_move[i],"");
                             }
                             this->StopMultiselect();
                             this->MoveFolder(folder.titles.empty() ? "" : this->cur_folder, true);
@@ -873,18 +873,21 @@ namespace ui {
         }
     }
 
-    void MenuLayout::HandleMultiselectMoveToFolder(const std::string &folder) {
-        if(this->select_on) {
-            u32 removed_idx = 0;
-            const auto root_title_count = g_EntryList.root.titles.size();
-            const auto folder_count = g_EntryList.folders.size();
-            for(u32 i = 0; i < root_title_count; i++) {
-                auto &title = g_EntryList.root.titles.at(i - removed_idx);
-                if(this->items_menu->IsItemMultiselected(folder_count + i)) {
-                    if(cfg::MoveRecordTo(g_EntryList, title, folder)) {
-                        removed_idx++;
-                    }
+    void MenuLayout::HandleMultiselectMoveToFolder(const std::string &folder) { //Moves items to a folder
+        if(this->select_on) { //Can perform only if selection is enabled
+            g_EntryList = cfg::LoadTitleList();
+            const auto root_title_count = g_EntryList.root.titles.size(); //Titles on the home
+            const auto folder_count = g_EntryList.folders.size(); //Folders on the home
+            std::vector<cfg::TitleRecord> titles_to_move;
+            //Collecting items to move
+            for(int i=0;i<root_title_count;i++){
+                if(this->items_menu->IsItemMultiselected(folder_count+i)){
+                    titles_to_move.push_back(g_EntryList.root.titles.at(i));
                 }
+            }
+            //Actually moving items
+            for(int i=0;i<titles_to_move.size();i++){
+                cfg::MoveRecordTo(g_EntryList,titles_to_move[i], folder);
             }
             this->StopMultiselect();
             this->MoveFolder(this->cur_folder, true);
