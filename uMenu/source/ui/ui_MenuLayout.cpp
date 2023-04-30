@@ -219,15 +219,14 @@ namespace ui {
                     else { //If i am into the folder i want to move items back to the title menu
                         auto sopt = g_MenuApplication->CreateShowDialog(GetLanguageString("menu_multiselect"), GetLanguageString("menu_move_from_folder"), { GetLanguageString("yes"), GetLanguageString("no"), GetLanguageString("cancel") }, true);
                         if(sopt == 0) {
-                            u32 removed_idx = 0;
                             auto &folder = cfg::FindFolderByName(g_EntryList, this->cur_folder); //Getting current folder details
                             std::vector<cfg::TitleRecord> titles_to_move;
-                            for(int i=0;i<folder.titles.size();i++){ //Collecting items to move
+                            for(std::vector<cfg::TitleRecord>::size_type i=0;i<folder.titles.size();i++){ //Collecting items to move
                                 if(this->items_menu->IsItemMultiselected(i)){
                                     titles_to_move.push_back(folder.titles.at(i));
                                 }
                             }
-                            for(int i=0;i<titles_to_move.size();i++){ //Actually moving the items
+                            for(std::vector<cfg::TitleRecord>::size_type i=0;i<titles_to_move.size();i++){ //Actually moving the items
                                 cfg::MoveRecordTo(g_EntryList, titles_to_move[i],"");
                             }
                             this->StopMultiselect();
@@ -880,13 +879,13 @@ namespace ui {
             const auto folder_count = g_EntryList.folders.size(); //Folders on the home
             std::vector<cfg::TitleRecord> titles_to_move;
             //Collecting items to move
-            for(int i=0;i<root_title_count;i++){
+            for(std::vector<cfg::TitleRecord>::size_type i=0;i<root_title_count;i++){
                 if(this->items_menu->IsItemMultiselected(folder_count+i)){
                     titles_to_move.push_back(g_EntryList.root.titles.at(i));
                 }
             }
             //Actually moving items
-            for(int i=0;i<titles_to_move.size();i++){
+            for(std::vector<cfg::TitleRecord>::size_type i=0;i<titles_to_move.size();i++){
                 cfg::MoveRecordTo(g_EntryList,titles_to_move[i], folder);
             }
             this->StopMultiselect();
