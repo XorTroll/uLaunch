@@ -219,6 +219,7 @@ namespace ui {
                     else { //If i am into the folder i want to move items back to the title menu
                         auto sopt = g_MenuApplication->CreateShowDialog(GetLanguageString("menu_multiselect"), GetLanguageString("menu_move_from_folder"), { GetLanguageString("yes"), GetLanguageString("no"), GetLanguageString("cancel") }, true);
                         if(sopt == 0) {
+                            bool all_items_moved=false;
                             auto &folder = cfg::FindFolderByName(g_EntryList, this->cur_folder); //Getting current folder details
                             std::vector<cfg::TitleRecord> titles_to_move;
                             for(std::vector<cfg::TitleRecord>::size_type i=0;i<folder.titles.size();i++){ //Collecting items to move
@@ -226,11 +227,19 @@ namespace ui {
                                     titles_to_move.push_back(folder.titles.at(i));
                                 }
                             }
-                            for(std::vector<cfg::TitleRecord>::size_type i=0;i<titles_to_move.size();i++){ //Actually moving the items
-                                cfg::MoveRecordTo(g_EntryList, titles_to_move[i],"");
+                            if(titles_to_move.size()==folder.titles.size()){
+                                all_items_moved=true;
+                            }
+                            for(std::vector<cfg::TitleRecord>::size_type i=0;i<titles_to_move.size();i++){ //Deleting the items from a folder means that we are deleting its record from the entry folder
+                                cfg::DeleteRecord(titles_to_move[i]);
                             }
                             this->StopMultiselect();
-                            this->MoveFolder(folder.titles.empty() ? "" : this->cur_folder, true);
+                            g_EntryList = cfg::LoadTitleList();
+                            if(all_items_moved){
+                                this->MoveFolder("",true);
+                            }else{
+                                this->MoveFolder(this->cur_folder,true);
+                            }
                         }
                         else if(sopt == 1) {
                             this->StopMultiselect();

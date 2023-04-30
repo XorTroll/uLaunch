@@ -340,6 +340,8 @@ namespace cfg {
     void SaveConfig(const Config &cfg);
 
     void SaveRecord(const TitleRecord &record);
+
+    void DeleteRecord(const TitleRecord record);
     
     inline void RemoveRecord(const TitleRecord &record) {
         fs::DeleteFile(cfg::GetRecordJsonPath(record));

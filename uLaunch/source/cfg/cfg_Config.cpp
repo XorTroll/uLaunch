@@ -384,6 +384,13 @@ namespace cfg {
         ofs.close();
     }
 
+    void DeleteRecord(const TitleRecord record){
+        const auto json_path = GetRecordJsonPath(record);
+        if(fs::ExistsFile(json_path)) {
+            fs::DeleteFile(json_path);
+        }
+    }
+
     bool MoveRecordTo(TitleList &list, const TitleRecord &record, const std::string &folder_name) {
         bool title_found = false;
         TitleRecord record_copy = {};
