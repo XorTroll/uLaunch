@@ -85,28 +85,50 @@ namespace ui::actions {
     }
 
     void ShowWebPage() {
-        SwkbdConfig swkbd;
-        swkbdCreate(&swkbd, 0);
-        UL_ON_SCOPE_EXIT({
-            swkbdClose(&swkbd);
-        });
-        
-        swkbdConfigSetGuideText(&swkbd, GetLanguageString("swkbd_webpage_guide").c_str());
-        
-        char url[500] = {0};
-        swkbdShow(&swkbd, url, 500);
+        const int url_size=500;
+        char url[url_size] = {0};
+        bool open_browser=false;
+        auto sopt = g_MenuApplication->CreateShowDialog(GetLanguageString("web_dialog"), GetLanguageString("web_dialog_info"), { GetLanguageString("web_enter_url"), GetLanguageString("web_use_google"), GetLanguageString("web_cancel")}, true);
 
-        UL_RC_ASSERT(dmi::menu::SendCommand(dmi::DaemonMessage::OpenWebPage, [&](dmi::menu::MenuScopedStorageWriter &writer) {
-            UL_RC_TRY(writer.PushData(url, sizeof(url)));
-            return ResultSuccess;
-        },
-        [&](dmi::menu::MenuScopedStorageReader &reader) {
-            // ...
-            return ResultSuccess;
-        }));
+        if(sopt==0){ //Entering the url manually
+            SwkbdConfig swkbd;
+            swkbdCreate(&swkbd, 0);
+            UL_ON_SCOPE_EXIT({
+                swkbdClose(&swkbd);
+            });
+            swkbdConfigSetGuideText(&swkbd, GetLanguageString("swkbd_webpage_guide").c_str());
+            swkbdShow(&swkbd, url, url_size);
+            if(std::strlen(url)>0){
+                open_browser=true;
+            }
+        }else if(sopt==1){ //Setting pragmatically the url to google
+            char google_url[]="https://www.google.com";
+            std::strcpy(url,google_url);
+            open_browser=true;
+        }
+        if(open_browser){
+            UL_RC_ASSERT(dmi::menu::SendCommand(dmi::DaemonMessage::OpenWebPage, [&](dmi::menu::MenuScopedStorageWriter &writer) {
+                if(!(std::strstr(url,"http://") || std::strstr(url,"https://"))){ //If the URL does not contain http or https the browser will give en error, so i am automatically addinh http (not every website supports https and if a website supports https it will redirect)
+                    if(std::strlen(url)<493){ //we want to avoid a buffer overflow when using strcat
+                        char http_prefix[]="http://";
+                        char new_url[url_size]="";
+                        std::strcat(new_url,http_prefix);
+                        std::strcat(new_url,url);
+                        std::strcpy(url,new_url); //Replacing the elements of the old url
+                    }
+                    
+                }
+                UL_RC_TRY(writer.PushData(url, sizeof(url)));
+                return ResultSuccess;
+            },
+            [&](dmi::menu::MenuScopedStorageReader &reader) {
+                // ...
+                return ResultSuccess;
+            }));
 
-        g_MenuApplication->StopPlayBGM();
-        g_MenuApplication->CloseWithFadeOut();
+            g_MenuApplication->StopPlayBGM();
+            g_MenuApplication->CloseWithFadeOut();
+        }
     }
 
     void ShowHelpDialog() {
