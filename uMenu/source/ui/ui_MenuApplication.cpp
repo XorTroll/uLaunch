@@ -50,6 +50,8 @@ namespace ui {
         this->settings_menu_lyt = SettingsMenuLayout::New();
         this->languages_menu_lyt = LanguagesMenuLayout::New();
 
+        this->logout_sfx=pu::audio::LoadSfx(cfg::GetAssetByTheme(g_Theme, "sound/Logout.wav"));
+
         switch(this->start_mode) {
             case dmi::MenuStartMode::StartupScreen: {
                 this->LoadStartupMenu();
@@ -61,6 +63,10 @@ namespace ui {
                 break;
             }
         }
+    }
+
+    void MenuApplication::PlayLogoutSfx(){
+        pu::audio::PlaySfx(this->logout_sfx);
     }
 
     void MenuApplication::ShowNotification(const std::string &text, const u64 timeout) {

@@ -59,11 +59,11 @@ namespace ui::actions {
             }
 
             if(log_off) {
+                g_MenuApplication->PlayLogoutSfx();
                 auto &menu_lyt = g_MenuApplication->GetMenuLayout();
                 if(g_MenuApplication->IsSuspended()) {
                     menu_lyt->DoTerminateApplication();
                 }
-
                 g_TransitionGuard.Run([&]() {
                     g_MenuApplication->FadeOut();
                     menu_lyt->MoveFolder("", false);
