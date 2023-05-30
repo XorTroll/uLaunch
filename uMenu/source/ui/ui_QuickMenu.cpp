@@ -8,6 +8,10 @@ extern ui::MenuApplication::Ref g_MenuApplication;
 
 namespace ui {
 
+    namespace quickmenu_utils{
+        bool ignoreQuickMenuInput=false;
+    }
+
     namespace {
 
         std::atomic_bool g_HomePressed = false;
@@ -21,7 +25,7 @@ namespace ui {
     QuickMenu::QuickMenu(const std::string &main_icon) {
         this->on = false;
         this->bg_alpha = 0;
-
+        quickmenu_utils::ignoreQuickMenuInput=false;
         this->options_menu = pu::ui::elm::Menu::New(MenuX, MenuY, MenuWidth, g_MenuApplication->GetMenuBackgroundColor(), g_MenuApplication->GetMenuFocusColor(), MenuItemHeight, MenuItemsToShow);
         g_MenuApplication->ApplyConfigForElement("quick_menu", "quick_menu_item", this->options_menu);
         
@@ -115,36 +119,40 @@ namespace ui {
         if(this->on) {
             this->options_menu->OnInput(keys_down, keys_up, keys_held, touch_pos);
         }
-        if((keys_down & HidNpadButton_L) || (keys_down & HidNpadButton_R) || (keys_down & HidNpadButton_ZL) || (keys_down & HidNpadButton_ZR)) {
-            if(!this->on){ //Play menu opening
-                pu::audio::PlaySfx(this->menu_open_sfx);
-            }else{ //Play menu closing if i am closing the menu with L R ZL ZR
-                pu::audio::PlaySfx(this->menu_close_sfx);
-            }
-            this->Toggle();
-            
-        }
-        else if((keys_down & HidNpadButton_B) || (keys_down & HidNpadButton_A)) {
-            // B only valid for toggling off
-            // A = something selected in the menu
-            if(this->on) {
-                if((keys_down & HidNpadButton_B)){ //Pressing B means closing the menu
+        if(!quickmenu_utils::ignoreQuickMenuInput){
+            if((keys_down & HidNpadButton_L) || (keys_down & HidNpadButton_R) || (keys_down & HidNpadButton_ZL) || (keys_down & HidNpadButton_ZR)) {
+                if(!this->on){ //Play menu opening
+                    pu::audio::PlaySfx(this->menu_open_sfx);
+                }else{ //Play menu closing if i am closing the menu with L R ZL ZR
                     pu::audio::PlaySfx(this->menu_close_sfx);
                 }
                 this->Toggle();
             }
-        }else if((keys_down & HidNpadButton_AnyUp || keys_down & HidNpadButton_AnyDown)){
-            pu::audio::PlaySfx(this->menu_scroll_sfx); //Playing sfx on menu scroll
-        }
-        else {
-            if(g_HomePressed) { //The input is the home button
+            else if((keys_down & HidNpadButton_B) || (keys_down & HidNpadButton_A)) {
+                // B only valid for toggling off
+                // A = something selected in the menu
                 if(this->on) {
-                    pu::audio::PlaySfx(this->menu_close_sfx); //Plays the close sfx if home button is pressed and menu is open
+                    if((keys_down & HidNpadButton_B)){ //Pressing B means closing the menu
+                        pu::audio::PlaySfx(this->menu_close_sfx);
+                    }
                     this->Toggle();
                 }
-                g_HomePressed = false;
+            }else if((keys_down & HidNpadButton_AnyUp || keys_down & HidNpadButton_AnyDown)){
+                pu::audio::PlaySfx(this->menu_scroll_sfx); //Playing sfx on menu scroll
             }
+            else {
+                if(g_HomePressed) { //The input is the home button
+                    if(this->on) {
+                        pu::audio::PlaySfx(this->menu_close_sfx); //Plays the close sfx if home button is pressed and menu is open
+                        this->Toggle();
+                    }
+                    g_HomePressed = false;
+                }
+            }
+        }else{
+            
         }
+        
     }
 
 }

@@ -5,6 +5,10 @@
 
 namespace ui {
 
+    namespace quickmenu_utils{
+        extern bool ignoreQuickMenuInput;
+    }
+
     class QuickMenu : public pu::ui::elm::Element {
         public:
             static constexpr s32 MainItemSize = 300;
@@ -30,6 +34,7 @@ namespace ui {
 
         private:
             bool on;
+            
             s32 bg_alpha;
             pu::ui::elm::Menu::Ref options_menu;
 
@@ -39,7 +44,6 @@ namespace ui {
             pu::audio::Sfx menu_open_sfx; //Used when opening the quick menu
             pu::audio::Sfx menu_scroll_sfx; //Used when scrolling the quick menu
             pu::audio::Sfx menu_close_sfx; //Used when closing the quick menu
-
             QuickMenu(const std::string &main_icon);
             PU_SMART_CTOR(QuickMenu)
 

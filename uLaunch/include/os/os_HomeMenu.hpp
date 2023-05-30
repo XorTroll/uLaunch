@@ -48,5 +48,6 @@ namespace os {
     };
 
     Result PushSystemAppletMessage(const SystemAppletMessage msg);
+    
 
 }
