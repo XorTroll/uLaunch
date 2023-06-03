@@ -9,7 +9,7 @@ extern ui::MenuApplication::Ref g_MenuApplication;
 namespace ui {
 
     namespace quickmenu_utils{
-        bool ignoreQuickMenuInput=false;
+        int quickMenuInputsToIgnore=0;
     }
 
     namespace {
@@ -25,7 +25,7 @@ namespace ui {
     QuickMenu::QuickMenu(const std::string &main_icon) {
         this->on = false;
         this->bg_alpha = 0;
-        quickmenu_utils::ignoreQuickMenuInput=false;
+        ui::quickmenu_utils::quickMenuInputsToIgnore=0;
         this->options_menu = pu::ui::elm::Menu::New(MenuX, MenuY, MenuWidth, g_MenuApplication->GetMenuBackgroundColor(), g_MenuApplication->GetMenuFocusColor(), MenuItemHeight, MenuItemsToShow);
         g_MenuApplication->ApplyConfigForElement("quick_menu", "quick_menu_item", this->options_menu);
         
@@ -119,12 +119,13 @@ namespace ui {
         if(this->on) {
             this->options_menu->OnInput(keys_down, keys_up, keys_held, touch_pos);
         }
-        if(!quickmenu_utils::ignoreQuickMenuInput){
             if((keys_down & HidNpadButton_L) || (keys_down & HidNpadButton_R) || (keys_down & HidNpadButton_ZL) || (keys_down & HidNpadButton_ZR)) {
                 if(!this->on){ //Play menu opening
                     pu::audio::PlaySfx(this->menu_open_sfx);
                 }else{ //Play menu closing if i am closing the menu with L R ZL ZR
-                    pu::audio::PlaySfx(this->menu_close_sfx);
+                    if(ui::quickmenu_utils::quickMenuInputsToIgnore==0){ //If input is skipped sound should not be played
+                        pu::audio::PlaySfx(this->menu_close_sfx);
+                    }
                 }
                 this->Toggle();
             }
@@ -133,7 +134,9 @@ namespace ui {
                 // A = something selected in the menu
                 if(this->on) {
                     if((keys_down & HidNpadButton_B)){ //Pressing B means closing the menu
-                        pu::audio::PlaySfx(this->menu_close_sfx);
+                        if(ui::quickmenu_utils::quickMenuInputsToIgnore==0){ //If input is skipped sound should not be played
+                            pu::audio::PlaySfx(this->menu_close_sfx);
+                        }
                     }
                     this->Toggle();
                 }
@@ -149,10 +152,6 @@ namespace ui {
                     g_HomePressed = false;
                 }
             }
-        }else{
-            
-        }
-        
     }
 
 }

@@ -6,7 +6,7 @@
 namespace ui {
 
     namespace quickmenu_utils{
-        extern bool ignoreQuickMenuInput;
+        extern int quickMenuInputsToIgnore;
     }
 
     class QuickMenu : public pu::ui::elm::Element {
@@ -64,7 +64,12 @@ namespace ui {
             }
             
             inline void Toggle() {
-                this->on = !this->on;
+                if(ui::quickmenu_utils::quickMenuInputsToIgnore>0){
+                    ui::quickmenu_utils::quickMenuInputsToIgnore--;
+                }else{
+                    ui::quickmenu_utils::quickMenuInputsToIgnore=0;
+                    this->on = !this->on;
+                }
             }
 
             inline constexpr bool IsOn() {

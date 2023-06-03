@@ -812,6 +812,7 @@ namespace ui {
             this->StopMultiselect();
         }
         this->MoveFolder("", true);
+        
     }
 
     void MenuLayout::HandleCloseSuspended() {

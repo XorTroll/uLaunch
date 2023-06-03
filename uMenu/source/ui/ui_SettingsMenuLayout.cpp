@@ -69,6 +69,7 @@ namespace ui {
     }
 
     bool SettingsMenuLayout::OnHomeButtonPress() {
+        ui::quickmenu_utils::quickMenuInputsToIgnore=0;
         if(!this->settings_back_sfx_played){
             this->settings_back_sfx_played=true;
             pu::audio::PlaySfx(this->settings_back_sfx); //When i am going back to the main menu from the themes menu i want to play the sfx

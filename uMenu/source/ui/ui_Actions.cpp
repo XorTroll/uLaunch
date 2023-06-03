@@ -23,6 +23,7 @@ namespace ui::actions {
     }
 
     void ShowSettingsMenu() {
+        ui::quickmenu_utils::quickMenuInputsToIgnore=2;
         g_TransitionGuard.Run([]() {
             g_MenuApplication->FadeOut();
             g_MenuApplication->LoadSettingsMenu();
@@ -31,6 +32,7 @@ namespace ui::actions {
     }
 
     void ShowThemesMenu() {
+        ui::quickmenu_utils::quickMenuInputsToIgnore=2;
         g_TransitionGuard.Run([]() {
             g_MenuApplication->FadeOut();
             g_MenuApplication->LoadThemeMenu();
@@ -43,12 +45,12 @@ namespace ui::actions {
         std::string name;
         os::GetAccountName(uid, name);
         const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("user_settings"), GetLanguageString("user_selected") + ": " + name + "\n" + GetLanguageString("user_option"), { GetLanguageString("user_view_page"), GetLanguageString("user_logoff"), GetLanguageString("cancel") }, true, os::GetIconCacheImagePath(uid));
-        ui::quickmenu_utils::ignoreQuickMenuInput=true;
+        ui::quickmenu_utils::quickMenuInputsToIgnore=1;
         if(option == 0) {
             friendsLaShowMyProfileForHomeMenu(uid);
         }
         else if(option == 1) {
-            ui::quickmenu_utils::ignoreQuickMenuInput=false; //Menu can close if i am logging out
+            ui::quickmenu_utils::quickMenuInputsToIgnore=0; //Menu can close if i am logging out
             auto log_off = false;
             if(g_MenuApplication->IsSuspended()) {
                 const auto option_2 = g_MenuApplication->CreateShowDialog(GetLanguageString("suspended_app"), GetLanguageString("user_logoff_app_suspended"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
@@ -77,7 +79,7 @@ namespace ui::actions {
     }
 
     void ShowControllerSupport() {
-        ui::quickmenu_utils::ignoreQuickMenuInput=true;
+        ui::quickmenu_utils::quickMenuInputsToIgnore=1;
         HidLaControllerSupportArg arg = {};
         hidLaCreateControllerSupportArg(&arg);
         arg.enable_explain_text = true;
@@ -92,7 +94,7 @@ namespace ui::actions {
         char url[url_size] = {0};
         bool open_browser=false;
         auto sopt = g_MenuApplication->CreateShowDialog(GetLanguageString("web_dialog"), GetLanguageString("web_dialog_info"), { GetLanguageString("web_enter_url"), GetLanguageString("web_use_google"), GetLanguageString("web_cancel")}, true);
-        ui::quickmenu_utils::ignoreQuickMenuInput=true;
+        ui::quickmenu_utils::quickMenuInputsToIgnore=1;
         if(sopt==0){ //Entering the url manually
             SwkbdConfig swkbd;
             swkbdCreate(&swkbd, 0);
@@ -145,11 +147,11 @@ namespace ui::actions {
         msg += " - " + GetLanguageString("help_plus") + "\n";
 
         g_MenuApplication->CreateShowDialog(GetLanguageString("help_title"), msg, { GetLanguageString("ok") }, true);
-        ui::quickmenu_utils::ignoreQuickMenuInput=true;
+        ui::quickmenu_utils::quickMenuInputsToIgnore=1;
     }
 
     void ShowAlbumApplet() {
-        ui::quickmenu_utils::ignoreQuickMenuInput=true;
+        ui::quickmenu_utils::quickMenuInputsToIgnore=1;
         UL_RC_ASSERT(dmi::menu::SendCommand(dmi::DaemonMessage::OpenAlbum, [&](dmi::menu::MenuScopedStorageWriter &writer) {
             // ...
             return ResultSuccess;
@@ -167,17 +169,17 @@ namespace ui::actions {
         auto msg = os::GeneralChannelMessage::Invalid;
 
         auto sopt = g_MenuApplication->CreateShowDialog(GetLanguageString("power_dialog"), GetLanguageString("power_dialog_info"), { GetLanguageString("power_sleep"), GetLanguageString("power_power_off"), GetLanguageString("power_reboot"), GetLanguageString("cancel") }, true);
-        ui::quickmenu_utils::ignoreQuickMenuInput=true;
+        ui::quickmenu_utils::quickMenuInputsToIgnore=1;
         if(sopt == 0) {
-            ui::quickmenu_utils::ignoreQuickMenuInput=false;
+            ui::quickmenu_utils::quickMenuInputsToIgnore=0;
             msg = os::GeneralChannelMessage::Sleep;
         }
         else if(sopt == 1) {
-            ui::quickmenu_utils::ignoreQuickMenuInput=false;
+            ui::quickmenu_utils::quickMenuInputsToIgnore=0;
             msg = os::GeneralChannelMessage::Shutdown;
         }
         else if(sopt == 2) {
-            ui::quickmenu_utils::ignoreQuickMenuInput=false;
+            ui::quickmenu_utils::quickMenuInputsToIgnore=0;
             msg = os::GeneralChannelMessage::Reboot;
         }
 
