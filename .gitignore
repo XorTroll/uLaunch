@@ -9,3 +9,5 @@ SdOut/
 .vs/
 bin/
 obj/
+old/
+out/
