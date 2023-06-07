@@ -328,8 +328,14 @@ namespace cfg {
     std::vector<Theme> LoadThemes();
     std::string GetAssetByTheme(const Theme &base, const std::string &resource_base);
 
-    inline std::string GetLanguageJSONPath(const std::string &lang) {
-        return UL_BASE_SD_DIR "/lang/" + lang + ".json";
+    inline std::string GetLanguageJSONPath(const std::string &lang)
+    {
+        // prefer custom translation
+        if (fs::ExistsFile(UL_BASE_SD_DIR "/lang/" + lang + ".json"))
+        {
+            return UL_BASE_SD_DIR "/lang/" + lang + ".json";
+        }
+        return "romfs:/" + lang + ".json";
     }
 
     std::string GetLanguageString(const JSON &lang, const JSON &def, const std::string &name);
