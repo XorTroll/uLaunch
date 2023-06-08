@@ -22,11 +22,13 @@ namespace ul {
     /*
     
     Result submodules:
-    0 -> res/misc
+    0 -> misc
     1 -> smi
     2 -> sf (ipc)
     3 -> loader
-    4 -> smi (system)
+    4 -> smi
+    5 -> util
+    6 -> uMenu
     
     */
 

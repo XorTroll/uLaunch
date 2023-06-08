@@ -7,7 +7,6 @@
 #include <ul/fs/fs_Stdio.hpp>
 #include <ul/util/util_Scope.hpp>
 #include <ul/util/util_Size.hpp>
-#include <ul/ent/ent_Cache.hpp>
 #include <queue>
 
 extern "C" {
@@ -39,7 +38,7 @@ ams::os::Mutex g_MenuMessageQueueLock(false);
 std::queue<ul::smi::MenuMessage> *g_MenuMessageQueue;
 
 #define DEBUG_LOG(fmt, ...) ({ \
-    auto f = fopen("sdmc:/umad/usystem-tmp.log", "ab+"); \
+    auto f = fopen("sdmc:/ulaunch/usystem-tmp.log", "ab+"); \
     if(f) { \
         fprintf(f, fmt "\n", ##__VA_ARGS__); \
         fclose(f); \
@@ -104,7 +103,7 @@ namespace {
     }
 
     inline Result LaunchMenu(const ul::smi::MenuStartMode st_mode, const ul::smi::SystemStatus &status) {
-        return ecs::RegisterLaunchAsApplet(la::GetMenuProgramId(), static_cast<u32>(st_mode), "/umad/bin/uMenu", std::addressof(status), sizeof(status));
+        return ecs::RegisterLaunchAsApplet(la::GetMenuProgramId(), static_cast<u32>(st_mode), "/ulaunch/bin/uMenu", std::addressof(status), sizeof(status));
     }
 
     void HandleHomeButton() {
@@ -343,13 +342,17 @@ namespace {
                             if(g_ApplicationLaunchFlag > 0) {
                                 return smi::ResultAlreadyQueued;
                             }
-                            if(g_Config.hb_application_takeover_program_id == 0) {
+
+                            u64 hb_application_takeover_program_id;
+                            UL_ASSERT_TRUE(g_Config.GetEntry(ul::cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, hb_application_takeover_program_id));
+                            if(hb_application_takeover_program_id == 0) {
                                 return smi::ResultNoHomebrewTakeoverApplication;
                             }
 
                             g_LoaderApplicationLaunchFlag = temp_ipt;
                             g_LoaderApplicationLaunchFlagCopy = temp_ipt;
-                            g_ApplicationLaunchFlag = g_Config.hb_application_takeover_program_id;
+
+                            g_ApplicationLaunchFlag = hb_application_takeover_program_id;
                             break;
                         }
                         case ul::smi::SystemMessage::OpenWebPage: {
@@ -372,8 +375,8 @@ namespace {
                             u64 takeover_app_id;
                             UL_RC_TRY(reader.Pop(takeover_app_id));
 
-                            g_Config.hb_application_takeover_program_id = takeover_app_id;
-                            UL_ASSERT_TRUE(g_Config.Save());
+                            UL_ASSERT_TRUE(g_Config.SetEntry(ul::cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, takeover_app_id));
+                            ul::cfg::SaveConfig(g_Config);
                             break;
                         }
                         default: {
@@ -494,7 +497,9 @@ namespace {
         }
         if(g_LoaderLaunchFlag.magic == ul::loader::TargetInput::Magic) {
             if(!la::IsActive()) {
-                UL_RC_ASSERT(ecs::RegisterLaunchAsApplet(g_Config.hb_applet_takeover_program_id, 0, "/umad/bin/uLoader/applet", &g_LoaderLaunchFlag, sizeof(g_LoaderLaunchFlag)));
+                u64 hb_applet_takeover_program_id;
+                UL_ASSERT_TRUE(g_Config.GetEntry(ul::cfg::ConfigEntryId::HomebrewAppletTakeoverProgramId, hb_applet_takeover_program_id));
+                UL_RC_ASSERT(ecs::RegisterLaunchAsApplet(hb_applet_takeover_program_id, 0, "/ulaunch/bin/uLoader/applet", &g_LoaderLaunchFlag, sizeof(g_LoaderLaunchFlag)));
                 
                 sth_done = true;
                 g_LoaderLaunchFlag = {};
@@ -502,7 +507,9 @@ namespace {
         }
         if(!la::IsActive()) {
             const auto cur_id = la::GetLastAppletId();
-            if((cur_id == AppletId_LibraryAppletWeb) || (cur_id == AppletId_LibraryAppletPhotoViewer) || (cur_id == g_Config.hb_applet_takeover_program_id)) {
+            u64 hb_applet_takeover_program_id;
+            UL_ASSERT_TRUE(g_Config.GetEntry(ul::cfg::ConfigEntryId::HomebrewAppletTakeoverProgramId, hb_applet_takeover_program_id));
+            if((cur_id == AppletId_LibraryAppletWeb) || (cur_id == AppletId_LibraryAppletPhotoViewer) || (cur_id == hb_applet_takeover_program_id)) {
                 UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::Menu, CreateStatus()));
                 
                 sth_done = true;
@@ -534,17 +541,16 @@ namespace {
         UL_RC_ASSERT(UpdateOperationMode());
 
         UL_RC_ASSERT(setsysGetFirmwareVersion(&g_FwVersion));
-        
-        // UL_RC_ASSERT(db::Mount());
 
-        ul::fs::CreateDirectory(ul::ent::RootDirectory);
-        ul::fs::CreateDirectory(ul::ent::CacheDirectory);
+        // ul::fs::CreateDirectory(ul::ent::RootDirectory);
+        // ul::fs::CreateDirectory(ul::ent::CacheDirectory);
 
-        UL_ASSERT_TRUE(g_Config.EnsureLoad());
+        // ul::ent::CacheEnsureEntries();
 
-        ul::ent::CacheEnsureEntries();
-
-        la::SetMenuProgramId(g_Config.menu_takeover_program_id);
+        g_Config = ul::cfg::LoadConfig();
+        u64 menu_program_id;
+        UL_ASSERT_TRUE(g_Config.GetEntry(ul::cfg::ConfigEntryId::MenuTakeoverProgramId, menu_program_id));
+        la::SetMenuProgramId(menu_program_id);
 
         UL_RC_ASSERT(sf::Initialize());
     }

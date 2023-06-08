@@ -40,10 +40,10 @@ namespace {
         return ul::ResultSuccess;
     }
 
-}
+    constexpr size_t HeapSize = 32_KB;
+    u8 g_Heap[HeapSize] = {};
 
-constexpr size_t HeapSize = 32_KB;
-u8 g_Heap[HeapSize] = {};
+}
 
 extern "C" {
 

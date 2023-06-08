@@ -9,10 +9,9 @@ ATMOSPHERE_SYSTEM_MODULE_TARGETS := nsp
 
 LIBSTRAT	:=	$(CURDIR)/../../libs/Atmosphere-libs/libstratosphere
 LIBUCOMMON	:=	$(CURDIR)/../../libs/uCommon
-LIBUENTRY	:=	$(CURDIR)/../../libs/uEntry
 
-LIBDIRS	+=	$(LIBUCOMMON) $(LIBUENTRY)
-LIBS	+=	-luCommon -luEntry
+LIBDIRS	+=	$(LIBUCOMMON)
+LIBS	+=	-luCommon
 
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional
@@ -76,7 +75,6 @@ endif
 #---------------------------------------------------------------------------------
 all: $(ATMOSPHERE_OUT_DIR) $(ATMOSPHERE_BUILD_DIR) $(ATMOSPHERE_LIBRARIES_DIR)/libstratosphere/$(ATMOSPHERE_LIBRARY_DIR)/libstratosphere.a
 	@$(MAKE) -C $(LIBUCOMMON)
-	@$(MAKE) -C $(LIBUENTRY)
 	@$(MAKE) __RECURSIVE__=1 OUTPUT=$(CURDIR)/$(ATMOSPHERE_OUT_DIR)/$(TARGET) \
 	DEPSDIR=$(CURDIR)/$(ATMOSPHERE_BUILD_DIR) \
 	--no-print-directory -C $(ATMOSPHERE_BUILD_DIR) \
@@ -99,7 +97,6 @@ $(ATMOSPHERE_OUT_DIR) $(ATMOSPHERE_BUILD_DIR):
 clean:
 	@echo clean ...
 	@$(MAKE) clean -C $(LIBUCOMMON)
-	@$(MAKE) clean -C $(LIBUENTRY)
 	@rm -fr $(ATMOSPHERE_OUT_DIR) $(ATMOSPHERE_BUILD_DIR)
 
 

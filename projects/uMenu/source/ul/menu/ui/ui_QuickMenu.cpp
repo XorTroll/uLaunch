@@ -1,8 +1,9 @@
 #include <ul/menu/ui/ui_QuickMenu.hpp>
-#include <ul/menu/ui/ui_Application.hpp>
-#include <ul/menu/ui/ui_Util.hpp>
+#include <ul/menu/ui/ui_MenuApplication.hpp>
+#include <ul/cfg/cfg_Config.hpp>
 
-extern ul::menu::ui::Application::Ref g_Application;
+extern ul::cfg::Theme g_Theme;
+extern ul::menu::ui::MenuApplication::Ref g_MenuApplication;
 
 namespace ul::menu::ui {
 
@@ -16,67 +17,59 @@ namespace ul::menu::ui {
         g_HomePressed = true;
     }
 
-    QuickMenu::QuickMenu() {
+    QuickMenu::QuickMenu(const std::string &main_icon) {
         this->on = false;
         this->bg_alpha = 0;
 
-        this->options_menu = pu::ui::elm::Menu::New(MenuX, MenuY, MenuWidth, pu::ui::Color { 0x57, 0, 0x7f, 0xff }, pu::ui::Color { 0x86, 0x4e, 0xa0, 0xff }, MenuItemHeight, MenuItemsToShow);
-        // g_MenuApplication->ApplyConfigForElement("quick_menu", "quick_menu_item", this->options_menu);
+        this->options_menu = pu::ui::elm::Menu::New(MenuX, MenuY, MenuWidth, g_MenuApplication->GetMenuBackgroundColor(), g_MenuApplication->GetMenuFocusColor(), MenuItemHeight, MenuItemsToShow);
+        g_MenuApplication->ApplyConfigForElement("quick_menu", "quick_menu_item", this->options_menu);
         
-        const pu::ui::Color text_clr = { 0xff, 0xff, 0xff, 0xff };
-
         auto help_item = pu::ui::elm::MenuItem::New("Help & information");
-        help_item->SetIcon("sdmc:/umad/uitest/help.png");
-        help_item->AddOnKey(&ShowHelpDialog);
-        help_item->SetColor(text_clr);
+        help_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/HelpIcon.png"));
+        help_item->AddOnKey(&actions::ShowHelpDialog);
+        help_item->SetColor(g_MenuApplication->GetTextColor());
         this->options_menu->AddItem(help_item);
 
         auto power_item = pu::ui::elm::MenuItem::New("Power options");
-        power_item->SetIcon("sdmc:/umad/uitest/power.png");
-        power_item->AddOnKey(&ShowPowerDialog);
-        power_item->SetColor(text_clr);
+        power_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/PowerIcon.png"));
+        power_item->AddOnKey(&actions::ShowPowerDialog);
+        power_item->SetColor(g_MenuApplication->GetTextColor());
         this->options_menu->AddItem(power_item);
 
         auto controller_item = pu::ui::elm::MenuItem::New("Controller options");
-        controller_item->SetIcon("sdmc:/umad/uitest/controller.png");
-        controller_item->AddOnKey(&ShowControllerSupport);
-        controller_item->SetColor(text_clr);
+        controller_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/ControllerIcon.png"));
+        controller_item->AddOnKey(&actions::ShowControllerSupport);
+        controller_item->SetColor(g_MenuApplication->GetTextColor());
         this->options_menu->AddItem(controller_item);
 
         auto album_item = pu::ui::elm::MenuItem::New("Open album");
-        album_item->SetIcon("sdmc:/umad/uitest/album.png");
-        album_item->AddOnKey(&ShowAlbumApplet);
-        album_item->SetColor(text_clr);
+        album_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/AlbumIcon.png"));
+        album_item->AddOnKey(&actions::ShowAlbumApplet);
+        album_item->SetColor(g_MenuApplication->GetTextColor());
         this->options_menu->AddItem(album_item);
 
         auto web_item = pu::ui::elm::MenuItem::New("Open web-page");
-        web_item->SetIcon("sdmc:/umad/uitest/web.png");
-        web_item->AddOnKey(&ShowWebPage);
-        web_item->SetColor(text_clr);
+        web_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/WebIcon.png"));
+        web_item->AddOnKey(&actions::ShowWebPage);
+        web_item->SetColor(g_MenuApplication->GetTextColor());
         this->options_menu->AddItem(web_item);
 
-        auto mii_item = pu::ui::elm::MenuItem::New("Open mii maker");
-        mii_item->SetIcon("sdmc:/umad/uitest/mii.png");
-        mii_item->AddOnKey(&ShowMiiEdit);
-        mii_item->SetColor(text_clr);
-        this->options_menu->AddItem(mii_item);
-
         auto user_item = pu::ui::elm::MenuItem::New("User menu");
-        user_item->SetIcon("sdmc:/umad/uitest/user.png");
-        user_item->AddOnKey(&ShowUserMenu);
-        user_item->SetColor(text_clr);
+        user_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/UserIcon.png"));
+        user_item->AddOnKey(&actions::ShowUserMenu);
+        user_item->SetColor(g_MenuApplication->GetTextColor());
         this->options_menu->AddItem(user_item);
 
         auto themes_item = pu::ui::elm::MenuItem::New("Themes menu");
-        themes_item->SetIcon("sdmc:/umad/uitest/themes.png");
-        themes_item->AddOnKey(&ShowThemesMenu);
-        themes_item->SetColor(text_clr);
+        themes_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/ThemesIcon.png"));
+        themes_item->AddOnKey(&actions::ShowThemesMenu);
+        themes_item->SetColor(g_MenuApplication->GetTextColor());
         this->options_menu->AddItem(themes_item);
 
         auto settings_item = pu::ui::elm::MenuItem::New("Settings menu");
-        settings_item->SetIcon("sdmc:/umad/uitest/settings.png");
-        settings_item->AddOnKey(&ShowSettingsMenu);
-        settings_item->SetColor(text_clr);
+        settings_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/SettingsIcon.png"));
+        settings_item->AddOnKey(&actions::ShowSettingsMenu);
+        settings_item->SetColor(g_MenuApplication->GetTextColor());
         this->options_menu->AddItem(settings_item);
     }
 
@@ -113,20 +106,26 @@ namespace ul::menu::ui {
     }
 
     void QuickMenu::OnInput(const u64 keys_down, const u64 keys_up, const u64 keys_held, const pu::ui::TouchPoint touch_pos) {
-        if(!this->on) {
-            return;
+        if(this->on) {
+            this->options_menu->OnInput(keys_down, keys_up, keys_held, touch_pos);
         }
 
-        this->options_menu->OnInput(keys_down, keys_up, keys_held, touch_pos);
-
-        if((keys_down & HidNpadButton_B) || (keys_down & HidNpadButton_A)) {
+        if((keys_down & HidNpadButton_L) || (keys_down & HidNpadButton_R) || (keys_down & HidNpadButton_ZL) || (keys_down & HidNpadButton_ZR)) {
+            this->Toggle();
+        }
+        else if((keys_down & HidNpadButton_B) || (keys_down & HidNpadButton_A)) {
             // B only valid for toggling off
             // A = something selected in the menu
-            this->Toggle();
+            if(this->on) {
+                this->Toggle();
+            }
         }
         else {
             if(g_HomePressed) {
-                this->Toggle();
+                if(this->on) {
+                    this->Toggle();
+                }
+                
                 g_HomePressed = false;
             }
         }

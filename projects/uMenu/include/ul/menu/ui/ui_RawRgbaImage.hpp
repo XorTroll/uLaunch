@@ -50,10 +50,6 @@ namespace ul::menu::ui {
                 this->h = h;
             }
 
-            inline u8 GetAlpha() {
-                return this->alpha;
-            }
-
             inline void SetAlpha(const u8 alpha) {
                 this->alpha = alpha;
             }

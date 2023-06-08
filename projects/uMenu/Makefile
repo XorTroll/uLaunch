@@ -40,16 +40,15 @@ ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 LIBUCOMMON	:=	$(CURDIR)/../../libs/uCommon
-LIBUENTRY	:=	$(CURDIR)/../../libs/uEntry
 LIBPU		:=	$(CURDIR)/../../libs/Plutonium/Plutonium
 
-LIBS	:= -lpu -lfreetype -lSDL2_mixer -lopusfile -lopus -lmodplug -lmpg123 -lvorbisidec -logg -lSDL2_ttf -lSDL2_gfx -lSDL2_image -lSDL2 -lEGL -lGLESv2 -lglapi -ldrm_nouveau -lwebp -lpng -ljpeg `sdl2-config --libs` `freetype-config --libs` -luCommon -luEntry -lnx
+LIBS	:= -lpu -lfreetype -lSDL2_mixer -lopusfile -lopus -lmodplug -lmpg123 -lvorbisidec -logg -lSDL2_ttf -lSDL2_gfx -lSDL2_image -lSDL2 -lEGL -lGLESv2 -lglapi -ldrm_nouveau -lwebp -lpng -ljpeg `sdl2-config --libs` `freetype-config --libs` -luCommon -lnx
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS	:= $(PORTLIBS) $(LIBNX) $(LIBUCOMMON) $(LIBUENTRY) $(LIBPU)
+LIBDIRS	:= $(PORTLIBS) $(LIBNX) $(LIBUCOMMON) $(LIBPU)
 
 
 #---------------------------------------------------------------------------------
@@ -139,7 +138,6 @@ all: $(BUILD)
 $(BUILD):
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) -C $(LIBUCOMMON)
-	@$(MAKE) -C $(LIBUENTRY)
 	@$(MAKE) -C $(LIBPU)
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
@@ -147,10 +145,8 @@ $(BUILD):
 clean:
 	@echo clean ...
 	@$(MAKE) clean -C $(LIBUCOMMON)
-	@$(MAKE) clean -C $(LIBUENTRY)
 	@$(MAKE) clean -C $(LIBPU)
 	@rm -fr $(BUILD) $(TARGET).nsp $(TARGET).npdm $(TARGET).nso $(TARGET).elf
-
 
 #---------------------------------------------------------------------------------
 else

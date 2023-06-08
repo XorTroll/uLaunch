@@ -24,6 +24,8 @@ namespace ul::util {
     #define UL_CONCAT(x,y) UL_CONCAT_IMPL(x,y)
     #define UL_UNIQUE_VAR_NAME(prefix) UL_CONCAT(prefix ## _, __COUNTER__)
 
+    #define UL_ON_SCOPE_EXIT(...) ::ul::util::OnScopeExit UL_UNIQUE_VAR_NAME(on_scope_exit) ([&]() { __VA_ARGS__ })
+
     class ScopedLock {
         private:
             Mutex &lock;

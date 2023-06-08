@@ -20,4 +20,12 @@ namespace ul::util {
         return strm.str();
     }
 
+    inline u64 Get64FromString(const std::string &val) {
+        return strtoull(val.c_str(), nullptr, 16);
+    }
+
+    std::string FormatAccount(const AccountUid value);
+    std::string FormatResultDisplay(const Result rc);
+    std::string FormatResultHex(const Result rc);
+
 }

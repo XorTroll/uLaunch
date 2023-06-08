@@ -6,6 +6,7 @@ SdOut/
 *.npdm
 *.nso
 *.nsp
+*.nacp
 .vs/
 bin/
 obj/

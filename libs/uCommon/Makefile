@@ -17,7 +17,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 #---------------------------------------------------------------------------------
 BUILD		:=	build
 TARGET		:=  $(notdir $(CURDIR))
-SOURCES		:=	source source/ul source/ul/cfg source/ul/smi source/ul/system
+SOURCES		:=	source source/ul source/ul/cfg source/ul/smi source/ul/system source/ul/acc source/ul/net source/ul/os source/ul/util
 INCLUDES	:=	include
 OUT_LIB		:=	lib
 

@@ -123,4 +123,16 @@ namespace ul::menu::smi {
         );
     }
 
+    inline Result RestartMenu() {
+        return SendCommand(SystemMessage::RestartMenu,
+            [&](ScopedStorageWriter &writer) {
+                return ResultSuccess;
+            },
+            [](ScopedStorageReader &reader) {
+                // ...
+                return ResultSuccess;
+            }
+        );
+    }
+
 }

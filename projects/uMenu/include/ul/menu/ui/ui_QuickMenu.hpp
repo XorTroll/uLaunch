@@ -1,7 +1,7 @@
 
 #pragma once
-#include <ul/menu/smi/smi_SystemMessageHandler.hpp>
 #include <pu/Plutonium>
+#include <ul/menu/smi/smi_SystemMessageHandler.hpp>
 
 namespace ul::menu::ui {
 
@@ -36,7 +36,7 @@ namespace ul::menu::ui {
             static void OnHomeButtonDetection();
 
         public:
-            QuickMenu();
+            QuickMenu(const std::string &main_icon);
             PU_SMART_CTOR(QuickMenu)
 
             inline constexpr s32 GetX() override {

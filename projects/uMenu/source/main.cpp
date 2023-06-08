@@ -1,13 +1,13 @@
-#include <ul/menu/am/am_LibnxLibappletWrap.hpp>
-#include <ul/menu/am/am_LibraryAppletUtils.hpp>
-#include <ul/menu/smi/smi_Commands.hpp>
-#include <ul/menu/ui/ui_Application.hpp>
-#include <ul/menu/ui/ui_TransitionGuard.hpp>
-// #include <ul/menu/thm/thm_Theme.hpp>
-#include <ul/cfg/cfg_Config.hpp>
-#include <ul/ent/ent_Load.hpp>
 #include <ul/fs/fs_Stdio.hpp>
+#include <ul/cfg/cfg_Config.hpp>
+#include <ul/util/util_Json.hpp>
+#include <ul/menu/ui/ui_MenuApplication.hpp>
 #include <ul/util/util_Size.hpp>
+#include <ul/net/net_Service.hpp>
+#include <ul/menu/smi/smi_SystemMessageHandler.hpp>
+#include <ul/menu/am/am_LibraryAppletUtils.hpp>
+#include <ul/menu/am/am_LibnxLibappletWrap.hpp>
+#include <ul/menu/menu_Results.hpp>
 
 using namespace ul::util::size;
 
@@ -16,110 +16,130 @@ extern "C" {
     u32 __nx_applet_type = AppletType_LibraryApplet; // Explicitly declare we're a library applet (need to do so for non-hbloader homebrew)
     TimeServiceType __nx_time_service_type = TimeServiceType_System;
     u32 __nx_fs_num_sessions = 1;
-
-    extern u8 *fake_heap_start;
-    extern u8 *fake_heap_end;
-
-    constexpr size_t HeapSize = 160_MB;
-
-    void __libnx_initheap() {
-        void *heap_addr;
-        UL_RC_ASSERT(svcSetHeapSize(&heap_addr, HeapSize));
-
-        fake_heap_start = reinterpret_cast<u8*>(heap_addr);
-        fake_heap_end = fake_heap_start + HeapSize;
-    }
+    size_t __nx_heap_size = 176_MB;
 
 }
 
-ul::cfg::Config g_Config;
-ul::menu::ui::Application::Ref g_Application;
+constexpr const char RomfsFile[] = "sdmc:/ulaunch/bin/uMenu/romfs.bin";
+
+ul::menu::ui::MenuApplication::Ref g_MenuApplication;
 ul::menu::ui::TransitionGuard g_TransitionGuard;
-ul::smi::SystemStatus g_SystemStatus;
-AccountUid g_SelectedUser;
-ul::smi::MenuStartMode g_MenuStartMode;
-// ul::menu::thm::Theme g_Theme;
+
+ul::cfg::TitleList g_EntryList;
+std::vector<ul::cfg::TitleRecord> g_HomebrewRecordList;
+
+ul::cfg::Config g_Config;
+ul::cfg::Theme g_Theme;
+
+ul::util::JSON g_DefaultLanguage;
+ul::util::JSON g_MainLanguage;
+char g_FwVersion[0x18] = {};
 
 namespace {
 
     void Initialize() {
         UL_RC_ASSERT(accountInitialize(AccountServiceType_System));
         UL_RC_ASSERT(nsInitialize());
+        UL_RC_ASSERT(ul::net::Initialize());
         UL_RC_ASSERT(psmInitialize());
         UL_RC_ASSERT(setsysInitialize());
         UL_RC_ASSERT(setInitialize());
-        UL_RC_ASSERT(nifmInitialize(NifmServiceType_System));
-        UL_RC_ASSERT(psmInitialize());
 
+        // Initialize uSystem message handling
         UL_RC_ASSERT(ul::menu::smi::InitializeSystemMessageHandler());
-        ul::menu::am::RegisterLibnxLibappletHomeButtonDetection();
 
-        UL_ASSERT_TRUE(g_Config.EnsureLoad());
-        AccountUid users[ACC_USER_LIST_SIZE];
-        s32 count;
-        UL_RC_ASSERT(accountListAllUsers(users, ACC_USER_LIST_SIZE, &count));
-
-        g_SelectedUser = users[0];
-        UL_RC_ASSERT(ul::menu::smi::SetSelectedUser(g_SelectedUser));
-
-        /*
-        const auto themes = ul::menu::thm::LoadThemes();
-        for(const auto &theme : themes) {
-            if(theme.manifest.name == g_Config.active_theme_name) {
-                g_Theme = theme;
-                break;
-            }
-        }
-
-        UL_ASSERT_TRUE(g_Theme.IsValid());
-        */
+        // Load menu config and theme
+        g_Config = ul::cfg::LoadConfig();
+        std::string theme_name;
+        UL_ASSERT_TRUE(g_Config.GetEntry(ul::cfg::ConfigEntryId::ActiveThemeName, theme_name));
+        g_Theme = ul::cfg::LoadTheme(theme_name);
     }
 
-    NORETURN void Finalize() {
+    void Exit() {
         ul::menu::smi::FinalizeSystemMessageHandler();
 
-        psmExit();
-        nifmExit();
         setExit();
         setsysExit();
         psmExit();
+        ul::net::Finalize();
         nsExit();
         accountExit();
-        exit(0);
-        __builtin_unreachable();
     }
-
 }
 
+// uMenu procedure: read sent storages, initialize RomFs (externally), load config and other stuff, finally create the renderer and start the UI
+
 int main() {
-    UL_RC_ASSERT(ul::menu::am::ReadStartMode(g_MenuStartMode));
-    UL_ASSERT_TRUE(g_MenuStartMode != ul::smi::MenuStartMode::Invalid);
+    auto start_mode = ul::smi::MenuStartMode::Invalid;
+    UL_RC_ASSERT(ul::menu::am::ReadStartMode(start_mode));
+    UL_ASSERT_TRUE(start_mode != ul::smi::MenuStartMode::Invalid);
 
-    // Information sent as an extra storage to us
-    UL_RC_ASSERT(ul::menu::am::ReadFromInputStorage(&g_SystemStatus, sizeof(g_SystemStatus)));
+    // Information sent as an extra storage to uMenu
+    ul::smi::SystemStatus status = {};
+    UL_RC_ASSERT(ul::menu::am::ReadFromInputStorage(&status, sizeof(status)));
 
+    memcpy(g_FwVersion, status.fw_version, sizeof(g_FwVersion));
+    
+    // Check if our RomFs data exists...
+    if(!ul::fs::ExistsFile(RomfsFile)) {
+        UL_RC_ASSERT(ul::menu::ResultRomfsNotFound);
+    }
+
+    // Try to mount it
+    UL_RC_ASSERT(romfsMountFromFsdev(RomfsFile, 0, "romfs"));
+
+    // After initializing RomFs, start initializing the rest of stuff here
     Initialize();
 
+    // Cache title and homebrew icons
+    ul::cfg::CacheEverything();
+
+    g_EntryList = ul::cfg::LoadTitleList();
+
+    // Get system language and load translations (default one if not present)
+    u64 lang_code = 0;
+    UL_RC_ASSERT(setGetLanguageCode(&lang_code));
+    const auto lang_path = ul::cfg::GetLanguageJSONPath(reinterpret_cast<char*>(&lang_code));
+    UL_RC_ASSERT(ul::util::LoadJSONFromFile(g_DefaultLanguage, ul::DefaultLanguagePath));
+    g_MainLanguage = g_DefaultLanguage;
+    if(ul::fs::ExistsFile(lang_path)) {
+        auto lang_json = ul::util::JSON::object();
+        UL_RC_ASSERT(ul::util::LoadJSONFromFile(lang_json, lang_path));
+        g_MainLanguage = lang_json;
+    }
+
+    // Get the text sizes to initialize default fonts
+    auto ui_json = ul::util::JSON::object();
+    UL_RC_ASSERT(ul::util::LoadJSONFromFile(ui_json, ul::cfg::GetAssetByTheme(g_Theme, "ui/UI.json")));
+    const auto menu_folder_text_size = ui_json.value<u32>("menu_folder_text_size", 25);
+    const auto default_font_path = ul::cfg::GetAssetByTheme(g_Theme, "ui/Font.ttf");
+
     auto renderer_opts = pu::ui::render::RendererInitOptions(SDL_INIT_EVERYTHING, pu::ui::render::RendererHardwareFlags);
-    renderer_opts.UseTTF();
+    renderer_opts.UseTTF(default_font_path);
     renderer_opts.UseImage(pu::ui::render::IMGAllFlags);
     renderer_opts.UseAudio(pu::ui::render::MixerAllFlags);
+    renderer_opts.SetExtraDefaultFontSize(menu_folder_text_size);
     auto renderer = pu::ui::render::Renderer::New(renderer_opts);
-    g_Application = ul::menu::ui::Application::New(renderer);
+    g_MenuApplication = ul::menu::ui::MenuApplication::New(renderer);
 
-    g_Application->Prepare();
+    g_MenuApplication->SetInformation(start_mode, status, ui_json);
+    g_MenuApplication->Prepare();
 
-    // Register handlers for different event detections
-    ul::menu::ui::Application::RegisterHomeButtonDetection();
-    ul::menu::ui::Application::RegisterSdCardEjectedDetection();
+    // Register handlers for HOME button press detection
+    ul::menu::am::RegisterLibnxLibappletHomeButtonDetection();
+    ul::menu::ui::MenuApplication::RegisterHomeButtonDetection();
     ul::menu::ui::QuickMenu::RegisterHomeButtonDetection();
 
-    if(g_MenuStartMode == ul::smi::MenuStartMode::MenuApplicationSuspended) {
-        g_Application->Show();
+    if(start_mode == ul::smi::MenuStartMode::MenuApplicationSuspended) {
+        g_MenuApplication->Show();
     }
     else {
-        g_Application->ShowWithFadeIn();
+        g_MenuApplication->ShowWithFadeIn();
     }
-    
-    Finalize();
+
+    // Exit RomFs manually, since we also initialized it manually
+    romfsExit();
+
+    Exit();
+    return 0;
 }
