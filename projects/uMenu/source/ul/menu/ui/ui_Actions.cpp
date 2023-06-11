@@ -76,8 +76,7 @@ namespace ul::menu::ui::actions {
         hidLaCreateControllerSupportArg(&arg);
         arg.enable_explain_text = true;
         for(u32 i = 0; i < 8; i++) {
-            // FIX
-            strcpy(arg.explain_text[i], "Test explain text");
+            strcpy(arg.explain_text[i], GetLanguageString("controller_support_explain_text").c_str());
         }
         hidLaShowControllerSupportForSystem(nullptr, &arg, true);
     }

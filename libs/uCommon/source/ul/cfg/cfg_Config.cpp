@@ -131,6 +131,10 @@ namespace ul::cfg {
         if(icon_path.empty()) {
             if(record.title_type == TitleType::Homebrew) {
                 icon_path = GetNroCacheIconPath(record.nro_target.nro_path);
+                if(!fs::ExistsFile(icon_path)) {
+                    // NRO has no icon, use the default one
+                    icon_path = DefaultHomebrewIconPath;
+                }
             }
             else if(record.title_type == TitleType::Installed) {
                 icon_path = GetTitleCacheIconPath(record.app_id);
@@ -378,6 +382,7 @@ namespace ul::cfg {
             fs::DeleteFile(json_path);
         }
 
+        // TODO: check res?
         util::SaveJSON(json_path, entry);
     }
 

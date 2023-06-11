@@ -16,6 +16,7 @@ namespace ul {
     constexpr const char TitleCachePath[] = "sdmc:/ulaunch/titles";
     constexpr const char AccountCachePath[] = "sdmc:/ulaunch/user";
     constexpr const char EntryCachePath[] = "sdmc:/ulaunch/nro";
+    constexpr const char DefaultHomebrewIconPath[] = "sdmc:/ulaunch/default_hb_icon.jpg";
 
     constexpr const char RootHomebrewPath[] = "sdmc:/switch";
 
