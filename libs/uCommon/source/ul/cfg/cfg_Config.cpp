@@ -10,15 +10,30 @@ namespace ul::cfg {
 
         NacpStruct g_DefaultHomebrewNacp = {};
 
+        std::string GetHomebrewCachePath(const std::string &nro_path, const std::string &ext) {
+            char path_copy[FS_MAX_PATH] = {};
+            strcpy(path_copy, nro_path.c_str());
+            u8 hash[SHA256_HASH_SIZE] = {};
+            sha256CalculateHash(hash, path_copy, FS_MAX_PATH);
+
+            std::stringstream strm;
+            strm << HomebrewCachePath << "/";
+            // Use the first half of the hash, like N does with NCAs
+            for(u32 i = 0; i < sizeof(hash) / 2; i++) {
+                strm << std::setw(2) << std::setfill('0') << std::hex << std::nouppercase << static_cast<u32>(hash[i]);
+            }
+            strm << "." << ext;
+            return strm.str();
+        }
+
         void CacheHomebrewEntry(const std::string &nro_path) {
             const auto cache_nro_icon_path = GetHomebrewCacheIconPath(nro_path);
-            if(fs::ExistsFile(cache_nro_icon_path)) {
-                // Since the cache icon filename is the SHA256 of the NRO, we know it's already cached
-                // (if the NRO were to have a different ico the SHA256 would also be different)
+            const auto cache_nro_nacp_path = GetHomebrewCacheNacpPath(nro_path);
+            if(fs::ExistsFile(cache_nro_icon_path) && fs::ExistsFile(cache_nro_nacp_path)) {
+                // Since the cache icon/nacp filename is the SHA256 of the NRO, we know it's already cached
+                // (if the NRO were to have a different icon/nacp the SHA256 would also be different)
                 return;
             }
-
-            // TODONEW: cache nacp too?
 
             auto f = fopen(nro_path.c_str(), "rb");
             if(f) {
@@ -29,7 +44,7 @@ namespace ul::cfg {
                             NroAssetHeader asset_header = {};
                             if(fread(&asset_header, sizeof(asset_header), 1, f) == 1) {
                                 if(asset_header.magic == NROASSETHEADER_MAGIC) {
-                                    if((asset_header.icon.offset > 0) && (asset_header.icon.size > 0)) {
+                                    if(!fs::ExistsFile(cache_nro_icon_path) && (asset_header.icon.offset > 0) && (asset_header.icon.size > 0)) {
                                         auto icon_buf = new u8[asset_header.icon.size]();
                                         if(fseek(f, header.size + asset_header.icon.offset, SEEK_SET) == 0) {
                                             if(fread(icon_buf, asset_header.icon.size, 1, f) == 1) {
@@ -37,6 +52,15 @@ namespace ul::cfg {
                                             }
                                         }
                                         delete[] icon_buf;
+                                    }
+                                    if(!fs::ExistsFile(cache_nro_nacp_path) && (asset_header.nacp.offset > 0) && (asset_header.nacp.size > 0)) {
+                                        auto nacp_buf = new u8[asset_header.nacp.size]();
+                                        if(fseek(f, header.size + asset_header.nacp.offset, SEEK_SET) == 0) {
+                                            if(fread(nacp_buf, asset_header.nacp.size, 1, f) == 1) {
+                                                fs::WriteFile(cache_nro_nacp_path, nacp_buf, asset_header.nacp.size, true);
+                                            }
+                                        }
+                                        delete[] nacp_buf;
                                     }
                                 }
                             }
@@ -96,32 +120,19 @@ namespace ul::cfg {
 
         void EnsureLoadDefaultHomebrewNacp() {
             if(g_DefaultHomebrewNacp.display_version[0] == 0) {
-                fs::ReadFile(DefaultHomebrewNacpPath, &g_DefaultHomebrewNacp, sizeof(g_DefaultHomebrewNacp));
+                UL_ASSERT_TRUE(fs::ReadFile(DefaultHomebrewNacpPath, &g_DefaultHomebrewNacp, sizeof(g_DefaultHomebrewNacp)));
             }
         }
 
         void LoadHomebrewControlData(const std::string &nro_path, TitleControlData &out_control) {
             auto loaded = false;
-            auto f = fopen(nro_path.c_str(), "rb");
-            if(f) {
-                fseek(f, sizeof(NroStart), SEEK_SET);
-                NroHeader hdr = {};
-                if(fread(&hdr, 1, sizeof(NroHeader), f) == sizeof(NroHeader)) {
-                    fseek(f, hdr.size, SEEK_SET);
-                    NroAssetHeader ahdr = {};
-                    if(fread(&ahdr, 1, sizeof(NroAssetHeader), f) == sizeof(NroAssetHeader)) {
-                        if(ahdr.magic == NROASSETHEADER_MAGIC) {
-                            if(ahdr.nacp.size > 0) {
-                                NacpStruct nacp = {};
-                                fseek(f, hdr.size + ahdr.nacp.offset, SEEK_SET);
-                                fread(&nacp, 1, ahdr.nacp.size, f);
-                                ProcessControlDataStrings(out_control, &nacp);
-                                loaded = true;
-                            }
-                        }
-                    }
-                }
-                fclose(f);
+
+            const auto cache_nacp_path = GetHomebrewCacheNacpPath(nro_path);
+            if(fs::ExistsFile(cache_nacp_path)) {
+                NacpStruct nacp = {};
+                UL_ASSERT_TRUE(fs::ReadFile(cache_nacp_path, &nacp, sizeof(nacp)));
+                ProcessControlDataStrings(out_control, &nacp);
+                loaded = true;
             }
             if(!loaded) {
                 // Default NACP strings
@@ -132,7 +143,7 @@ namespace ul::cfg {
 
         void LoadApplicationControlData(const u64 app_id, TitleControlData &out_control) {
             auto tmp_control_data = new NsApplicationControlData();
-            nsGetApplicationControlData(NsApplicationControlSource_Storage, app_id, tmp_control_data, sizeof(NsApplicationControlData), nullptr);
+            UL_RC_ASSERT(nsGetApplicationControlData(NsApplicationControlSource_Storage, app_id, tmp_control_data, sizeof(NsApplicationControlData), nullptr));
             ProcessControlDataStrings(out_control, &tmp_control_data->nacp);
         }
 
@@ -669,19 +680,11 @@ namespace ul::cfg {
     }
 
     std::string GetHomebrewCacheIconPath(const std::string &nro_path) {
-        char path_copy[FS_MAX_PATH] = {};
-        strcpy(path_copy, nro_path.c_str());
-        u8 hash[0x20] = {0};
-        sha256CalculateHash(hash, path_copy, FS_MAX_PATH);
+        return GetHomebrewCachePath(nro_path, "jpg");
+    }
 
-        std::stringstream strm;
-        strm << HomebrewCachePath << "/";
-        // Use the first half of the hash, like N does with NCAs.
-        for(u32 i = 0; i < sizeof(hash) / 2; i++) {
-            strm << std::setw(2) << std::setfill('0') << std::hex << std::nouppercase << static_cast<u32>(hash[i]);
-        }
-        strm << ".jpg";
-        return strm.str();
+    std::string GetHomebrewCacheNacpPath(const std::string &nro_path) {
+        return GetHomebrewCachePath(nro_path, "nacp");
     }
 
 }

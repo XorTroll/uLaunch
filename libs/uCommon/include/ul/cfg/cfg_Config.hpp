@@ -393,6 +393,7 @@ namespace ul::cfg {
         return JoinPath(TitleCachePath, util::FormatProgramId(app_id) + ".jpg");
     }
 
-    std::string GetHomebrewCacheIconPath(const std::string &path);
+    std::string GetHomebrewCacheIconPath(const std::string &nro_path);
+    std::string GetHomebrewCacheNacpPath(const std::string &nro_path);
 
 }

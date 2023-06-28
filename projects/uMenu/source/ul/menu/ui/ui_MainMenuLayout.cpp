@@ -19,14 +19,6 @@ extern char g_FwVersion[0x18];
 
 #define MENU_HBMENU_NRO "sdmc:/hbmenu.nro"
 
-#define DEBUG_LOG(fmt, ...) ({ \
-    auto f = fopen("sdmc:/ulaunch/umenu-tmp.log", "ab+"); \
-    if(f) { \
-        fprintf(f, fmt "\n", ##__VA_ARGS__); \
-        fclose(f); \
-    } \
-})
-
 namespace ul::menu::ui {
 
     namespace {
@@ -690,18 +682,15 @@ namespace ul::menu::ui {
                     if(this->items_menu->IsSuspendedItemSelected() && (this->suspended_screen_alpha <= this->min_alpha)) {
                         this->suspended_screen_alpha = this->min_alpha;
                         this->suspended_screen_img->SetAlpha(this->suspended_screen_alpha);
-                        DEBUG_LOG("now focused from startshow");
                         this->mode = SuspendedImageMode::Focused;
                     }
                     else if(!this->items_menu->IsSuspendedItemSelected() && (this->suspended_screen_alpha == 0)) {
                         this->suspended_screen_img->SetAlpha(this->suspended_screen_alpha);
-                        DEBUG_LOG("now not focused from startshow");
                         this->mode = SuspendedImageMode::NotFocused;
                     }
                     else {
                         this->suspended_screen_img->SetAlpha(this->suspended_screen_alpha);
                         this->suspended_screen_alpha -= SuspendedScreenAlphaIncrement;
-                        DEBUG_LOG("startshow alpha: %d -> %d", this->suspended_screen_alpha + SuspendedScreenAlphaIncrement, this->suspended_screen_alpha);
                         if(this->suspended_screen_alpha < 0) {
                             this->suspended_screen_alpha = 0;
                         }
@@ -720,7 +709,6 @@ namespace ul::menu::ui {
                     else {
                         this->suspended_screen_img->SetAlpha(this->suspended_screen_alpha);
                         this->suspended_screen_alpha += SuspendedScreenAlphaIncrement;
-                        DEBUG_LOG("hide alpha: %d -> %d", this->suspended_screen_alpha - SuspendedScreenAlphaIncrement, this->suspended_screen_alpha);
                         if(this->suspended_screen_alpha > 0xFF) {
                             this->suspended_screen_alpha = 0xFF;
                         }
@@ -733,13 +721,11 @@ namespace ul::menu::ui {
                 case SuspendedImageMode::ShowingGainedFocus: {
                     if(this->suspended_screen_alpha == this->min_alpha) {
                         this->suspended_screen_img->SetAlpha(this->suspended_screen_alpha);
-                        DEBUG_LOG("now focused from ShowingGainedFocus");
                         this->mode = SuspendedImageMode::Focused;
                     }
                     else {
                         this->suspended_screen_img->SetAlpha(this->suspended_screen_alpha);
                         this->suspended_screen_alpha += SuspendedScreenAlphaIncrement;
-                        DEBUG_LOG("reshow alpha: %d -> %d", this->suspended_screen_alpha - SuspendedScreenAlphaIncrement, this->suspended_screen_alpha);
                         if(this->suspended_screen_alpha > this->min_alpha) {
                             this->suspended_screen_alpha = this->min_alpha;
                         }
@@ -749,13 +735,11 @@ namespace ul::menu::ui {
                 case SuspendedImageMode::HidingLostFocus: {
                     if(this->suspended_screen_alpha == 0) {
                         this->suspended_screen_img->SetAlpha(this->suspended_screen_alpha);
-                        DEBUG_LOG("now not focus from hidelostfocus");
                         this->mode = SuspendedImageMode::NotFocused;
                     }
                     else {
                         this->suspended_screen_img->SetAlpha(this->suspended_screen_alpha);
                         this->suspended_screen_alpha -= SuspendedScreenAlphaIncrement;
-                        DEBUG_LOG("hidelostfocus alpha: %d -> %d", this->suspended_screen_alpha - SuspendedScreenAlphaIncrement, this->suspended_screen_alpha);
                         if(this->suspended_screen_alpha < 0) {
                             this->suspended_screen_alpha = 0;
                         }
@@ -798,7 +782,6 @@ namespace ul::menu::ui {
                 if(action) {
                     action();
                 }
-                this->items_menu->Rewind(); // TODONEW: this was a temp fix, we shouldnt have to rewind here
                 this->DoMoveFolder(name);
 
                 g_MenuApplication->FadeIn();
