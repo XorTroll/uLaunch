@@ -1,14 +1,25 @@
 #include <ul/cfg/cfg_Config.hpp>
 #include <ul/util/util_String.hpp>
 #include <ul/util/util_Stl.hpp>
-#include <ul/os/os_Titles.hpp>
+#include <ul/os/os_Applications.hpp>
+#include <ul/ul_Result.hpp>
 
 namespace ul::cfg {
 
     namespace {
 
-        void DoCacheHomebrew(const std::string &nro_path) {
-            const auto cache_nro_icon_path = GetNroCacheIconPath(nro_path);
+        NacpStruct g_DefaultHomebrewNacp = {};
+
+        void CacheHomebrewEntry(const std::string &nro_path) {
+            const auto cache_nro_icon_path = GetHomebrewCacheIconPath(nro_path);
+            if(fs::ExistsFile(cache_nro_icon_path)) {
+                // Since the cache icon filename is the SHA256 of the NRO, we know it's already cached
+                // (if the NRO were to have a different ico the SHA256 would also be different)
+                return;
+            }
+
+            // TODONEW: cache nacp too?
+
             auto f = fopen(nro_path.c_str(), "rb");
             if(f) {
                 if(fseek(f, sizeof(NroStart), SEEK_SET) == 0) {
@@ -36,37 +47,40 @@ namespace ul::cfg {
             }
         }
 
-        void CacheHomebrew(const std::string &hb_base_path) {
+        void CacheHomebrewEntries(const std::string &hb_base_path) {
             UL_FS_FOR(hb_base_path, name, path, is_dir, is_file, {
                 if(dt->d_type & DT_DIR) {
-                    CacheHomebrew(path);
+                    CacheHomebrewEntries(path);
                 }
                 else if(util::StringEndsWith(name, ".nro")) {
-                    DoCacheHomebrew(path);
+                    CacheHomebrewEntry(path);
                 }
             });
         }
 
-        void CacheInstalledTitles() {
-            const auto titles = os::QueryInstalledTitles();
-
-            auto control_data = new NsApplicationControlData();
-            for(const auto &title: titles) {
-                const auto cache_icon_path = cfg::GetTitleCacheIconPath(title.app_id);
-                if(R_SUCCEEDED(nsGetApplicationControlData(NsApplicationControlSource_Storage, title.app_id, control_data, sizeof(NsApplicationControlData), nullptr))) {
-                    fs::WriteFile(cache_icon_path, control_data->icon, sizeof(control_data->icon), true);
-                }
+        void CacheApplicationEntry(const u64 app_id, NsApplicationControlData *tmp_control_data) {
+            const auto cache_icon_path = cfg::GetTitleCacheIconPath(app_id);
+            fs::DeleteFile(cache_icon_path);
+            if(R_SUCCEEDED(nsGetApplicationControlData(NsApplicationControlSource_Storage, app_id, tmp_control_data, sizeof(NsApplicationControlData), nullptr))) {
+                fs::WriteFile(cache_icon_path, tmp_control_data->icon, sizeof(tmp_control_data->icon), true);
             }
-            delete control_data;
         }
 
-        void ProcessStringsFromNacp(RecordStrings &strs, NacpStruct *nacp) {
+        void CacheApplicationEntries(const std::vector<NsApplicationRecord> &records) {
+            auto tmp_control_data = new NsApplicationControlData();
+            for(const auto &record: records) {
+                CacheApplicationEntry(record.application_id, tmp_control_data);
+            }
+            delete tmp_control_data;
+        }
+
+        void ProcessControlDataStrings(TitleControlData &out_control, NacpStruct *nacp) {
             NacpLanguageEntry *lang_entry = nullptr;
             nacpGetLanguageEntry(nacp, &lang_entry);
             if(lang_entry == nullptr) {
                 for(u32 i = 0; i < 16; i++) {
                     lang_entry = &nacp->lang[i];
-                    if((strlen(lang_entry->name) > 0) && (strlen(lang_entry->author) > 0)) {
+                    if((lang_entry->name[0] > 0) && (lang_entry->author[0] > 0)) {
                         break;
                     }
                     lang_entry = nullptr;
@@ -74,10 +88,52 @@ namespace ul::cfg {
             }
 
             if(lang_entry != nullptr) {
-                strs.name = lang_entry->name;
-                strs.author = lang_entry->author;
-                strs.version = nacp->display_version;
+                out_control.name = lang_entry->name;
+                out_control.author = lang_entry->author;
+                out_control.version = nacp->display_version;
             }
+        }
+
+        void EnsureLoadDefaultHomebrewNacp() {
+            if(g_DefaultHomebrewNacp.display_version[0] == 0) {
+                fs::ReadFile(DefaultHomebrewNacpPath, &g_DefaultHomebrewNacp, sizeof(g_DefaultHomebrewNacp));
+            }
+        }
+
+        void LoadHomebrewControlData(const std::string &nro_path, TitleControlData &out_control) {
+            auto loaded = false;
+            auto f = fopen(nro_path.c_str(), "rb");
+            if(f) {
+                fseek(f, sizeof(NroStart), SEEK_SET);
+                NroHeader hdr = {};
+                if(fread(&hdr, 1, sizeof(NroHeader), f) == sizeof(NroHeader)) {
+                    fseek(f, hdr.size, SEEK_SET);
+                    NroAssetHeader ahdr = {};
+                    if(fread(&ahdr, 1, sizeof(NroAssetHeader), f) == sizeof(NroAssetHeader)) {
+                        if(ahdr.magic == NROASSETHEADER_MAGIC) {
+                            if(ahdr.nacp.size > 0) {
+                                NacpStruct nacp = {};
+                                fseek(f, hdr.size + ahdr.nacp.offset, SEEK_SET);
+                                fread(&nacp, 1, ahdr.nacp.size, f);
+                                ProcessControlDataStrings(out_control, &nacp);
+                                loaded = true;
+                            }
+                        }
+                    }
+                }
+                fclose(f);
+            }
+            if(!loaded) {
+                // Default NACP strings
+                EnsureLoadDefaultHomebrewNacp();
+                ProcessControlDataStrings(out_control, &g_DefaultHomebrewNacp);
+            }
+        }
+
+        void LoadApplicationControlData(const u64 app_id, TitleControlData &out_control) {
+            auto tmp_control_data = new NsApplicationControlData();
+            nsGetApplicationControlData(NsApplicationControlSource_Storage, app_id, tmp_control_data, sizeof(NsApplicationControlData), nullptr);
+            ProcessControlDataStrings(out_control, &tmp_control_data->nacp);
         }
 
     }
@@ -105,7 +161,8 @@ namespace ul::cfg {
                                 if((header.magic == NROHEADER_MAGIC) && (f_size >= header.size)) {
                                     TitleRecord rec = {};
                                     rec.title_type = TitleType::Homebrew;
-                                    strcpy(rec.nro_target.nro_path, path.c_str());
+                                    rec.hb_info = {};
+                                    strcpy(rec.hb_info.nro_target.nro_path, path.c_str());
                                     nros.push_back(rec);
                                 }
                             }
@@ -118,86 +175,64 @@ namespace ul::cfg {
         return nros;
     }
 
-    void CacheEverything(const std::string &hb_base_path) {
+    void CacheHomebrew(const std::string &hb_base_path) {
+        fs::CleanDirectory(HomebrewCachePath);
+        CacheHomebrewEntries(hb_base_path);
+    }
+    
+    void CacheApplications(const std::vector<NsApplicationRecord> &records) {
         fs::CleanDirectory(TitleCachePath);
-        CacheInstalledTitles();
+        CacheApplicationEntries(records);
+    }
 
-        fs::CleanDirectory(EntryCachePath);
-        CacheHomebrew(hb_base_path);
+    void CacheSingleApplication(const u64 app_id) {
+        auto tmp_control_data = new NsApplicationControlData();
+        CacheApplicationEntry(app_id, tmp_control_data);
+        delete tmp_control_data;
     }
 
     std::string GetRecordIconPath(const TitleRecord &record) {
-        auto icon_path = record.icon;
+        auto icon_path = record.control.icon_path;
         if(icon_path.empty()) {
             if(record.title_type == TitleType::Homebrew) {
-                icon_path = GetNroCacheIconPath(record.nro_target.nro_path);
+                icon_path = GetHomebrewCacheIconPath(record.hb_info.nro_target.nro_path);
                 if(!fs::ExistsFile(icon_path)) {
                     // NRO has no icon, use the default one
                     icon_path = DefaultHomebrewIconPath;
                 }
             }
-            else if(record.title_type == TitleType::Installed) {
-                icon_path = GetTitleCacheIconPath(record.app_id);
+            else if(record.title_type == TitleType::Application) {
+                icon_path = GetTitleCacheIconPath(record.app_info.record.application_id);
             }
         }
         return icon_path;
     }
 
     std::string GetRecordJsonPath(const TitleRecord &record) {
-        auto json_name = record.json_name;
+        auto json_name = record.cfg.json_name;
         if(json_name.empty()) {
             if(record.title_type == TitleType::Homebrew) {
-                json_name = std::to_string(fs::GetFileSize(record.nro_target.nro_path)) + ".json";
+                json_name = std::to_string(fs::GetFileSize(record.hb_info.nro_target.nro_path)) + ".json";
             }
-            else if(record.title_type == TitleType::Installed) {
-                const auto app_id_str = util::FormatProgramId(record.app_id);
+            else if(record.title_type == TitleType::Application) {
+                const auto app_id_str = util::FormatProgramId(record.app_info.record.application_id);
                 json_name = app_id_str + ".json";
             }
         }
         return JoinPath(EntriesPath, json_name);
     }
 
-    RecordInformation GetRecordInformation(const TitleRecord &record) {
-        RecordInformation info = {};
-        info.icon_path = GetRecordIconPath(record);
-        if(record.title_type == TitleType::Homebrew) {
-            auto f = fopen(record.nro_target.nro_path, "rb");
-            if(f) {
-                fseek(f, sizeof(NroStart), SEEK_SET);
-                NroHeader hdr = {};
-                if(fread(&hdr, 1, sizeof(NroHeader), f) == sizeof(NroHeader)) {
-                    fseek(f, hdr.size, SEEK_SET);
-                    NroAssetHeader ahdr = {};
-                    if(fread(&ahdr, 1, sizeof(NroAssetHeader), f) == sizeof(NroAssetHeader)) {
-                        if(ahdr.magic == NROASSETHEADER_MAGIC) {
-                            if(ahdr.nacp.size > 0) {
-                                NacpStruct nacp = {};
-                                fseek(f, hdr.size + ahdr.nacp.offset, SEEK_SET);
-                                fread(&nacp, 1, ahdr.nacp.size, f);
-                                ProcessStringsFromNacp(info.strings, &nacp);
-                            }
-                        }
-                    }
-                }
-                fclose(f);
+    void TitleRecord::EnsureControlDataLoaded() {
+        if(!this->control.IsLoaded()) {
+            if(this->Is<TitleType::Homebrew>()) {
+                LoadHomebrewControlData(this->hb_info.nro_target.nro_path, this->control);
+            }
+            else {
+                LoadApplicationControlData(this->app_info.record.application_id, this->control);
             }
         }
-        else {
-            auto control_data = new NsApplicationControlData();
-            nsGetApplicationControlData(NsApplicationControlSource_Storage, record.app_id, control_data, sizeof(NsApplicationControlData), nullptr);
-            ProcessStringsFromNacp(info.strings, &control_data->nacp);
-            delete control_data;
-        }
-        if(!record.name.empty()) {
-            info.strings.name = record.name;
-        }
-        if(!record.author.empty()) {
-            info.strings.author = record.author;
-        }
-        if(!record.version.empty()) {
-            info.strings.version = record.version;
-        }
-        return info;
+
+        UL_ASSERT_TRUE(this->control.IsLoaded());
     }
 
     Theme LoadTheme(const std::string &base_name) {
@@ -350,31 +385,31 @@ namespace ul::cfg {
     void SaveRecord(const TitleRecord &record) {
         auto entry = util::JSON::object();
         entry["type"] = static_cast<u32>(record.title_type);
-        entry["folder"] = record.sub_folder;
+        entry["folder"] = record.cfg.sub_folder;
 
-        if(!record.name.empty()) {
-            entry["name"] = record.name;
+        if(record.control.custom_name) {
+            entry["name"] = record.control.name;
         }
-        if(!record.author.empty()) {
-            entry["author"] = record.author;
+        if(record.control.custom_author) {
+            entry["author"] = record.control.author;
         }
-        if(!record.version.empty()) {
-            entry["version"] = record.version;
+        if(record.control.custom_version) {
+            entry["version"] = record.control.version;
         }
-        if(!record.icon.empty()) {
-            entry["icon"] = record.icon;
+        if(record.control.custom_icon_path) {
+            entry["icon"] = record.control.icon_path;
         }
 
         if(record.title_type == TitleType::Homebrew) {
-            entry["nro_path"] = record.nro_target.nro_path;
-            if(strlen(record.nro_target.nro_argv)) {
-                if(strcasecmp(record.nro_target.nro_path, record.nro_target.nro_argv) != 0) {
-                    entry["nro_argv"] = record.nro_target.nro_argv;
+            entry["nro_path"] = record.hb_info.nro_target.nro_path;
+            if(strlen(record.hb_info.nro_target.nro_argv)) {
+                if(strcasecmp(record.hb_info.nro_target.nro_path, record.hb_info.nro_target.nro_argv) != 0) {
+                    entry["nro_argv"] = record.hb_info.nro_target.nro_argv;
                 }
             }
         }
-        else if(record.title_type == TitleType::Installed) {
-            entry["application_id"] = util::FormatProgramId(record.app_id);
+        else if(record.title_type == TitleType::Application) {
+            entry["application_id"] = util::FormatProgramId(record.app_info.record.application_id);
         }
         
         const auto json_path = GetRecordJsonPath(record);
@@ -382,8 +417,8 @@ namespace ul::cfg {
             fs::DeleteFile(json_path);
         }
 
-        // TODO: check res?
-        util::SaveJSON(json_path, entry);
+        // TODONEW: better check?
+        UL_ASSERT_TRUE(util::SaveJSON(json_path, entry));
     }
 
     bool MoveRecordTo(TitleList &list, const TitleRecord &record, const std::string &folder_name) {
@@ -398,7 +433,7 @@ namespace ul::cfg {
             if(folder_name.empty()) {
                 return true;
             }
-            record_json_name = UL_STL_UNWRAP(find_in_root).json_name;
+            record_json_name = UL_STL_UNWRAP(find_in_root).cfg.json_name;
 
             list.root.titles.erase(find_in_root);
             title_found = true;
@@ -413,7 +448,7 @@ namespace ul::cfg {
                     if(folder.name == folder_name) {
                         return true;
                     }
-                    record_json_name = UL_STL_UNWRAP(find_in_folder).json_name;
+                    record_json_name = UL_STL_UNWRAP(find_in_folder).cfg.json_name;
 
                     folder.titles.erase(find_in_folder);
                     title_found = true;
@@ -424,8 +459,8 @@ namespace ul::cfg {
 
         if(title_found) {
             TitleRecord title = record;
-            title.json_name = record_json_name;
-            title.sub_folder = folder_name;
+            title.cfg.json_name = record_json_name;
+            title.cfg.sub_folder = folder_name;
 
             // Add (move) it to root again
             if(folder_name.empty()) {
@@ -466,7 +501,7 @@ namespace ul::cfg {
         if(!folder.name.empty()) {
             folder.name = new_name;
             for(auto &entry: folder.titles) {
-                entry.sub_folder = new_name;
+                entry.cfg.sub_folder = new_name;
                 SaveRecord(entry);
             }
         }
@@ -480,7 +515,7 @@ namespace ul::cfg {
         // Search in root first
         const auto find_in_root = UL_STL_FIND_IF(list.root.titles, title_item, record.Equals(title_item));
         if(UL_STL_FOUND(list.root.titles, find_in_root)) {
-            if(!UL_STL_UNWRAP(find_in_root).json_name.empty()) {
+            if(!UL_STL_UNWRAP(find_in_root).cfg.json_name.empty()) {
                 title_found = true;
             }
         }
@@ -490,7 +525,7 @@ namespace ul::cfg {
             for(auto &folder: list.folders) {
                 const auto find_in_folder = UL_STL_FIND_IF(folder.titles, title_item, record.Equals(title_item));
                 if(UL_STL_FOUND(folder.titles, find_in_folder)) {
-                    if(!UL_STL_UNWRAP(find_in_folder).json_name.empty()) {
+                    if(!UL_STL_UNWRAP(find_in_folder).cfg.json_name.empty()) {
                         title_found = true;
                         break;
                     }
@@ -504,40 +539,52 @@ namespace ul::cfg {
     TitleList LoadTitleList() {
         TitleList list = {};
         
-        // Installed titles first
-        auto titles = os::QueryInstalledTitles();
+        // Applications first
+        auto records = os::ListApplicationRecords();
 
         UL_FS_FOR("sdmc:/ulaunch/entries", name, path, is_dir, is_file, {
             util::JSON entry;
             const auto rc = util::LoadJSONFromFile(entry, path);
             if(R_SUCCEEDED(rc)) {
                 const auto type = static_cast<TitleType>(entry.value("type", static_cast<u32>(TitleType::Invalid)));
-                if(type == TitleType::Installed) {
+                if(type == TitleType::Application) {
                     const std::string app_id_str = entry.value("application_id", "");
                     if(!app_id_str.empty()) {
                         const std::string folder = entry.value("folder", "");
                         const auto app_id = util::Get64FromString(app_id_str);
                         if(app_id > 0) {
+                            // TODONEW: allow custom items in root folder?
                             if(!folder.empty()) {
                                 TitleRecord rec = {
-                                    .json_name = name,
                                     .title_type = type,
-                                    .sub_folder = folder,
-                                    .icon = entry.value("icon", ""),
-                                    .app_id = app_id,
-                                    .name = entry.value("name", ""),
-                                    .author = entry.value("author", ""),
-                                    .version = entry.value("version", "")
+                                    .cfg = {
+                                        .json_name = name,
+                                        .sub_folder = folder
+                                    },
+                                    .control = {
+                                        .name = entry.value("name", ""),
+                                        .author = entry.value("author", ""),
+                                        .version = entry.value("version", ""),
+                                        .icon_path = entry.value("icon", "")
+                                    },
+                                    .app_info = {}
                                 };
+                                rec.control.custom_name = !rec.control.name.empty();
+                                rec.control.custom_author = !rec.control.author.empty();
+                                rec.control.custom_version = !rec.control.version.empty();
+                                rec.control.custom_icon_path = !rec.control.icon_path.empty();
 
-                                const auto find_title = UL_STL_FIND_IF(titles, title_item, title_item.app_id == app_id);
-                                if(UL_STL_FOUND(titles, find_title)) {
-                                    titles.erase(find_title);
+                                const auto found_record = UL_STL_FIND_IF(records, record, record.application_id == app_id);
+                                if(UL_STL_FOUND(records, found_record)) {
+                                    // TODONEW: if not found the entry is invalid/duplicate?
+                                    rec.app_info.record = UL_STL_UNWRAP(found_record);
+                                    rec.app_info.meta_status = os::GetApplicationContentMetaStatus(rec.app_info.record.application_id);
+                                    records.erase(found_record);
                                 }
 
-                                const auto find_folder = UL_STL_FIND_IF(list.folders, folder_item, folder_item.name == folder);
-                                if(UL_STL_FOUND(list.folders, find_folder)) {
-                                    UL_STL_UNWRAP(find_folder).titles.push_back(rec);
+                                const auto found_folder = UL_STL_FIND_IF(list.folders, folder_item, folder_item.name == folder);
+                                if(UL_STL_FOUND(list.folders, found_folder)) {
+                                    UL_STL_UNWRAP(found_folder).titles.push_back(rec);
                                 }
                                 else {
                                     TitleFolder title_folder = {
@@ -556,18 +603,28 @@ namespace ul::cfg {
                     if(fs::ExistsFile(nro_path)) {
                         const std::string folder = entry.value("folder", "");
                         TitleRecord rec = {
-                            .json_name = name,
                             .title_type = type,
-                            .sub_folder = folder,
-                            .icon = entry.value("icon", ""),
-                            .name = entry.value("name", ""),
-                            .author = entry.value("author", ""),
-                            .version = entry.value("version", "")
+                            .cfg = {
+                                .json_name = name,
+                                .sub_folder = folder
+                            },
+                            .control = {
+                                .name = entry.value("name", ""),
+                                .author = entry.value("author", ""),
+                                .version = entry.value("version", ""),
+                                .icon_path = entry.value("icon", "")
+                            },
+                            .hb_info = {}
                         };
+                        rec.control.custom_name = !rec.control.name.empty();
+                        rec.control.custom_author = !rec.control.author.empty();
+                        rec.control.custom_version = !rec.control.version.empty();
+                        rec.control.custom_icon_path = !rec.control.icon_path.empty();
+
                         const std::string argv = entry.value("nro_argv", "");
-                        strcpy(rec.nro_target.nro_path, nro_path.c_str());
+                        strcpy(rec.hb_info.nro_target.nro_path, nro_path.c_str());
                         if(!argv.empty()) {
-                            strcpy(rec.nro_target.nro_argv, argv.c_str());
+                            strcpy(rec.hb_info.nro_target.nro_argv, argv.c_str());
                         }
                         
                         if(folder.empty()) {
@@ -592,23 +649,33 @@ namespace ul::cfg {
             }
         });
 
-        // Add cached icons to non-custom title entries
-        for(auto &title: titles) {
-            title.icon = cfg::GetTitleCacheIconPath(title.app_id);
+        // Add cached icons to non-custom application entries
+        for(const auto &record: records) {
+            const TitleRecord rec = {
+                .title_type = TitleType::Application,
+                .cfg = {},
+                .control = {
+                    .icon_path = cfg::GetTitleCacheIconPath(record.application_id)
+                },
+                .app_info = {
+                    .record = record,
+                    .meta_status = os::GetApplicationContentMetaStatus(record.application_id)
+                }
+            };
+            list.root.titles.push_back(rec);
         }
 
-        list.root.titles.insert(list.root.titles.end(), titles.begin(), titles.end());
         return list;
     }
 
-    std::string GetNroCacheIconPath(const std::string &path) {
+    std::string GetHomebrewCacheIconPath(const std::string &nro_path) {
         char path_copy[FS_MAX_PATH] = {};
-        strcpy(path_copy, path.c_str());
+        strcpy(path_copy, nro_path.c_str());
         u8 hash[0x20] = {0};
         sha256CalculateHash(hash, path_copy, FS_MAX_PATH);
 
         std::stringstream strm;
-        strm << "sdmc:/ulaunch/nro/";
+        strm << HomebrewCachePath << "/";
         // Use the first half of the hash, like N does with NCAs.
         for(u32 i = 0; i < sizeof(hash) / 2; i++) {
             strm << std::setw(2) << std::setfill('0') << std::hex << std::nouppercase << static_cast<u32>(hash[i]);

@@ -45,7 +45,7 @@ namespace ul::menu::ui {
             g_MenuApplication->StartPlayBGM();
             g_TransitionGuard.Run([]() {
                 g_MenuApplication->FadeOut();
-                g_MenuApplication->LoadMenu();
+                g_MenuApplication->LoadMainMenu();
                 g_MenuApplication->FadeIn();
             });
         }

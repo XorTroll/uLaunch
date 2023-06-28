@@ -13,7 +13,7 @@ namespace ul::menu::ui {
 
     }
 
-    void QuickMenu::OnHomeButtonDetection() {
+    void QuickMenu::OnHomeButtonDetection(const smi::MenuMessageContext _) {
         g_HomePressed = true;
     }
 
@@ -26,49 +26,49 @@ namespace ul::menu::ui {
         
         auto help_item = pu::ui::elm::MenuItem::New("Help & information");
         help_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/HelpIcon.png"));
-        help_item->AddOnKey(&actions::ShowHelpDialog);
+        help_item->AddOnKey(&ShowHelpDialog);
         help_item->SetColor(g_MenuApplication->GetTextColor());
         this->options_menu->AddItem(help_item);
 
         auto power_item = pu::ui::elm::MenuItem::New("Power options");
         power_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/PowerIcon.png"));
-        power_item->AddOnKey(&actions::ShowPowerDialog);
+        power_item->AddOnKey(&ShowPowerDialog);
         power_item->SetColor(g_MenuApplication->GetTextColor());
         this->options_menu->AddItem(power_item);
 
         auto controller_item = pu::ui::elm::MenuItem::New("Controller options");
         controller_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/ControllerIcon.png"));
-        controller_item->AddOnKey(&actions::ShowControllerSupport);
+        controller_item->AddOnKey(&ShowControllerSupport);
         controller_item->SetColor(g_MenuApplication->GetTextColor());
         this->options_menu->AddItem(controller_item);
 
         auto album_item = pu::ui::elm::MenuItem::New("Open album");
         album_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/AlbumIcon.png"));
-        album_item->AddOnKey(&actions::ShowAlbumApplet);
+        album_item->AddOnKey(&ShowAlbumApplet);
         album_item->SetColor(g_MenuApplication->GetTextColor());
         this->options_menu->AddItem(album_item);
 
         auto web_item = pu::ui::elm::MenuItem::New("Open web-page");
         web_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/WebIcon.png"));
-        web_item->AddOnKey(&actions::ShowWebPage);
+        web_item->AddOnKey(&ShowWebPage);
         web_item->SetColor(g_MenuApplication->GetTextColor());
         this->options_menu->AddItem(web_item);
 
         auto user_item = pu::ui::elm::MenuItem::New("User menu");
         user_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/UserIcon.png"));
-        user_item->AddOnKey(&actions::ShowUserMenu);
+        user_item->AddOnKey(&ShowUserMenu);
         user_item->SetColor(g_MenuApplication->GetTextColor());
         this->options_menu->AddItem(user_item);
 
         auto themes_item = pu::ui::elm::MenuItem::New("Themes menu");
         themes_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/ThemesIcon.png"));
-        themes_item->AddOnKey(&actions::ShowThemesMenu);
+        themes_item->AddOnKey(&ShowThemesMenu);
         themes_item->SetColor(g_MenuApplication->GetTextColor());
         this->options_menu->AddItem(themes_item);
 
         auto settings_item = pu::ui::elm::MenuItem::New("Settings menu");
         settings_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/SettingsIcon.png"));
-        settings_item->AddOnKey(&actions::ShowSettingsMenu);
+        settings_item->AddOnKey(&ShowSettingsMenu);
         settings_item->SetColor(g_MenuApplication->GetTextColor());
         this->options_menu->AddItem(settings_item);
     }

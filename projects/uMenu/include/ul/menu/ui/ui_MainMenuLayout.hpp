@@ -10,15 +10,20 @@
 
 namespace ul::menu::ui {
 
-    class MenuLayout : public IMenuLayout {
+    class MainMenuLayout : public IMenuLayout {
         public:
-            // 16:9 ratio
-            static constexpr u32 SuspendedImageWidthIncrement = (u32)30.0f;
-            static constexpr u32 SuspendedImageHeightIncrement = (u32)(SuspendedImageWidthIncrement / (16.0f / 9.0f));
-
-            static constexpr u8 SuspendedScreenAlphaIncrement = 10;
+            static constexpr u8 SuspendedScreenAlphaIncrement = 6;
 
         private:
+            enum class SuspendedImageMode {
+                ShowingAfterStart = 0,
+                Focused = 1,
+                HidingForResume = 2,
+                NotFocused = 3,
+                ShowingGainedFocus = 4,
+                HidingLostFocus = 5
+            };
+
             bool last_has_connection;
             u32 last_battery_lvl;
             bool last_is_charging;
@@ -49,7 +54,8 @@ namespace ul::menu::ui {
             bool select_on;
             bool select_dir;
             u8 min_alpha;
-            u32 mode;
+            u8 target_alpha;
+            SuspendedImageMode mode;
             s32 suspended_screen_alpha;
             pu::audio::Sfx title_launch_sfx;
             pu::audio::Sfx menu_toggle_sfx;
@@ -57,34 +63,13 @@ namespace ul::menu::ui {
             void DoMoveFolder(const std::string &name);
 
             void menu_Click(const u64 keys_down, const u32 idx);
-            void menu_OnSelected(const u32 idx);
+            void menu_OnSelected(const s32 prev_idx, const u32 idx);
             void menuToggle_Click();
 
-            inline void ApplySuspendedRatio(const bool increase) {
-                auto susp_w = this->suspended_screen_img->GetWidth();
-                auto susp_h = this->suspended_screen_img->GetHeight();
-
-                if(increase) {
-                    susp_w += (s32)SuspendedImageWidthIncrement;
-                    susp_h += (s32)SuspendedImageHeightIncrement;
-                }
-                else {
-                    susp_w -= (s32)SuspendedImageWidthIncrement;
-                    susp_h -= (s32)SuspendedImageHeightIncrement;
-                }
-                
-                const auto susp_x = (pu::ui::render::ScreenWidth - susp_w) / 2;
-                const auto susp_y = (pu::ui::render::ScreenHeight - susp_h) / 2;
-                this->suspended_screen_img->SetX(susp_x);
-                this->suspended_screen_img->SetY(susp_y);
-                this->suspended_screen_img->SetWidth(susp_w);
-                this->suspended_screen_img->SetHeight(susp_h);
-            }
-
         public:
-            MenuLayout(const u8 *captured_screen_buf, const u8 min_alpha);
-            ~MenuLayout();
-            PU_SMART_CTOR(MenuLayout)
+            MainMenuLayout(const u8 *captured_screen_buf, const u8 min_alpha);
+            ~MainMenuLayout();
+            PU_SMART_CTOR(MainMenuLayout)
 
             void OnMenuInput(const u64 keys_down, const u64 keys_up, const u64 keys_held, const pu::ui::TouchPoint touch_pos) override;
             bool OnHomeButtonPress() override;

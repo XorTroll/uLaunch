@@ -21,8 +21,8 @@ namespace ul::menu::ui {
         return cfg::GetLanguageString(g_MainLanguage, g_DefaultLanguage, name);
     }
 
-    void UiOnHomeButtonDetection() {
-        g_MenuApplication->GetLayout<IMenuLayout>()->DoOnHomeButtonPress();
+    void OnMessage(const smi::MenuMessageContext msg_ctx) {
+        g_MenuApplication->GetLayout<IMenuLayout>()->NotifyMessageContext(msg_ctx);
     }
 
     void MenuApplication::OnLoad() {
@@ -51,7 +51,7 @@ namespace ul::menu::ui {
 
         const u8 suspended_final_alpha = this->ui_json.value("suspended_final_alpha", 80);
         this->startup_lyt = StartupLayout::New();
-        this->menu_lyt = MenuLayout::New(screen_capture_buf, suspended_final_alpha);
+        this->main_menu_lyt = MainMenuLayout::New(screen_capture_buf, suspended_final_alpha);
         this->theme_menu_lyt = ThemeMenuLayout::New();
         this->settings_menu_lyt = SettingsMenuLayout::New();
         this->languages_menu_lyt = LanguagesMenuLayout::New();
@@ -63,7 +63,7 @@ namespace ul::menu::ui {
             }
             default: {
                 this->StartPlayBGM();
-                this->LoadMenu();
+                this->LoadMainMenu();
                 break;
             }
         }

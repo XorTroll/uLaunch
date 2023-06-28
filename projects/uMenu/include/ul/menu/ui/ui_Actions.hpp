@@ -2,7 +2,11 @@
 #pragma once
 #include <ul/cfg/cfg_Config.hpp>
 
-namespace ul::menu::ui::actions {
+namespace ul::menu::ui {
+
+    void RebootSystem();
+    void ShutdownSystem();
+    void SleepSystem();
 
     void ShowAboutDialog();
     void ShowSettingsMenu();

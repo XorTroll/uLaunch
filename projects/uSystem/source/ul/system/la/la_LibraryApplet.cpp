@@ -47,9 +47,9 @@ namespace ul::system::la {
         return !appletHolderCheckFinished(&g_AppletHolder);
     }
 
-    void Terminate() {
+    Result Terminate() {
         // Give it 15 seconds
-        appletHolderRequestExitOrTerminate(&g_AppletHolder, 15'000'000'000ul);
+        return appletHolderRequestExitOrTerminate(&g_AppletHolder, 15'000'000'000ul);
     }
 
     Result Start(const AppletId id, const u32 la_version, const void *in_data, const size_t in_size) {

@@ -56,7 +56,7 @@ namespace ul::menu::ui {
         if(keys_down & HidNpadButton_B) {
             g_TransitionGuard.Run([]() {
                 g_MenuApplication->FadeOut();
-                g_MenuApplication->LoadMenu();
+                g_MenuApplication->LoadMainMenu();
                 g_MenuApplication->FadeIn();
             });
         }
@@ -65,7 +65,7 @@ namespace ul::menu::ui {
     bool ThemeMenuLayout::OnHomeButtonPress() {
         return g_TransitionGuard.Run([]() {
             g_MenuApplication->FadeOut();
-            g_MenuApplication->LoadMenu();
+            g_MenuApplication->LoadMainMenu();
             g_MenuApplication->FadeIn();
         });
     }

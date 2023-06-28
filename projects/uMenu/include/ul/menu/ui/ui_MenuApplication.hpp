@@ -2,7 +2,7 @@
 #pragma once
 #include <ul/menu/ui/ui_TransitionGuard.hpp>
 #include <ul/menu/ui/ui_StartupLayout.hpp>
-#include <ul/menu/ui/ui_MenuLayout.hpp>
+#include <ul/menu/ui/ui_MainMenuLayout.hpp>
 #include <ul/menu/ui/ui_ThemeMenuLayout.hpp>
 #include <ul/menu/ui/ui_SettingsMenuLayout.hpp>
 #include <ul/menu/ui/ui_LanguagesMenuLayout.hpp>
@@ -20,13 +20,13 @@ namespace ul::menu::ui {
         Languages
     };
 
-    void UiOnHomeButtonDetection();
+    void OnMessage(const smi::MenuMessageContext msg_ctx);
 
     class MenuApplication : public pu::ui::Application {
         private:
             smi::MenuStartMode start_mode;
             StartupLayout::Ref startup_lyt;
-            MenuLayout::Ref menu_lyt;
+            MainMenuLayout::Ref main_menu_lyt;
             ThemeMenuLayout::Ref theme_menu_lyt;
             SettingsMenuLayout::Ref settings_menu_lyt;
             LanguagesMenuLayout::Ref languages_menu_lyt;
@@ -52,10 +52,6 @@ namespace ul::menu::ui {
             
             PU_SMART_CTOR(MenuApplication)
 
-            static inline void RegisterHomeButtonDetection() {
-                smi::RegisterOnMessageDetect(&UiOnHomeButtonDetection, smi::MenuMessage::HomeRequest);
-            }
-
             void OnLoad() override;
 
             inline void SetInformation(const smi::MenuStartMode start_mode, const smi::SystemStatus system_status, const util::JSON ui_json) {
@@ -64,9 +60,9 @@ namespace ul::menu::ui {
                 this->ui_json = ui_json;
             }
 
-            inline void LoadMenu() {
-                this->menu_lyt->SetUser(this->system_status.selected_user);
-                this->LoadLayout(this->menu_lyt);
+            inline void LoadMainMenu() {
+                this->main_menu_lyt->SetUser(this->system_status.selected_user);
+                this->LoadLayout(this->main_menu_lyt);
                 this->loaded_menu = MenuType::Main;
             }
 
@@ -182,8 +178,8 @@ namespace ul::menu::ui {
                 return this->startup_lyt;
             }
 
-            inline MenuLayout::Ref &GetMenuLayout() {
-                return this->menu_lyt;
+            inline MainMenuLayout::Ref &GetMenuLayout() {
+                return this->main_menu_lyt;
             }
 
             inline ThemeMenuLayout::Ref &GetThemeMenuLayout() {
@@ -208,5 +204,9 @@ namespace ul::menu::ui {
                 return this->loaded_menu;
             }
     };
+
+    inline void RegisterOnMessageCallback() {
+        smi::RegisterOnMessageDetect(&OnMessage);
+    }
 
 }

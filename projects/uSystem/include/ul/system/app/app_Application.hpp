@@ -24,7 +24,7 @@ namespace ul::system::app {
     static_assert(sizeof(ApplicationSelectedUserArgument) == 0x88);
 
     bool IsActive();
-    void Terminate();
+    Result Terminate();
     Result Start(const u64 app_id, const bool system, const AccountUid user_id, const void *data = nullptr, const size_t size = 0);
     bool HasForeground();
     Result SetForeground();

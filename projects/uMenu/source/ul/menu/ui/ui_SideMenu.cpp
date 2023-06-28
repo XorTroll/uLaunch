@@ -69,7 +69,7 @@ namespace ul::menu::ui {
         this->UpdateBorderIcons();
     }
 
-    SideMenu::SideMenu(const pu::ui::Color suspended_clr, const std::string &cursor_path, const std::string &suspended_img_path, const std::string &multiselect_img_path, const s32 txt_x, const s32 txt_y, const std::string &font_name, const pu::ui::Color txt_clr, const s32 y) : selected_item_idx(0), suspended_item_idx(-1), base_icon_idx(0), move_alpha(0), text_x(txt_x), text_y(txt_y), enabled(true), text_clr(txt_clr), on_select_cb(), on_selection_changed_cb(), left_border_icon(nullptr), right_border_icon(nullptr), text_font(font_name), scroll_flag(0), scroll_tp_value(50), scroll_count(0) {
+    SideMenu::SideMenu(const pu::ui::Color suspended_clr, const std::string &cursor_path, const std::string &suspended_img_path, const std::string &multiselect_img_path, const s32 txt_x, const s32 txt_y, const std::string &font_name, const pu::ui::Color txt_clr, const s32 y) : selected_item_idx(0), prev_selected_item_idx(-1), suspended_item_idx(-1), base_icon_idx(0), move_alpha(0), text_x(txt_x), text_y(txt_y), enabled(true), text_clr(txt_clr), on_select_cb(), on_selection_changed_cb(), left_border_icon(nullptr), right_border_icon(nullptr), text_font(font_name), scroll_flag(0), scroll_tp_value(50), scroll_count(0) {
         this->cursor_icon = pu::ui::render::LoadImage(cursor_path);
         this->suspended_icon = pu::ui::render::LoadImage(suspended_img_path);
         this->multiselect_icon = pu::ui::render::LoadImage(multiselect_img_path);
@@ -126,7 +126,7 @@ namespace ul::menu::ui {
                 if((this->base_icon_idx + i) == this->selected_item_idx) {
                     drawer->RenderTexture(this->cursor_icon, base_x - Margin, y - Margin, pu::ui::render::TextureRenderOptions::WithCustomAlphaAndDimensions(0xFF - this->move_alpha, ExtraIconSize, ExtraIconSize));
                 }
-                else if((this->base_icon_idx + i) == this->prev_selected_item_idx) {
+                else if((s32)(this->base_icon_idx + i) == this->prev_selected_item_idx) {
                     drawer->RenderTexture(this->cursor_icon, base_x - Margin, y - Margin, pu::ui::render::TextureRenderOptions::WithCustomAlphaAndDimensions(this->move_alpha, ExtraIconSize, ExtraIconSize));
                 }
             }

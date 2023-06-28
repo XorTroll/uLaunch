@@ -1,7 +1,6 @@
 #include <ul/menu/ui/ui_Actions.hpp>
 #include <ul/menu/ui/ui_MenuApplication.hpp>
-#include <ul/menu/ui/ui_MenuLayout.hpp>
-#include <ul/os/os_Titles.hpp>
+#include <ul/menu/ui/ui_MainMenuLayout.hpp>
 #include <ul/menu/ui/ui_MenuApplication.hpp>
 #include <ul/util/util_Scope.hpp>
 #include <ul/fs/fs_Stdio.hpp>
@@ -13,7 +12,34 @@ extern ul::menu::ui::MenuApplication::Ref g_MenuApplication;
 extern ul::menu::ui::TransitionGuard g_TransitionGuard;
 extern ul::cfg::Config g_Config;
 
-namespace ul::menu::ui::actions {
+namespace ul::menu::ui {
+
+    namespace {
+
+        inline void PushPowerSystemAppletMessage(const system::GeneralChannelMessage msg) {
+            // Fade out on all cases
+            g_MenuApplication->FadeOut();
+
+            system::PushSimpleSystemAppletMessage(msg);
+            svcSleepThread(1'500'000'000ul);
+
+            // When we get back after sleep we will do a cool fade in, whereas with the other options the console will be already off/rebooted
+            g_MenuApplication->FadeIn();
+        }
+
+    }
+
+    void RebootSystem() {
+        PushPowerSystemAppletMessage(system::GeneralChannelMessage::Unk_Reboot);
+    }
+
+    void ShutdownSystem() {
+        PushPowerSystemAppletMessage(system::GeneralChannelMessage::Unk_Shutdown);
+    }
+
+    void SleepSystem() {
+        PushPowerSystemAppletMessage(system::GeneralChannelMessage::Unk_Sleep);
+    }
 
     void ShowAboutDialog() {
         g_MenuApplication->CreateShowDialog(GetLanguageString("ulaunch_about"), "uLaunch v" + std::string(UL_VERSION) + "\n\n" + GetLanguageString("ulaunch_desc") + ":\nhttps://github.com/XorTroll/uLaunch", { GetLanguageString("ok") }, true, "romfs:/LogoLarge.png");
@@ -56,14 +82,14 @@ namespace ul::menu::ui::actions {
             }
 
             if(log_off) {
-                auto &menu_lyt = g_MenuApplication->GetMenuLayout();
+                auto &main_menu_lyt = g_MenuApplication->GetMenuLayout();
                 if(g_MenuApplication->IsSuspended()) {
-                    menu_lyt->DoTerminateApplication();
+                    main_menu_lyt->DoTerminateApplication();
                 }
 
                 g_TransitionGuard.Run([&]() {
                     g_MenuApplication->FadeOut();
-                    menu_lyt->MoveFolder("", false);
+                    main_menu_lyt->MoveFolder("", false);
                     g_MenuApplication->LoadStartupMenu();
                     g_MenuApplication->FadeIn();
                 });
@@ -134,14 +160,7 @@ namespace ul::menu::ui::actions {
         }
 
         if(msg != ul::system::GeneralChannelMessage::Unk_Invalid) {
-            // Fade out on all cases
-            g_MenuApplication->FadeOut();
-
-            ul::system::PushSimpleSystemAppletMessage(msg);
-            svcSleepThread(1'500'000'000ul);
-
-            // When we get back after sleep we will do a cool fade in, whereas with the other options the console will be already off/rebooted
-            g_MenuApplication->FadeIn();
+            PushPowerSystemAppletMessage(msg);
         }
     }
 

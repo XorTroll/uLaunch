@@ -91,9 +91,7 @@ int main() {
     // After initializing RomFs, start initializing the rest of stuff here
     Initialize();
 
-    // Cache title and homebrew icons
-    ul::cfg::CacheEverything();
-
+    // TODONEW: consider lazy-loading this in uSystem?
     g_EntryList = ul::cfg::LoadTitleList();
 
     // Get system language and load translations (default one if not present)
@@ -127,7 +125,7 @@ int main() {
 
     // Register handlers for HOME button press detection
     ul::menu::am::RegisterLibnxLibappletHomeButtonDetection();
-    ul::menu::ui::MenuApplication::RegisterHomeButtonDetection();
+    ul::menu::ui::RegisterOnMessageCallback();
     ul::menu::ui::QuickMenu::RegisterHomeButtonDetection();
 
     if(start_mode == ul::smi::MenuStartMode::MenuApplicationSuspended) {

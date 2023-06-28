@@ -13,7 +13,7 @@ namespace {
 
 namespace ul::menu::am {
 
-    void OnHomeButtonDetection() {
+    void OnHomeButtonDetection(const smi::MenuMessageContext _) {
         if(g_IsAppletRunning) {
             g_DetectionHomePressed = true;
         }

@@ -7,5 +7,6 @@ namespace ul::system::sf {
     UL_RC_DEFINE_SUBMODULE(2);
 
     UL_RC_DEFINE(InvalidProcess, 1);
+    UL_RC_DEFINE(NoMessagesAvailable, 2);
 
 }

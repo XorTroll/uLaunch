@@ -50,7 +50,7 @@ namespace ul::menu::ui {
         if(keys_down & HidNpadButton_B) {
             g_TransitionGuard.Run([]() {
                 g_MenuApplication->FadeOut();
-                g_MenuApplication->LoadMenu();
+                g_MenuApplication->LoadMainMenu();
                 g_MenuApplication->FadeIn();
             });
         }
@@ -59,13 +59,13 @@ namespace ul::menu::ui {
     bool SettingsMenuLayout::OnHomeButtonPress() {
         return g_TransitionGuard.Run([]() {
             g_MenuApplication->FadeOut();
-            g_MenuApplication->LoadMenu();
+            g_MenuApplication->LoadMainMenu();
             g_MenuApplication->FadeIn();
         });
     }
 
     void SettingsMenuLayout::Reload(const bool reset_idx) {
-        // TODO: more settings
+        // TODONEW: more settings
         this->settings_menu->ClearItems();
         
         SetSysDeviceNickName console_name = {};

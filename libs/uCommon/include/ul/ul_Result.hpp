@@ -1,7 +1,6 @@
 
 #pragma once
-#include <switch.h>
-#include <cstdio>
+#include <ul/ul_Include.hpp>
 
 #ifdef ATMOSPHERE
 #include <stratosphere.hpp>
@@ -28,7 +27,7 @@ namespace ul {
     3 -> loader
     4 -> smi
     5 -> util
-    6 -> uMenu
+    6 -> menu
     
     */
 
@@ -60,11 +59,9 @@ namespace ul {
         } \
     })
 
-    constexpr auto AssertionLogFile = "sdmc:/umad/assert.log";
-
     template<typename ...Args>
     inline void NORETURN OnAssertionFailed(const Result rc, const char *log_fmt, Args &&...args) {
-        // TODO: unique log file for each assertion fatal?
+        // TODONEW: unique log file for each assertion fatal?
         auto log_f = fopen(AssertionLogFile, "wb");
         if(log_f) {
             fprintf(log_f, log_fmt, args...);

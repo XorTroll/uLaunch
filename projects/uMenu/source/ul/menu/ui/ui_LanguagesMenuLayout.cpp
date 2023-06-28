@@ -38,7 +38,7 @@ namespace ul::menu::ui {
     bool LanguagesMenuLayout::OnHomeButtonPress() {
         return g_TransitionGuard.Run([]() {
             g_MenuApplication->FadeOut();
-            g_MenuApplication->LoadMenu();
+            g_MenuApplication->LoadMainMenu();
             g_MenuApplication->FadeIn();
         });
     }
@@ -63,7 +63,7 @@ namespace ul::menu::ui {
     }
 
     void LanguagesMenuLayout::lang_DefaultKey(const u32 idx) {
-        // TODO: cache system language...
+        // TODONEW: cache system language...
 
         const auto sys_lang = os::GetSystemLanguage();
         if(static_cast<u32>(sys_lang) == idx) {

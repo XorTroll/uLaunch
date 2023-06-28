@@ -14,8 +14,8 @@ namespace ul::menu::smi {
             );
         }
 
-        inline Result privateServicePopMessage(Service *srv, MenuMessage *out_msg) {
-            return serviceDispatchOut(srv, 1, *out_msg);
+        inline Result privateServicePopMessageContext(Service *srv, MenuMessageContext *out_msg_ctx) {
+            return serviceDispatchOut(srv, 1, *out_msg_ctx);
         }
 
         Service g_PrivateService;
@@ -35,10 +35,8 @@ namespace ul::menu::smi {
             serviceClose(&g_PrivateService);
         }
 
-        MenuMessage GetPrivateServiceMessage() {
-            auto msg = MenuMessage::Invalid;
-            UL_RC_ASSERT(privateServicePopMessage(&g_PrivateService, &msg));
-            return msg;
+        Result PopPrivateServiceMessageContext(MenuMessageContext *out_msg_ctx) {
+            return privateServicePopMessageContext(&g_PrivateService, out_msg_ctx);
         }
 
     }
@@ -58,14 +56,17 @@ namespace ul::menu::smi {
                 }
 
                 {
-                    const auto last_msg = GetPrivateServiceMessage();
-                    util::ScopedLock lk(g_CallbackTableLock);
+                    MenuMessageContext last_msg_ctx;
+                    if(R_SUCCEEDED(PopPrivateServiceMessageContext(&last_msg_ctx))) {
+                        util::ScopedLock lk(g_CallbackTableLock);
 
-                    for(const auto &[cb, msg] : g_MessageCallbackTable) {
-                        if(msg == last_msg) {
-                            cb();
+                        for(const auto &[cb, msg] : g_MessageCallbackTable) {
+                            if((msg == MenuMessage::Invalid) || (msg == last_msg_ctx.msg)) {
+                                cb(last_msg_ctx);
+                            }
                         }
                     }
+                    
                 }
 
                 svcSleepThread(10'000'000ul);

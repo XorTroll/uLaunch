@@ -20,12 +20,12 @@ namespace ul::menu::ui {
             static constexpr u64 ScrollMoveWaitTimeMs = 200;
 
             using OnSelectCallback = std::function<void(const u64, const u32)>;
-            using OnSelectionChangedCallback = std::function<void(const u32)>;
+            using OnSelectionChangedCallback = std::function<void(const s32, const u32)>;
 
         private:
             s32 y;
             u32 selected_item_idx;
-            u32 prev_selected_item_idx;
+            s32 prev_selected_item_idx;
             s32 suspended_item_idx;
             u32 base_icon_idx;
             u8 move_alpha;
@@ -61,7 +61,7 @@ namespace ul::menu::ui {
 
             inline void DoOnSelectionChanged() {
                 if(this->on_selection_changed_cb) {
-                    (this->on_selection_changed_cb)(this->selected_item_idx);
+                    (this->on_selection_changed_cb)(this->prev_selected_item_idx, this->selected_item_idx);
                 }
             }
 
@@ -136,8 +136,20 @@ namespace ul::menu::ui {
                 }
             }
 
+            inline bool HasSuspendedItem() {
+                return this->suspended_item_idx >= 0;
+            }
+            
+            inline u32 GetSuspendedItem() {
+                return this->suspended_item_idx;
+            }
+
             inline void ResetSuspendedItem() {
                 this->suspended_item_idx = -1;
+            }
+
+            inline bool IsSuspendedItemSelected() {
+                return this->suspended_item_idx == static_cast<s32>(this->selected_item_idx);
             }
 
             inline void Rewind() {

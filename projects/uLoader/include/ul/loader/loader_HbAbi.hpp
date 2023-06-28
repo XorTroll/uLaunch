@@ -19,7 +19,8 @@ namespace ul::loader {
         LastLoadResult = 11,
         RandomSeed = 14,
         UserIdStorage = 15,
-        HosVersion = 16
+        HosVersion = 16,
+        SyscallAvailableHint2 = 17
     };
 
     enum class EntryFlags : u32 {

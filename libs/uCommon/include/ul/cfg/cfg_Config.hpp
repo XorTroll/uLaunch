@@ -10,32 +10,81 @@ namespace ul::cfg {
 
     enum class TitleType : u32 {
         Invalid,
-        Installed,
+        Application,
         Homebrew
     };
 
-    struct TitleRecord {
+    struct ApplicationInfo {
+        NsApplicationRecord record;
+        NsApplicationContentMetaStatus meta_status;
+
+        inline bool IsInstalledNew() const {
+            return this->record.type == 0x03;
+        }
+
+        inline bool IsInstalled() const {
+            return this->record.type == 0x10;
+        }
+        
+        inline bool IsLaunchable() const {
+            return this->IsInstalled() || this->IsInstalledNew();
+        }
+
+        /* TODONEW
+        inline bool IsGamecard() const {
+            return this->meta_status.storageID == NcmStorageId_GameCard;
+        }
+        */
+    };
+
+    struct HomebrewInfo {
+        loader::TargetInput nro_target;
+    };
+
+    struct TitleRecordConfig {
         std::string json_name; // Empty for non-SD, normal title records
-        TitleType title_type; // Title type
         std::string sub_folder; // Empty for root, name for a certain folder
-        std::string icon; // Custom icon, if specified
+    };
 
-        u64 app_id; // For TitleType::Installed
-        loader::TargetInput nro_target; // For TitleType::Homebrew
-
-        // Optional NACP params
+    struct TitleControlData {
         std::string name;
+        bool custom_name;
         std::string author;
+        bool custom_author;
         std::string version;
+        bool custom_version;
+        std::string icon_path;
+        bool custom_icon_path;
+
+        inline bool IsLoaded() {
+            return !this->name.empty();
+        }
+    };
+
+    struct TitleRecord {
+        TitleType title_type; // Title type
+
+        TitleRecordConfig cfg;
+        TitleControlData control;
+
+        union {
+            ApplicationInfo app_info; // For TitleType::Application
+            HomebrewInfo hb_info; // For TitleType::Homebrew
+        };
+
+        template<TitleType Type>
+        constexpr inline bool Is() const {
+            return this->title_type == Type;
+        }
 
         inline bool Equals(const TitleRecord &other) const {
             if(this->title_type == other.title_type) {
                 switch(this->title_type) {
-                    case TitleType::Installed: {
-                        return this->app_id == other.app_id;
+                    case TitleType::Application: {
+                        return this->app_info.record.application_id == other.app_info.record.application_id;
                     }
                     case TitleType::Homebrew: {
-                        return std::strcmp(this->nro_target.nro_path, other.nro_target.nro_path) == 0;
+                        return std::strcmp(this->hb_info.nro_target.nro_path, other.hb_info.nro_target.nro_path) == 0;
                     }
                     default: {
                         return false;
@@ -44,6 +93,8 @@ namespace ul::cfg {
             }
             return false;
         }
+
+        void EnsureControlDataLoaded();
     };
 
     struct TitleFolder {
@@ -72,17 +123,6 @@ namespace ul::cfg {
         inline bool IsDefault() {
             return this->base_name.empty();
         }
-    };
-
-    struct RecordStrings {
-        std::string name;
-        std::string author;
-        std::string version;
-    };
-
-    struct RecordInformation {
-        RecordStrings strings;
-        std::string icon_path;
     };
 
     enum class ConfigEntryId : u8 {
@@ -315,18 +355,20 @@ namespace ul::cfg {
 
     TitleList LoadTitleList();
     std::vector<TitleRecord> QueryAllHomebrew(const std::string &base = RootHomebrewPath);
-    void CacheEverything(const std::string &hb_base_path = RootHomebrewPath);
+
+    void CacheHomebrew(const std::string &hb_base_path = RootHomebrewPath);
+    void CacheApplications(const std::vector<NsApplicationRecord> &records);
+    void CacheSingleApplication(const u64 app_id);
 
     std::string GetRecordIconPath(const TitleRecord &record);
     std::string GetRecordJsonPath(const TitleRecord &record);
-    RecordInformation GetRecordInformation(const TitleRecord &record);
 
     Theme LoadTheme(const std::string &base_name);
     std::vector<Theme> LoadThemes();
     std::string GetAssetByTheme(const Theme &base, const std::string &resource_base);
 
     inline std::string GetLanguageJSONPath(const std::string &lang) {
-        return "sdmc:/ulaunch/lang/" + lang + ".json";
+        return JoinPath(LanguagesPath, lang + ".json");
     }
 
     std::string GetLanguageString(const util::JSON &lang, const util::JSON &def, const std::string &name);
@@ -348,9 +390,9 @@ namespace ul::cfg {
     bool ExistsRecord(const TitleList &list, const TitleRecord &record);
 
     inline std::string GetTitleCacheIconPath(const u64 app_id) {
-        return "sdmc:/ulaunch/titles/" + util::FormatProgramId(app_id) + ".jpg";
+        return JoinPath(TitleCachePath, util::FormatProgramId(app_id) + ".jpg");
     }
 
-    std::string GetNroCacheIconPath(const std::string &path);
+    std::string GetHomebrewCacheIconPath(const std::string &path);
 
 }

@@ -26,7 +26,7 @@ namespace ul::loader {
         u8 g_SavedTls[0x100];
         Result g_LastTargetResult = ResultSuccess;
 
-        ConfigEntry g_TargetConfigEntries[12] = {};
+        ConfigEntry g_TargetConfigEntries[13] = {};
         NroHeader g_TargetHeader = {};
 
         constexpr size_t InternalPathSize = 512;
@@ -292,14 +292,15 @@ namespace ul::loader {
             const auto target_heap_addr = reinterpret_cast<u64>(heap_addr) + target_size;
             const auto target_heap_size = heap_size - target_size;
 
-            auto syscall_available_hint_1 = 0xFFFFFFFFFFFFFFFFull;
-            auto syscall_available_hint_2 = 0x09FC9FFF0027FFFFull;
+            auto syscall_available_hint_1 = UINT64_MAX;
+            auto syscall_available_hint_2 = UINT64_MAX;
+            auto syscall_available_hint_3 = UINT64_MAX;
             const auto code_mem_capability = DetermineCodeMemoryCapability(heap_addr);
             if(!static_cast<bool>(code_mem_capability & CodeMemoryCapability::Available)) {
                 // Revoke access to svcCreateCodeMemory (syscall 0x4B) if it's not available
                 syscall_available_hint_2 &= ~(1ul << (0x4B % 0x40));
             }
-            if(!static_cast<bool>(code_mem_capability & CodeMemoryCapability::Available)) {
+            if(!static_cast<bool>(code_mem_capability & CodeMemoryCapability::AvailableForSameProcess)) {
                 // Revoke access to svcControlCodeMemory (syscall 0x4C) if it's not available for same-process usage
                 syscall_available_hint_2 &= ~(1ul << (0x4C % 0x40));
             }
@@ -359,6 +360,13 @@ namespace ul::loader {
                     static_cast<u32>(EntryFlags::None), {
                         syscall_available_hint_1,
                         syscall_available_hint_2
+                    }
+                },
+                {
+                    EntryKind::SyscallAvailableHint2,
+                    static_cast<u32>(EntryFlags::None), {
+                        syscall_available_hint_3,
+                        0
                     }
                 },
                 {

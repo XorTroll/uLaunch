@@ -24,15 +24,17 @@ namespace ul::system::app {
         return !appletApplicationCheckFinished(&g_ApplicationHolder);
     }
 
-    void Terminate() {
-        appletApplicationRequestExit(&g_ApplicationHolder);
+    Result Terminate() {
+        UL_RC_TRY(appletApplicationRequestExit(&g_ApplicationHolder));
 
-        // Wait until it's actually exited
-        while(IsActive()) {
-            svcSleepThread(10'000'000);
+        const auto rc = eventWait(&g_ApplicationHolder.StateChangedEvent, 15'000'000'000ul);
+        if(rc == KERNELRESULT(TimedOut)) {
+            UL_RC_TRY(appletApplicationTerminate(&g_ApplicationHolder));
         }
 
+        appletApplicationClose(&g_ApplicationHolder);
         g_ApplicationHasFocus = false;
+        return rc;
     }
 
     Result Start(const u64 app_id, const bool system, const AccountUid user_id, const void *data, const size_t size) {
@@ -42,6 +44,50 @@ namespace ul::system::app {
             UL_RC_TRY(appletCreateSystemApplication(&g_ApplicationHolder, app_id));
         }
         else {
+            // Ensure it's launchable
+            UL_RC_TRY(nsTouchApplication(app_id));
+
+            auto ct_data = new NsApplicationControlData;
+            UL_ON_SCOPE_EXIT({ delete[] ct_data; });
+
+            // TODONEW: send from umenu who already has read it?
+            size_t dummy_size;
+            UL_RC_TRY(nsGetApplicationControlData(NsApplicationControlSource_Storage, app_id, ct_data, sizeof(NsApplicationControlData), &dummy_size));
+
+            // Note: why isn't TemporaryStorage automatically created with nsTouchApplication like regular savedata?
+            // Let's create it ourselves if it doesn't exist yet
+            if(ct_data->nacp.temporary_storage_size > 0) {
+                const FsSaveDataAttribute attr = {
+                    .application_id = app_id,
+                    .system_save_data_id = 0,
+                    .save_data_type = FsSaveDataType_Temporary,
+                    .save_data_rank = FsSaveDataRank_Primary,
+                    .save_data_index = 0
+                };
+                constexpr auto space_id = FsSaveDataSpaceId_Temporary;
+                const FsSaveDataCreationInfo cr_info = {
+                    .save_data_size = (s64)ct_data->nacp.temporary_storage_size,
+                    .journal_size = 0,
+                    .available_size = 0x4000,
+                    .owner_id = app_id,
+                    .flags = 0,
+                    .save_data_space_id = space_id
+                };
+                const FsSaveDataMetaInfo meta_info = {
+                    .size = 0,
+                    .type = FsSaveDataMetaType_None
+                };
+
+                FsFileSystem dummy_fs;
+                if(R_SUCCEEDED(fsOpenSaveDataFileSystem(&dummy_fs, space_id, &attr))) {
+                    fsFsClose(&dummy_fs);
+                }
+                else {
+                    // Not yet created, create it then
+                    UL_RC_TRY(fsCreateSaveDataFileSystem(&attr, &cr_info, &meta_info));
+                }
+            }
+
             UL_RC_TRY(appletCreateApplication(&g_ApplicationHolder, app_id));
         }
 
@@ -55,11 +101,11 @@ namespace ul::system::app {
         }
 
         UL_RC_TRY(appletUnlockForeground());
-
         UL_RC_TRY(appletApplicationStart(&g_ApplicationHolder));
         UL_RC_TRY(SetForeground());
+
         g_LastApplicationId = app_id;
-        return 0;
+        return ResultSuccess;
     }
 
     bool HasForeground() {

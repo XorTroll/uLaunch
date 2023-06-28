@@ -17,7 +17,18 @@ namespace ul::smi {
     enum class MenuMessage : u32 {
         Invalid,
         HomeRequest,
-        SdCardEjected
+        SdCardEjected,
+        GameCardMountFailure
+    };
+
+    struct MenuMessageContext {
+        MenuMessage msg;
+
+        union {
+            struct {
+                Result mount_rc;
+            } gc_mount_failure;
+        };
     };
 
     enum class SystemMessage : u32 {

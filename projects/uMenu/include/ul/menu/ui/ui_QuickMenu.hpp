@@ -33,7 +33,7 @@ namespace ul::menu::ui {
             s32 bg_alpha;
             pu::ui::elm::Menu::Ref options_menu;
 
-            static void OnHomeButtonDetection();
+            static void OnHomeButtonDetection(const smi::MenuMessageContext _);
 
         public:
             QuickMenu(const std::string &main_icon);
