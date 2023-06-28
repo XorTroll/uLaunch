@@ -287,10 +287,10 @@ namespace ul::menu::ui {
     }
 
     void SideMenu::HandleMoveRight() {
-        if((selected_item_idx + 1) < this->items_icon_paths.size()) {
+        if((this->selected_item_idx + 1) < this->items_icon_paths.size()) {
             const auto is_right_last = IsRightLast();
-            prev_selected_item_idx = selected_item_idx;
-            selected_item_idx++;
+            this->prev_selected_item_idx = this->selected_item_idx;
+            this->selected_item_idx++;
             if(is_right_last) {
                 MoveReloadIcons(true);
             }

@@ -32,6 +32,7 @@ namespace ul::system::app {
             UL_RC_TRY(appletApplicationTerminate(&g_ApplicationHolder));
         }
 
+        // TODONEW: something's not completely right about closing apps
         appletApplicationClose(&g_ApplicationHolder);
         g_ApplicationHasFocus = false;
         return rc;

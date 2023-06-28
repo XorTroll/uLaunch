@@ -19,6 +19,14 @@ extern char g_FwVersion[0x18];
 
 #define MENU_HBMENU_NRO "sdmc:/hbmenu.nro"
 
+#define DEBUG_LOG(fmt, ...) ({ \
+    auto f = fopen("sdmc:/ulaunch/umenu-tmp.log", "ab+"); \
+    if(f) { \
+        fprintf(f, fmt "\n", ##__VA_ARGS__); \
+        fclose(f); \
+    } \
+})
+
 namespace ul::menu::ui {
 
     namespace {
@@ -498,7 +506,7 @@ namespace ul::menu::ui {
             }
         }
 
-        if(g_MenuApplication->IsSuspended()) {
+        if(g_MenuApplication->IsSuspended() && (prev_idx >= 0)) {
             if((prev_idx == (s32)this->items_menu->GetSuspendedItem()) && (idx != this->items_menu->GetSuspendedItem())) {
                 this->mode = SuspendedImageMode::HidingLostFocus;
             }
@@ -682,15 +690,18 @@ namespace ul::menu::ui {
                     if(this->items_menu->IsSuspendedItemSelected() && (this->suspended_screen_alpha <= this->min_alpha)) {
                         this->suspended_screen_alpha = this->min_alpha;
                         this->suspended_screen_img->SetAlpha(this->suspended_screen_alpha);
+                        DEBUG_LOG("now focused from startshow");
                         this->mode = SuspendedImageMode::Focused;
                     }
                     else if(!this->items_menu->IsSuspendedItemSelected() && (this->suspended_screen_alpha == 0)) {
                         this->suspended_screen_img->SetAlpha(this->suspended_screen_alpha);
+                        DEBUG_LOG("now not focused from startshow");
                         this->mode = SuspendedImageMode::NotFocused;
                     }
                     else {
                         this->suspended_screen_img->SetAlpha(this->suspended_screen_alpha);
                         this->suspended_screen_alpha -= SuspendedScreenAlphaIncrement;
+                        DEBUG_LOG("startshow alpha: %d -> %d", this->suspended_screen_alpha + SuspendedScreenAlphaIncrement, this->suspended_screen_alpha);
                         if(this->suspended_screen_alpha < 0) {
                             this->suspended_screen_alpha = 0;
                         }
@@ -709,6 +720,7 @@ namespace ul::menu::ui {
                     else {
                         this->suspended_screen_img->SetAlpha(this->suspended_screen_alpha);
                         this->suspended_screen_alpha += SuspendedScreenAlphaIncrement;
+                        DEBUG_LOG("hide alpha: %d -> %d", this->suspended_screen_alpha - SuspendedScreenAlphaIncrement, this->suspended_screen_alpha);
                         if(this->suspended_screen_alpha > 0xFF) {
                             this->suspended_screen_alpha = 0xFF;
                         }
@@ -721,11 +733,13 @@ namespace ul::menu::ui {
                 case SuspendedImageMode::ShowingGainedFocus: {
                     if(this->suspended_screen_alpha == this->min_alpha) {
                         this->suspended_screen_img->SetAlpha(this->suspended_screen_alpha);
+                        DEBUG_LOG("now focused from ShowingGainedFocus");
                         this->mode = SuspendedImageMode::Focused;
                     }
                     else {
                         this->suspended_screen_img->SetAlpha(this->suspended_screen_alpha);
                         this->suspended_screen_alpha += SuspendedScreenAlphaIncrement;
+                        DEBUG_LOG("reshow alpha: %d -> %d", this->suspended_screen_alpha - SuspendedScreenAlphaIncrement, this->suspended_screen_alpha);
                         if(this->suspended_screen_alpha > this->min_alpha) {
                             this->suspended_screen_alpha = this->min_alpha;
                         }
@@ -735,11 +749,13 @@ namespace ul::menu::ui {
                 case SuspendedImageMode::HidingLostFocus: {
                     if(this->suspended_screen_alpha == 0) {
                         this->suspended_screen_img->SetAlpha(this->suspended_screen_alpha);
+                        DEBUG_LOG("now not focus from hidelostfocus");
                         this->mode = SuspendedImageMode::NotFocused;
                     }
                     else {
                         this->suspended_screen_img->SetAlpha(this->suspended_screen_alpha);
                         this->suspended_screen_alpha -= SuspendedScreenAlphaIncrement;
+                        DEBUG_LOG("hidelostfocus alpha: %d -> %d", this->suspended_screen_alpha - SuspendedScreenAlphaIncrement, this->suspended_screen_alpha);
                         if(this->suspended_screen_alpha < 0) {
                             this->suspended_screen_alpha = 0;
                         }
@@ -774,13 +790,17 @@ namespace ul::menu::ui {
         return true;
     }
 
-    void MainMenuLayout::MoveFolder(const std::string &name, const bool fade) {
-        this->items_menu->Rewind();
-
+    void MainMenuLayout::MoveFolder(const std::string &name, const bool fade, std::function<void()> action) {
         if(fade) {
             g_TransitionGuard.Run([&]() {
                 g_MenuApplication->FadeOut();
+
+                if(action) {
+                    action();
+                }
+                this->items_menu->Rewind(); // TODONEW: this was a temp fix, we shouldnt have to rewind here
                 this->DoMoveFolder(name);
+
                 g_MenuApplication->FadeIn();
             });
         }
@@ -797,12 +817,14 @@ namespace ul::menu::ui {
 
     void MainMenuLayout::menuToggle_Click() {
         pu::audio::PlaySfx(this->menu_toggle_sfx);
-        this->homebrew_mode = !this->homebrew_mode;
-        if(this->select_on) {
-            g_MenuApplication->ShowNotification(GetLanguageString("menu_multiselect_cancel"));
-            this->StopMultiselect();
-        }
-        this->MoveFolder("", true);
+
+        this->MoveFolder("", true, [&]() {
+            this->homebrew_mode = !this->homebrew_mode;
+            if(this->select_on) {
+                g_MenuApplication->ShowNotification(GetLanguageString("menu_multiselect_cancel"));
+                this->StopMultiselect();
+            }
+        });
     }
 
     void MainMenuLayout::HandleCloseSuspended() {
@@ -882,6 +904,11 @@ namespace ul::menu::ui {
     }
 
     void MainMenuLayout::DoTerminateApplication() {
+        auto &folder = cfg::FindFolderByName(g_EntryList, this->cur_folder);
+        const auto susp_idx = this->items_menu->GetSuspendedItem() - g_EntryList.folders.size();
+        auto &title = folder.titles.at(susp_idx);
+        title.app_info.record.type = 0x10;
+
         this->items_menu->ResetSuspendedItem();
         g_MenuApplication->NotifyEndSuspended();
         

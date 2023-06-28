@@ -601,27 +601,6 @@ namespace {
         return diff_records;
     }
 
-    void Initialize() {
-        UL_RC_ASSERT(appletLoadAndApplyIdlePolicySettings());
-        UL_RC_ASSERT(UpdateOperationMode());
-
-        UL_RC_ASSERT(setsysGetFirmwareVersion(&g_FwVersion));
-
-        g_CurrentRecords = ul::os::ListApplicationRecords();
-        ul::cfg::CacheApplications(g_CurrentRecords);
-        ul::cfg::CacheHomebrew();
-
-        g_Config = ul::cfg::LoadConfig();
-        u64 menu_program_id;
-        UL_ASSERT_TRUE(g_Config.GetEntry(ul::cfg::ConfigEntryId::MenuTakeoverProgramId, menu_program_id));
-        la::SetMenuProgramId(menu_program_id);
-
-        UL_RC_ASSERT(sf::Initialize());
-
-        UL_RC_ASSERT(threadCreate(&g_EventManagerThread, EventManagerMain, nullptr, g_EventManagerThreadStack, sizeof(g_EventManagerThreadStack), 0x2C, -2));
-        UL_RC_ASSERT(threadStart(&g_EventManagerThread));
-    }
-
     void EventManagerMain(void*) {
         Event record_ev;
         UL_RC_ASSERT(nsGetApplicationRecordUpdateSystemEvent(&record_ev));
@@ -661,6 +640,27 @@ namespace {
 
             svcSleepThread(100'000ul);
         }
+    }
+
+    void Initialize() {
+        UL_RC_ASSERT(appletLoadAndApplyIdlePolicySettings());
+        UL_RC_ASSERT(UpdateOperationMode());
+
+        UL_RC_ASSERT(setsysGetFirmwareVersion(&g_FwVersion));
+
+        g_CurrentRecords = ul::os::ListApplicationRecords();
+        ul::cfg::CacheApplications(g_CurrentRecords);
+        ul::cfg::CacheHomebrew();
+
+        g_Config = ul::cfg::LoadConfig();
+        u64 menu_program_id;
+        UL_ASSERT_TRUE(g_Config.GetEntry(ul::cfg::ConfigEntryId::MenuTakeoverProgramId, menu_program_id));
+        la::SetMenuProgramId(menu_program_id);
+
+        UL_RC_ASSERT(sf::Initialize());
+
+        UL_RC_ASSERT(threadCreate(&g_EventManagerThread, EventManagerMain, nullptr, g_EventManagerThreadStack, sizeof(g_EventManagerThreadStack), 0x2C, -2));
+        UL_RC_ASSERT(threadStart(&g_EventManagerThread));
     }
 
 }
