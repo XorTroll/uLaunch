@@ -60,13 +60,12 @@ namespace ul::menu::ui {
         this->users_menu->ClearItems();
 
         std::vector<AccountUid> users;
-        if(R_SUCCEEDED(acc::QuerySystemAccounts(true, users))) {
+        if(R_SUCCEEDED(acc::ListAccounts(users))) {
             for(const auto &user: users) {
                 std::string name;
                 if(R_SUCCEEDED(acc::GetAccountName(user, name))) {
-                    const auto path = acc::GetIconCacheImagePath(user);
                     auto user_item = pu::ui::elm::MenuItem::New(name);
-                    user_item->SetIcon(path);
+                    user_item->SetIcon(acc::GetIconCacheImagePath(user));
                     user_item->AddOnKey(std::bind(&StartupLayout::user_DefaultKey, this, user));
                     user_item->SetColor(g_MenuApplication->GetTextColor());
                     this->users_menu->AddItem(user_item);

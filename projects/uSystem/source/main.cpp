@@ -5,6 +5,7 @@
 #include <ul/system/system_Message.hpp>
 #include <ul/cfg/cfg_Config.hpp>
 #include <ul/fs/fs_Stdio.hpp>
+#include <ul/acc/acc_Accounts.hpp>
 #include <ul/os/os_Applications.hpp>
 #include <ul/util/util_Scope.hpp>
 #include <ul/util/util_Size.hpp>
@@ -520,6 +521,7 @@ namespace {
             if(!la::IsActive()) {
                 u64 hb_applet_takeover_program_id;
                 UL_ASSERT_TRUE(g_Config.GetEntry(ul::cfg::ConfigEntryId::HomebrewAppletTakeoverProgramId, hb_applet_takeover_program_id));
+                // TODONEW: dont assert, send the error result to umenu instead
                 UL_RC_ASSERT(ecs::RegisterLaunchAsApplet(hb_applet_takeover_program_id, 0, "/ulaunch/bin/uLoader/applet", &g_LoaderLaunchFlag, sizeof(g_LoaderLaunchFlag)));
                 
                 sth_done = true;
@@ -549,6 +551,7 @@ namespace {
                 }
 
                 // Reopen uMenu in launch-error mode
+                // TODONEW: send launch failure info as a menu message, instead of using "start modes"
                 UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::MenuLaunchFailure, CreateStatus()));
                 g_LoaderOpenedAsApplication = false;
             }
@@ -646,7 +649,13 @@ namespace {
         UL_RC_ASSERT(appletLoadAndApplyIdlePolicySettings());
         UL_RC_ASSERT(UpdateOperationMode());
 
+        UL_RC_ASSERT(setsysInitialize());
         UL_RC_ASSERT(setsysGetFirmwareVersion(&g_FwVersion));
+        setsysExit();
+
+        UL_RC_ASSERT(accountInitialize(AccountServiceType_System));
+        UL_RC_ASSERT(ul::acc::CacheAccounts());
+        accountExit();
 
         g_CurrentRecords = ul::os::ListApplicationRecords();
         ul::cfg::CacheApplications(g_CurrentRecords);
@@ -685,19 +694,15 @@ namespace ams {
             UL_RC_ASSERT(appletInitialize());
             UL_RC_ASSERT(fsInitialize());
             UL_RC_ASSERT(nsInitialize());
-            UL_RC_ASSERT(pminfoInitialize());
             UL_RC_ASSERT(ldrShellInitialize());
             UL_RC_ASSERT(pmshellInitialize());
-            UL_RC_ASSERT(setsysInitialize());
-
             UL_RC_ASSERT(fsdevMountSdmc());
         }
 
         void FinalizeSystemModule() {
             fsdevUnmountAll();
-            setsysExit();
             pmshellExit();
-            pminfoExit();
+            ldrShellExit();
             nsExit();
             fsExit();
             appletExit();

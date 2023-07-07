@@ -22,6 +22,7 @@ clean:
 	@$(MAKE) clean -C projects/uMenu
 	@rm -rf SdOut
 
+# TODONEW: move this inside themes
 default_hb:
 	@nacptool --create "$(DEFAULT_HB_NAME)" "$(DEFAULT_HB_AUTHOR)" "$(DEFAULT_HB_VERSION)" default_hb_nacp.nacp
 	@mkdir -p SdOut/ulaunch

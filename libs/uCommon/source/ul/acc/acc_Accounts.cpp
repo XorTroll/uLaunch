@@ -11,29 +11,38 @@ namespace ul::acc {
         return JoinPath(AccountCachePath, uid_str + ".jpg");
     }
 
-    Result QuerySystemAccounts(const bool dump_icon, std::vector<AccountUid> &out_accounts) {
+    Result ListAccounts(std::vector<AccountUid> &out_accounts) {
+        AccountUid uids[ACC_USER_LIST_SIZE] = {};
+        s32 acc_count = 0;
+        UL_RC_TRY(accountListAllUsers(uids, ACC_USER_LIST_SIZE, &acc_count));
+        for(s32 i = 0; i < acc_count; i++) {
+            out_accounts.push_back(uids[i]);
+        }
+        return ResultSuccess;
+    }
+
+    Result CacheAccounts() {
+        fs::CleanDirectory(AccountCachePath);
+
         AccountUid uids[ACC_USER_LIST_SIZE] = {};
         s32 acc_count = 0;
         UL_RC_TRY(accountListAllUsers(uids, ACC_USER_LIST_SIZE, &acc_count));
         for(s32 i = 0; i < acc_count; i++) {
             const auto uid = uids[i];
-            out_accounts.push_back(uid);
-            if(dump_icon) {
-                AccountProfile prof;
-                if(R_SUCCEEDED(accountGetProfile(&prof, uid))) {
-                    u32 img_size = 0;
-                    accountProfileGetImageSize(&prof, &img_size);
-                    if(img_size > 0) {
-                        auto img_buf = new u8[img_size]();
-                        u32 tmp_size;
-                        if(R_SUCCEEDED(accountProfileLoadImage(&prof, img_buf, img_size, &tmp_size))) {
-                            const auto cache_icon_path = GetIconCacheImagePath(uid);
-                            fs::WriteFile(cache_icon_path, img_buf, img_size, true);
-                        }
-                        delete[] img_buf;
+            AccountProfile prof;
+            if(R_SUCCEEDED(accountGetProfile(&prof, uid))) {
+                u32 img_size = 0;
+                accountProfileGetImageSize(&prof, &img_size);
+                if(img_size > 0) {
+                    auto img_buf = new u8[img_size]();
+                    u32 tmp_size;
+                    if(R_SUCCEEDED(accountProfileLoadImage(&prof, img_buf, img_size, &tmp_size))) {
+                        const auto cache_icon_path = GetIconCacheImagePath(uid);
+                        fs::WriteFile(cache_icon_path, img_buf, img_size, true);
                     }
-                    accountProfileClose(&prof);
+                    delete[] img_buf;
                 }
+                accountProfileClose(&prof);
             }
         }
         return ResultSuccess;

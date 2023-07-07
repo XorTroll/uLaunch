@@ -143,8 +143,14 @@ namespace ul::cfg {
 
         void LoadApplicationControlData(const u64 app_id, TitleControlData &out_control) {
             auto tmp_control_data = new NsApplicationControlData();
-            UL_RC_ASSERT(nsGetApplicationControlData(NsApplicationControlSource_Storage, app_id, tmp_control_data, sizeof(NsApplicationControlData), nullptr));
-            ProcessControlDataStrings(out_control, &tmp_control_data->nacp);
+            if(R_SUCCEEDED(nsGetApplicationControlData(NsApplicationControlSource_Storage, app_id, tmp_control_data, sizeof(NsApplicationControlData), nullptr))) {
+                ProcessControlDataStrings(out_control, &tmp_control_data->nacp);        
+            }
+            else {
+                // TODONEW: proper default NACP strings?
+                EnsureLoadDefaultHomebrewNacp();
+                ProcessControlDataStrings(out_control, &g_DefaultHomebrewNacp);
+            }
         }
 
     }

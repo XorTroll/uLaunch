@@ -11,7 +11,9 @@ namespace ul::system::sf {
     ams::Result PrivateService::Initialize(const ams::sf::ClientProcessId &client_pid) {
         if(!this->initialized) {
             u64 program_id = 0;
+            UL_RC_TRY(pminfoInitialize());
             UL_RC_TRY(pminfoGetProgramId(&program_id, client_pid.process_id.value));
+            pminfoExit();
 
             const auto last_menu_program_id = la::GetMenuProgramId();
             // If Menu hasn't been launched it's program ID will be 0 (invalid), thus a single (program_id != last_menu_program_id) check isn't enough
