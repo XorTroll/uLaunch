@@ -62,7 +62,7 @@ namespace ul {
     template<typename ...Args>
     inline void NORETURN OnAssertionFailed(const Result rc, const char *log_fmt, Args &&...args) {
         // TODONEW: unique log file for each assertion fatal?
-        auto log_f = fopen(AssertionLogFile, "wb");
+        auto log_f = fopen(AssertionLogFile, "ab+");
         if(log_f) {
             fprintf(log_f, log_fmt, args...);
             fclose(log_f);

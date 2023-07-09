@@ -7,7 +7,7 @@ namespace ul::menu::ui {
 
     class IMenuLayout : public pu::ui::Layout {
         private:
-            RecursiveLock msg_queue_lock;
+            RecursiveMutex msg_queue_lock;
             std::queue<smi::MenuMessageContext> msg_queue;
 
         public:

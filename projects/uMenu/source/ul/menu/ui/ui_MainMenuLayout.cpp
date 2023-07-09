@@ -28,7 +28,7 @@ namespace ul::menu::ui {
             memcpy(ipt.nro_path, base_params.nro_path, sizeof(ipt.nro_path));
             if(strlen(base_params.nro_argv)) {
                 const auto default_argv = std::string(base_params.nro_path) + " " + base_params.nro_argv;
-                strncpy(ipt.nro_argv, default_argv.c_str(), default_argv.length());
+                util::CopyToStringBuffer(ipt.nro_argv, default_argv);
             }
             else {
                 memcpy(ipt.nro_argv, base_params.nro_path, sizeof(ipt.nro_argv));
@@ -476,7 +476,8 @@ namespace ul::menu::ui {
                 title.EnsureControlDataLoaded();
 
                 if(title.Is<cfg::TitleType::Application>()) {
-                    this->selected_item_name_text->SetText(title.control.name + "(type " + std::to_string(title.app_info.record.type) + ", stid + " + std::to_string(title.app_info.meta_status.storageID) + ")");
+                    // TODONEW: remove this debug params
+                    this->selected_item_name_text->SetText(title.control.name + " (type " + std::to_string(title.app_info.record.type) + ", stid + " + std::to_string(title.app_info.meta_status.storageID) + ")");
                 }
                 else {
                     this->selected_item_name_text->SetText(title.control.name);
@@ -670,7 +671,7 @@ namespace ul::menu::ui {
         if(std::chrono::duration_cast<std::chrono::milliseconds>(now_tp - this->startup_tp).count() >= 1000) {
             if(!this->launch_fail_warn_shown) {
                 if(g_MenuApplication->LaunchFailed()) {
-                    g_MenuApplication->CreateShowDialog(GetLanguageString("app_launch"), GetLanguageString("app_unexpected_error"), { GetLanguageString("ok") }, true);
+                    // g_MenuApplication->CreateShowDialog(GetLanguageString("app_launch"), GetLanguageString("app_unexpected_error"), { GetLanguageString("ok") }, true);
                 }
                 this->launch_fail_warn_shown = true;
             }
@@ -800,6 +801,18 @@ namespace ul::menu::ui {
 
     void MainMenuLayout::menuToggle_Click() {
         pu::audio::PlaySfx(this->menu_toggle_sfx);
+
+        /*
+        UL_RC_ASSERT(ul::menu::smi::SendCommand(ul::menu::smi::SystemMessage::ChooseHomebrew,
+            [&](ul::menu::smi::ScopedStorageWriter &writer) {
+                return ResultSuccess;
+            },
+            [](ul::menu::smi::ScopedStorageReader &reader) {
+                return ResultSuccess;
+            }
+        ));
+        g_MenuApplication->CloseWithFadeOut();
+        */
 
         this->MoveFolder("", true, [&]() {
             this->homebrew_mode = !this->homebrew_mode;

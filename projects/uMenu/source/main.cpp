@@ -4,7 +4,7 @@
 #include <ul/menu/ui/ui_MenuApplication.hpp>
 #include <ul/util/util_Size.hpp>
 #include <ul/net/net_Service.hpp>
-#include <ul/menu/smi/smi_SystemMessageHandler.hpp>
+#include <ul/menu/smi/smi_MenuMessageHandler.hpp>
 #include <ul/menu/am/am_LibraryAppletUtils.hpp>
 #include <ul/menu/am/am_LibnxLibappletWrap.hpp>
 #include <ul/menu/menu_Results.hpp>
@@ -45,9 +45,6 @@ namespace {
         UL_RC_ASSERT(setsysInitialize());
         UL_RC_ASSERT(setInitialize());
 
-        // Initialize uSystem message handling
-        UL_RC_ASSERT(ul::menu::smi::InitializeSystemMessageHandler());
-
         // Load menu config and theme
         g_Config = ul::cfg::LoadConfig();
         std::string theme_name;
@@ -56,7 +53,7 @@ namespace {
     }
 
     void Exit() {
-        ul::menu::smi::FinalizeSystemMessageHandler();
+        ul::menu::smi::FinalizeMenuMessageHandler();
 
         setExit();
         setsysExit();
@@ -127,6 +124,9 @@ int main() {
     ul::menu::am::RegisterLibnxLibappletHomeButtonDetection();
     ul::menu::ui::RegisterOnMessageCallback();
     ul::menu::ui::QuickMenu::RegisterHomeButtonDetection();
+
+    // With the handlers ready, initialize uSystem message handling
+    UL_RC_ASSERT(ul::menu::smi::InitializeMenuMessageHandler());
 
     if(start_mode == ul::smi::MenuStartMode::MenuApplicationSuspended) {
         g_MenuApplication->Show();

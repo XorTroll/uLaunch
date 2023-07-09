@@ -3,7 +3,7 @@
 #include <ul/system/la/la_LibraryApplet.hpp>
 #include <queue>
 
-extern ul::RecursiveLock g_MenuMessageQueueLock;
+extern ul::RecursiveMutex g_MenuMessageQueueLock;
 extern std::queue<ul::smi::MenuMessageContext> *g_MenuMessageQueue;
 
 namespace ul::system::sf {
@@ -28,19 +28,19 @@ namespace ul::system::sf {
         return ResultSuccess;
     }
 
-    ams::Result PrivateService::PopMessageContext(ams::sf::Out<smi::MenuMessageContext> out_msg_ctx) {
+    ams::Result PrivateService::TryPopMessageContext(ams::sf::Out<MenuMessageContext> out_msg_ctx) {
         if(!this->initialized) {
             return ResultInvalidProcess;
         }
 
-        std::scoped_lock lk(g_MenuMessageQueueLock);
+        ScopedLock lk(g_MenuMessageQueueLock);
         if(g_MenuMessageQueue->empty()) {
             return ResultNoMessagesAvailable;
         }
         else {
             const auto last_msg_ctx = g_MenuMessageQueue->front();
             g_MenuMessageQueue->pop();
-            out_msg_ctx.SetValue(last_msg_ctx);
+            out_msg_ctx.SetValue({ .actual_ctx = last_msg_ctx });
             return ResultSuccess;
         }
     }

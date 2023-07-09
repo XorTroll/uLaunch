@@ -12,7 +12,7 @@ namespace ul::menu::ui {
 
     void IMenuLayout::OnInput(const u64 keys_down, const u64 keys_up, const u64 keys_held, const pu::ui::TouchPoint touch_pos) {
         {
-            std::scoped_lock lk(this->msg_queue_lock);
+            ScopedLock lk(this->msg_queue_lock);
 
             if(!this->msg_queue.empty()) {
                 const auto first_msg = this->msg_queue.front();
@@ -25,15 +25,30 @@ namespace ul::menu::ui {
                         break;
                     }
                     case smi::MenuMessage::GameCardMountFailure: {
+                        // TODONEW: proper strings
                         g_MenuApplication->CreateShowDialog("GC mount", "GC mount failed: " + util::FormatResultHex(first_msg.gc_mount_failure.mount_rc), { "K" }, true);
                         this->msg_queue.pop();
                         break;
                     }
                     case smi::MenuMessage::SdCardEjected: {
+                        // TODONEW: proper strings
                         g_MenuApplication->CreateShowDialog("SD ejected", "SD ejected", { "K" }, true);
                         this->msg_queue.pop();
 
                         RebootSystem();
+                        break;
+                    }
+                    case smi::MenuMessage::PreviousLaunchFailure: {
+                        g_MenuApplication->CreateShowDialog(GetLanguageString("app_launch"), GetLanguageString("app_unexpected_error"), { GetLanguageString("ok") }, true);
+                        this->msg_queue.pop();
+
+                        break;
+                    }
+                    case smi::MenuMessage::ChosenHomebrew: {
+                        // TODONEW: proper implementation
+                        g_MenuApplication->CreateShowDialog("chosen hb", first_msg.chosen_hb.nro_path, { "K" }, true);
+                        this->msg_queue.pop();
+
                         break;
                     }
                     default: {
@@ -54,7 +69,7 @@ namespace ul::menu::ui {
     }
 
     void IMenuLayout::NotifyMessageContext(const smi::MenuMessageContext msg_ctx) {
-        std::scoped_lock lk(this->msg_queue_lock);
+        ScopedLock lk(this->msg_queue_lock);
         // TODONEW: remove consequent homemenu requests?
         this->msg_queue.push(msg_ctx);
     }

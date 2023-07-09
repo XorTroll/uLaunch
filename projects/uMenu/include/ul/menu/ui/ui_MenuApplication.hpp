@@ -118,7 +118,7 @@ namespace ul::menu::ui {
             }
 
             inline bool LaunchFailed() {
-                return this->start_mode == smi::MenuStartMode::MenuLaunchFailure;
+                return false; // this->start_mode == smi::MenuStartMode::MenuLaunchFailure;
             }
 
             void ShowNotification(const std::string &text, const u64 timeout = 1500);

@@ -10,8 +10,10 @@ ATMOSPHERE_SYSTEM_MODULE_TARGETS := nsp
 LIBSTRAT	:=	$(CURDIR)/../../libs/Atmosphere-libs/libstratosphere
 LIBUCOMMON	:=	$(CURDIR)/../../libs/uCommon
 
-LIBDIRS	+=	$(LIBUCOMMON)
-LIBS	+=	-luCommon
+CXXFLAGS	+=	$(UL_DEFS)
+
+LIBDIRS		+=	$(LIBUCOMMON)
+LIBS		+=	-luCommon
 
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional

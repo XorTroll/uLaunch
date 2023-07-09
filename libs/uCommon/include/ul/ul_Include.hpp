@@ -24,43 +24,58 @@ namespace ul {
 
     constexpr const char RootHomebrewPath[] = "sdmc:/switch";
 
-    class Lock {
+    class Mutex {
         private:
             ::Mutex mutex;
 
         public:
-            constexpr Lock() : mutex() {}
+            constexpr Mutex() : mutex() {}
 
-            inline void lock() {
+            inline void Lock() {
                 mutexLock(&this->mutex);
             }
 
-            inline void unlock() {
+            inline void Unlock() {
                 mutexUnlock(&this->mutex);
             }
 
-            inline bool try_lock() {
+            inline bool TryLock() {
                 return mutexTryLock(&this->mutex);
             }
     };
 
-    class RecursiveLock {
+    class RecursiveMutex {
         private:
             ::RMutex mutex;
 
         public:
-            constexpr RecursiveLock() : mutex() {}
+            constexpr RecursiveMutex() : mutex() {}
 
-            inline void lock() {
+            inline void Lock() {
                 rmutexLock(&this->mutex);
             }
 
-            inline void unlock() {
+            inline void Unlock() {
                 rmutexUnlock(&this->mutex);
             }
 
-            inline bool try_lock() {
+            inline bool TryLock() {
                 return rmutexTryLock(&this->mutex);
+            }
+    };
+
+    template<typename T>
+    class ScopedLock {
+        private:
+            T &lock;
+        
+        public:
+            ScopedLock(T &lock) : lock(lock) {
+                lock.Lock();
+            }
+
+            ~ScopedLock() {
+                this->lock.Unlock();
             }
     };
 

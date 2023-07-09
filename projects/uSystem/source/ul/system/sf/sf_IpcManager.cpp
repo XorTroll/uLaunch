@@ -55,7 +55,7 @@ namespace ul::system::sf {
     }
 
     Allocator &GetManagerAllocator() {
-        std::scoped_lock lk(g_ManagerAllocatorLock);
+        ScopedLock lk(g_ManagerAllocatorLock);
         return g_ManagerAllocator;
     }
 

@@ -26,7 +26,7 @@ OUT_LIB		:=	lib
 #---------------------------------------------------------------------------------
 ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIC -ftls-model=local-exec
 
-CFLAGS	:=	-g -Wall -Werror -O2 -ffunction-sections -fdata-sections $(ARCH) $(INCLUDE) -D__SWITCH__
+CFLAGS	:=	-g -Wall -Werror -O2 -ffunction-sections -fdata-sections $(ARCH) $(INCLUDE) -D__SWITCH__ $(UL_DEFS)
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fexceptions -std=gnu++20
 

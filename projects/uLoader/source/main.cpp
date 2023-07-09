@@ -97,11 +97,22 @@ int main() {
     }
     const auto is_auto_game_recording = g_SelfControlData.nacp.video_capture == 2;
 
+    auto f = fopen("dump-target.bin", "wb");
+    fwrite(&target_ipt, sizeof(target_ipt), 1, f);
+    fclose(f);
+
     fsdevUnmountAll();
     fsExit();
     smExit();
 
     UL_RC_ASSERT(ul::loader::Target(target_ipt, is_auto_game_recording, applet_heap_size, applet_heap_reservation_size));
+
+    ul::loader::TargetOutput target_opt;
+    ul::loader::LoadTargetOutput(target_opt);
+
+    UL_RC_ASSERT(smInitialize());
+    UL_RC_ASSERT(ul::loader::WriteTargetOutput(target_opt));
+    smExit();
 
     return 0;
 }

@@ -1,6 +1,6 @@
 
 #pragma once
-#include <ul/loader/loader_TargetInput.hpp>
+#include <ul/loader/loader_TargetTypes.hpp>
 #include <ul/smi/smi_Results.hpp>
 #include <functional>
 
@@ -10,15 +10,16 @@ namespace ul::smi {
         Invalid,
         StartupScreen,
         Menu,
-        MenuApplicationSuspended,
-        MenuLaunchFailure
+        MenuApplicationSuspended
     };
 
     enum class MenuMessage : u32 {
         Invalid,
         HomeRequest,
         SdCardEjected,
-        GameCardMountFailure
+        GameCardMountFailure,
+        PreviousLaunchFailure,
+        ChosenHomebrew
     };
 
     struct MenuMessageContext {
@@ -28,6 +29,9 @@ namespace ul::smi {
             struct {
                 Result mount_rc;
             } gc_mount_failure;
+            struct {
+                char nro_path[FS_MAX_PATH];
+            } chosen_hb;
         };
     };
 
@@ -39,6 +43,7 @@ namespace ul::smi {
         TerminateApplication,
         LaunchHomebrewLibraryApplet,
         LaunchHomebrewApplication,
+        ChooseHomebrew,
         OpenWebPage,
         OpenAlbum,
         RestartMenu,

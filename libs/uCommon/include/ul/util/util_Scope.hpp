@@ -26,18 +26,4 @@ namespace ul::util {
 
     #define UL_ON_SCOPE_EXIT(...) ::ul::util::OnScopeExit UL_UNIQUE_VAR_NAME(on_scope_exit) ([&]() { __VA_ARGS__ })
 
-    class ScopedLock {
-        private:
-            Mutex &lock;
-        
-        public:
-            ScopedLock(Mutex &lock) : lock(lock) {
-                mutexLock(std::addressof(lock));
-            }
-
-            ~ScopedLock() {
-                mutexUnlock(std::addressof(this->lock));
-            }
-    };
-
 }

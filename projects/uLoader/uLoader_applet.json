@@ -1,5 +1,5 @@
 {
-	"name":	"uLoader_applet",
+	"name":	"uLoader_apl",
 	"program_id":	"0x01000000000FFFF",
 	"program_id_range_min":	"0x010000000000FFFF",
 	"program_id_range_max":	"0x010000000000FFFF",

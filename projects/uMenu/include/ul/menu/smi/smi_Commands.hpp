@@ -1,6 +1,6 @@
 
 #pragma once
-#include <ul/loader/loader_TargetInput.hpp>
+#include <ul/loader/loader_TargetTypes.hpp>
 #include <ul/menu/smi/smi_MenuProtocol.hpp>
 
 namespace ul::menu::smi {
@@ -56,7 +56,7 @@ namespace ul::menu::smi {
     }
 
     inline Result LaunchHomebrewLibraryApplet(const std::string &nro_path, const std::string &nro_argv) {
-        const auto target_ipt = loader::TargetInput::Create(nro_path, nro_argv, false);
+        const auto target_ipt = loader::TargetInput::Create(nro_path, nro_argv, false, "");
 
         return SendCommand(SystemMessage::LaunchHomebrewLibraryApplet,
             [&](ScopedStorageWriter &writer) {
@@ -71,7 +71,7 @@ namespace ul::menu::smi {
     }
 
     inline Result LaunchHomebrewApplication(const std::string &nro_path, const std::string &nro_argv) {
-        const auto target_ipt = loader::TargetInput::Create(nro_path, nro_argv, false);
+        const auto target_ipt = loader::TargetInput::Create(nro_path, nro_argv, false, "");
 
         return SendCommand(SystemMessage::LaunchHomebrewApplication,
             [&](ScopedStorageWriter &writer) {

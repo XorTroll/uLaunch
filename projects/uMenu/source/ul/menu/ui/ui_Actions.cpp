@@ -102,7 +102,7 @@ namespace ul::menu::ui {
         hidLaCreateControllerSupportArg(&arg);
         arg.enable_explain_text = true;
         for(u32 i = 0; i < 8; i++) {
-            strcpy(arg.explain_text[i], GetLanguageString("controller_support_explain_text").c_str());
+            util::CopyToStringBuffer(arg.explain_text[i], GetLanguageString("controller_support_explain_text"));
         }
         hidLaShowControllerSupportForSystem(nullptr, &arg, true);
     }

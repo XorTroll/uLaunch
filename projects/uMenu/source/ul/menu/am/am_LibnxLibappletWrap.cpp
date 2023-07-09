@@ -1,6 +1,6 @@
 #include <ul/smi/smi_Protocol.hpp>
 #include <ul/menu/am/am_LibnxLibappletWrap.hpp>
-#include <ul/menu/smi/smi_SystemMessageHandler.hpp>
+#include <ul/menu/smi/smi_MenuMessageHandler.hpp>
 #include <ul/util/util_Scope.hpp>
 #include <atomic>
 

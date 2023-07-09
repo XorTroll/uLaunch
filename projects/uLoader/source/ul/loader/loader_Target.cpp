@@ -6,7 +6,7 @@
 #include <ul/util/util_Size.hpp>
 #include <ul/util/util_Scope.hpp>
 #include <ul/util/util_Enum.hpp>
-#include <cstring>
+#include <ul/util/util_String.hpp>
 #include <cstdlib>
 
 extern "C" {
@@ -29,24 +29,14 @@ namespace ul::loader {
         ConfigEntry g_TargetConfigEntries[13] = {};
         NroHeader g_TargetHeader = {};
 
-        constexpr size_t InternalPathSize = 512;
-        constexpr size_t InternalArgvSize = 2048;
+        char g_NextTargetPath[NroPathSize] = {};
+        char g_NextTargetArgv[NroArgvSize] = {};
 
-        char g_NextTargetPath[InternalPathSize] = {};
-        char g_NextTargetArgv[InternalArgvSize] = {};
+        char g_TargetCurrentArgv[NroArgvSize] = {};
 
-        char g_TargetCurrentArgv[InternalArgvSize] = {};
-
-        char g_NoticeText[] = "Loaded by uLoader v" UL_VERSION " - uLaunch's custom hbloader alternative ;)";
+        char g_NoticeText[MenuCaptionSize] = {};
 
         AccountUid g_UserIdStorage;
-
-        template<size_t S1, size_t S2>
-        inline void CopyStringBuffer(char (&dst)[S1], const char (&src)[S2]) {
-            constexpr auto copy_size = std::min(S1, S2);
-            memcpy(dst, src, copy_size);
-            dst[copy_size - 1] = '\0';
-        }
 
         inline void BackupTls() {
             memcpy(g_SavedTls, reinterpret_cast<u8*>(armGetTls()) + 0x100, sizeof(g_SavedTls));
@@ -203,11 +193,11 @@ namespace ul::loader {
             }
 
             if(g_NextTargetPath[0] == '\0') {
-                CopyStringBuffer(g_NextTargetPath, target_ipt.nro_path);
-                CopyStringBuffer(g_NextTargetArgv, target_ipt.nro_argv);
+                util::CopyToStringBuffer(g_NextTargetPath, target_ipt.nro_path);
+                util::CopyToStringBuffer(g_NextTargetArgv, target_ipt.nro_argv);
             }
 
-            CopyStringBuffer(g_TargetCurrentArgv, g_NextTargetArgv);
+            util::CopyToStringBuffer(g_TargetCurrentArgv, g_NextTargetArgv);
 
             auto target_base = heap_addr;
             auto target_start = reinterpret_cast<NroStart*>(target_base);
@@ -223,7 +213,7 @@ namespace ul::loader {
                 {
                     auto f = fopen(g_NextTargetPath, "rb");
                     if(f == nullptr) {
-                        return MAKERESULT(333, errno + 9000);
+                        return MAKERESULT(333, 900 + errno);
                         return MAKERESULT(Module_HomebrewLoader, 3);
                     }
                     util::OnScopeExit file_close([&]() {
@@ -393,7 +383,7 @@ namespace ul::loader {
                 {
                     EntryKind::EndOfList,
                     static_cast<u32>(EntryFlags::None), {
-                        reinterpret_cast<u64>(g_NoticeText),
+                        reinterpret_cast<uintptr_t>(reinterpret_cast<char*>(g_NoticeText)),
                         sizeof(g_NoticeText)
                     }
                 }
@@ -411,6 +401,7 @@ namespace ul::loader {
     }
 
     Result Target(const TargetInput &target_ipt, const bool is_auto_gameplay_recording, const u64 applet_heap_size, const u64 applet_heap_reservation_size) {
+        util::CopyToStringBuffer(g_NoticeText, target_ipt.menu_caption);
         BackupTls();
 
         u8 *heap_addr;
@@ -422,6 +413,14 @@ namespace ul::loader {
         } while(!target_ipt.target_once);
 
         return ResultSuccess;
+    }
+
+    void LoadTargetOutput(TargetOutput &out_target_opt) {
+        out_target_opt = TargetOutput::Create(g_NextTargetPath, g_NextTargetArgv);
+
+        if(strlen(out_target_opt.nro_argv) == 0) {
+            util::CopyToStringBuffer(out_target_opt.nro_argv, out_target_opt.nro_path);
+        }
     }
 
 }

@@ -36,7 +36,7 @@ using namespace ul::system;
 
 // Note: these are global since they are accessed by IPC
 
-ul::RecursiveLock g_MenuMessageQueueLock;
+ul::RecursiveMutex g_MenuMessageQueueLock;
 std::queue<ul::smi::MenuMessageContext> *g_MenuMessageQueue;
 
 #define DEBUG_LOG(fmt, ...) ({ \
@@ -51,6 +51,7 @@ namespace {
 
     AccountUid g_SelectedUser = {};
     ul::loader::TargetInput g_LoaderLaunchFlag = {};
+    bool g_LoaderChooseFlag = false;
     ul::loader::TargetInput g_LoaderApplicationLaunchFlag = {};
     ul::loader::TargetInput g_LoaderApplicationLaunchFlagCopy = {};
     u64 g_ApplicationLaunchFlag = 0;
@@ -80,12 +81,12 @@ namespace {
 namespace {
 
     inline void PushMenuMessageContext(const ul::smi::MenuMessageContext msg_ctx) {
-        std::scoped_lock lk(g_MenuMessageQueueLock);
+        ul::ScopedLock lk(g_MenuMessageQueueLock);
         g_MenuMessageQueue->push(msg_ctx);
     }
 
     inline void PushSimpleMenuMessage(const ul::smi::MenuMessage msg) {
-        std::scoped_lock lk(g_MenuMessageQueueLock);
+        ul::ScopedLock lk(g_MenuMessageQueueLock);
         const ul::smi::MenuMessageContext msg_ctx = {
             .msg = msg
         };
@@ -377,6 +378,12 @@ namespace {
                             g_ApplicationLaunchFlag = hb_application_takeover_program_id;
                             break;
                         }
+                        case ul::smi::SystemMessage::ChooseHomebrew: {
+                            constexpr auto hbmenu_nro = "sdmc:/hbmenu.nro";
+                            g_LoaderLaunchFlag = ul::loader::TargetInput::Create(hbmenu_nro, hbmenu_nro, true, "Choose a homebrew for uMenu");
+                            g_LoaderChooseFlag = true;
+                            break;
+                        }
                         case ul::smi::SystemMessage::OpenWebPage: {
                             char web_url[500] = {};
                             UL_RC_TRY(reader.PopData(web_url, sizeof(web_url)));
@@ -532,8 +539,28 @@ namespace {
             const auto cur_id = la::GetLastAppletId();
             u64 hb_applet_takeover_program_id;
             UL_ASSERT_TRUE(g_Config.GetEntry(ul::cfg::ConfigEntryId::HomebrewAppletTakeoverProgramId, hb_applet_takeover_program_id));
-            if((cur_id == AppletId_LibraryAppletWeb) || (cur_id == AppletId_LibraryAppletPhotoViewer) || (cur_id == hb_applet_takeover_program_id)) {
+            if((cur_id == AppletId_LibraryAppletWeb) || (cur_id == AppletId_LibraryAppletPhotoViewer) || (cur_id == la::GetAppletIdForProgramId(hb_applet_takeover_program_id))) {
+                ul::loader::TargetOutput target_opt;
+                if(g_LoaderChooseFlag) {
+                    AppletStorage target_opt_st;
+                    UL_RC_ASSERT(la::Pop(&target_opt_st));
+                    UL_RC_ASSERT(appletStorageRead(&target_opt_st, 0, &target_opt, sizeof(target_opt)));
+
+                    DEBUG_LOG("read choose hb: '%s'", target_opt.nro_path);
+                }
+                
                 UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::Menu, CreateStatus()));
+
+                if(g_LoaderChooseFlag) {
+                    ul::smi::MenuMessageContext msg_ctx = {
+                        .msg = ul::smi::MenuMessage::ChosenHomebrew,
+                        .chosen_hb = {}
+                    };
+                    memcpy(msg_ctx.chosen_hb.nro_path, target_opt.nro_path, sizeof(msg_ctx.chosen_hb.nro_path));
+                    PushMenuMessageContext(msg_ctx);
+
+                    g_LoaderChooseFlag = false;
+                }
                 
                 sth_done = true;
             }
@@ -550,9 +577,9 @@ namespace {
                     UL_RC_ASSERT(terminate_rc);
                 }
 
-                // Reopen uMenu in launch-error mode
-                // TODONEW: send launch failure info as a menu message, instead of using "start modes"
-                UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::MenuLaunchFailure, CreateStatus()));
+                // Reopen uMenu, notify failure
+                UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::Menu, CreateStatus()));
+                PushSimpleMenuMessage(ul::smi::MenuMessage::PreviousLaunchFailure);
                 g_LoaderOpenedAsApplication = false;
             }
         }

@@ -1,4 +1,4 @@
-#include <ul/menu/smi/smi_SystemMessageHandler.hpp>
+#include <ul/menu/smi/smi_MenuMessageHandler.hpp>
 #include <ul/sf/sf_Base.hpp>
 #include <ul/util/util_Scope.hpp>
 #include <atomic>
@@ -14,8 +14,11 @@ namespace ul::menu::smi {
             );
         }
 
-        inline Result privateServicePopMessageContext(Service *srv, MenuMessageContext *out_msg_ctx) {
-            return serviceDispatchOut(srv, 1, *out_msg_ctx);
+        inline Result privateServiceTryPopMessageContext(Service *srv, MenuMessageContext *out_msg_ctx) {
+            return serviceDispatch(srv, 1,
+                .buffer_attrs = { SfBufferAttr_HipcMapAlias | SfBufferAttr_Out },
+                .buffers = { { out_msg_ctx, sizeof(MenuMessageContext) } },
+            );
         }
 
         Service g_PrivateService;
@@ -35,8 +38,8 @@ namespace ul::menu::smi {
             serviceClose(&g_PrivateService);
         }
 
-        Result PopPrivateServiceMessageContext(MenuMessageContext *out_msg_ctx) {
-            return privateServicePopMessageContext(&g_PrivateService, out_msg_ctx);
+        Result TryPopPrivateServiceMessageContext(MenuMessageContext *out_msg_ctx) {
+            return privateServiceTryPopMessageContext(&g_PrivateService, out_msg_ctx);
         }
 
     }
@@ -49,7 +52,7 @@ namespace ul::menu::smi {
         std::vector<std::pair<OnMessageCallback, MenuMessage>> g_MessageCallbackTable;
         Mutex g_CallbackTableLock = {};
 
-        void SystemMessageReceiverThread(void*) {
+        void MenuMessageReceiverThread(void*) {
             while(true) {
                 if(g_ReceiverThreadShouldStop) {
                     break;
@@ -57,8 +60,8 @@ namespace ul::menu::smi {
 
                 {
                     MenuMessageContext last_msg_ctx;
-                    if(R_SUCCEEDED(PopPrivateServiceMessageContext(&last_msg_ctx))) {
-                        util::ScopedLock lk(g_CallbackTableLock);
+                    if(R_SUCCEEDED(TryPopPrivateServiceMessageContext(&last_msg_ctx))) {
+                        ScopedLock lk(g_CallbackTableLock);
 
                         for(const auto &[cb, msg] : g_MessageCallbackTable) {
                             if((msg == MenuMessage::Invalid) || (msg == last_msg_ctx.msg)) {
@@ -66,7 +69,6 @@ namespace ul::menu::smi {
                             }
                         }
                     }
-                    
                 }
 
                 svcSleepThread(10'000'000ul);
@@ -75,7 +77,7 @@ namespace ul::menu::smi {
 
     }
 
-    Result InitializeSystemMessageHandler() {
+    Result InitializeMenuMessageHandler() {
         if(g_Initialized) {
             return ResultSuccess;
         }
@@ -83,14 +85,14 @@ namespace ul::menu::smi {
         UL_RC_TRY(InitializePrivateService());
 
         g_ReceiverThreadShouldStop = false;
-        UL_RC_TRY(threadCreate(&g_ReceiverThread, &SystemMessageReceiverThread, nullptr, nullptr, 0x1000, 49, -2));
+        UL_RC_TRY(threadCreate(&g_ReceiverThread, &MenuMessageReceiverThread, nullptr, nullptr, 0x1000, 49, -2));
         UL_RC_TRY(threadStart(&g_ReceiverThread));
 
         g_Initialized = true;
         return ResultSuccess;
     }
 
-    void FinalizeSystemMessageHandler() {
+    void FinalizeMenuMessageHandler() {
         if(!g_Initialized) {
             return;
         }
@@ -104,7 +106,7 @@ namespace ul::menu::smi {
     }
 
     void RegisterOnMessageDetect(OnMessageCallback callback, const MenuMessage desired_msg) {
-        util::ScopedLock lk(g_CallbackTableLock);
+        ScopedLock lk(g_CallbackTableLock);
 
         g_MessageCallbackTable.push_back({ callback, desired_msg });
     }

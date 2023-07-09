@@ -9,8 +9,8 @@ namespace ul::menu::smi {
 
     using OnMessageCallback = std::function<void(const MenuMessageContext)>;
 
-    Result InitializeSystemMessageHandler();
-    void FinalizeSystemMessageHandler();
+    Result InitializeMenuMessageHandler();
+    void FinalizeMenuMessageHandler();
     void RegisterOnMessageDetect(OnMessageCallback callback, const MenuMessage desired_msg = MenuMessage::Invalid);
 
 }

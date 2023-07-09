@@ -12,7 +12,7 @@ namespace ul::cfg {
 
         std::string GetHomebrewCachePath(const std::string &nro_path, const std::string &ext) {
             char path_copy[FS_MAX_PATH] = {};
-            strcpy(path_copy, nro_path.c_str());
+            util::CopyToStringBuffer(path_copy, nro_path);
             u8 hash[SHA256_HASH_SIZE] = {};
             sha256CalculateHash(hash, path_copy, FS_MAX_PATH);
 
@@ -176,10 +176,11 @@ namespace ul::cfg {
                             NroHeader header;
                             if(fread(&header, sizeof(header), 1, f) == 1) {
                                 if((header.magic == NROHEADER_MAGIC) && (f_size >= header.size)) {
-                                    TitleRecord rec = {};
-                                    rec.title_type = TitleType::Homebrew;
-                                    rec.hb_info = {};
-                                    strcpy(rec.hb_info.nro_target.nro_path, path.c_str());
+                                    TitleRecord rec = {
+                                        .title_type = TitleType::Homebrew,
+                                        .hb_info = {}
+                                    };
+                                    util::CopyToStringBuffer(rec.hb_info.nro_target.nro_path, path);
                                     nros.push_back(rec);
                                 }
                             }
@@ -639,9 +640,9 @@ namespace ul::cfg {
                         rec.control.custom_icon_path = !rec.control.icon_path.empty();
 
                         const std::string argv = entry.value("nro_argv", "");
-                        strcpy(rec.hb_info.nro_target.nro_path, nro_path.c_str());
+                        util::CopyToStringBuffer(rec.hb_info.nro_target.nro_path, nro_path);
                         if(!argv.empty()) {
-                            strcpy(rec.hb_info.nro_target.nro_argv, argv.c_str());
+                            util::CopyToStringBuffer(rec.hb_info.nro_target.nro_argv, argv);
                         }
                         
                         if(folder.empty()) {

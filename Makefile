@@ -8,7 +8,7 @@ DEFAULT_HB_NAME		:=	Unnamed homebrew
 DEFAULT_HB_AUTHOR	:=	Unknown author
 DEFAULT_HB_VERSION	:=	Unknown version
 
-export CPP_DEFS	:=	-DUL_VERSION=\"$(VERSION)\"
+export UL_DEFS	:=	-DUL_VERSION=\"$(VERSION)\"
 
 .PHONY: all fresh clean default_hb usystem uloader umenu
 
