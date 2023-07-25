@@ -11,13 +11,8 @@
 
 extern ul::menu::ui::MenuApplication::Ref g_MenuApplication;
 extern ul::menu::ui::TransitionGuard g_TransitionGuard;
-extern ul::cfg::TitleList g_EntryList;
-extern std::vector<ul::cfg::TitleRecord> g_HomebrewRecordList;
 extern ul::cfg::Config g_Config;
 extern ul::cfg::Theme g_Theme;
-extern char g_FwVersion[0x18];
-
-#define MENU_HBMENU_NRO "sdmc:/hbmenu.nro"
 
 namespace ul::menu::ui {
 
@@ -25,494 +20,429 @@ namespace ul::menu::ui {
 
         inline loader::TargetInput CreateLaunchTargetInput(const loader::TargetInput &base_params) {
             loader::TargetInput ipt = {};
-            memcpy(ipt.nro_path, base_params.nro_path, sizeof(ipt.nro_path));
-            if(strlen(base_params.nro_argv)) {
+            util::CopyToStringBuffer(ipt.nro_path, base_params.nro_path);
+            if(strlen(base_params.nro_argv) > 0) {
                 const auto default_argv = std::string(base_params.nro_path) + " " + base_params.nro_argv;
                 util::CopyToStringBuffer(ipt.nro_argv, default_argv);
             }
             else {
-                memcpy(ipt.nro_argv, base_params.nro_path, sizeof(ipt.nro_argv));
+                util::CopyToStringBuffer(ipt.nro_argv, base_params.nro_path);
             }
             return ipt;
         }
 
     }
 
-    void MainMenuLayout::DoMoveFolder(const std::string &name) {
-        if(this->homebrew_mode) {
-            if(g_HomebrewRecordList.empty()) {
-                g_HomebrewRecordList = cfg::QueryAllHomebrew();
+    void MainMenuLayout::DoMoveTo(const std::string &new_path) {
+        // Empty path used as a "reload" argumnt
+        if(!new_path.empty()) {
+            char menu_path[FS_MAX_PATH];
+            util::CopyToStringBuffer(menu_path, new_path);
+            UL_RC_ASSERT(smi::UpdateMenuPath(menu_path));
+        }
+
+        this->entries_menu->MoveTo(new_path);
+
+        // TODONEW: remove this when the cwd is properly displayed somehow
+        this->fw_text->SetFont(pu::ui::GetDefaultFont(pu::ui::DefaultFontSize::Small));
+        this->fw_text->SetText(this->entries_menu->GetPath());
+
+        if(this->entries_menu->HasEntries()) {
+            this->banner_img->SetVisible(true);
+            this->selected_item_name_text->SetVisible(true);
+            this->selected_item_author_text->SetVisible(true);
+            this->selected_item_version_text->SetVisible(true);
+            this->no_entries_text->SetVisible(false);
+
+            /*
+            u32 cur_i = 0;
+            for(const auto &entry : g_CurrentMenuEntries) {
+                auto entry_icon = entry.control.icon_path;
+                if(entry_icon.empty() && entry.Is<EntryType::Folder>()) {
+                    entry_icon = cfg::GetAssetByTheme(g_Theme, "ui/Folder.png");
+                }
+                this->entries_menu->AddItem(entry_icon);
+
+                if((entry.Is<EntryType::Application>() && (g_MenuApplication->GetStatus().suspended_app_id == entry.app_info.record.application_id)) || (entry.Is<EntryType::Homebrew>() && g_MenuApplication->EqualsSuspendedHomebrewPath(entry.hb_info.nro_target.nro_path))) {
+                    this->entries_menu->SetSuspendedItem(cur_i);
+                }
+
+                cur_i++;
             }
-        }
 
-        auto item_list = g_HomebrewRecordList;
-        if(!this->homebrew_mode) {
-            const auto &folder = cfg::FindFolderByName(g_EntryList, name);
-            item_list = folder.titles;
-        }
-
-        this->items_menu->ClearItems();
-        if(this->homebrew_mode) {
-            this->items_menu->AddItem(cfg::GetAssetByTheme(g_Theme, "ui/Hbmenu.png"));
+            // TODONEW: find a faster way to do this?
+            g_MenuApplication->CallForRender();
+            if(!g_EntryIndexStack.empty()) {
+                const auto saved_i = g_EntryIndexStack.top();
+                if(saved_i < g_CurrentMenuEntries.size()) {
+                    while(this->entries_menu->GetSelectedItem() < saved_i) {
+                        this->entries_menu->HandleMoveRight();
+                    }
+                }
+            }
+            */
         }
         else {
-            if(name.empty()) {
-                // Remove empty folders
-                UL_STL_REMOVE_IF(g_EntryList.folders, folder, folder.titles.empty());
-                for(const auto &folder: g_EntryList.folders) {
-                    this->items_menu->AddItem(cfg::GetAssetByTheme(g_Theme, "ui/Folder.png"), folder.name);
-                }
-            }
-        }
-
-        u32 tmp_idx = 0;
-        for(const auto &item: item_list) {
-            auto set_susp = false;
-            if(item.title_type == cfg::TitleType::Application) {
-                if(g_MenuApplication->IsTitleSuspended()) {
-                    if(g_MenuApplication->GetSuspendedApplicationId() == item.app_info.record.application_id) {
-                        set_susp = true;
-                    }
-                }
-            }
-            else {
-                if(g_MenuApplication->IsHomebrewSuspended()) {
-                    if(g_MenuApplication->EqualsSuspendedHomebrewPath(item.hb_info.nro_target.nro_path)) {
-                        set_susp = true;
-                    }
-                }
-            }
-            this->items_menu->AddItem(cfg::GetRecordIconPath(item));
-            if(set_susp) {
-                u32 susp_idx = tmp_idx;
-                // Skip initial item if homebrew mode
-                if(this->homebrew_mode) {
-                    susp_idx++;
-                }
-                // Ignore front folders from main menu
-                else if(name.empty()) {
-                    susp_idx += g_EntryList.folders.size();
-                }
-                this->items_menu->SetSuspendedItem(susp_idx);
-            }
-            tmp_idx++;
-        }
-
-        this->items_menu->UpdateBorderIcons();
-        if(!this->homebrew_mode) {
-            this->cur_folder = name;
+            this->banner_img->SetVisible(false);
+            this->selected_item_name_text->SetVisible(false);
+            this->selected_item_author_text->SetVisible(false);
+            this->selected_item_version_text->SetVisible(false);
+            this->no_entries_text->SetVisible(true);
         }
     }
 
-    void MainMenuLayout::menu_Click(const u64 keys_down, const u32 idx) {
-        if(this->select_on && (keys_down & HidNpadButton_A)) {
-            if(!this->items_menu->IsAnyMultiselected()) {
-                this->StopMultiselect();
-            }
+    void MainMenuLayout::menu_EntryInputPressed(const u64 keys_down) {
+        if(!this->entries_menu->HasEntries()) {
+            return;
         }
-        if(this->select_on) {
-            if(select_dir) {
-                if((keys_down & HidNpadButton_A) || (keys_down & HidNpadButton_Y)) {
-                    if((!this->homebrew_mode) && this->cur_folder.empty()) {
-                        if(idx < g_EntryList.folders.size()) {
-                            auto &folder = g_EntryList.folders.at(idx);
-                            const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("menu_multiselect"), GetLanguageString("menu_move_existing_folder_conf"), { GetLanguageString("yes"), GetLanguageString("no"), GetLanguageString("cancel") }, true);
-                            if(option == 0) {
-                                this->HandleMultiselectMoveToFolder(folder.name);
-                            }
-                            else if(option == 1) {
-                                this->StopMultiselect();
-                            }
-                        }
-                    }
-                }
-                else if(keys_down & HidNpadButton_B) {
-                    this->select_dir = false;
-                    g_MenuApplication->ShowNotification(GetLanguageString("menu_move_select_folder_cancel"));
-                }
-            }
-            else {
-                if(keys_down & HidNpadButton_B) {
-                    g_MenuApplication->ShowNotification(GetLanguageString("menu_multiselect_cancel"));
-                    this->StopMultiselect();
-                }
-                else if(keys_down & HidNpadButton_Y) {
-                    auto selectable = false;
-                    if(this->homebrew_mode) {
-                        selectable = true;
-                    }
-                    else {
-                        if(this->cur_folder.empty()) {
-                            selectable = idx >= g_EntryList.folders.size();
-                        }
-                        else {
-                            selectable = true;
-                        }
-                    }
-                    if(selectable) {
-                        this->items_menu->SetItemMultiselected(idx, !this->items_menu->IsItemMultiselected(idx));
-                    }
-                }
-                else if(keys_down & HidNpadButton_A) {
-                    if(this->homebrew_mode) {
-                        const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("menu_multiselect"), GetLanguageString("hb_mode_entries_add"), { GetLanguageString("yes"), GetLanguageString("no"), GetLanguageString("cancel") }, true);
-                        if(option == 0) {
-                            // Get the idx of the last g_HomebrewRecordList element.
-                            s32 hb_idx = 0;
-                            for(auto &entry: g_EntryList.root.titles) {
-                                if(entry.title_type == cfg::TitleType::Application) {
-                                    break;
-                                }
-                                hb_idx++;
-                            }
-                            if(hb_idx < 0) {
-                                hb_idx = 0;
-                            }
-                            auto all_added = true;
-                            for(u32 i = 0; i < g_HomebrewRecordList.size(); i++) {
-                                auto &hb = g_HomebrewRecordList.at(i);
-                                const auto idx = i + 1;
-                                if(this->items_menu->IsItemMultiselected(idx)) {
-                                    if(!cfg::ExistsRecord(g_EntryList, hb)) {
-                                        cfg::SaveRecord(hb);
-                                        g_EntryList.root.titles.insert(g_EntryList.root.titles.begin() + hb_idx, hb);
-                                        hb_idx++;
-                                    }
-                                    else {
-                                        all_added = false;
-                                    }
-                                }
-                            }
-                            if(all_added) {
-                                g_MenuApplication->ShowNotification(GetLanguageString("hb_mode_entries_added"));
-                            }
-                            else {
-                                g_MenuApplication->ShowNotification(GetLanguageString("hb_mode_entries_some_added"));
-                            }
-                            this->StopMultiselect();
-                        }
-                        else if(option == 1) {
-                            this->StopMultiselect();
-                        }
-                    }
-                    else if(this->cur_folder.empty()) {
-                        const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("menu_multiselect"), GetLanguageString("menu_move_to_folder"), { GetLanguageString("menu_move_new_folder"), GetLanguageString("menu_move_existing_folder"), GetLanguageString("no"), GetLanguageString("cancel") }, true);
-                        if(option == 0) {
-                            SwkbdConfig cfg;
-                            swkbdCreate(&cfg, 0);
-                            swkbdConfigSetGuideText(&cfg, GetLanguageString("swkbd_new_folder_guide").c_str());
-                            char dir[500] = {};
-                            const auto rc = swkbdShow(&cfg, dir, sizeof(dir));
-                            swkbdClose(&cfg);
-                            if(R_SUCCEEDED(rc)) {
-                                this->HandleMultiselectMoveToFolder(dir);
-                            }
-                        }
-                        else if(option == 1) {
-                            this->select_dir = true;
-                            g_MenuApplication->ShowNotification(GetLanguageString("menu_move_select_folder"));
-                        }
-                        else if(option == 2) {
-                            this->StopMultiselect();
-                        }
-                    }
-                    else {
-                        auto sopt = g_MenuApplication->CreateShowDialog(GetLanguageString("menu_multiselect"), GetLanguageString("menu_move_from_folder"), { GetLanguageString("yes"), GetLanguageString("no"), GetLanguageString("cancel") }, true);
-                        if(sopt == 0) {
-                            u32 removed_idx = 0;
-                            auto &folder = cfg::FindFolderByName(g_EntryList, this->cur_folder);
-                            for(u32 i = 0; i < folder.titles.size(); i++) {
-                                auto &title = folder.titles.at(i - removed_idx);
-                                if(this->items_menu->IsItemMultiselected(i)) {
-                                    if(cfg::MoveRecordTo(g_EntryList, title, "")) {
-                                        removed_idx++;
-                                    }
-                                }
-                            }
-                            this->StopMultiselect();
-                            this->MoveFolder(folder.titles.empty() ? "" : this->cur_folder, true);
-                        }
-                        else if(sopt == 1) {
-                            this->StopMultiselect();
-                        }
-                    }
-                }
-            }
-        }
-        else {
-            if((idx == 0) && this->homebrew_mode) {
-                if(keys_down & HidNpadButton_A) {
-                    pu::audio::PlaySfx(this->title_launch_sfx);
-                    
-                    // Launch normal hbmenu
-                    UL_RC_ASSERT(menu::smi::LaunchHomebrewLibraryApplet(MENU_HBMENU_NRO, MENU_HBMENU_NRO));
 
-                    g_MenuApplication->StopPlayBGM();
-                    g_MenuApplication->CloseWithFadeOut();
-                    return;
+        auto &cur_entry = this->entries_menu->GetFocusedEntry();
+
+        if(keys_down & HidNpadButton_B) {
+            if(this->entries_menu->IsAnySelected()) {
+                const auto option = g_MenuApplication->CreateShowDialog("Selection", "Would you like to cancel the current selection?", { "Yes", "Cancel" }, true);
+                if(option == 0) {
+                    // TODONEW: (MULTI)select, strings, standfn
+                    g_MenuApplication->ShowNotification(GetLanguageString("menu_multiselect_cancel"));
+                    this->StopSelection();
                 }
             }
-            else {
-                s32 actual_idx = idx;
-                if(this->homebrew_mode) {
-                    actual_idx--;
-                    const auto &hb = g_HomebrewRecordList.at(actual_idx);
-                    if(keys_down & HidNpadButton_A) {
-                        auto launch_hb = true;
-                        if(g_MenuApplication->IsHomebrewSuspended()) {
-                            if(g_MenuApplication->EqualsSuspendedHomebrewPath(hb.hb_info.nro_target.nro_path)) {
-                                if(this->mode == SuspendedImageMode::Focused) {
-                                    this->mode = SuspendedImageMode::HidingForResume;
+            else if(!this->entries_menu->IsInRoot()) {
+                const auto parent_path = fs::GetBaseDirectory(this->entries_menu->GetPath());
+                this->MoveTo(parent_path, true);
+            }
+        }
+        else if(keys_down & HidNpadButton_A) {
+            if(this->entries_menu->IsAnySelected()) {
+                if(cur_entry.Is<EntryType::Folder>()) {
+                    if(this->entries_menu->IsFocusedEntrySelected()) {
+                        g_MenuApplication->ShowNotification("Cant move the folder into itself!");
+                    }
+                    else {
+                        const auto option = g_MenuApplication->CreateShowDialog("Multiselect", "Would you like to move all to this dir?", { "Yes", "Cancel" }, true);
+                        if(option == 0) {
+                            u32 cur_i = 0;
+                            for(auto &entry : this->entries_menu->GetEntries()) {
+                                if(this->entries_menu->IsEntrySelected(cur_i)) {
+                                    entry.MoveTo(cur_entry.GetFolderPath());
                                 }
-                                launch_hb = false;
+
+                                cur_i++;
                             }
-                            else {
-                                launch_hb = false;
-                                this->HandleCloseSuspended();
-                                launch_hb = !g_MenuApplication->IsHomebrewSuspended();
-                            }
+
+                            this->StopSelection();
+                            g_MenuApplication->ShowNotification("all moved");
+                            this->MoveTo("", true);
                         }
-                        if(launch_hb) {
-                            this->HandleHomebrewLaunch(hb);
-                        }
-                    }
-                    else if(keys_down & HidNpadButton_X) {
-                        if(g_MenuApplication->IsSuspended()) {
-                            if(g_MenuApplication->EqualsSuspendedHomebrewPath(hb.hb_info.nro_target.nro_path)) {
-                                this->HandleCloseSuspended();
-                            }
-                        }
-                    }
-                    else if(keys_down & HidNpadButton_Y) {
-                        this->select_on = true;
-                        this->items_menu->SetItemMultiselected(this->items_menu->GetSelectedItem(), true);
                     }
                 }
                 else {
-                    auto &folder = cfg::FindFolderByName(g_EntryList, this->cur_folder);
-                    s32 title_idx = actual_idx;
-                    if(this->cur_folder.empty()) {
-                        if(static_cast<u32>(actual_idx) >= g_EntryList.folders.size()) {
-                            title_idx -= g_EntryList.folders.size();
+                    auto &cur_entries = this->entries_menu->GetEntries();
+                    const auto cur_i = this->entries_menu->GetFocusedEntryIndex();
+                    const auto last_i = cur_entries.size() - 1;
+
+                    // TODONEW: proper strings
+                    // TODONEW: apply this to folder too? maybe pick better key inputs for this
+                    const auto option = g_MenuApplication->CreateShowDialog("Multiselect", "Move stuff kind", { "Before", "After", "Swap", "Cancel" }, true);
+                    if(option == 0) {
+                        auto cur_start_idx = (cur_i == 0) ? InvalidEntryIndex : cur_entries.at(cur_i - 1).index;
+                        const auto cur_end_idx = cur_entry.index;
+                        u32 cur_i = 0;
+                        for(auto &entry : cur_entries) {
+                            if(this->entries_menu->IsEntrySelected(cur_i)) {
+                                // Move to the start range, then limit the range so next entries will follow this one
+                                entry.OrderBetween(cur_start_idx, cur_end_idx);
+                                cur_start_idx = entry.index;
+                            }
+
+                            cur_i++;
                         }
-                        else {
-                            auto &selected_folder = g_EntryList.folders.at(actual_idx);
-                            if(keys_down & HidNpadButton_A) {
-                                this->MoveFolder(selected_folder.name, true);
+
+                        this->StopSelection();
+                        g_MenuApplication->ShowNotification("all moved before");
+                        this->MoveTo("", true);
+                    }
+                    else if(option == 1) {
+                        auto cur_start_idx = cur_entry.index;
+                        const auto cur_end_idx = (cur_i == last_i) ? InvalidEntryIndex : cur_entries.at(cur_i + 1).index;
+                        u32 cur_i = 0;
+                        for(auto &entry : cur_entries) {
+                            if(this->entries_menu->IsEntrySelected(cur_i)) {
+                                // Move to the start range, then limit the range so next entries will follow this one
+                                entry.OrderBetween(cur_start_idx, cur_end_idx);
+                                cur_start_idx = entry.index;
                             }
-                            else if(keys_down & HidNpadButton_Y) {
-                                const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("menu_rename_folder"), GetLanguageString("menu_rename_folder_conf"), { GetLanguageString("yes"), GetLanguageString("no") }, true);
-                                if(option == 0) {
-                                    SwkbdConfig cfg;
-                                    swkbdCreate(&cfg, 0);
-                                    swkbdConfigSetGuideText(&cfg, GetLanguageString("swkbd_rename_folder_guide").c_str());
-                                    char dir[500] = {0};
-                                    const auto rc = swkbdShow(&cfg, dir, sizeof(dir));
-                                    swkbdClose(&cfg);
-                                    if(R_SUCCEEDED(rc)) {
-                                        cfg::RenameFolder(g_EntryList, selected_folder.name, dir);
-                                        this->MoveFolder(this->cur_folder, true);
-                                    }
+
+                            cur_i++;
+                        }
+
+                        this->StopSelection();
+                        g_MenuApplication->ShowNotification("all moved after");
+                        this->MoveTo("", true);
+                    }
+                    else if(option == 2) {
+                        // Basically a "move before" followed by moving the current item in the range where the first multiselected item was
+                        auto cur_start_idx = (cur_i == 0) ? InvalidEntryIndex : cur_entries.at(cur_i - 1).index;
+                        const auto cur_end_idx = cur_entry.index;
+                        u32 cur_i = 0;
+                        u32 move_start_idx = UINT32_MAX;
+                        u32 move_end_idx = UINT32_MAX;
+                        for(auto &entry : cur_entries) {
+                            if(this->entries_menu->IsEntrySelected(cur_i)) {
+                                // This way, get the start+end index which map the range of the first multiselected item
+                                if(move_start_idx == UINT32_MAX) {
+                                    move_start_idx = entry.index;
                                 }
+                                else if(move_end_idx == UINT32_MAX) {
+                                    move_end_idx = entry.index;
+                                }
+                                
+
+                                entry.OrderBetween(cur_start_idx, cur_end_idx);
+                                cur_start_idx = entry.index;
                             }
-                            title_idx = -1;
+
+                            cur_i++;
+                        }
+
+                        cur_entry.OrderBetween(move_start_idx, move_end_idx);
+
+                        this->StopSelection();
+                        g_MenuApplication->ShowNotification("all swapped with one");
+                        this->MoveTo("", true);
+                    }
+                }
+            }
+            else {
+                if(cur_entry.Is<EntryType::Folder>()) {
+                    this->MoveTo(cur_entry.GetFolderPath(), true);
+                }
+                else {
+                    auto do_launch_entry = true;
+
+                    if(g_MenuApplication->IsSuspended()) {
+                        const auto cur_hb_suspended = cur_entry.Is<EntryType::Homebrew>() && g_MenuApplication->EqualsSuspendedHomebrewPath(cur_entry.hb_info.nro_target.nro_path);
+                        const auto cur_app_suspended = cur_entry.Is<EntryType::Application>() && (cur_entry.app_info.record.application_id == g_MenuApplication->GetStatus().suspended_app_id);
+
+                        // Play animations, then resume the suspended hb/app
+                        if(cur_hb_suspended) {
+                            if(this->mode == SuspendedImageMode::Focused) {
+                                this->mode = SuspendedImageMode::HidingForResume;
+                            }
+                            do_launch_entry = false;
+                        }
+                        else if(cur_app_suspended) {
+                            if(this->mode == SuspendedImageMode::Focused) {
+                                this->mode = SuspendedImageMode::HidingForResume;
+                            }
+                            do_launch_entry = false;
+                        }
+
+                        // If the suspended entry is another one, ask the user to close it beforehand
+                        // Homebrew launching code already does this checks later, this do this check only with apps
+                        if(do_launch_entry && cur_entry.Is<EntryType::Application>()) {
+                            do_launch_entry = false;
+                            this->HandleCloseSuspended();
+                            do_launch_entry = !g_MenuApplication->IsSuspended();
                         }
                     }
-                    if(title_idx >= 0) {
-                        auto &title = folder.titles.at(title_idx);
-                        if(keys_down & HidNpadButton_A) {
-                            auto launch_title = true;
 
-                            if(g_MenuApplication->IsSuspended()) {
-                                if(title.title_type == cfg::TitleType::Homebrew) {
-                                    if(g_MenuApplication->EqualsSuspendedHomebrewPath(title.hb_info.nro_target.nro_path)) {
-                                        if(this->mode == SuspendedImageMode::Focused) {
-                                            this->mode = SuspendedImageMode::HidingForResume;
-                                        }
-                                        launch_title = false;
-                                    }
-                                }
-                                else if(title.title_type == cfg::TitleType::Application) {
-                                    if(title.app_info.record.application_id == g_MenuApplication->GetSuspendedApplicationId()) {
-                                        if(this->mode == SuspendedImageMode::Focused) {
-                                            this->mode = SuspendedImageMode::HidingForResume;
-                                        }
-                                        launch_title = false;
-                                    }
-                                }
-                                if(launch_title) {
-                                    // Homebrew launching code already does this checks later - doing this check only with installed titles
-                                    if(title.title_type == cfg::TitleType::Application) {
-                                        launch_title = false;
-                                        this->HandleCloseSuspended();
-                                        launch_title = !g_MenuApplication->IsSuspended();
-                                    }
-                                }
-                            }
+                    if(cur_entry.Is<EntryType::Application>() && !cur_entry.app_info.IsLaunchable()) {
+                        // TODONEW: gamecard detection, proper strings, etc
+                        g_MenuApplication->ShowNotification("Not launchable (gamecard not inserted, archived, not downloaded, etc)");
+                        do_launch_entry = false;
+                    }
 
-                            if(title.title_type == cfg::TitleType::Application) {
-                                if(!title.app_info.IsLaunchable()) {
-                                    // TODONEW: gamecard detection
-                                    g_MenuApplication->ShowNotification("Not launchable (gamecard not inserted, archived, not downloaded, etc)");
-                                    launch_title = false;
-                                }
-                            }
-
-                            if(launch_title) {
-                                if(title.title_type == cfg::TitleType::Homebrew) {
-                                    this->HandleHomebrewLaunch(title);
-                                }
-                                else {
-                                    pu::audio::PlaySfx(this->title_launch_sfx);
-
-                                    const auto rc = menu::smi::LaunchApplication(title.app_info.record.application_id);
-                                    if(R_SUCCEEDED(rc)) {
-                                        g_MenuApplication->StopPlayBGM();
-                                        g_MenuApplication->CloseWithFadeOut();
-                                        return;
-                                    }
-                                    else {
-                                        g_MenuApplication->ShowNotification(GetLanguageString("app_launch_error") + ": " + util::FormatResultDisplay(rc));
-                                    }
-                                }
-                            }
+                    if(do_launch_entry) {
+                        if(cur_entry.Is<EntryType::Homebrew>()) {
+                            this->HandleHomebrewLaunch(cur_entry);
                         }
-                        else if(keys_down & HidNpadButton_X) {
-                            if(g_MenuApplication->IsSuspended()) {
-                                if(title.title_type == cfg::TitleType::Homebrew) {
-                                    if(g_MenuApplication->EqualsSuspendedHomebrewPath(title.hb_info.nro_target.nro_path)) {
-                                        this->HandleCloseSuspended();
-                                    }
-                                }
-                                else {
-                                    if(title.app_info.record.application_id == g_MenuApplication->GetSuspendedApplicationId()) {
-                                        this->HandleCloseSuspended();
-                                    }
-                                }
-                            }
-                        }
-                        else if(keys_down & HidNpadButton_Y) {
-                            if(title.title_type == cfg::TitleType::Homebrew) {
-                                const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("entry_options"), GetLanguageString("entry_action"), { GetLanguageString("entry_move"), GetLanguageString("entry_remove"), GetLanguageString("cancel") }, true);
-                                if(option == 0) {
-                                    if(!this->select_on) {
-                                        this->select_on = true;
-                                    }
-                                    this->items_menu->SetItemMultiselected(this->items_menu->GetSelectedItem(), true);
-                                }
-                                else if(option == 1) {
-                                    const auto option_2 = g_MenuApplication->CreateShowDialog(GetLanguageString("entry_remove"), GetLanguageString("entry_remove_conf"), { GetLanguageString("yes"), GetLanguageString("no") }, true);
-                                    if(option_2 == 0) {
-                                        cfg::RemoveRecord(title);
-                                        folder.titles.erase(folder.titles.begin() + title_idx);
-                                        g_MenuApplication->ShowNotification(GetLanguageString("entry_remove_ok"));
-                                        this->MoveFolder(this->cur_folder, true);
-                                    }
-                                }
+                        else {
+                            pu::audio::PlaySfx(this->title_launch_sfx);
+
+                            const auto rc = smi::LaunchApplication(cur_entry.app_info.record.application_id);
+                            if(R_SUCCEEDED(rc)) {
+                                g_MenuApplication->StopPlayBGM();
+                                g_MenuApplication->CloseWithFadeOut();
+                                return;
                             }
                             else {
-                                this->select_on = true;
-                                this->items_menu->SetItemMultiselected(this->items_menu->GetSelectedItem(), true);
-                            }
-                        }
-                        else if(keys_down & HidNpadButton_AnyUp) {
-                            if(title.title_type == cfg::TitleType::Application) {
-                                const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("app_launch"), GetLanguageString("app_take_over_select") + "\n" + GetLanguageString("app_take_over_selected"), { "Yes", "Cancel" }, true);
-                                if(option == 0) {
-                                    UL_ASSERT_TRUE(g_Config.SetEntry(cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, title.app_info.record.application_id));
-                                    cfg::SaveConfig(g_Config);
-                                    g_MenuApplication->ShowNotification(GetLanguageString("app_take_over_done"));
-                                }
+                                g_MenuApplication->ShowNotification(GetLanguageString("app_launch_error") + ": " + util::FormatResultDisplay(rc));
                             }
                         }
                     }
                 }
             }
         }
+        else if(keys_down & HidNpadButton_Y) {
+            this->entries_menu->ToggleFocusedEntrySelected();
+            g_MenuApplication->ShowNotification("fucking toggle: " + std::to_string(this->entries_menu->IsFocusedEntrySelected()));
+        }
+        else if(keys_down & HidNpadButton_X) {
+            if(this->entries_menu->IsAnySelected()) {
+                const auto option = g_MenuApplication->CreateShowDialog("Selection", "Would you like to cancel the current selection?", { "Yes", "Cancel" }, true);
+                if(option == 0) {
+                    // TODONEW: above
+                    g_MenuApplication->ShowNotification(GetLanguageString("menu_multiselect_cancel"));
+                    this->StopSelection();
+                }
+            }
+            else {
+                if(cur_entry.Is<EntryType::Folder>()) {
+                    const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("entry_options"), GetLanguageString("entry_action"), { "Rename", GetLanguageString("entry_remove"), GetLanguageString("cancel") }, true);
+                    if(option == 0) {
+                        SwkbdConfig cfg;
+                        // TODONEW: check results here
+                        swkbdCreate(&cfg, 0);
+                        swkbdConfigSetGuideText(&cfg, GetLanguageString("swkbd_rename_folder_guide").c_str());
+                        char new_folder_name[500] = {};
+                        const auto rc = swkbdShow(&cfg, new_folder_name, sizeof(new_folder_name));
+                        swkbdClose(&cfg);
+                        // TODONEW: confirm?
+                        if(R_SUCCEEDED(rc)) {
+                            util::CopyToStringBuffer(cur_entry.folder_info.name, new_folder_name);
+                            cur_entry.Save();
+                            this->MoveTo("", true);
+                        }
+                    }
+                    else if(option == 1) {
+                        const auto option_2 = g_MenuApplication->CreateShowDialog(GetLanguageString("entry_remove"), GetLanguageString("entry_remove_conf"), { GetLanguageString("yes"), GetLanguageString("no") }, true);
+                        if(option_2 == 0) {
+                            cur_entry.Remove();
+                            this->MoveTo("", true);
+                            g_MenuApplication->ShowNotification(GetLanguageString("entry_remove_ok"));
+                        }
+                    }
+                }
+                else if(cur_entry.Is<EntryType::Homebrew>()) {
+                    const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("entry_options"), GetLanguageString("entry_action"), { GetLanguageString("entry_remove"), GetLanguageString("cancel") }, true);
+                    if(option == 0) {
+                        const auto option_2 = g_MenuApplication->CreateShowDialog(GetLanguageString("entry_remove"), GetLanguageString("entry_remove_conf"), { GetLanguageString("yes"), GetLanguageString("no") }, true);
+                        if(option_2 == 0) {
+                            if(strcmp(cur_entry.hb_info.nro_target.nro_path, ul::HbmenuPath) == 0) {
+                                g_MenuApplication->ShowNotification("hbmenu not removable");
+                            }
+                            else {
+                                cur_entry.Remove();
+                                this->MoveTo("", true);
+                                g_MenuApplication->ShowNotification(GetLanguageString("entry_remove_ok"));
+                            }
+                        }
+                    }
+                }
+                else {
+                    const auto cur_hb_suspended = cur_entry.Is<EntryType::Homebrew>() && g_MenuApplication->EqualsSuspendedHomebrewPath(cur_entry.hb_info.nro_target.nro_path);
+                    const auto cur_app_suspended = cur_entry.Is<EntryType::Application>() && (cur_entry.app_info.record.application_id == g_MenuApplication->GetStatus().suspended_app_id);
+
+                    if(g_MenuApplication->IsSuspended() && (cur_hb_suspended || cur_app_suspended)) {
+                        this->HandleCloseSuspended();
+                    }
+                }
+            }
+        }
+        else if(keys_down & HidNpadButton_StickL) { 
+            // pu::audio::PlaySfx(this->menu_toggle_sfx);
+
+            const auto option = g_MenuApplication->CreateShowDialog("New options", "Choose option", { "New folder", "Add homebrew to menu", "Cancel" }, true);
+            if(option == 0) {
+                SwkbdConfig cfg;
+                // TODONEW: check results here
+                swkbdCreate(&cfg, 0);
+                swkbdConfigSetGuideText(&cfg, "New folder name");
+                char new_folder_name[500] = {};
+                const auto rc = swkbdShow(&cfg, new_folder_name, sizeof(new_folder_name));
+                swkbdClose(&cfg);
+                if(R_SUCCEEDED(rc)) {
+                    CreateFolderEntry(this->entries_menu->GetPath(), new_folder_name);
+                    g_MenuApplication->ShowNotification("Folder created");
+                    this->MoveTo("", true);
+                }
+            }
+            else if(option == 1) {
+                UL_RC_ASSERT(smi::ChooseHomebrew());
+                g_MenuApplication->CloseWithFadeOut();
+            }
+        }
+        else if(keys_down & HidNpadButton_StickR) { 
+            if(cur_entry.Is<EntryType::Application>()) {
+                const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("app_launch"), GetLanguageString("app_take_over_select") + "\n" + GetLanguageString("app_take_over_selected"), { "Yes", "Cancel" }, true);
+                if(option == 0) {
+                    UL_ASSERT_TRUE(g_Config.SetEntry(cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, cur_entry.app_info.record.application_id));
+                    cfg::SaveConfig(g_Config);
+                    g_MenuApplication->ShowNotification(GetLanguageString("app_take_over_done"));
+                }
+            }
+        }
     }
 
-    void MainMenuLayout::menu_OnSelected(const s32 prev_idx, const u32 idx) {
+    void MainMenuLayout::menu_FocusedEntryChanged(const bool has_prev_entry, const bool is_prev_entry_suspended, const bool is_cur_entry_suspended) {
+        if(!this->entries_menu->HasEntries()) {
+            return;
+        }
+
         this->selected_item_author_text->SetVisible(true);
         this->selected_item_version_text->SetVisible(true);
-        u32 actual_idx = idx;
-        if(this->homebrew_mode) {
-            if(idx == 0) {
-                this->selected_item_author_text->SetVisible(false);
-                this->selected_item_version_text->SetVisible(false);
-                this->banner_img->SetImage(cfg::GetAssetByTheme(g_Theme, "ui/BannerHomebrew.png"));
-                this->selected_item_name_text->SetText(GetLanguageString("hbmenu_launch"));
-            }
-            else {
-                actual_idx--;
-                auto &hb = g_HomebrewRecordList.at(actual_idx);
-                hb.EnsureControlDataLoaded();
 
-                this->selected_item_name_text->SetText(hb.control.name);
-                this->selected_item_author_text->SetText(hb.control.author);
-                this->selected_item_version_text->SetText(hb.control.version);
+        UL_RC_ASSERT(smi::UpdateMenuIndex(this->entries_menu->GetFocusedEntryIndex()));
 
-                this->banner_img->SetImage(cfg::GetAssetByTheme(g_Theme, "ui/BannerHomebrew.png"));
-            }
+        auto &cur_entry = this->entries_menu->GetFocusedEntry();
+        if(cur_entry.Is<EntryType::Folder>()) {
+            this->banner_img->SetImage(cfg::GetAssetByTheme(g_Theme, "ui/BannerFolder.png"));
+
+            // TODONEW: entry count?
+            // this->selected_item_author_text->SetText(std::to_string(folder_entry_count) + " " + ((folder_entry_count == 1) ? GetLanguageString("folder_entry_single") : GetLanguageString("folder_entry_mult")));
+            this->selected_item_name_text->SetText(cur_entry.folder_info.name);
+            this->selected_item_author_text->SetText(cur_entry.folder_info.fs_name);
+            this->selected_item_version_text->SetVisible(false);
         }
         else {
-            auto &folder = cfg::FindFolderByName(g_EntryList, this->cur_folder);
-            s32 title_idx = actual_idx;
-            if(this->cur_folder.empty()) {
-                if(actual_idx >= g_EntryList.folders.size()) {
-                    title_idx -= g_EntryList.folders.size();
-                }
-                else {
-                    const auto &selected_folder = g_EntryList.folders.at(actual_idx);
-                    this->banner_img->SetImage(cfg::GetAssetByTheme(g_Theme, "ui/BannerFolder.png"));
-                    const auto folder_entry_count = selected_folder.titles.size();
-                    this->selected_item_author_text->SetText(std::to_string(folder_entry_count) + " " + ((folder_entry_count == 1) ? GetLanguageString("folder_entry_single") : GetLanguageString("folder_entry_mult")));
-                    this->selected_item_version_text->SetVisible(false);
-                    this->selected_item_name_text->SetText(selected_folder.name);
-                    title_idx = -1;
-                }
+            if(cur_entry.Is<EntryType::Application>()) {
+                this->banner_img->SetImage(cfg::GetAssetByTheme(g_Theme, "ui/BannerInstalled.png"));
             }
-            if(title_idx >= 0) {
-                auto &title = folder.titles.at(title_idx);
-                title.EnsureControlDataLoaded();
-
-                if(title.Is<cfg::TitleType::Application>()) {
-                    // TODONEW: remove this debug params
-                    this->selected_item_name_text->SetText(title.control.name + " (type " + std::to_string(title.app_info.record.type) + ", stid + " + std::to_string(title.app_info.meta_status.storageID) + ")");
-                }
-                else {
-                    this->selected_item_name_text->SetText(title.control.name);
-                }
-
-                this->selected_item_author_text->SetText(title.control.author);
-                this->selected_item_version_text->SetText(title.control.version);
-
-                if(title.Is<cfg::TitleType::Homebrew>()) {
-                    this->banner_img->SetImage(cfg::GetAssetByTheme(g_Theme, "ui/BannerHomebrew.png"));
-                }
-                else {
-                    this->banner_img->SetImage(cfg::GetAssetByTheme(g_Theme, "ui/BannerInstalled.png"));
-                }
+            else {
+                this->banner_img->SetImage(cfg::GetAssetByTheme(g_Theme, "ui/BannerHomebrew.png"));
             }
-            if(!this->cur_folder.empty()) {
-                // This way we know we're inside a folder
-                this->banner_img->SetImage(cfg::GetAssetByTheme(g_Theme, "ui/BannerFolder.png"));
+            
+            cur_entry.TryLoadControlData();
+            if(cur_entry.control.IsLoaded()) {
+                if(cur_entry.Is<EntryType::Application>()) {
+                    // TODONEW: remove this debug params when no longer necessary
+                    this->selected_item_name_text->SetText(cur_entry.control.name + " (type " + std::to_string(cur_entry.app_info.record.type) + ", stid + " + std::to_string(cur_entry.app_info.meta_status.storageID) + ")");
+                }
+                else {
+                    this->selected_item_name_text->SetText(cur_entry.control.name);
+                }
+
+                /*
+                this->selected_item_author_text->SetText(cur_entry.control.author);
+                this->selected_item_version_text->SetText(cur_entry.control.version);
+                */
+
+                this->selected_item_author_text->SetText(cur_entry.entry_path);
+                this->selected_item_version_text->SetText(std::to_string(cur_entry.index));
+            }
+            else {
+                // TODONEW: what to show when controldata doesnt load? (really shouldnt happen anyway)
+                this->selected_item_name_text->SetText("Unknown name...");
+                this->selected_item_author_text->SetText("Unknown author...");
+                this->selected_item_version_text->SetText("Unknown version...");
             }
         }
 
-        if(g_MenuApplication->IsSuspended() && (prev_idx >= 0)) {
-            if((prev_idx == (s32)this->items_menu->GetSuspendedItem()) && (idx != this->items_menu->GetSuspendedItem())) {
+        if(g_MenuApplication->IsSuspended() && has_prev_entry) {
+            if(is_prev_entry_suspended && !is_cur_entry_suspended) {
                 this->mode = SuspendedImageMode::HidingLostFocus;
             }
-            else if((prev_idx != (s32)this->items_menu->GetSuspendedItem()) && (idx == this->items_menu->GetSuspendedItem())) {
+            else if(!is_prev_entry_suspended && is_cur_entry_suspended) {
                 this->mode = SuspendedImageMode::ShowingGainedFocus;
             }
         }
     }
 
-    MainMenuLayout::MainMenuLayout(const u8 *captured_screen_buf, const u8 min_alpha) : last_has_connection(false), last_battery_lvl(0), last_is_charging(false), launch_fail_warn_shown(false), homebrew_mode(false), select_on(false), select_dir(false), min_alpha(min_alpha), target_alpha(0), mode(SuspendedImageMode::ShowingAfterStart), suspended_screen_alpha(0xFF) {
-        const auto menu_text_x = g_MenuApplication->GetUIConfigValue<u32>("menu_folder_text_x", 30);
-        const auto menu_text_y = g_MenuApplication->GetUIConfigValue<u32>("menu_folder_text_y", 200);
-        const auto menu_text_size = g_MenuApplication->GetUIConfigValue<u32>("menu_folder_text_size", 25);
+    MainMenuLayout::MainMenuLayout(const u8 *captured_screen_buf, const u8 min_alpha) : last_has_connection(false), last_battery_lvl(0), last_is_charging(false), launch_fail_warn_shown(false), min_alpha(min_alpha), target_alpha(0), mode(SuspendedImageMode::ShowingAfterStart), suspended_screen_alpha(0xFF) {
+        // const auto menu_text_x = g_MenuApplication->GetUIConfigValue<u32>("menu_folder_text_x", 30);
+        // const auto menu_text_y = g_MenuApplication->GetUIConfigValue<u32>("menu_folder_text_y", 200);
+        // const auto menu_text_size = g_MenuApplication->GetUIConfigValue<u32>("menu_folder_text_size", 25);
 
         if(captured_screen_buf != nullptr) {
             this->suspended_screen_img = RawRgbaImage::New(0, 0, captured_screen_buf, 1280, 720, 4);
@@ -525,10 +455,6 @@ namespace ul::menu::ui {
         this->top_menu_img = pu::ui::elm::Image::New(40, 35, cfg::GetAssetByTheme(g_Theme, "ui/TopMenu.png"));
         g_MenuApplication->ApplyConfigForElement("main_menu", "top_menu_bg", this->top_menu_img);
         this->Add(this->top_menu_img);
-
-        this->banner_img = pu::ui::elm::Image::New(0, 585, cfg::GetAssetByTheme(g_Theme, "ui/BannerInstalled.png"));
-        g_MenuApplication->ApplyConfigForElement("main_menu", "banner_image", this->banner_img);
-        this->Add(this->banner_img);
 
         // Then load buttons and other UI elements
         this->logo_img = ClickableImage::New(610, 13 + 35, "romfs:/Logo.png");
@@ -577,44 +503,49 @@ namespace ul::menu::ui {
         g_MenuApplication->ApplyConfigForElement("main_menu", "themes_icon", this->themes_img);
         this->Add(this->themes_img);
 
-        this->fw_text = pu::ui::elm::TextBlock::New(970, 65, g_FwVersion);
+        this->fw_text = pu::ui::elm::TextBlock::New(970, 65, g_MenuApplication->GetStatus().fw_version);
         this->fw_text->SetColor(g_MenuApplication->GetTextColor());
         g_MenuApplication->ApplyConfigForElement("main_menu", "firmware_text", this->fw_text);
         this->Add(this->fw_text);
 
-        this->guide_buttons_img = pu::ui::elm::Image::New(540, 120, cfg::GetAssetByTheme(g_Theme, "ui/GuideButtons.png"));
-        g_MenuApplication->ApplyConfigForElement("main_menu", "guide_buttons", this->guide_buttons_img);
-        this->Add(this->guide_buttons_img);
+        this->input_bar = InputBar::New(120);
+        this->Add(this->input_bar);
 
-        this->menu_totggle_img = ClickableImage::New(520, 200, cfg::GetAssetByTheme(g_Theme, "ui/ToggleClick.png"));
-        this->menu_totggle_img->SetOnClick(std::bind(&MainMenuLayout::menuToggle_Click, this));
-        g_MenuApplication->ApplyConfigForElement("main_menu", "menu_toggle_button", this->menu_totggle_img);
-        this->Add(this->menu_totggle_img);
+        this->banner_img = pu::ui::elm::Image::New(0, 585, cfg::GetAssetByTheme(g_Theme, "ui/BannerInstalled.png"));
+        g_MenuApplication->ApplyConfigForElement("main_menu", "banner_image", this->banner_img);
 
         this->selected_item_name_text = pu::ui::elm::TextBlock::New(40, 610, "...");
         this->selected_item_name_text->SetFont(pu::ui::GetDefaultFont(pu::ui::DefaultFontSize::Large));
         this->selected_item_name_text->SetColor(g_MenuApplication->GetTextColor());
         g_MenuApplication->ApplyConfigForElement("main_menu", "banner_name_text", this->selected_item_name_text);
-        this->Add(this->selected_item_name_text);
 
         this->selected_item_author_text = pu::ui::elm::TextBlock::New(45, 650, "...");
         this->selected_item_author_text->SetFont(pu::ui::GetDefaultFont(pu::ui::DefaultFontSize::Medium));
         this->selected_item_author_text->SetColor(g_MenuApplication->GetTextColor());
         g_MenuApplication->ApplyConfigForElement("main_menu", "banner_author_text", this->selected_item_author_text);
-        this->Add(this->selected_item_author_text);
 
         this->selected_item_version_text = pu::ui::elm::TextBlock::New(45, 675, "...");
         this->selected_item_version_text->SetFont(pu::ui::GetDefaultFont(pu::ui::DefaultFontSize::Medium));
         this->selected_item_version_text->SetColor(g_MenuApplication->GetTextColor());
         g_MenuApplication->ApplyConfigForElement("main_menu", "banner_version_text", this->selected_item_version_text);
-        this->Add(this->selected_item_version_text);
 
-        this->items_menu = SideMenu::New(pu::ui::Color(0, 255, 120, 0xFF), cfg::GetAssetByTheme(g_Theme, "ui/Cursor.png"), cfg::GetAssetByTheme(g_Theme, "ui/Suspended.png"), cfg::GetAssetByTheme(g_Theme, "ui/Multiselect.png"), menu_text_x, menu_text_y, pu::ui::MakeDefaultFontName(menu_text_size), g_MenuApplication->GetTextColor(), 294);
-        this->MoveFolder("", false);
-        this->items_menu->SetOnItemSelected(std::bind(&MainMenuLayout::menu_Click, this, std::placeholders::_1, std::placeholders::_2));
-        this->items_menu->SetOnSelectionChanged(std::bind(&MainMenuLayout::menu_OnSelected, this, std::placeholders::_1, std::placeholders::_2));
-        g_MenuApplication->ApplyConfigForElement("main_menu", "items_menu", this->items_menu, false); // Main menu must be visible, and only Y is customizable here
-        this->Add(this->items_menu);
+        this->no_entries_text = pu::ui::elm::TextBlock::New(0, 0, "No entries here");
+        this->no_entries_text->SetFont(pu::ui::GetDefaultFont(pu::ui::DefaultFontSize::Medium));
+        this->no_entries_text->SetColor(g_MenuApplication->GetTextColor());
+        this->no_entries_text->SetHorizontalAlign(pu::ui::elm::HorizontalAlign::Center);
+        this->no_entries_text->SetVerticalAlign(pu::ui::elm::VerticalAlign::Center);
+        this->no_entries_text->SetVisible(false);
+        // TODONEW: g_MenuApplication->ApplyConfigForElement("main_menu", "banner_author_text", this->no_entries_text);
+        this->Add(this->no_entries_text);
+
+        this->entries_menu = EntryMenu::New(160, pu::ui::render::ScreenHeight - 160, g_MenuApplication->GetStatus().last_menu_path, g_MenuApplication->GetStatus().last_menu_index, std::bind(&MainMenuLayout::menu_EntryInputPressed, this, std::placeholders::_1), std::bind(&MainMenuLayout::menu_FocusedEntryChanged, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)); // SideMenu::New(pu::ui::Color(0, 255, 120, 0xFF), cfg::GetAssetByTheme(g_Theme, "ui/Cursor.png"), cfg::GetAssetByTheme(g_Theme, "ui/Suspended.png"), cfg::GetAssetByTheme(g_Theme, "ui/Multiselect.png"), menu_text_x, menu_text_y, pu::ui::MakeDefaultFontName(menu_text_size), g_MenuApplication->GetTextColor(), 294);
+        this->Add(this->entries_menu);
+
+        this->Add(this->banner_img);
+
+        this->Add(this->selected_item_name_text);
+        this->Add(this->selected_item_author_text);
+        this->Add(this->selected_item_version_text);
 
         if(captured_screen_buf != nullptr) {
             this->Add(this->suspended_screen_img);
@@ -626,21 +557,76 @@ namespace ul::menu::ui {
         this->startup_tp = std::chrono::steady_clock::now();
 
         this->title_launch_sfx = pu::audio::LoadSfx(cfg::GetAssetByTheme(g_Theme, "sound/TitleLaunch.wav"));
-        this->menu_toggle_sfx = pu::audio::LoadSfx(cfg::GetAssetByTheme(g_Theme, "sound/MenuToggle.wav"));
 
         this->SetBackgroundImage(cfg::GetAssetByTheme(g_Theme, "ui/Background.png"));
+
+        this->entries_menu->Initialize();
     }
 
     MainMenuLayout::~MainMenuLayout() {
         pu::audio::DestroySfx(this->title_launch_sfx);
-        pu::audio::DestroySfx(this->menu_toggle_sfx);
     }
 
     void MainMenuLayout::OnMenuInput(const u64 keys_down, const u64 keys_up, const u64 keys_held, const pu::ui::TouchPoint touch_pos) {
         const auto quick_menu_on = this->quick_menu->IsOn();
-        this->items_menu->SetEnabled(!quick_menu_on);
+        this->entries_menu->SetEnabled(!quick_menu_on);
         if(quick_menu_on) {
             return;
+        }
+
+        if(this->entries_menu->HasEntries()) {
+            if(this->entries_menu->IsAnySelected()) {
+                this->input_bar->AddSetInput(HidNpadButton_A, "Move selection");
+            }
+            else if(this->entries_menu->IsFocusedEntrySuspended()) {
+                this->input_bar->AddSetInput(HidNpadButton_A, "Resume");
+            }
+            else if(this->entries_menu->HasEntries()) {
+                const auto &cur_entry = this->entries_menu->GetFocusedEntry();
+                if(cur_entry.Is<EntryType::Folder>()) {
+                    this->input_bar->AddSetInput(HidNpadButton_A, "Open");
+                }
+                else {
+                    this->input_bar->AddSetInput(HidNpadButton_A, "Launch");
+                }
+            }
+            else {
+                this->input_bar->AddSetInput(HidNpadButton_X, "");
+            }
+
+            if(this->entries_menu->IsAnySelected()) {
+                this->input_bar->AddSetInput(HidNpadButton_X, "Cancel selection");
+            }
+            else if(this->entries_menu->IsFocusedEntrySuspended()) {
+                this->input_bar->AddSetInput(HidNpadButton_X, "Close");
+            }
+            else if(this->entries_menu->HasEntries()) {
+                this->input_bar->AddSetInput(HidNpadButton_X, "Options");
+            }
+            else {
+                this->input_bar->AddSetInput(HidNpadButton_X, "");
+            }
+
+            this->input_bar->AddSetInput(HidNpadButton_Y, "Select");
+
+            if(this->entries_menu->IsAnySelected()) {
+                this->input_bar->AddSetInput(HidNpadButton_B, "Cancel selection");
+            }
+            else if(!this->entries_menu->IsInRoot()) {
+                this->input_bar->AddSetInput(HidNpadButton_B, "Go back");
+            }
+            else {
+                this->input_bar->AddSetInput(HidNpadButton_B, "");
+            }
+
+            this->input_bar->AddSetInput(HidNpadButton_L | HidNpadButton_R | HidNpadButton_ZL | HidNpadButton_ZR, "Quick menu");
+
+            this->input_bar->AddSetInput(HidNpadButton_Plus | HidNpadButton_Minus, "Resize");
+
+            this->input_bar->AddSetInput(HidNpadButton_StickL, "New entry");
+        }
+        else {
+            this->input_bar->ClearInputs();
         }
 
         const auto has_conn = net::HasConnection();
@@ -668,24 +654,31 @@ namespace ul::menu::ui {
         }
 
         const auto now_tp = std::chrono::steady_clock::now();
+        // Wait a bit before handling sent messages
         if(std::chrono::duration_cast<std::chrono::milliseconds>(now_tp - this->startup_tp).count() >= 1000) {
-            if(!this->launch_fail_warn_shown) {
-                if(g_MenuApplication->LaunchFailed()) {
-                    // g_MenuApplication->CreateShowDialog(GetLanguageString("app_launch"), GetLanguageString("app_unexpected_error"), { GetLanguageString("ok") }, true);
-                }
-                this->launch_fail_warn_shown = true;
+            if(g_MenuApplication->GetLaunchFailed()) {
+                g_MenuApplication->CreateShowDialog(GetLanguageString("app_launch"), GetLanguageString("app_unexpected_error"), { GetLanguageString("ok") }, true);
+            }
+            else if(g_MenuApplication->HasChosenHomebrew()) {
+                const auto nro_path = g_MenuApplication->GetChosenHomebrew();
+                g_MenuApplication->CreateShowDialog("chosen hb", nro_path, { "K" }, true);
+
+                // TODONEW: custom argv option?
+                CreateHomebrewEntry(this->entries_menu->GetPath(), nro_path, nro_path);
+                g_MenuApplication->ShowNotification("Homebrew added");
+                this->MoveTo("", true);
             }
         }
 
         if(this->suspended_screen_img) {
             switch(this->mode) {
                 case SuspendedImageMode::ShowingAfterStart: {
-                    if(this->items_menu->IsSuspendedItemSelected() && (this->suspended_screen_alpha <= this->min_alpha)) {
+                    if(this->entries_menu->IsFocusedEntrySuspended() && (this->suspended_screen_alpha <= this->min_alpha)) {
                         this->suspended_screen_alpha = this->min_alpha;
                         this->suspended_screen_img->SetAlpha(this->suspended_screen_alpha);
                         this->mode = SuspendedImageMode::Focused;
                     }
-                    else if(!this->items_menu->IsSuspendedItemSelected() && (this->suspended_screen_alpha == 0)) {
+                    else if(!this->entries_menu->IsFocusedEntrySuspended() && (this->suspended_screen_alpha == 0)) {
                         this->suspended_screen_img->SetAlpha(this->suspended_screen_alpha);
                         this->mode = SuspendedImageMode::NotFocused;
                     }
@@ -705,7 +698,7 @@ namespace ul::menu::ui {
                     if(this->suspended_screen_alpha == 0xFF) {
                         this->suspended_screen_img->SetAlpha(this->suspended_screen_alpha);
 
-                        UL_RC_ASSERT(menu::smi::ResumeApplication());
+                        UL_RC_ASSERT(smi::ResumeApplication());
                     }
                     else {
                         this->suspended_screen_img->SetAlpha(this->suspended_screen_alpha);
@@ -751,15 +744,17 @@ namespace ul::menu::ui {
         }
 
         if(keys_down & HidNpadButton_B) {
-            if(!this->cur_folder.empty() && !this->homebrew_mode) {
-                this->MoveFolder("", true);
+            if(!this->entries_menu->IsInRoot()) {
+                const auto parent_path = fs::GetBaseDirectory(this->entries_menu->GetPath());
+                this->MoveTo(parent_path, true);
             }
         }
         else if(keys_down & HidNpadButton_Plus) {
-            ShowAboutDialog();
+            // ShowAboutDialog();
+            this->entries_menu->IncrementHorizontalCount();
         }
         else if(keys_down & HidNpadButton_Minus) {
-            this->menuToggle_Click();
+            this->entries_menu->DecrementHorizontalCount();
         }
     }
 
@@ -770,12 +765,12 @@ namespace ul::menu::ui {
             }
         }
         else {
-            this->items_menu->Rewind();
+            this->entries_menu->RewindEntries();
         }
         return true;
     }
 
-    void MainMenuLayout::MoveFolder(const std::string &name, const bool fade, std::function<void()> action) {
+    void MainMenuLayout::MoveTo(const std::string &new_path, const bool fade, std::function<void()> action) {
         if(fade) {
             g_TransitionGuard.Run([&]() {
                 g_MenuApplication->FadeOut();
@@ -783,13 +778,13 @@ namespace ul::menu::ui {
                 if(action) {
                     action();
                 }
-                this->DoMoveFolder(name);
+                this->DoMoveTo(new_path);
 
                 g_MenuApplication->FadeIn();
             });
         }
         else {
-            this->DoMoveFolder(name);
+            this->DoMoveTo(new_path);
         }
     }
 
@@ -799,30 +794,6 @@ namespace ul::menu::ui {
         this->users_img->SetHeight(50);
     }
 
-    void MainMenuLayout::menuToggle_Click() {
-        pu::audio::PlaySfx(this->menu_toggle_sfx);
-
-        /*
-        UL_RC_ASSERT(ul::menu::smi::SendCommand(ul::menu::smi::SystemMessage::ChooseHomebrew,
-            [&](ul::menu::smi::ScopedStorageWriter &writer) {
-                return ResultSuccess;
-            },
-            [](ul::menu::smi::ScopedStorageReader &reader) {
-                return ResultSuccess;
-            }
-        ));
-        g_MenuApplication->CloseWithFadeOut();
-        */
-
-        this->MoveFolder("", true, [&]() {
-            this->homebrew_mode = !this->homebrew_mode;
-            if(this->select_on) {
-                g_MenuApplication->ShowNotification(GetLanguageString("menu_multiselect_cancel"));
-                this->StopMultiselect();
-            }
-        });
-    }
-
     void MainMenuLayout::HandleCloseSuspended() {
         const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("suspended_app"), GetLanguageString("suspended_close"), { GetLanguageString("yes"), GetLanguageString("no") }, true);
         if(option == 0) {
@@ -830,15 +801,15 @@ namespace ul::menu::ui {
         }
     }
 
-    void MainMenuLayout::HandleHomebrewLaunch(const cfg::TitleRecord &rec) {
+    void MainMenuLayout::HandleHomebrewLaunch(const Entry &hb_entry) {
         u64 title_takeover_id;
         UL_ASSERT_TRUE(g_Config.GetEntry(cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, title_takeover_id));
         const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("hb_launch"), GetLanguageString("hb_launch_conf"), { GetLanguageString("hb_applet"), GetLanguageString("hb_app"), GetLanguageString("cancel") }, true);
         if(option == 0) {
             pu::audio::PlaySfx(this->title_launch_sfx);
             
-            const auto proper_ipt = CreateLaunchTargetInput(rec.hb_info.nro_target);
-            UL_RC_ASSERT(menu::smi::LaunchHomebrewLibraryApplet(proper_ipt.nro_path, proper_ipt.nro_argv));
+            const auto proper_ipt = CreateLaunchTargetInput(hb_entry.hb_info.nro_target);
+            UL_RC_ASSERT(smi::LaunchHomebrewLibraryApplet(proper_ipt.nro_path, proper_ipt.nro_argv));
 
             g_MenuApplication->StopPlayBGM();
             g_MenuApplication->CloseWithFadeOut();
@@ -856,8 +827,8 @@ namespace ul::menu::ui {
                 if(launch) {
                     pu::audio::PlaySfx(this->title_launch_sfx);
                     
-                    const auto ipt = CreateLaunchTargetInput(rec.hb_info.nro_target);
-                    const auto rc = ul::menu::smi::LaunchHomebrewApplication(ipt.nro_path, ipt.nro_argv);
+                    const auto ipt = CreateLaunchTargetInput(hb_entry.hb_info.nro_target);
+                    const auto rc = smi::LaunchHomebrewApplication(ipt.nro_path, ipt.nro_argv);
 
                     if(R_SUCCEEDED(rc)) {
                         g_MenuApplication->StopPlayBGM();
@@ -875,44 +846,36 @@ namespace ul::menu::ui {
         }
     }
 
-    void MainMenuLayout::HandleMultiselectMoveToFolder(const std::string &folder) {
-        if(this->select_on) {
-            u32 removed_idx = 0;
-            const auto root_title_count = g_EntryList.root.titles.size();
-            const auto folder_count = g_EntryList.folders.size();
-            for(u32 i = 0; i < root_title_count; i++) {
-                auto &title = g_EntryList.root.titles.at(i - removed_idx);
-                if(this->items_menu->IsItemMultiselected(folder_count + i)) {
-                    if(cfg::MoveRecordTo(g_EntryList, title, folder)) {
-                        removed_idx++;
-                    }
+    void MainMenuLayout::HandleMultiselectMoveToFolder(const std::string &new_path) {
+        if(this->entries_menu->IsAnySelected()) {
+            u32 cur_i = 0;
+            for(auto &entry : this->entries_menu->GetEntries()) {
+                if(this->entries_menu->IsEntrySelected(cur_i)) {
+                    entry.MoveTo(new_path);
                 }
+
+                cur_i++;
             }
-            this->StopMultiselect();
-            this->MoveFolder(this->cur_folder, true);
+
+            this->StopSelection();
+            this->MoveTo("", true);
+            // TODONEW: proper string
+            g_MenuApplication->ShowNotification("Move was done");
         }
     }
 
-    void MainMenuLayout::StopMultiselect() {
-        this->select_on = false;
-        this->select_dir = false;
-        this->items_menu->ResetMultiselections();
+    void MainMenuLayout::StopSelection() {
+        this->entries_menu->ResetSelection();
     }
 
     void MainMenuLayout::DoTerminateApplication() {
-        auto &folder = cfg::FindFolderByName(g_EntryList, this->cur_folder);
-        const auto susp_idx = this->items_menu->GetSuspendedItem() - g_EntryList.folders.size();
-        auto &title = folder.titles.at(susp_idx);
-        title.app_info.record.type = 0x10;
+        UL_RC_ASSERT(smi::TerminateApplication());
 
-        this->items_menu->ResetSuspendedItem();
-        g_MenuApplication->NotifyEndSuspended();
+        g_MenuApplication->ResetSuspendedApplication();
         
         if(this->suspended_screen_img) {
             this->suspended_screen_img->SetAlpha(0);
         }
-
-        UL_RC_ASSERT(menu::smi::TerminateApplication());
     }
 
 }

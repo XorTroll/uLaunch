@@ -47,7 +47,9 @@ namespace ul::smi {
         OpenWebPage,
         OpenAlbum,
         RestartMenu,
-        SetHomebrewTakeoverApplication
+        SetHomebrewTakeoverApplication,
+        UpdateMenuPath,
+        UpdateMenuIndex
     };
 
     struct SystemStatus {
@@ -55,6 +57,8 @@ namespace ul::smi {
         loader::TargetInput suspended_hb_target_ipt; // Set if homebrew (launched as an application) is currently suspended
         u64 suspended_app_id; // Set if any normal application is suspended
         char fw_version[0x18]; // System version (sent by uSystem so that it contains Atmosphere/EmuMMC info)
+        char last_menu_path[FS_MAX_PATH];
+        u32 last_menu_index;
     };
 
     using CommandFunction = Result(*)(void*, const size_t, const bool);
@@ -65,7 +69,7 @@ namespace ul::smi {
     };
 
     constexpr u32 CommandMagic = 0x21494D53; // "SMI!"
-    constexpr size_t CommandStorageSize = 0x800;
+    constexpr size_t CommandStorageSize = 0x8000;
 
     namespace impl {
 

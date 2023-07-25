@@ -32,6 +32,8 @@ namespace ul::menu::ui {
             LanguagesMenuLayout::Ref languages_menu_lyt;
             pu::ui::extras::Toast::Ref notif_toast;
             smi::SystemStatus system_status;
+            bool launch_failed;
+            char chosen_hb[FS_MAX_PATH];
             MenuType loaded_menu;
             util::JSON ui_json;
             util::JSON bgm_json;
@@ -54,7 +56,7 @@ namespace ul::menu::ui {
 
             void OnLoad() override;
 
-            inline void SetInformation(const smi::MenuStartMode start_mode, const smi::SystemStatus system_status, const util::JSON ui_json) {
+            inline void Initialize(const smi::MenuStartMode start_mode, const smi::SystemStatus system_status, const util::JSON ui_json) {
                 this->start_mode = start_mode;
                 this->system_status = system_status;
                 this->ui_json = ui_json;
@@ -107,18 +109,38 @@ namespace ul::menu::ui {
                 return this->system_status.suspended_hb_target_ipt.nro_path == path;
             }
 
-            inline u64 GetSuspendedApplicationId() {
-                return this->system_status.suspended_app_id;
+            inline smi::SystemStatus &GetStatus() {
+                return this->system_status;
             }
 
-            inline void NotifyEndSuspended() {
+            inline void ResetSuspendedApplication() {
                 // Blanking the whole status would also blank the selected user, thus we only blank the params
                 this->system_status.suspended_app_id = {};
                 this->system_status.suspended_hb_target_ipt = {};
             }
 
-            inline bool LaunchFailed() {
-                return false; // this->start_mode == smi::MenuStartMode::MenuLaunchFailure;
+            inline bool GetLaunchFailed() {
+                const auto res = this->launch_failed;
+                this->launch_failed = 0;
+                return res;
+            }
+
+            inline void NotifyLaunchFailed() {
+                this->launch_failed = true;
+            }
+
+            inline bool HasChosenHomebrew() {
+                return this->chosen_hb[0] != '\0';
+            }
+
+            inline std::string GetChosenHomebrew() {
+                const std::string res = this->chosen_hb;
+                memset(this->chosen_hb, 0, sizeof(this->chosen_hb));
+                return res;
+            }
+
+            inline void NotifyHomebrewChosen(const char (&chosen_hb_path)[FS_MAX_PATH]) {
+                util::CopyToStringBuffer(this->chosen_hb, chosen_hb_path);
             }
 
             void ShowNotification(const std::string &text, const u64 timeout = 1500);
@@ -178,7 +200,7 @@ namespace ul::menu::ui {
                 return this->startup_lyt;
             }
 
-            inline MainMenuLayout::Ref &GetMenuLayout() {
+            inline MainMenuLayout::Ref &GetMainMenuLayout() {
                 return this->main_menu_lyt;
             }
 

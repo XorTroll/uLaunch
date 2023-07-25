@@ -4,11 +4,13 @@
 #include <ul/system/sys/sys_SystemApplet.hpp>
 #include <ul/system/system_Message.hpp>
 #include <ul/cfg/cfg_Config.hpp>
-#include <ul/fs/fs_Stdio.hpp>
+#include <ul/menu/menu_Entries.hpp>
+#include <ul/menu/menu_Cache.hpp>
 #include <ul/acc/acc_Accounts.hpp>
 #include <ul/os/os_Applications.hpp>
 #include <ul/util/util_Scope.hpp>
 #include <ul/util/util_Size.hpp>
+#include <ul/fs/fs_Stdio.hpp>
 #include <queue>
 
 extern "C" {
@@ -39,14 +41,6 @@ using namespace ul::system;
 ul::RecursiveMutex g_MenuMessageQueueLock;
 std::queue<ul::smi::MenuMessageContext> *g_MenuMessageQueue;
 
-#define DEBUG_LOG(fmt, ...) ({ \
-    auto f = fopen("sdmc:/ulaunch/usystem-tmp.log", "ab+"); \
-    if(f) { \
-        fprintf(f, fmt "\n", ##__VA_ARGS__); \
-        fclose(f); \
-    } \
-})
-
 namespace {
 
     AccountUid g_SelectedUser = {};
@@ -63,11 +57,14 @@ namespace {
     AppletOperationMode g_OperationMode;
     ul::cfg::Config g_Config = {};
 
+    char g_CurrentMenuPath[FS_MAX_PATH] = {};
+    u32 g_CurrentMenuIndex = 0;
+
     alignas(ams::os::MemoryPageSize) constinit u8 g_EventManagerThreadStack[16_KB];
     Thread g_EventManagerThread;
 
     std::vector<NsApplicationRecord> g_CurrentRecords;
-    
+
     SetSysFirmwareVersion g_FwVersion = {};
 
     constexpr size_t LibstratosphereHeapSize = 4_MB;
@@ -95,11 +92,14 @@ namespace {
 
     ul::smi::SystemStatus CreateStatus() {
         ul::smi::SystemStatus status = {
-            .selected_user = g_SelectedUser
+            .selected_user = g_SelectedUser,
+            .last_menu_index = g_CurrentMenuIndex
         };
 
         // Note: uMenu could itself get this from setsys services, but only qlaunch (thus uSystem) is intercepted by Atmosphere to get the extra emuNAND/AMS versions
-        memcpy(status.fw_version, g_FwVersion.display_version, sizeof(status.fw_version));
+        ul::util::CopyToStringBuffer(status.fw_version, g_FwVersion.display_version);
+
+        ul::util::CopyToStringBuffer(status.last_menu_path, g_CurrentMenuPath);
 
         if(app::IsActive()) {
             if(g_LoaderOpenedAsApplication) {
@@ -126,23 +126,17 @@ namespace {
     void HandleHomeButton() {
         if(la::IsActive() && !la::IsMenu()) {
             // An applet is opened (which is not our menu), thus close it and reopen the menu
-            DEBUG_LOG("[HBUT] Libapplet opened, closing it and launching menu...");
             UL_RC_ASSERT(la::Terminate());
             UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::Menu, CreateStatus()));
         }
         else if(app::IsActive() && app::HasForeground()) {
             // Hide the application currently on focus and open our menu
-            DEBUG_LOG("[HBUT] App opened, suspending it and launching menu... isla: %d, ismenu: %d", la::IsActive(), la::IsMenu());
             UL_RC_ASSERT(sys::SetForeground());
             UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::MenuApplicationSuspended, CreateStatus()));
         }
         else if(la::IsMenu()) {
             // Send a message to our menu to handle itself the home press
-            DEBUG_LOG("[HBUT] Menu opened, notifying it...");
             PushSimpleMenuMessage(ul::smi::MenuMessage::HomeRequest);
-        }
-        else {
-            DEBUG_LOG("[HBUT] unk state...");
         }
     }
 
@@ -160,12 +154,11 @@ namespace {
 
             SystemAppletMessageHeader sams_header;
             UL_RC_ASSERT(sams_st_reader.Read(sams_header));
-            DEBUG_LOG("SystemAppletMessageHeader [size: 0x%lX] { magic: 0x%X, unk: 0x%X, msg: %d, unk_2: 0x%X }", sams_st_size, sams_header.magic, sams_header.unk, static_cast<u32>(sams_header.msg), sams_header.unk_2);
-
+            UL_LOG_INFO("SystemAppletMessageHeader [size: 0x%lX] { magic: 0x%X, unk: 0x%X, msg: %d, unk_2: 0x%X }", sams_st_size, sams_header.magic, sams_header.unk, static_cast<u32>(sams_header.msg), sams_header.unk_2);
             if(sams_header.IsValid()) {
                 switch(sams_header.msg) {
                     case GeneralChannelMessage::Unk_Invalid: {
-                        DEBUG_LOG("Invalid general channel message!");
+                        UL_LOG_WARN("Invalid general channel message!");
                         break;
                     }
                     case GeneralChannelMessage::RequestHomeMenu: {
@@ -185,27 +178,27 @@ namespace {
                         break;
                     }
                     case GeneralChannelMessage::RequestJumpToSystemUpdate: {
-                        DEBUG_LOG("Unimplemented: RequestJumpToSystemUpdate");
+                        UL_LOG_WARN("Unimplemented: RequestJumpToSystemUpdate");
                         break;
                     }
                     case GeneralChannelMessage::Unk_OverlayBrightValueChanged: {
-                        DEBUG_LOG("Unimplemented: Unk_OverlayBrightValueChanged");
+                        UL_LOG_WARN("Unimplemented: Unk_OverlayBrightValueChanged");
                         break;
                     }
                     case GeneralChannelMessage::Unk_OverlayAutoBrightnessChanged: {
-                        DEBUG_LOG("Unimplemented: Unk_OverlayAutoBrightnessChanged");
+                        UL_LOG_WARN("Unimplemented: Unk_OverlayAutoBrightnessChanged");
                         break;
                     }
                     case GeneralChannelMessage::Unk_OverlayAirplaneModeChanged: {
-                        DEBUG_LOG("Unimplemented: Unk_OverlayAirplaneModeChanged");
+                        UL_LOG_WARN("Unimplemented: Unk_OverlayAirplaneModeChanged");
                         break;
                     }
                     case GeneralChannelMessage::Unk_HomeButtonHold: {
-                        DEBUG_LOG("Unimplemented: Unk_HomeButtonHold");
+                        UL_LOG_WARN("Unimplemented: Unk_HomeButtonHold");
                         break;
                     }
                     case GeneralChannelMessage::Unk_OverlayHidden: {
-                        DEBUG_LOG("Unimplemented: Unk_OverlayHidden");
+                        UL_LOG_WARN("Unimplemented: Unk_OverlayHidden");
                         break;
                     }
                     case GeneralChannelMessage::RequestToLaunchApplication: {
@@ -225,7 +218,7 @@ namespace {
                         auto launch_params_buf = new u8[launch_params_buf_size];
                         UL_RC_ASSERT(sams_st_reader.ReadBuffer(launch_params_buf, launch_params_buf_size));
 
-                        DEBUG_LOG("Unimplemented: RequestToLaunchApplication { launch_app_request_sender: %d, app_id: 0%16lX, uid: %016lX + %016lX, launch params buf size: 0x%X }", launch_app_request_sender, app_id, uid.uid[0], uid.uid[1], launch_params_buf_size);
+                        UL_LOG_WARN("Unimplemented: RequestToLaunchApplication { launch_app_request_sender: %d, app_id: 0%16lX, uid: %016lX + %016lX, launch params buf size: 0x%X }", launch_app_request_sender, app_id, uid.uid[0], uid.uid[1], launch_params_buf_size);
 
                         delete[] launch_params_buf;
                         break;
@@ -237,12 +230,12 @@ namespace {
                         u64 app_id;
                         UL_RC_ASSERT(sams_st_reader.Read(app_id));
 
-                        DEBUG_LOG("Unimplemented: RequestJumpToStory { uid: %016lX + %016lX, app_id: 0%16lX }", uid.uid[0], uid.uid[1], app_id);
+                        UL_LOG_WARN("Unimplemented: RequestJumpToStory { uid: %016lX + %016lX, app_id: 0%16lX }", uid.uid[0], uid.uid[1], app_id);
                         break;
                     }
                     default:
                         // TODONEW
-                        DEBUG_LOG("Unhandled general channel message!");
+                        UL_LOG_WARN("Unhandled general channel message!");
                         break;
                 }
             }
@@ -263,8 +256,6 @@ namespace {
     void HandleAppletMessage() {
         u32 raw_msg = 0;
         if(R_SUCCEEDED(appletGetMessage(&raw_msg))) {
-            DEBUG_LOG("AppletMessage: %d", raw_msg);
-
             /*
             Applet messages known to be received by us:
             - ChangeIntoForeground
@@ -302,7 +293,7 @@ namespace {
                     break;
                 }
                 default:
-                    // TODONEW: more?
+                    UL_LOG_WARN("Unimplemented applet message: %d", raw_msg);
                     break;
             }
         } 
@@ -337,6 +328,7 @@ namespace {
                         }
                         case ul::smi::SystemMessage::ResumeApplication: {
                             if(!app::IsActive()) {
+                                // TODONEW: more appropiate result
                                 return smi::ResultApplicationActive;
                             }
 
@@ -406,6 +398,20 @@ namespace {
 
                             UL_ASSERT_TRUE(g_Config.SetEntry(ul::cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, takeover_app_id));
                             ul::cfg::SaveConfig(g_Config);
+                            break;
+                        }
+                        case ul::smi::SystemMessage::UpdateMenuPath: {
+                            char menu_path[FS_MAX_PATH];
+                            UL_RC_TRY(reader.PopData(menu_path, sizeof(menu_path)));
+
+                            ul::util::CopyToStringBuffer(g_CurrentMenuPath, menu_path);
+                            break;
+                        }
+                        case ul::smi::SystemMessage::UpdateMenuIndex: {
+                            u32 menu_index;
+                            UL_RC_TRY(reader.Pop(menu_index));
+
+                            g_CurrentMenuIndex = menu_index;
                             break;
                         }
                         default: {
@@ -545,8 +551,6 @@ namespace {
                     AppletStorage target_opt_st;
                     UL_RC_ASSERT(la::Pop(&target_opt_st));
                     UL_RC_ASSERT(appletStorageRead(&target_opt_st, 0, &target_opt, sizeof(target_opt)));
-
-                    DEBUG_LOG("read choose hb: '%s'", target_opt.nro_path);
                 }
                 
                 UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::Menu, CreateStatus()));
@@ -632,31 +636,32 @@ namespace {
     }
 
     void EventManagerMain(void*) {
+        UL_LOG_INFO("EventManager: alive!");
+        
         Event record_ev;
         UL_RC_ASSERT(nsGetApplicationRecordUpdateSystemEvent(&record_ev));
-        DEBUG_LOG("GOT APPREC EVENT");
 
         Event gc_mount_fail_event;
         UL_RC_ASSERT(nsGetGameCardMountFailureEvent(&gc_mount_fail_event));
-        DEBUG_LOG("GOT GCMF EVENT");
 
         s32 ev_idx;
         while(true) {
             if(R_SUCCEEDED(waitMulti(&ev_idx, UINT64_MAX, waiterForEvent(&record_ev), waiterForEvent(&gc_mount_fail_event)))) {
                 if(ev_idx == 0) {
-                    DEBUG_LOG("APPRECORD CHANGED");
+                    UL_LOG_INFO("Application records changed! diff:");
 
                     const auto diff_records = ListChangedRecords();
                     for(const auto &record: diff_records) {
-                        DEBUG_LOG("DIFF RECORD: 0x%lX", record.application_id);
-                        ul::cfg::CacheSingleApplication(record.application_id);
+                        UL_LOG_INFO("- 0x%lX", record.application_id);
+                        ul::menu::CacheSingleApplication(record.application_id);
+                        ul::menu::EnsureApplicationEntry(record);
                     }
                 }
                 if(ev_idx == 1) {
                     eventClear(&gc_mount_fail_event);
 
                     const auto fail_rc = nsGetLastGameCardMountFailureResult();
-                    DEBUG_LOG("GC MOUNT FAILED: 0x%X", fail_rc);
+                    UL_LOG_INFO("Gamecard mount failed with rc: 0x%X (sending it to uMenu...)", fail_rc);
 
                     const ul::smi::MenuMessageContext msg_ctx = {
                         .msg = ul::smi::MenuMessage::GameCardMountFailure,
@@ -680,13 +685,22 @@ namespace {
         UL_RC_ASSERT(setsysGetFirmwareVersion(&g_FwVersion));
         setsysExit();
 
+        // Remove old cache
+        ul::fs::DeleteDirectory(ul::OldApplicationCachePath);
+        ul::fs::DeleteDirectory(ul::OldHomebrewCachePath);
+        ul::fs::DeleteDirectory(ul::OldAccountCachePath);
+
+        ul::fs::CleanDirectory(ul::RootCachePath);
+
+        ul::util::CopyToStringBuffer(g_CurrentMenuPath, ul::MenuPath);
+
         UL_RC_ASSERT(accountInitialize(AccountServiceType_System));
         UL_RC_ASSERT(ul::acc::CacheAccounts());
         accountExit();
 
         g_CurrentRecords = ul::os::ListApplicationRecords();
-        ul::cfg::CacheApplications(g_CurrentRecords);
-        ul::cfg::CacheHomebrew();
+        ul::menu::CacheApplications(g_CurrentRecords);
+        ul::menu::CacheHomebrew();
 
         g_Config = ul::cfg::LoadConfig();
         u64 menu_program_id;
@@ -715,6 +729,8 @@ namespace ams {
     namespace init {
 
         void InitializeSystemModule() {
+            ul::InitializeLogging("uSystem");
+
             UL_RC_ASSERT(sm::Initialize());
 
             __nx_applet_type = AppletType_SystemApplet;

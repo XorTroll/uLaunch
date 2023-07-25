@@ -1,7 +1,6 @@
 
 #pragma once
 #include <extras/json.hpp>
-#include <switch.h>
 
 namespace ul::util {
 

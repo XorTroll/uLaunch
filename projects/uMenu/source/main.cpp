@@ -25,15 +25,11 @@ constexpr const char RomfsFile[] = "sdmc:/ulaunch/bin/uMenu/romfs.bin";
 ul::menu::ui::MenuApplication::Ref g_MenuApplication;
 ul::menu::ui::TransitionGuard g_TransitionGuard;
 
-ul::cfg::TitleList g_EntryList;
-std::vector<ul::cfg::TitleRecord> g_HomebrewRecordList;
-
 ul::cfg::Config g_Config;
 ul::cfg::Theme g_Theme;
 
 ul::util::JSON g_DefaultLanguage;
 ul::util::JSON g_MainLanguage;
-char g_FwVersion[0x18] = {};
 
 namespace {
 
@@ -44,6 +40,8 @@ namespace {
         UL_RC_ASSERT(psmInitialize());
         UL_RC_ASSERT(setsysInitialize());
         UL_RC_ASSERT(setInitialize());
+
+        ul::menu::InitializeEntries();
 
         // Load menu config and theme
         g_Config = ul::cfg::LoadConfig();
@@ -67,6 +65,9 @@ namespace {
 // uMenu procedure: read sent storages, initialize RomFs (externally), load config and other stuff, finally create the renderer and start the UI
 
 int main() {
+    ul::InitializeLogging("uMenu");
+    UL_LOG_INFO("Alive!");
+
     auto start_mode = ul::smi::MenuStartMode::Invalid;
     UL_RC_ASSERT(ul::menu::am::ReadStartMode(start_mode));
     UL_ASSERT_TRUE(start_mode != ul::smi::MenuStartMode::Invalid);
@@ -74,8 +75,6 @@ int main() {
     // Information sent as an extra storage to uMenu
     ul::smi::SystemStatus status = {};
     UL_RC_ASSERT(ul::menu::am::ReadFromInputStorage(&status, sizeof(status)));
-
-    memcpy(g_FwVersion, status.fw_version, sizeof(g_FwVersion));
     
     // Check if our RomFs data exists...
     if(!ul::fs::ExistsFile(RomfsFile)) {
@@ -87,9 +86,6 @@ int main() {
 
     // After initializing RomFs, start initializing the rest of stuff here
     Initialize();
-
-    // TODONEW: consider lazy-loading this in uSystem?
-    g_EntryList = ul::cfg::LoadTitleList();
 
     // Get system language and load translations (default one if not present)
     u64 lang_code = 0;
@@ -117,7 +113,7 @@ int main() {
     auto renderer = pu::ui::render::Renderer::New(renderer_opts);
     g_MenuApplication = ul::menu::ui::MenuApplication::New(renderer);
 
-    g_MenuApplication->SetInformation(start_mode, status, ui_json);
+    g_MenuApplication->Initialize(start_mode, status, ui_json);
     g_MenuApplication->Prepare();
 
     // Register handlers for HOME button press detection
@@ -137,6 +133,8 @@ int main() {
 
     // Exit RomFs manually, since we also initialized it manually
     romfsExit();
+
+    UL_LOG_INFO("Goodbye!");
 
     Exit();
     return 0;

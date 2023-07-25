@@ -8,10 +8,7 @@ namespace ul::util {
         if(fs::ExistsFile(path)) {
             std::string json_str;
             if(fs::ReadFileString(path, json_str)) {
-                try {
-                    out_json = JSON::parse(json_str);
-                }
-                catch(std::exception&) {}
+                out_json = JSON::parse(json_str);
                 return ResultSuccess;
             }
         }

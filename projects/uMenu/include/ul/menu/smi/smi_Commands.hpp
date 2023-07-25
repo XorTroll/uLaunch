@@ -85,6 +85,19 @@ namespace ul::menu::smi {
         );
     }
 
+    inline Result ChooseHomebrew() {
+        return SendCommand(SystemMessage::ChooseHomebrew,
+            [&](ScopedStorageWriter &writer) {
+                // ...
+                return ResultSuccess;
+            },
+            [](ScopedStorageReader &reader) {
+                // ...
+                return ResultSuccess;
+            }
+        );
+    }
+
     inline Result OpenWebPage(const char(&url)[500]) {
         return SendCommand(SystemMessage::OpenWebPage,
             [&](ScopedStorageWriter &writer) {
@@ -110,6 +123,18 @@ namespace ul::menu::smi {
         );
     }
 
+    inline Result RestartMenu() {
+        return SendCommand(SystemMessage::RestartMenu,
+            [&](ScopedStorageWriter &writer) {
+                return ResultSuccess;
+            },
+            [](ScopedStorageReader &reader) {
+                // ...
+                return ResultSuccess;
+            }
+        );
+    }
+
     inline Result SetHomebrewTakeoverApplication(const u64 app_id) {
         return SendCommand(SystemMessage::SetHomebrewTakeoverApplication,
             [&](ScopedStorageWriter &writer) {
@@ -123,9 +148,23 @@ namespace ul::menu::smi {
         );
     }
 
-    inline Result RestartMenu() {
-        return SendCommand(SystemMessage::RestartMenu,
+    inline Result UpdateMenuPath(const char (&menu_path)[FS_MAX_PATH]) {
+        return SendCommand(SystemMessage::UpdateMenuPath,
             [&](ScopedStorageWriter &writer) {
+                writer.PushData(menu_path, sizeof(menu_path));
+                return ResultSuccess;
+            },
+            [](ScopedStorageReader &reader) {
+                // ...
+                return ResultSuccess;
+            }
+        );
+    }
+
+    inline Result UpdateMenuIndex(const u32 menu_index) {
+        return SendCommand(SystemMessage::UpdateMenuIndex,
+            [&](ScopedStorageWriter &writer) {
+                writer.Push(menu_index);
                 return ResultSuccess;
             },
             [](ScopedStorageReader &reader) {

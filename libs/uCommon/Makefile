@@ -17,7 +17,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 #---------------------------------------------------------------------------------
 BUILD		:=	build
 TARGET		:=  $(notdir $(CURDIR))
-SOURCES		:=	source source/ul source/ul/cfg source/ul/smi source/ul/system source/ul/acc source/ul/net source/ul/os source/ul/util
+SOURCES		:=	source source/ul source/ul/fs source/ul/cfg source/ul/menu source/ul/smi source/ul/system source/ul/acc source/ul/net source/ul/os source/ul/util
 INCLUDES	:=	include
 OUT_LIB		:=	lib
 
@@ -28,7 +28,7 @@ ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIC -ftls-model=local-exec
 
 CFLAGS	:=	-g -Wall -Werror -O2 -ffunction-sections -fdata-sections $(ARCH) $(INCLUDE) -D__SWITCH__ $(UL_DEFS)
 
-CXXFLAGS	:= $(CFLAGS) -fno-rtti -fexceptions -std=gnu++20
+CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++20
 
 ASFLAGS	:=	-g $(ARCH)
 

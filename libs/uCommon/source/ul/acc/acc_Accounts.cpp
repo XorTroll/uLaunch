@@ -8,7 +8,7 @@ namespace ul::acc {
 
     std::string GetIconCacheImagePath(const AccountUid user_id) {
         const auto uid_str = util::FormatAccount(user_id);
-        return JoinPath(AccountCachePath, uid_str + ".jpg");
+        return fs::JoinPath(AccountCachePath, uid_str + ".jpg");
     }
 
     Result ListAccounts(std::vector<AccountUid> &out_accounts) {

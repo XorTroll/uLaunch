@@ -82,14 +82,15 @@ namespace ul::menu::ui {
             }
 
             if(log_off) {
-                auto &main_menu_lyt = g_MenuApplication->GetMenuLayout();
+                auto &main_menu_lyt = g_MenuApplication->GetMainMenuLayout();
                 if(g_MenuApplication->IsSuspended()) {
                     main_menu_lyt->DoTerminateApplication();
                 }
 
                 g_TransitionGuard.Run([&]() {
                     g_MenuApplication->FadeOut();
-                    main_menu_lyt->MoveFolder("", false);
+                    // TODONEW
+                    main_menu_lyt->MoveTo("", false);
                     g_MenuApplication->LoadStartupMenu();
                     g_MenuApplication->FadeIn();
                 });

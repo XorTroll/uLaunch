@@ -23,12 +23,6 @@ namespace ul::menu::ui {
 
         this->options_menu = pu::ui::elm::Menu::New(MenuX, MenuY, MenuWidth, g_MenuApplication->GetMenuBackgroundColor(), g_MenuApplication->GetMenuFocusColor(), MenuItemHeight, MenuItemsToShow);
         g_MenuApplication->ApplyConfigForElement("quick_menu", "quick_menu_item", this->options_menu);
-        
-        auto help_item = pu::ui::elm::MenuItem::New("Help & information");
-        help_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/HelpIcon.png"));
-        help_item->AddOnKey(&ShowHelpDialog);
-        help_item->SetColor(g_MenuApplication->GetTextColor());
-        this->options_menu->AddItem(help_item);
 
         auto power_item = pu::ui::elm::MenuItem::New("Power options");
         power_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/PowerIcon.png"));
@@ -42,7 +36,7 @@ namespace ul::menu::ui {
         controller_item->SetColor(g_MenuApplication->GetTextColor());
         this->options_menu->AddItem(controller_item);
 
-        auto album_item = pu::ui::elm::MenuItem::New("Open album");
+        auto album_item = pu::ui::elm::MenuItem::New("Open album/hbmenu");
         album_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/AlbumIcon.png"));
         album_item->AddOnKey(&ShowAlbumApplet);
         album_item->SetColor(g_MenuApplication->GetTextColor());

@@ -66,6 +66,8 @@ extern "C" {
 }
 
 int main() {
+    ul::InitializeLogging("uLoader");
+
     UL_RC_ASSERT(smInitialize());
 
     UL_RC_ASSERT(fsInitialize());
@@ -97,9 +99,7 @@ int main() {
     }
     const auto is_auto_game_recording = g_SelfControlData.nacp.video_capture == 2;
 
-    auto f = fopen("dump-target.bin", "wb");
-    fwrite(&target_ipt, sizeof(target_ipt), 1, f);
-    fclose(f);
+    UL_LOG_INFO("Targetting '%s' with argv '%s' (once: %d)", target_ipt.nro_path, target_ipt.nro_argv, target_ipt.target_once);
 
     fsdevUnmountAll();
     fsExit();
@@ -109,6 +109,8 @@ int main() {
 
     ul::loader::TargetOutput target_opt;
     ul::loader::LoadTargetOutput(target_opt);
+
+    UL_LOG_INFO("Sending target output... '%s' with argv '%s'", target_opt.nro_path, target_opt.nro_argv);
 
     UL_RC_ASSERT(smInitialize());
     UL_RC_ASSERT(ul::loader::WriteTargetOutput(target_opt));

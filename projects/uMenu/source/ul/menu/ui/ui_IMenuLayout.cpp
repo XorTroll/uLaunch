@@ -25,28 +25,32 @@ namespace ul::menu::ui {
                         break;
                     }
                     case smi::MenuMessage::GameCardMountFailure: {
-                        // TODONEW: proper strings
+                        // TODONEW: proper strings, move elsewhere
                         g_MenuApplication->CreateShowDialog("GC mount", "GC mount failed: " + util::FormatResultHex(first_msg.gc_mount_failure.mount_rc), { "K" }, true);
                         this->msg_queue.pop();
                         break;
                     }
                     case smi::MenuMessage::SdCardEjected: {
                         // TODONEW: proper strings
-                        g_MenuApplication->CreateShowDialog("SD ejected", "SD ejected", { "K" }, true);
                         this->msg_queue.pop();
 
-                        RebootSystem();
+                        const auto option = g_MenuApplication->CreateShowDialog("SD ejected", "SD ejected", { "Shutdown", "Reboot" }, false);
+                        if(option == 1) {
+                            RebootSystem();
+                        }
+                        else {
+                            ShutdownSystem();
+                        }
                         break;
                     }
                     case smi::MenuMessage::PreviousLaunchFailure: {
-                        g_MenuApplication->CreateShowDialog(GetLanguageString("app_launch"), GetLanguageString("app_unexpected_error"), { GetLanguageString("ok") }, true);
+                        g_MenuApplication->NotifyLaunchFailed();
                         this->msg_queue.pop();
 
                         break;
                     }
                     case smi::MenuMessage::ChosenHomebrew: {
-                        // TODONEW: proper implementation
-                        g_MenuApplication->CreateShowDialog("chosen hb", first_msg.chosen_hb.nro_path, { "K" }, true);
+                        g_MenuApplication->NotifyHomebrewChosen(first_msg.chosen_hb.nro_path);
                         this->msg_queue.pop();
 
                         break;

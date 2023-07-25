@@ -118,6 +118,28 @@ namespace ul::fs {
         return WriteFile(path, str.c_str(), str.length(), overwrite);
     }
 
+    inline std::string GetBaseName(const std::string &path) {
+        return path.substr(path.find_last_of("/") + 1);
+    }
+
+    inline std::string GetBaseDirectory(const std::string &path) {
+        return path.substr(0, path.find_last_of("/"));
+    }
+
+    inline std::string GetFileName(const std::string &path) {
+        return path.substr(0, path.find_last_of("."));
+    }
+
+    inline std::string GetExtension(const std::string &path) {
+        return path.substr(path.find_last_of(".") + 1);
+    }
+
+    inline std::string JoinPath(const std::string &a, const std::string &b) {
+        return a + "/" + b;
+    }
+
+    void RenameDirectory(const std::string &old_path, const std::string &new_path);
+
     #define UL_FS_FOR(dir, name_var, path_var, is_dir_var, is_file_var, ...) ({ \
         const std::string dir_str = (dir); \
         auto dp = opendir(dir_str.c_str()); \

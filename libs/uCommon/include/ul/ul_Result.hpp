@@ -59,14 +59,22 @@ namespace ul {
         } \
     })
 
+    enum class LogKind {
+        Information,
+        Warning,
+        Critical
+    };
+
+    void InitializeLogging(const char *proc_name);
+    void LogImpl(const LogKind kind, const char *log_fmt, ...);
+
+    #define UL_LOG_INFO(log_fmt, ...) ::ul::LogImpl(::ul::LogKind::Information, log_fmt, ##__VA_ARGS__)
+
+    #define UL_LOG_WARN(log_fmt, ...) ::ul::LogImpl(::ul::LogKind::Warning, log_fmt, ##__VA_ARGS__)
+
     template<typename ...Args>
     inline void NORETURN OnAssertionFailed(const Result rc, const char *log_fmt, Args &&...args) {
-        // TODONEW: unique log file for each assertion fatal?
-        auto log_f = fopen(AssertionLogFile, "ab+");
-        if(log_f) {
-            fprintf(log_f, log_fmt, args...);
-            fclose(log_f);
-        }
+        LogImpl(LogKind::Critical, log_fmt, args...);
 
         svcBreak(0, reinterpret_cast<uintptr_t>(&rc), sizeof(rc));
         __builtin_unreachable();
@@ -75,14 +83,14 @@ namespace ul {
     #define UL_RC_ASSERT(expr) ({ \
         const auto _tmp_rc = ::ul::res::TransformIntoResult(expr); \
         if(R_FAILED(_tmp_rc)) { \
-            ::ul::OnAssertionFailed(_tmp_rc, #expr " asserted 0x%X...", _tmp_rc); \
+            ::ul::OnAssertionFailed(_tmp_rc, #expr " asserted 0x%X...\n", _tmp_rc); \
         } \
     })
 
     #define UL_ASSERT_TRUE(expr) ({ \
         const auto _tmp_expr = (expr); \
         if(!_tmp_expr) { \
-            ::ul::OnAssertionFailed(::ul::res::ResultAssertionFailed, #expr " asserted to be false..."); \
+            ::ul::OnAssertionFailed(::ul::res::ResultAssertionFailed, #expr " asserted to be false...\n"); \
         } \
     })
 

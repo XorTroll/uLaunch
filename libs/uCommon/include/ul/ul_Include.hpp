@@ -11,17 +11,30 @@ namespace ul {
     constexpr const char DefaultThemePath[] = "romfs:/default";
     constexpr const char DefaultLanguagePath[] = "romfs:/en.json";
 
+    constexpr const char RootPath[] = "sdmc:/ulaunch";
+
     constexpr const char ConfigPath[] = "sdmc:/ulaunch/config.cfg";
+
     constexpr const char ThemesPath[] = "sdmc:/ulaunch/themes";
-    constexpr const char EntriesPath[] = "sdmc:/ulaunch/themes";
-    constexpr const char TitleCachePath[] = "sdmc:/ulaunch/titles";
+
+    constexpr const char MenuPath[] = "sdmc:/ulaunch/menu";
+
     constexpr const char LanguagesPath[] = "sdmc:/ulaunch/lang";
-    constexpr const char AccountCachePath[] = "sdmc:/ulaunch/user";
-    constexpr const char HomebrewCachePath[] = "sdmc:/ulaunch/nro";
+
+    constexpr const char RootCachePath[] = "sdmc:/ulaunch/cache";
+    constexpr const char ApplicationCachePath[] = "sdmc:/ulaunch/cache/app";
+    constexpr const char HomebrewCachePath[] = "sdmc:/ulaunch/cache/hb";
+    constexpr const char AccountCachePath[] = "sdmc:/ulaunch/cache/acc";
+
+    constexpr const char OldMenuPath[] = "sdmc:/ulaunch/entries";
+    constexpr const char OldApplicationCachePath[] = "sdmc:/ulaunch/titles";
+    constexpr const char OldHomebrewCachePath[] = "sdmc:/ulaunch/nro";
+    constexpr const char OldAccountCachePath[] = "sdmc:/ulaunch/user";
+
     constexpr const char DefaultHomebrewIconPath[] = "sdmc:/ulaunch/default_hb_icon.jpg";
     constexpr const char DefaultHomebrewNacpPath[] = "sdmc:/ulaunch/default_hb_nacp.nacp";
-    constexpr const char AssertionLogFile[] = "sdmc:/ulaunch/assert.log";
 
+    constexpr const char HbmenuPath[] = "sdmc:/hbmenu.nro";
     constexpr const char RootHomebrewPath[] = "sdmc:/switch";
 
     class Mutex {
@@ -78,9 +91,5 @@ namespace ul {
                 this->lock.Unlock();
             }
     };
-
-    inline std::string JoinPath(const std::string &a, const std::string &b) {
-        return a + "/" + b;
-    }
 
 }

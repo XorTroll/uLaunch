@@ -49,6 +49,9 @@ namespace ul::menu::ui {
         this->menu_focus_clr = pu::ui::Color::FromHex(this->GetUIConfigValue<std::string>("menu_focus_color", "#5ebcffff"));
         this->menu_bg_clr = pu::ui::Color::FromHex(this->GetUIConfigValue<std::string>("menu_bg_color", "#0094ffff"));
 
+        this->launch_failed = false;
+        memset(this->chosen_hb, 0, sizeof(this->chosen_hb));
+
         const u8 suspended_final_alpha = this->ui_json.value("suspended_final_alpha", 80);
         this->startup_lyt = StartupLayout::New();
         this->main_menu_lyt = MainMenuLayout::New(screen_capture_buf, suspended_final_alpha);
