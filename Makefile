@@ -10,9 +10,9 @@ DEFAULT_HB_VERSION	:=	Unknown version
 
 export UL_DEFS	:=	-DUL_VERSION=\"$(VERSION)\"
 
-.PHONY: all fresh clean default_hb usystem uloader umenu
+.PHONY: all fresh clean default_hb usystem uloader umenu umanager
 
-all: default_hb usystem uloader umenu
+all: default_hb usystem uloader umenu umanager
 
 fresh: clean all
 
@@ -20,6 +20,7 @@ clean:
 	@$(MAKE) clean -C projects/uSystem
 	@$(MAKE) clean -C projects/uLoader
 	@$(MAKE) clean -C projects/uMenu
+	@$(MAKE) clean -C projects/uManager
 	@rm -rf SdOut
 
 # TODONEW: move this inside themes
@@ -33,6 +34,8 @@ usystem:
 	@$(MAKE) -C projects/uSystem
 	@mkdir -p SdOut/atmosphere/contents/0100000000001000
 	@cp projects/uSystem/out/nintendo_nx_arm64_armv8a/release/uSystem.nsp SdOut/atmosphere/contents/0100000000001000/exefs.nsp
+	@mkdir -p SdOut/ulaunch/bin/uSystem
+	@cp projects/uSystem/out/nintendo_nx_arm64_armv8a/release/uSystem.nsp SdOut/ulaunch/bin/uSystem/exefs.nsp
 
 uloader:
 	@$(MAKE) -C projects/uLoader
@@ -50,3 +53,8 @@ umenu:
 	@cp projects/uMenu/uMenu.nso SdOut/ulaunch/bin/uMenu/main
 	@cp projects/uMenu/uMenu.npdm SdOut/ulaunch/bin/uMenu/main.npdm
 	@build_romfs projects/uMenu/romfs SdOut/ulaunch/bin/uMenu/romfs.bin
+
+umanager:
+	@$(MAKE) -C projects/uManager
+	@mkdir -p SdOut/switch
+	@cp projects/uManager/uManager.nro SdOut/switch/uManager.nro

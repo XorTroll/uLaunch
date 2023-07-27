@@ -35,6 +35,7 @@ namespace ul {
     constexpr const char DefaultHomebrewNacpPath[] = "sdmc:/ulaunch/default_hb_nacp.nacp";
 
     constexpr const char HbmenuPath[] = "sdmc:/hbmenu.nro";
+    constexpr const char ManagerPath[] = "sdmc:/switch/uManager.nro";
     constexpr const char RootHomebrewPath[] = "sdmc:/switch";
 
     class Mutex {

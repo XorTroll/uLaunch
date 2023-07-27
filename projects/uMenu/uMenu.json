@@ -145,14 +145,10 @@
             "value": "0x30"
         },
         {
-            "type": "handle_table_size",
-            "value": 512
-        },
-        {
             "type": "debug_flags",
             "value": {
                 "allow_debug": true,
-                "force_debug": true
+                "force_debug": false
             }
         }
     ]

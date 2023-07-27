@@ -14,7 +14,6 @@ namespace ul::menu::ui {
     void ShowUserMenu();
     void ShowControllerSupport();
     void ShowWebPage();
-    void ShowHelpDialog();
     void ShowAlbumApplet();
     void ShowPowerDialog();
 

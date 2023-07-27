@@ -32,6 +32,9 @@ namespace ul::system::app {
             UL_RC_TRY(appletApplicationTerminate(&g_ApplicationHolder));
         }
 
+        const auto app_rc = serviceDispatch(&g_ApplicationHolder.s, 30);
+        UL_LOG_WARN("Application terminated with result 0x%X", app_rc);
+
         // TODONEW: something's not completely right about closing apps
         appletApplicationClose(&g_ApplicationHolder);
         g_ApplicationHasFocus = false;
@@ -51,7 +54,6 @@ namespace ul::system::app {
             auto ct_data = new NsApplicationControlData;
             UL_ON_SCOPE_EXIT({ delete[] ct_data; });
 
-            // TODONEW: send from umenu who already has read it?
             size_t dummy_size;
             UL_RC_TRY(nsGetApplicationControlData(NsApplicationControlSource_Storage, app_id, ct_data, sizeof(NsApplicationControlData), &dummy_size));
 

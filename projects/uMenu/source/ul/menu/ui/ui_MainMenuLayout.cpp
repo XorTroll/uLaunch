@@ -43,44 +43,12 @@ namespace ul::menu::ui {
 
         this->entries_menu->MoveTo(new_path);
 
-        // TODONEW: remove this when the cwd is properly displayed somehow
-        this->fw_text->SetFont(pu::ui::GetDefaultFont(pu::ui::DefaultFontSize::Small));
-        this->fw_text->SetText(this->entries_menu->GetPath());
-
         if(this->entries_menu->HasEntries()) {
             this->banner_img->SetVisible(true);
             this->selected_item_name_text->SetVisible(true);
             this->selected_item_author_text->SetVisible(true);
             this->selected_item_version_text->SetVisible(true);
             this->no_entries_text->SetVisible(false);
-
-            /*
-            u32 cur_i = 0;
-            for(const auto &entry : g_CurrentMenuEntries) {
-                auto entry_icon = entry.control.icon_path;
-                if(entry_icon.empty() && entry.Is<EntryType::Folder>()) {
-                    entry_icon = cfg::GetAssetByTheme(g_Theme, "ui/Folder.png");
-                }
-                this->entries_menu->AddItem(entry_icon);
-
-                if((entry.Is<EntryType::Application>() && (g_MenuApplication->GetStatus().suspended_app_id == entry.app_info.record.application_id)) || (entry.Is<EntryType::Homebrew>() && g_MenuApplication->EqualsSuspendedHomebrewPath(entry.hb_info.nro_target.nro_path))) {
-                    this->entries_menu->SetSuspendedItem(cur_i);
-                }
-
-                cur_i++;
-            }
-
-            // TODONEW: find a faster way to do this?
-            g_MenuApplication->CallForRender();
-            if(!g_EntryIndexStack.empty()) {
-                const auto saved_i = g_EntryIndexStack.top();
-                if(saved_i < g_CurrentMenuEntries.size()) {
-                    while(this->entries_menu->GetSelectedItem() < saved_i) {
-                        this->entries_menu->HandleMoveRight();
-                    }
-                }
-            }
-            */
         }
         else {
             this->banner_img->SetVisible(false);
@@ -215,6 +183,7 @@ namespace ul::menu::ui {
             }
             else {
                 if(cur_entry.Is<EntryType::Folder>()) {
+                    this->PushFolder(cur_entry.folder_info.name);
                     this->MoveTo(cur_entry.GetFolderPath(), true);
                 }
                 else {
@@ -439,7 +408,7 @@ namespace ul::menu::ui {
         }
     }
 
-    MainMenuLayout::MainMenuLayout(const u8 *captured_screen_buf, const u8 min_alpha) : last_has_connection(false), last_battery_lvl(0), last_is_charging(false), launch_fail_warn_shown(false), min_alpha(min_alpha), target_alpha(0), mode(SuspendedImageMode::ShowingAfterStart), suspended_screen_alpha(0xFF) {
+    MainMenuLayout::MainMenuLayout(const u8 *captured_screen_buf, const u8 min_alpha) : last_has_connection(false), last_battery_lvl(0), last_is_charging(false), cur_folder_path(""), launch_fail_warn_shown(false), min_alpha(min_alpha), target_alpha(0), mode(SuspendedImageMode::ShowingAfterStart), suspended_screen_alpha(0xFF) {
         // const auto menu_text_x = g_MenuApplication->GetUIConfigValue<u32>("menu_folder_text_x", 30);
         // const auto menu_text_y = g_MenuApplication->GetUIConfigValue<u32>("menu_folder_text_y", 200);
         // const auto menu_text_size = g_MenuApplication->GetUIConfigValue<u32>("menu_folder_text_size", 25);
@@ -511,6 +480,12 @@ namespace ul::menu::ui {
         this->input_bar = InputBar::New(120);
         this->Add(this->input_bar);
 
+        this->cur_path_text = pu::ui::elm::TextBlock::New(10, 170, this->cur_folder_path);
+        this->cur_path_text->SetFont(pu::ui::GetDefaultFont(pu::ui::DefaultFontSize::Medium));
+        this->cur_path_text->SetColor(g_MenuApplication->GetTextColor());
+        g_MenuApplication->ApplyConfigForElement("main_menu", "cur_path_text", this->cur_path_text);
+        this->Add(this->cur_path_text);
+
         this->banner_img = pu::ui::elm::Image::New(0, 585, cfg::GetAssetByTheme(g_Theme, "ui/BannerInstalled.png"));
         g_MenuApplication->ApplyConfigForElement("main_menu", "banner_image", this->banner_img);
 
@@ -538,7 +513,7 @@ namespace ul::menu::ui {
         // TODONEW: g_MenuApplication->ApplyConfigForElement("main_menu", "banner_author_text", this->no_entries_text);
         this->Add(this->no_entries_text);
 
-        this->entries_menu = EntryMenu::New(160, pu::ui::render::ScreenHeight - 160, g_MenuApplication->GetStatus().last_menu_path, g_MenuApplication->GetStatus().last_menu_index, std::bind(&MainMenuLayout::menu_EntryInputPressed, this, std::placeholders::_1), std::bind(&MainMenuLayout::menu_FocusedEntryChanged, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)); // SideMenu::New(pu::ui::Color(0, 255, 120, 0xFF), cfg::GetAssetByTheme(g_Theme, "ui/Cursor.png"), cfg::GetAssetByTheme(g_Theme, "ui/Suspended.png"), cfg::GetAssetByTheme(g_Theme, "ui/Multiselect.png"), menu_text_x, menu_text_y, pu::ui::MakeDefaultFontName(menu_text_size), g_MenuApplication->GetTextColor(), 294);
+        this->entries_menu = EntryMenu::New(190, pu::ui::render::ScreenHeight - 190, g_MenuApplication->GetStatus().last_menu_path, g_MenuApplication->GetStatus().last_menu_index, std::bind(&MainMenuLayout::menu_EntryInputPressed, this, std::placeholders::_1), std::bind(&MainMenuLayout::menu_FocusedEntryChanged, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)); // SideMenu::New(pu::ui::Color(0, 255, 120, 0xFF), cfg::GetAssetByTheme(g_Theme, "ui/Cursor.png"), cfg::GetAssetByTheme(g_Theme, "ui/Suspended.png"), cfg::GetAssetByTheme(g_Theme, "ui/Multiselect.png"), menu_text_x, menu_text_y, pu::ui::MakeDefaultFontName(menu_text_size), g_MenuApplication->GetTextColor(), 294);
         this->Add(this->entries_menu);
 
         this->Add(this->banner_img);
@@ -746,6 +721,7 @@ namespace ul::menu::ui {
         if(keys_down & HidNpadButton_B) {
             if(!this->entries_menu->IsInRoot()) {
                 const auto parent_path = fs::GetBaseDirectory(this->entries_menu->GetPath());
+                this->PopFolder();
                 this->MoveTo(parent_path, true);
             }
         }

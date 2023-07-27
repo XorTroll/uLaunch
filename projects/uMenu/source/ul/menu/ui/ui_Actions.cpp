@@ -110,36 +110,25 @@ namespace ul::menu::ui {
 
     void ShowWebPage() {
         SwkbdConfig swkbd;
-        swkbdCreate(&swkbd, 0);
-        UL_ON_SCOPE_EXIT({
-            swkbdClose(&swkbd);
-        });
-        
-        swkbdConfigSetGuideText(&swkbd, GetLanguageString("swkbd_webpage_guide").c_str());
-        
-        char url[500] = {0};
-        swkbdShow(&swkbd, url, 500);
+        if(R_SUCCEEDED(swkbdCreate(&swkbd, 0))) {
+            UL_ON_SCOPE_EXIT({
+                swkbdClose(&swkbd);
+            });
+            
+            swkbdConfigSetGuideText(&swkbd, GetLanguageString("swkbd_webpage_guide").c_str());
+            
+            char url[500] = {};
+            if(R_SUCCEEDED(swkbdShow(&swkbd, url, sizeof(url)))) {
+                UL_RC_ASSERT(ul::menu::smi::OpenWebPage(url));
 
-        UL_RC_ASSERT(ul::menu::smi::OpenWebPage(url));
-
-        g_MenuApplication->StopPlayBGM();
-        g_MenuApplication->CloseWithFadeOut();
-    }
-
-    void ShowHelpDialog() {
-        std::string msg;
-        msg += " - " + GetLanguageString("help_launch") + "\n";
-        msg += " - " + GetLanguageString("help_close") + "\n";
-        msg += " - " + GetLanguageString("help_quick") + "\n";
-        msg += " - " + GetLanguageString("help_multiselect") + "\n";
-        msg += " - " + GetLanguageString("help_back") + "\n";
-        msg += " - " + GetLanguageString("help_minus") + "\n";
-        msg += " - " + GetLanguageString("help_plus") + "\n";
-
-        g_MenuApplication->CreateShowDialog(GetLanguageString("help_title"), msg, { GetLanguageString("ok") }, true);
+                g_MenuApplication->StopPlayBGM();
+                g_MenuApplication->CloseWithFadeOut();
+            }
+        }
     }
 
     void ShowAlbumApplet() {
+        // TODONEW: somehow force to load actual album?
         UL_RC_ASSERT(ul::menu::smi::OpenAlbum());
 
         g_MenuApplication->StopPlayBGM();

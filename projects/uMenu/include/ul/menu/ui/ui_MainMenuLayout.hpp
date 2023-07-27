@@ -41,12 +41,14 @@ namespace ul::menu::ui {
             ClickableImage::Ref themes_img;
             pu::ui::elm::TextBlock::Ref fw_text;
             EntryMenu::Ref entries_menu;
+            std::string cur_folder_path;
             RawRgbaImage::Ref suspended_screen_img;
             pu::ui::elm::TextBlock::Ref selected_item_name_text;
             pu::ui::elm::TextBlock::Ref selected_item_author_text;
             pu::ui::elm::TextBlock::Ref selected_item_version_text;
             pu::ui::elm::Image::Ref banner_img;
             pu::ui::elm::TextBlock::Ref no_entries_text;
+            pu::ui::elm::TextBlock::Ref cur_path_text;
             QuickMenu::Ref quick_menu;
             InputBar::Ref input_bar;
             std::chrono::steady_clock::time_point startup_tp;
@@ -60,6 +62,16 @@ namespace ul::menu::ui {
             void DoMoveTo(const std::string &new_path);
             void menu_EntryInputPressed(const u64 keys_down);
             void menu_FocusedEntryChanged(const bool has_prev_entry, const bool is_prev_entry_suspended, const bool is_cur_entry_suspended);
+
+            inline void PushFolder(const std::string &name) {
+                this->cur_folder_path = fs::JoinPath(this->cur_folder_path, name);
+                this->cur_path_text->SetText(this->cur_folder_path);
+            }
+
+            inline void PopFolder() {
+                this->cur_folder_path = fs::GetBaseDirectory(this->cur_folder_path);
+                this->cur_path_text->SetText(this->cur_folder_path);
+            }
 
         public:
             MainMenuLayout(const u8 *captured_screen_buf, const u8 min_alpha);
