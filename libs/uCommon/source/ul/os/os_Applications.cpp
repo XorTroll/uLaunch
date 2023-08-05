@@ -6,7 +6,6 @@ namespace ul::os {
     std::vector<NsApplicationRecord> ListApplicationRecords() {
         std::vector<NsApplicationRecord> records;
 
-        // TODONEW: get app record count?
         auto records_buf = new NsApplicationRecord[MaxApplicationCount]();
         s32 record_count;
         UL_RC_ASSERT(nsListApplicationRecord(records_buf, MaxApplicationCount, 0, &record_count));

@@ -11,81 +11,74 @@ namespace ul::menu::ui {
             static constexpr u8 Alpha = 200;
 
         private:
+            s32 x;
             s32 y;
             std::map<u64, pu::sdl2::Texture> inputs;
             pu::sdl2::Texture bg_img;
 
             static inline std::string GetKeyString(const u64 key) {
-                // TODONEW
                 std::string str;
                 if(key & HidNpadButton_A) {
-                    str += "A"; //"\uE0A0";
-                    str += "/";
+                    str += "\uE0A0";
                 }
                 if(key & HidNpadButton_B) {
-                    str += "B"; //"\uE0A1";
-                    str += "/";
+                    str += "\uE0A1";
                 }
                 if(key & HidNpadButton_X) {
-                    str += "X"; //"\uE0A2";
-                    str += "/";
+                    str += "\uE0A2";
                 }
                 if(key & HidNpadButton_Y) {
-                    str += "Y"; //"\uE0A3";
-                    str += "/";
+                    str += "\uE0A3";
                 }
                 if(key & HidNpadButton_L) {
-                    str += "L"; //"\uE0A4";
-                    str += "/";
+                    str += "\uE0A4";
                 }
                 if(key & HidNpadButton_R) {
-                    str += "R"; //"\uE0A5";
-                    str += "/";
+                    str += "\uE0A5";
                 }
                 if(key & HidNpadButton_ZL) {
-                    str += "ZL"; //"\uE0A6";
-                    str += "/";
+                    str += "\uE0A6";
                 }
                 if(key & HidNpadButton_ZR) {
-                    str += "ZR"; //"\uE0A7";
-                    str += "/";
+                    str += "\uE0A7";
                 }
                 if(key & HidNpadButton_StickL) {
-                    str += "LS"; //"\uE08A";
-                    str += "/";
+                    str += "\uE08A";
                 }
                 if(key & HidNpadButton_StickR) {
-                    str += "RS"; //"\uE08B";
-                    str += "/";
+                    str += "\uE08B";
                 }
                 if(key & HidNpadButton_Minus) {
-                    str += "-"; //"\uE0B6";
-                    str += "/";
+                    str += "\uE0B6";
                 }
                 if(key & HidNpadButton_Plus) {
-                    str += "+"; //"\uE0B5";
-                    str += "/";
-                }
-                if(!str.empty()) {
-                    str.pop_back();
+                    str += "\uE0B5";
                 }
                 return str;
             }
 
         public:
-            InputBar(const s32 y);
+            InputBar(const s32 x, const s32 y);
             PU_SMART_CTOR(InputBar)
 
-            inline constexpr s32 GetX() override {
-                return 0;
+            inline s32 GetX() override {
+                return this->x;
             }
 
             inline s32 GetY() override {
                 return this->y;
             }
 
+            inline void SetX(const s32 x) {
+                this->x = x;
+            }
+
+            inline void SetY(const s32 y) {
+                this->y = y;
+            }
+
             inline s32 GetWidth() override {
-                return 1280;
+                return pu::ui::render::ScreenWidth;
             }
 
             inline s32 GetHeight() override {

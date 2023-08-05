@@ -88,6 +88,8 @@ namespace ul::menu {
         }
 
         void TryLoadControlData();
+        void ReloadApplicationInfo();
+
         void MoveTo(const std::string &new_folder_path);
         void Save() const;
         void Remove();

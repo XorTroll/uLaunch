@@ -11,8 +11,16 @@ extern ul::cfg::Config g_Config;
 
 namespace ul::menu::ui {
 
+    namespace {
+
+        SetLanguage g_SystemLanguage;
+
+    }
+
     LanguagesMenuLayout::LanguagesMenuLayout() {
         this->SetBackgroundImage(cfg::GetAssetByTheme(g_Theme, "ui/Background.png"));
+
+        g_SystemLanguage = os::GetSystemLanguage();
 
         this->info_text = pu::ui::elm::TextBlock::New(0, 100, GetLanguageString("lang_info_text"));
         this->info_text->SetColor(g_MenuApplication->GetTextColor());
@@ -63,10 +71,7 @@ namespace ul::menu::ui {
     }
 
     void LanguagesMenuLayout::lang_DefaultKey(const u32 idx) {
-        // TODONEW: cache system language...
-
-        const auto sys_lang = os::GetSystemLanguage();
-        if(static_cast<u32>(sys_lang) == idx) {
+        if(static_cast<u32>(g_SystemLanguage) == idx) {
             g_MenuApplication->ShowNotification(GetLanguageString("lang_active_this"));
         }
         else {

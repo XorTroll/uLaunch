@@ -217,6 +217,18 @@ namespace ul::menu::ui {
             }
 
             void SetSelectedUser(const AccountUid user_id);
+
+            inline bool IsEntrySuspended(const Entry &entry) {
+                if(entry.Is<EntryType::Application>()) {
+                    return entry.app_info.record.application_id == this->system_status.suspended_app_id;
+                }
+                else if(entry.Is<EntryType::Homebrew>()) {
+                    // TODONEW: better compare logic?
+                    return (strcmp(entry.hb_info.nro_target.nro_path, this->system_status.suspended_hb_target_ipt.nro_path) == 0) && (strcmp(entry.hb_info.nro_target.nro_argv, this->system_status.suspended_hb_target_ipt.nro_argv) == 0);
+                }
+
+                return false;
+            }
             
             inline AccountUid GetSelectedUser() {
                 return this->system_status.selected_user;

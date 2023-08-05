@@ -37,7 +37,7 @@ namespace ul::system {
         AlbumRecordingSaved = 93
     };
 
-    // TODONEW: official general channel message names? (unofficial names are preceded by Unk_*)
+    // TODONEW (low priority): official general channel message names? (unofficial names are preceded by Unk_*)
     enum class GeneralChannelMessage : u32 {
         Unk_Invalid,
         RequestHomeMenu = 2,

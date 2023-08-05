@@ -14,6 +14,7 @@ namespace ul::menu::ui {
 
     class MainMenuLayout : public IMenuLayout {
         public:
+            // TODONEW: config in theme?
             static constexpr u8 SuspendedScreenAlphaIncrement = 6;
 
         private:
@@ -43,9 +44,9 @@ namespace ul::menu::ui {
             EntryMenu::Ref entries_menu;
             std::string cur_folder_path;
             RawRgbaImage::Ref suspended_screen_img;
-            pu::ui::elm::TextBlock::Ref selected_item_name_text;
-            pu::ui::elm::TextBlock::Ref selected_item_author_text;
-            pu::ui::elm::TextBlock::Ref selected_item_version_text;
+            pu::ui::elm::TextBlock::Ref cur_entry_name_text;
+            pu::ui::elm::TextBlock::Ref cur_entry_author_text;
+            pu::ui::elm::TextBlock::Ref cur_entry_version_text;
             pu::ui::elm::Image::Ref banner_img;
             pu::ui::elm::TextBlock::Ref no_entries_text;
             pu::ui::elm::TextBlock::Ref cur_path_text;
@@ -82,10 +83,14 @@ namespace ul::menu::ui {
             bool OnHomeButtonPress() override;
 
             void MoveTo(const std::string &new_path, const bool fade, std::function<void()> action = nullptr);
+
+            inline void MoveToRoot(const bool fade, std::function<void()> action = nullptr) {
+                this->MoveTo(MenuPath, fade, action);
+            }
+
             void SetUser(const AccountUid user);
             void HandleCloseSuspended();
             void HandleHomebrewLaunch(const Entry &entry);
-            void HandleMultiselectMoveToFolder(const std::string &new_path);
             void StopSelection();
             void DoTerminateApplication();
     };

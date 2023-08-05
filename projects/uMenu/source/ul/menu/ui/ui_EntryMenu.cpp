@@ -13,18 +13,6 @@ namespace ul::menu::ui {
 
     namespace {
 
-        inline bool IsEntrySuspended(const Entry &entry) {
-            if(entry.Is<EntryType::Application>()) {
-                return entry.app_info.record.application_id == g_MenuApplication->GetStatus().suspended_app_id;
-            }
-            else if(entry.Is<EntryType::Homebrew>()) {
-                // TODONEW: better compare logic
-                return (strcmp(entry.hb_info.nro_target.nro_path, g_MenuApplication->GetStatus().suspended_hb_target_ipt.nro_path) == 0) && (strcmp(entry.hb_info.nro_target.nro_argv, g_MenuApplication->GetStatus().suspended_hb_target_ipt.nro_argv) == 0);
-            }
-
-            return false;
-        }
-
         u32 g_MenuEntryHorizontalCount = 0;
 
         void SetHorizontalEntryCount(const u32 count) {
@@ -105,8 +93,16 @@ namespace ul::menu::ui {
     pu::sdl2::Texture EntryMenu::LoadEntryImage(const u32 idx) {
         const auto &entry = this->cur_entries.at(idx);
         auto icon_path = entry.control.icon_path;
-        if(icon_path.empty() && entry.Is<EntryType::Folder>()) {
-            icon_path = cfg::GetAssetByTheme(g_Theme, "ui/Folder.png");
+        if(icon_path.empty()) {
+            if(entry.Is<EntryType::Folder>()) {
+                icon_path = cfg::GetAssetByTheme(g_Theme, "ui/Folder.png");
+            }
+            else if(entry.Is<EntryType::Application>()) {
+                icon_path = cfg::GetAssetByTheme(g_Theme, "ui/DefaultApplicationIcon.png");
+            }
+            else if(entry.Is<EntryType::Homebrew>()) {
+                icon_path = cfg::GetAssetByTheme(g_Theme, "ui/DefaultHomebrewIcon.png");
+            }
         }
         
         return pu::ui::render::LoadImage(icon_path);
@@ -114,15 +110,15 @@ namespace ul::menu::ui {
 
     void EntryMenu::NotifyFocusedEntryChanged(const s32 prev_idx) {
         const auto has_prev = (prev_idx >= 0) && (prev_idx < (s32)this->cur_entries.size());
-        const auto prev_suspended = has_prev ? IsEntrySuspended(this->cur_entries.at(prev_idx)) : false;
-        const auto cur_suspended = IsEntrySuspended(this->GetFocusedEntry());
+        const auto prev_suspended = has_prev ? g_MenuApplication->IsEntrySuspended(this->cur_entries.at(prev_idx)) : false;
+        const auto cur_suspended = g_MenuApplication->IsEntrySuspended(this->GetFocusedEntry());
         this->cur_entry_changed_cb(has_prev, prev_suspended, cur_suspended);
     }
 
-    EntryMenu::EntryMenu(const s32 y, const s32 height, const std::string &path, const u32 last_idx, FocusedEntryInputPressedCallback cur_entry_input_cb, FocusedEntryChangedCallback cur_entry_changed_cb) : y(y), height(height), cur_entry_idx(0), entries_selected(), entry_idx_stack(), cur_entry_input_cb(cur_entry_input_cb), cur_entry_changed_cb(cur_entry_changed_cb), enabled(true) {
+    EntryMenu::EntryMenu(const s32 x, const s32 y, const s32 height, const std::string &path, const u32 last_idx, FocusedEntryInputPressedCallback cur_entry_input_cb, FocusedEntryChangedCallback cur_entry_changed_cb) : x(x), y(y), height(height), cur_entry_idx(0), entries_selected(), entry_idx_stack(), cur_entry_input_cb(cur_entry_input_cb), cur_entry_changed_cb(cur_entry_changed_cb), enabled(true) {
         this->cursor_img = pu::ui::render::LoadImage(cfg::GetAssetByTheme(g_Theme, "ui/Cursor.png"));
         this->suspended_img = pu::ui::render::LoadImage(cfg::GetAssetByTheme(g_Theme, "ui/Suspended.png"));
-        this->selected_img = pu::ui::render::LoadImage(cfg::GetAssetByTheme(g_Theme, "ui/Multiselect.png"));
+        this->selected_img = pu::ui::render::LoadImage(cfg::GetAssetByTheme(g_Theme, "ui/Selected.png"));
 
         u64 menu_h_count;
         UL_ASSERT_TRUE(g_Config.GetEntry(cfg::ConfigEntryId::MenuEntryHorizontalCount, menu_h_count));
@@ -149,7 +145,7 @@ namespace ul::menu::ui {
     void EntryMenu::OnRender(pu::ui::render::Renderer::Ref &drawer, const s32 x, const s32 y) {
         if(!this->cur_entries.empty()) {
             const auto cur_actual_entry_idx = this->IsCursorInTransition() ? this->pre_transition_entry_idx : this->cur_entry_idx;
-            const auto base_y = this->y;
+            const auto base_y = y;
 
             const auto cursor_size = (u32)(((double)this->entry_size / (double)DefaultEntrySize) * DefaultCursorSize);
 
@@ -165,7 +161,7 @@ namespace ul::menu::ui {
                 const auto entry_i = this->base_scroll_entry_idx + i;
                 const auto entry = this->cur_entries.at(entry_i);
 
-                if(IsEntrySuspended(entry)) {
+                if(g_MenuApplication->IsEntrySuspended(entry)) {
                     const auto susp_x = entry_x - ((cursor_size - this->entry_size) / 2);
                     const auto susp_y = entry_y - ((cursor_size - this->entry_size) / 2);
 
@@ -186,8 +182,7 @@ namespace ul::menu::ui {
             const auto cursor_x = x + SideMargin + cur_actual_entry_idx_x * (this->entry_size + EntryMargin) - ((cursor_size - this->entry_size) / 2) + (this->IsCursorInTransition() ? this->cursor_transition_x : 0);
             const auto cursor_y = base_y + SideMargin + cur_actual_entry_idx_y * (this->entry_size + EntryMargin) - ((cursor_size - this->entry_size) / 2) + (this->IsCursorInTransition() ? this->cursor_transition_y : 0);
 
-            const auto cursor_width = cursor_size; // std::min(cursor_size, this->GetWidth() - cursor_x);
-            drawer->RenderTexture(this->cursor_img, cursor_x, cursor_y, pu::ui::render::TextureRenderOptions::WithCustomDimensions(cursor_width, cursor_size));
+            drawer->RenderTexture(this->cursor_img, cursor_x, cursor_y, pu::ui::render::TextureRenderOptions::WithCustomDimensions(cursor_size, cursor_size));
         }
 
         if(this->IsCursorInTransition()) {
@@ -410,7 +405,7 @@ namespace ul::menu::ui {
             return false;
         }
         else {
-            return IsEntrySuspended(this->GetFocusedEntry());
+            return g_MenuApplication->IsEntrySuspended(this->GetFocusedEntry());
         }
     }
 

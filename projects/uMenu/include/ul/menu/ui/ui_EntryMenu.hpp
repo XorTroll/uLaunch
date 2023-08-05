@@ -22,6 +22,7 @@ namespace ul::menu::ui {
             using FocusedEntryChangedCallback = std::function<void(const bool, const bool, const bool)>;
 
         private:
+            s32 x;
             s32 y;
             s32 height;
             u32 entry_v_count;
@@ -70,17 +71,25 @@ namespace ul::menu::ui {
             }
 
         public:
-            EntryMenu(const s32 y, const s32 height, const std::string &path, const u32 last_idx, FocusedEntryInputPressedCallback cur_entry_input_cb, FocusedEntryChangedCallback cur_entry_changed_cb);
+            EntryMenu(const s32 x, const s32 y, const s32 height, const std::string &path, const u32 last_idx, FocusedEntryInputPressedCallback cur_entry_input_cb, FocusedEntryChangedCallback cur_entry_changed_cb);
             PU_SMART_CTOR(EntryMenu)
 
             void Initialize();
 
-            inline constexpr s32 GetX() override {
-                return 0;
+            inline s32 GetX() override {
+                return this->x;
             }
 
             inline s32 GetY() override {
                 return this->y;
+            }
+
+            inline void SetX(const s32 x) {
+                this->x = x;
+            }
+
+            inline void SetY(const s32 y) {
+                this->y = y;
             }
 
             inline constexpr s32 GetWidth() override {

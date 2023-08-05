@@ -50,7 +50,6 @@ namespace ul::cfg {
 
     struct ConfigEntry {
         ConfigEntryHeader header;
-        // TODONEW: union?
         bool bool_value;
         u64 u64_value;
         std::string str_value;
@@ -274,7 +273,11 @@ namespace ul::cfg {
         }
     };
 
-    constexpr u32 CurrentThemeFormatVersion = 1;
+    constexpr u32 CurrentThemeFormatVersion = 2;
+
+    inline bool IsThemeOutdated(const Theme &theme) {
+        return theme.manifest.format_version < CurrentThemeFormatVersion;
+    }
 
     Theme LoadTheme(const std::string &base_name);
     std::vector<Theme> LoadThemes();

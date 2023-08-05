@@ -234,7 +234,7 @@ namespace {
                         break;
                     }
                     default:
-                        // TODONEW
+                        // TODONEW: try to find and implement more messages (mostly those sent by applets!)
                         UL_LOG_WARN("Unhandled general channel message!");
                         break;
                 }
@@ -274,12 +274,12 @@ namespace {
                     break;
                 }
                 case ul::system::AppletMessage::SdCardRemoved: {
-                    // Power off, since uMenu's UI relies on the SD card, so trying to use uMenu without the SD is quite risky...
-                    // TODONEW: handle this in a better way?
                     if(la::IsMenu()) {
                         PushSimpleMenuMessage(ul::smi::MenuMessage::SdCardEjected);
                     }
                     else {
+                        // Power off, since uMenu's UI relies on the SD card, so trying to use uMenu without the SD is not possible at all without any caching...
+                        // TODONEW: consider handling this in a better way?
                         UL_RC_ASSERT(appletStartShutdownSequence());
                     }
                     break;
@@ -328,8 +328,7 @@ namespace {
                         }
                         case ul::smi::SystemMessage::ResumeApplication: {
                             if(!app::IsActive()) {
-                                // TODONEW: more appropiate result
-                                return smi::ResultApplicationActive;
+                                return smi::ResultApplicationNotActive;
                             }
 
                             UL_RC_TRY(app::SetForeground());
@@ -484,7 +483,6 @@ namespace {
         // A valid version will always be >= 0x20000
         if(g_WebAppletLaunchFlag.version > 0) {
             if(!la::IsActive()) {
-                // TODONEW: applet startup sound?
                 UL_RC_ASSERT(la::StartWeb(&g_WebAppletLaunchFlag));
 
                 sth_done = true;
@@ -504,7 +502,6 @@ namespace {
                 const struct {
                     u8 album_arg;
                 } album_data = { AlbumLaArg_ShowAllAlbumFilesForHomeMenu };
-                // TODONEW: applet startup sound?
                 UL_RC_ASSERT(la::Start(AppletId_LibraryAppletPhotoViewer, 0x10000, &album_data, sizeof(album_data)));
 
                 sth_done = true;
@@ -534,7 +531,8 @@ namespace {
             if(!la::IsActive()) {
                 u64 hb_applet_takeover_program_id;
                 UL_ASSERT_TRUE(g_Config.GetEntry(ul::cfg::ConfigEntryId::HomebrewAppletTakeoverProgramId, hb_applet_takeover_program_id));
-                // TODONEW: dont assert, send the error result to umenu instead
+
+                // TODONEW: consider not asserting and sending the error result to menu instead?
                 UL_RC_ASSERT(ecs::RegisterLaunchAsApplet(hb_applet_takeover_program_id, 0, "/ulaunch/bin/uLoader/applet", &g_LoaderLaunchFlag, sizeof(g_LoaderLaunchFlag)));
                 
                 sth_done = true;

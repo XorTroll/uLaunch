@@ -11,7 +11,6 @@ namespace ul::menu {
     namespace {
 
         std::vector<NsApplicationRecord> g_ApplicationRecords = {};
-        NacpStruct g_DefaultHomebrewNacp = {};
 
         void LoadControlDataStrings(EntryControlData &out_control, NacpStruct *nacp) {
             NacpLanguageEntry *lang_entry = nullptr;
@@ -39,26 +38,12 @@ namespace ul::menu {
             }
         }
 
-        void EnsureLoadDefaultHomebrewNacp() {
-            if(g_DefaultHomebrewNacp.display_version[0] == 0) {
-                UL_ASSERT_TRUE(fs::ReadFile(DefaultHomebrewNacpPath, &g_DefaultHomebrewNacp, sizeof(g_DefaultHomebrewNacp)));
-            }
-        }
-
         void LoadHomebrewControlData(const std::string &nro_path, EntryControlData &out_control) {
-            auto loaded = false;
-
             const auto cache_nacp_path = GetHomebrewCacheNacpPath(nro_path);
             if(fs::ExistsFile(cache_nacp_path)) {
                 NacpStruct nacp = {};
                 UL_ASSERT_TRUE(fs::ReadFile(cache_nacp_path, &nacp, sizeof(nacp)));
                 LoadControlDataStrings(out_control, &nacp);
-                loaded = true;
-            }
-            if(!loaded) {
-                // Default NACP strings
-                EnsureLoadDefaultHomebrewNacp();
-                LoadControlDataStrings(out_control, &g_DefaultHomebrewNacp);
             }
         }
 
@@ -67,15 +52,10 @@ namespace ul::menu {
             if(R_SUCCEEDED(nsGetApplicationControlData(NsApplicationControlSource_Storage, app_id, tmp_control_data, sizeof(NsApplicationControlData), nullptr))) {
                 LoadControlDataStrings(out_control, &tmp_control_data->nacp);        
             }
-            else {
-                // TODONEW: proper default NACP strings?
-                EnsureLoadDefaultHomebrewNacp();
-                LoadControlDataStrings(out_control, &g_DefaultHomebrewNacp);
-            }
         }
 
-        void EnsureApplicationRecords() {
-            if(g_ApplicationRecords.empty()) {
+        void EnsureApplicationRecords(const bool reload = false) {
+            if(reload || g_ApplicationRecords.empty()) {
                 g_ApplicationRecords = os::ListApplicationRecords();
             }
         }
@@ -178,23 +158,28 @@ namespace ul::menu {
                                 });
                                 if(find_rec != g_ApplicationRecords.end()) {
                                     entry.app_info.record = *find_rec;
+
+                                    entry.Save();
                                 }
                                 else {
-                                    // TODONEW: logging system, log warns/errors!
+                                    UL_LOG_WARN("Found old menu application entry whose application is not present...");
                                 }
-
-                                entry.Save();
                                 break;
                             }
                             case EntryType::Homebrew: {
                                 const auto nro_path = old_entry_json.value("nro_path", "");
                                 const auto nro_argv = old_entry_json.value("nro_argv", "");
 
-                                entry.hb_info = {
-                                    .nro_target = loader::TargetInput::Create(nro_path, nro_argv, true, "")
-                                };
+                                if(fs::ExistsFile(nro_path)) {
+                                    entry.hb_info = {
+                                        .nro_target = loader::TargetInput::Create(nro_path, nro_argv, true, "")
+                                    };
 
-                                entry.Save();
+                                    entry.Save();
+                                }
+                                else {
+                                    UL_LOG_WARN("Found old menu homebrew entry whose NRO is not present...");
+                                }
                                 break;
                             }
                             default:
@@ -226,6 +211,27 @@ namespace ul::menu {
                 }
                 default:
                     break;
+            }
+        }
+    }
+
+    void Entry::ReloadApplicationInfo() {
+        if(this->Is<EntryType::Application>()) {
+            const auto app_id = this->app_info.record.application_id;
+
+            this->app_info.meta_status = os::GetApplicationContentMetaStatus(app_id);
+
+            // Assume we need to reload here
+            EnsureApplicationRecords(true);
+
+            const auto find_rec = std::find_if(g_ApplicationRecords.begin(), g_ApplicationRecords.end(), [&](const NsApplicationRecord &rec) -> bool {
+                return rec.application_id == app_id;
+            });
+            if(find_rec != g_ApplicationRecords.end()) {
+                this->app_info.record = *find_rec;
+            }
+            else {
+                UL_LOG_WARN("Unable to reload application record (not found...?)");
             }
         }
     }
@@ -400,7 +406,11 @@ namespace ul::menu {
                             const auto application_id = entry_json.value("application_id", static_cast<u64>(0));
 
                             if(!entry.control.custom_icon_path) {
-                                entry.control.icon_path = GetApplicationCacheIconPath(application_id);
+                                // Only set the icon if it's valid
+                                const auto cache_icon_path = GetApplicationCacheIconPath(application_id);
+                                if(fs::ExistsFile(cache_icon_path)) {
+                                    entry.control.icon_path = cache_icon_path;
+                                }
                             }
 
                             entry.app_info = {
@@ -414,7 +424,7 @@ namespace ul::menu {
                                 entry.app_info.record = *find_rec;
                             }
                             else {
-                                UL_LOG_WARN("invalid app entry with no record");
+                                UL_LOG_WARN("Invalid application entry with no application record");
                             }
 
                             entries.push_back(entry);
@@ -425,7 +435,11 @@ namespace ul::menu {
                             const auto nro_argv = entry_json.value("nro_argv", "");
 
                             if(!entry.control.custom_icon_path) {
-                                entry.control.icon_path = GetHomebrewCacheIconPath(nro_path);
+                                // Only set the icon if it's valid
+                                const auto cache_icon_path = GetHomebrewCacheIconPath(nro_path);
+                                if(fs::ExistsFile(cache_icon_path)) {
+                                    entry.control.icon_path = cache_icon_path;
+                                }
                             }
 
                             entry.hb_info = {
@@ -440,10 +454,10 @@ namespace ul::menu {
                             const auto fs_name = entry_json.value("fs_name", "");
 
                             if(name.empty()) {
-                                UL_LOG_WARN("invalid folder entry with empty name");
+                                UL_LOG_WARN("Invalid folder entry with empty name");
                             }
                             else if(fs_name.empty()) {
-                                UL_LOG_WARN("invalid folder entry with empty fs name");
+                                UL_LOG_WARN("Invalid folder entry with empty filesystem-name");
                             }
                             else {
                                 entry.folder_info = {};

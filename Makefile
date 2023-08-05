@@ -1,18 +1,13 @@
-
 VERSION_MAJOR	:=	1
 VERSION_MINOR	:=	0
 VERSION_MICRO	:=	0
 VERSION			:=	$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_MICRO)
 
-DEFAULT_HB_NAME		:=	Unnamed homebrew
-DEFAULT_HB_AUTHOR	:=	Unknown author
-DEFAULT_HB_VERSION	:=	Unknown version
-
 export UL_DEFS	:=	-DUL_VERSION=\"$(VERSION)\"
 
-.PHONY: all fresh clean default_hb usystem uloader umenu umanager
+.PHONY: all fresh clean usystem uloader umenu umanager
 
-all: default_hb usystem uloader umenu umanager
+all: usystem uloader umenu umanager
 
 fresh: clean all
 
@@ -22,13 +17,6 @@ clean:
 	@$(MAKE) clean -C projects/uMenu
 	@$(MAKE) clean -C projects/uManager
 	@rm -rf SdOut
-
-# TODONEW: move this inside themes
-default_hb:
-	@nacptool --create "$(DEFAULT_HB_NAME)" "$(DEFAULT_HB_AUTHOR)" "$(DEFAULT_HB_VERSION)" default_hb_nacp.nacp
-	@mkdir -p SdOut/ulaunch
-	@cp default_hb_nacp.nacp SdOut/ulaunch/default_hb_nacp.nacp
-	@cp default_hb_icon.jpg SdOut/ulaunch/default_hb_icon.jpg
 
 usystem:
 	@$(MAKE) -C projects/uSystem

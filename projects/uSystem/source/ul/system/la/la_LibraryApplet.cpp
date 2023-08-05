@@ -62,6 +62,8 @@ namespace ul::system::la {
 
         LibAppletArgs la_args;
         libappletArgsCreate(&la_args, la_version);
+        // TODONEW: does this make any difference?
+        libappletArgsSetPlayStartupSound(&la_args, true);
         UL_RC_TRY(libappletArgsPush(&la_args, &g_AppletHolder));
 
         if(in_size > 0) {

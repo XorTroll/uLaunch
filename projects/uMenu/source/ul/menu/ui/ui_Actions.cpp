@@ -89,8 +89,7 @@ namespace ul::menu::ui {
 
                 g_TransitionGuard.Run([&]() {
                     g_MenuApplication->FadeOut();
-                    // TODONEW
-                    main_menu_lyt->MoveTo("", false);
+                    main_menu_lyt->MoveToRoot(false);
                     g_MenuApplication->LoadStartupMenu();
                     g_MenuApplication->FadeIn();
                 });

@@ -65,7 +65,8 @@ namespace ul::menu::ui {
     }
 
     void SettingsMenuLayout::Reload(const bool reset_idx) {
-        // TODONEW: more settings
+        // TODONEW: more settings!
+
         this->settings_menu->ClearItems();
         
         SetSysDeviceNickName console_name = {};

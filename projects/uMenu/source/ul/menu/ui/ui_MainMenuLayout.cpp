@@ -31,6 +31,8 @@ namespace ul::menu::ui {
             return ipt;
         }
 
+        bool g_CurrentThemeChecked = false;
+
     }
 
     void MainMenuLayout::DoMoveTo(const std::string &new_path) {
@@ -45,16 +47,16 @@ namespace ul::menu::ui {
 
         if(this->entries_menu->HasEntries()) {
             this->banner_img->SetVisible(true);
-            this->selected_item_name_text->SetVisible(true);
-            this->selected_item_author_text->SetVisible(true);
-            this->selected_item_version_text->SetVisible(true);
+            this->cur_entry_name_text->SetVisible(true);
+            this->cur_entry_author_text->SetVisible(true);
+            this->cur_entry_version_text->SetVisible(true);
             this->no_entries_text->SetVisible(false);
         }
         else {
             this->banner_img->SetVisible(false);
-            this->selected_item_name_text->SetVisible(false);
-            this->selected_item_author_text->SetVisible(false);
-            this->selected_item_version_text->SetVisible(false);
+            this->cur_entry_name_text->SetVisible(false);
+            this->cur_entry_author_text->SetVisible(false);
+            this->cur_entry_version_text->SetVisible(false);
             this->no_entries_text->SetVisible(true);
         }
     }
@@ -68,10 +70,9 @@ namespace ul::menu::ui {
 
         if(keys_down & HidNpadButton_B) {
             if(this->entries_menu->IsAnySelected()) {
-                const auto option = g_MenuApplication->CreateShowDialog("Selection", "Would you like to cancel the current selection?", { "Yes", "Cancel" }, true);
+                const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("menu_selection"), GetLanguageString("menu_select_cancel_conf"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
                 if(option == 0) {
-                    // TODONEW: (MULTI)select, strings, standfn
-                    g_MenuApplication->ShowNotification(GetLanguageString("menu_multiselect_cancel"));
+                    g_MenuApplication->ShowNotification(GetLanguageString("menu_select_cancel"));
                     this->StopSelection();
                 }
             }
@@ -84,10 +85,10 @@ namespace ul::menu::ui {
             if(this->entries_menu->IsAnySelected()) {
                 if(cur_entry.Is<EntryType::Folder>()) {
                     if(this->entries_menu->IsFocusedEntrySelected()) {
-                        g_MenuApplication->ShowNotification("Cant move the folder into itself!");
+                        g_MenuApplication->ShowNotification(GetLanguageString("menu_move_folder_itself"));
                     }
                     else {
-                        const auto option = g_MenuApplication->CreateShowDialog("Multiselect", "Would you like to move all to this dir?", { "Yes", "Cancel" }, true);
+                        const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("menu_selection"), GetLanguageString("menu_move_to_folder_conf"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
                         if(option == 0) {
                             u32 cur_i = 0;
                             for(auto &entry : this->entries_menu->GetEntries()) {
@@ -99,8 +100,8 @@ namespace ul::menu::ui {
                             }
 
                             this->StopSelection();
-                            g_MenuApplication->ShowNotification("all moved");
                             this->MoveTo("", true);
+                            g_MenuApplication->ShowNotification(GetLanguageString("menu_move_ok"));
                         }
                     }
                 }
@@ -109,9 +110,8 @@ namespace ul::menu::ui {
                     const auto cur_i = this->entries_menu->GetFocusedEntryIndex();
                     const auto last_i = cur_entries.size() - 1;
 
-                    // TODONEW: proper strings
-                    // TODONEW: apply this to folder too? maybe pick better key inputs for this
-                    const auto option = g_MenuApplication->CreateShowDialog("Multiselect", "Move stuff kind", { "Before", "After", "Swap", "Cancel" }, true);
+                    // TODONEW: apply this to folders too? maybe pick better key inputs for this
+                    const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("menu_selection"), GetLanguageString("menu_move_around_entry_conf"), { GetLanguageString("menu_move_around_entry_before"), GetLanguageString("menu_move_around_entry_after"), GetLanguageString("menu_move_around_entry_swap"), GetLanguageString("cancel") }, true);
                     if(option == 0) {
                         auto cur_start_idx = (cur_i == 0) ? InvalidEntryIndex : cur_entries.at(cur_i - 1).index;
                         const auto cur_end_idx = cur_entry.index;
@@ -127,8 +127,8 @@ namespace ul::menu::ui {
                         }
 
                         this->StopSelection();
-                        g_MenuApplication->ShowNotification("all moved before");
                         this->MoveTo("", true);
+                        g_MenuApplication->ShowNotification(GetLanguageString("menu_move_ok"));
                     }
                     else if(option == 1) {
                         auto cur_start_idx = cur_entry.index;
@@ -145,11 +145,11 @@ namespace ul::menu::ui {
                         }
 
                         this->StopSelection();
-                        g_MenuApplication->ShowNotification("all moved after");
                         this->MoveTo("", true);
+                        g_MenuApplication->ShowNotification(GetLanguageString("menu_move_ok"));
                     }
                     else if(option == 2) {
-                        // Basically a "move before" followed by moving the current item in the range where the first multiselected item was
+                        // Basically a "move before" followed by moving the current item in the range where the first selected item was
                         auto cur_start_idx = (cur_i == 0) ? InvalidEntryIndex : cur_entries.at(cur_i - 1).index;
                         const auto cur_end_idx = cur_entry.index;
                         u32 cur_i = 0;
@@ -157,7 +157,7 @@ namespace ul::menu::ui {
                         u32 move_end_idx = UINT32_MAX;
                         for(auto &entry : cur_entries) {
                             if(this->entries_menu->IsEntrySelected(cur_i)) {
-                                // This way, get the start+end index which map the range of the first multiselected item
+                                // This way, get the start+end index which map the range of the first selected item
                                 if(move_start_idx == UINT32_MAX) {
                                     move_start_idx = entry.index;
                                 }
@@ -176,8 +176,8 @@ namespace ul::menu::ui {
                         cur_entry.OrderBetween(move_start_idx, move_end_idx);
 
                         this->StopSelection();
-                        g_MenuApplication->ShowNotification("all swapped with one");
                         this->MoveTo("", true);
+                        g_MenuApplication->ShowNotification(GetLanguageString("menu_move_ok"));
                     }
                 }
             }
@@ -217,8 +217,9 @@ namespace ul::menu::ui {
                     }
 
                     if(cur_entry.Is<EntryType::Application>() && !cur_entry.app_info.IsLaunchable()) {
-                        // TODONEW: gamecard detection, proper strings, etc
-                        g_MenuApplication->ShowNotification("Not launchable (gamecard not inserted, archived, not downloaded, etc)");
+                        // TODONEW: gamecard detection?
+                        // TODONEW: support for "fixing" corrupted apps, like regular homemenu?
+                        g_MenuApplication->ShowNotification(GetLanguageString("app_not_launchable"));
                         do_launch_entry = false;
                     }
 
@@ -245,14 +246,13 @@ namespace ul::menu::ui {
         }
         else if(keys_down & HidNpadButton_Y) {
             this->entries_menu->ToggleFocusedEntrySelected();
-            g_MenuApplication->ShowNotification("fucking toggle: " + std::to_string(this->entries_menu->IsFocusedEntrySelected()));
         }
         else if(keys_down & HidNpadButton_X) {
             if(this->entries_menu->IsAnySelected()) {
-                const auto option = g_MenuApplication->CreateShowDialog("Selection", "Would you like to cancel the current selection?", { "Yes", "Cancel" }, true);
+                const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("menu_selection"), GetLanguageString("menu_select_cancel_conf"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
                 if(option == 0) {
                     // TODONEW: above
-                    g_MenuApplication->ShowNotification(GetLanguageString("menu_multiselect_cancel"));
+                    g_MenuApplication->ShowNotification(GetLanguageString("menu_select_cancel"));
                     this->StopSelection();
                 }
             }
@@ -267,7 +267,7 @@ namespace ul::menu::ui {
                         char new_folder_name[500] = {};
                         const auto rc = swkbdShow(&cfg, new_folder_name, sizeof(new_folder_name));
                         swkbdClose(&cfg);
-                        // TODONEW: confirm?
+                        // TODONEW: add confirmation?
                         if(R_SUCCEEDED(rc)) {
                             util::CopyToStringBuffer(cur_entry.folder_info.name, new_folder_name);
                             cur_entry.Save();
@@ -286,12 +286,12 @@ namespace ul::menu::ui {
                 else if(cur_entry.Is<EntryType::Homebrew>()) {
                     const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("entry_options"), GetLanguageString("entry_action"), { GetLanguageString("entry_remove"), GetLanguageString("cancel") }, true);
                     if(option == 0) {
-                        const auto option_2 = g_MenuApplication->CreateShowDialog(GetLanguageString("entry_remove"), GetLanguageString("entry_remove_conf"), { GetLanguageString("yes"), GetLanguageString("no") }, true);
-                        if(option_2 == 0) {
-                            if(strcmp(cur_entry.hb_info.nro_target.nro_path, ul::HbmenuPath) == 0) {
-                                g_MenuApplication->ShowNotification("hbmenu not removable");
-                            }
-                            else {
+                        if((strcmp(cur_entry.hb_info.nro_target.nro_path, ul::HbmenuPath) == 0) || (strcmp(cur_entry.hb_info.nro_target.nro_path, ul::ManagerPath) == 0)) {
+                            g_MenuApplication->ShowNotification(GetLanguageString("entry_remove_special"));
+                        }
+                        else {
+                            const auto option_2 = g_MenuApplication->CreateShowDialog(GetLanguageString("entry_remove"), GetLanguageString("entry_remove_conf"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
+                            if(option_2 == 0) {
                                 cur_entry.Remove();
                                 this->MoveTo("", true);
                                 g_MenuApplication->ShowNotification(GetLanguageString("entry_remove_ok"));
@@ -312,19 +312,19 @@ namespace ul::menu::ui {
         else if(keys_down & HidNpadButton_StickL) { 
             // pu::audio::PlaySfx(this->menu_toggle_sfx);
 
-            const auto option = g_MenuApplication->CreateShowDialog("New options", "Choose option", { "New folder", "Add homebrew to menu", "Cancel" }, true);
+            const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("menu_new_entry_options"), GetLanguageString("menu_new_entry"), { GetLanguageString("menu_new_folder"), GetLanguageString("menu_add_hb"), GetLanguageString("cancel") }, true);
             if(option == 0) {
                 SwkbdConfig cfg;
                 // TODONEW: check results here
                 swkbdCreate(&cfg, 0);
-                swkbdConfigSetGuideText(&cfg, "New folder name");
+                swkbdConfigSetGuideText(&cfg, GetLanguageString("swkbd_rename_folder_guide").c_str());
                 char new_folder_name[500] = {};
                 const auto rc = swkbdShow(&cfg, new_folder_name, sizeof(new_folder_name));
                 swkbdClose(&cfg);
                 if(R_SUCCEEDED(rc)) {
                     CreateFolderEntry(this->entries_menu->GetPath(), new_folder_name);
-                    g_MenuApplication->ShowNotification("Folder created");
                     this->MoveTo("", true);
+                    g_MenuApplication->ShowNotification(GetLanguageString("menu_folder_created"));
                 }
             }
             else if(option == 1) {
@@ -349,8 +349,8 @@ namespace ul::menu::ui {
             return;
         }
 
-        this->selected_item_author_text->SetVisible(true);
-        this->selected_item_version_text->SetVisible(true);
+        this->cur_entry_author_text->SetVisible(true);
+        this->cur_entry_version_text->SetVisible(true);
 
         UL_RC_ASSERT(smi::UpdateMenuIndex(this->entries_menu->GetFocusedEntryIndex()));
 
@@ -359,10 +359,10 @@ namespace ul::menu::ui {
             this->banner_img->SetImage(cfg::GetAssetByTheme(g_Theme, "ui/BannerFolder.png"));
 
             // TODONEW: entry count?
-            // this->selected_item_author_text->SetText(std::to_string(folder_entry_count) + " " + ((folder_entry_count == 1) ? GetLanguageString("folder_entry_single") : GetLanguageString("folder_entry_mult")));
-            this->selected_item_name_text->SetText(cur_entry.folder_info.name);
-            this->selected_item_author_text->SetText(cur_entry.folder_info.fs_name);
-            this->selected_item_version_text->SetVisible(false);
+            // this->cur_entry_author_text->SetText(std::to_string(folder_entry_count) + " " + ((folder_entry_count == 1) ? GetLanguageString("folder_entry_single") : GetLanguageString("folder_entry_mult")));
+            this->cur_entry_name_text->SetText(cur_entry.folder_info.name);
+            this->cur_entry_author_text->SetText(cur_entry.folder_info.fs_name);
+            this->cur_entry_version_text->SetVisible(false);
         }
         else {
             if(cur_entry.Is<EntryType::Application>()) {
@@ -374,27 +374,15 @@ namespace ul::menu::ui {
             
             cur_entry.TryLoadControlData();
             if(cur_entry.control.IsLoaded()) {
-                if(cur_entry.Is<EntryType::Application>()) {
-                    // TODONEW: remove this debug params when no longer necessary
-                    this->selected_item_name_text->SetText(cur_entry.control.name + " (type " + std::to_string(cur_entry.app_info.record.type) + ", stid + " + std::to_string(cur_entry.app_info.meta_status.storageID) + ")");
-                }
-                else {
-                    this->selected_item_name_text->SetText(cur_entry.control.name);
-                }
-
-                /*
-                this->selected_item_author_text->SetText(cur_entry.control.author);
-                this->selected_item_version_text->SetText(cur_entry.control.version);
-                */
-
-                this->selected_item_author_text->SetText(cur_entry.entry_path);
-                this->selected_item_version_text->SetText(std::to_string(cur_entry.index));
+                this->cur_entry_name_text->SetText(cur_entry.control.name);
+                this->cur_entry_author_text->SetText(cur_entry.control.author);
+                this->cur_entry_version_text->SetText(cur_entry.control.version);
             }
             else {
-                // TODONEW: what to show when controldata doesnt load? (really shouldnt happen anyway)
-                this->selected_item_name_text->SetText("Unknown name...");
-                this->selected_item_author_text->SetText("Unknown author...");
-                this->selected_item_version_text->SetText("Unknown version...");
+                // TODONEW: anything better to show when controldata doesnt load? (really shouldnt happen anyway)
+                this->cur_entry_name_text->SetText("Unknown name...");
+                this->cur_entry_author_text->SetText("Unknown author...");
+                this->cur_entry_version_text->SetText("Unknown version...");
             }
         }
 
@@ -409,10 +397,8 @@ namespace ul::menu::ui {
     }
 
     MainMenuLayout::MainMenuLayout(const u8 *captured_screen_buf, const u8 min_alpha) : last_has_connection(false), last_battery_lvl(0), last_is_charging(false), cur_folder_path(""), launch_fail_warn_shown(false), min_alpha(min_alpha), target_alpha(0), mode(SuspendedImageMode::ShowingAfterStart), suspended_screen_alpha(0xFF) {
-        // const auto menu_text_x = g_MenuApplication->GetUIConfigValue<u32>("menu_folder_text_x", 30);
-        // const auto menu_text_y = g_MenuApplication->GetUIConfigValue<u32>("menu_folder_text_y", 200);
-        // const auto menu_text_size = g_MenuApplication->GetUIConfigValue<u32>("menu_folder_text_size", 25);
-
+        // TODONEW: like nxlink but for sending themes and quickly being able to test them?
+        
         if(captured_screen_buf != nullptr) {
             this->suspended_screen_img = RawRgbaImage::New(0, 0, captured_screen_buf, 1280, 720, 4);
         }
@@ -477,7 +463,8 @@ namespace ul::menu::ui {
         g_MenuApplication->ApplyConfigForElement("main_menu", "firmware_text", this->fw_text);
         this->Add(this->fw_text);
 
-        this->input_bar = InputBar::New(120);
+        this->input_bar = InputBar::New(0, 120);
+        g_MenuApplication->ApplyConfigForElement("main_menu", "input_bar", this->input_bar);
         this->Add(this->input_bar);
 
         this->cur_path_text = pu::ui::elm::TextBlock::New(10, 170, this->cur_folder_path);
@@ -489,20 +476,20 @@ namespace ul::menu::ui {
         this->banner_img = pu::ui::elm::Image::New(0, 585, cfg::GetAssetByTheme(g_Theme, "ui/BannerInstalled.png"));
         g_MenuApplication->ApplyConfigForElement("main_menu", "banner_image", this->banner_img);
 
-        this->selected_item_name_text = pu::ui::elm::TextBlock::New(40, 610, "...");
-        this->selected_item_name_text->SetFont(pu::ui::GetDefaultFont(pu::ui::DefaultFontSize::Large));
-        this->selected_item_name_text->SetColor(g_MenuApplication->GetTextColor());
-        g_MenuApplication->ApplyConfigForElement("main_menu", "banner_name_text", this->selected_item_name_text);
+        this->cur_entry_name_text = pu::ui::elm::TextBlock::New(40, 610, "...");
+        this->cur_entry_name_text->SetFont(pu::ui::GetDefaultFont(pu::ui::DefaultFontSize::Large));
+        this->cur_entry_name_text->SetColor(g_MenuApplication->GetTextColor());
+        g_MenuApplication->ApplyConfigForElement("main_menu", "banner_name_text", this->cur_entry_name_text);
 
-        this->selected_item_author_text = pu::ui::elm::TextBlock::New(45, 650, "...");
-        this->selected_item_author_text->SetFont(pu::ui::GetDefaultFont(pu::ui::DefaultFontSize::Medium));
-        this->selected_item_author_text->SetColor(g_MenuApplication->GetTextColor());
-        g_MenuApplication->ApplyConfigForElement("main_menu", "banner_author_text", this->selected_item_author_text);
+        this->cur_entry_author_text = pu::ui::elm::TextBlock::New(45, 650, "...");
+        this->cur_entry_author_text->SetFont(pu::ui::GetDefaultFont(pu::ui::DefaultFontSize::Medium));
+        this->cur_entry_author_text->SetColor(g_MenuApplication->GetTextColor());
+        g_MenuApplication->ApplyConfigForElement("main_menu", "banner_author_text", this->cur_entry_author_text);
 
-        this->selected_item_version_text = pu::ui::elm::TextBlock::New(45, 675, "...");
-        this->selected_item_version_text->SetFont(pu::ui::GetDefaultFont(pu::ui::DefaultFontSize::Medium));
-        this->selected_item_version_text->SetColor(g_MenuApplication->GetTextColor());
-        g_MenuApplication->ApplyConfigForElement("main_menu", "banner_version_text", this->selected_item_version_text);
+        this->cur_entry_version_text = pu::ui::elm::TextBlock::New(45, 675, "...");
+        this->cur_entry_version_text->SetFont(pu::ui::GetDefaultFont(pu::ui::DefaultFontSize::Medium));
+        this->cur_entry_version_text->SetColor(g_MenuApplication->GetTextColor());
+        g_MenuApplication->ApplyConfigForElement("main_menu", "banner_version_text", this->cur_entry_version_text);
 
         this->no_entries_text = pu::ui::elm::TextBlock::New(0, 0, "No entries here");
         this->no_entries_text->SetFont(pu::ui::GetDefaultFont(pu::ui::DefaultFontSize::Medium));
@@ -510,17 +497,18 @@ namespace ul::menu::ui {
         this->no_entries_text->SetHorizontalAlign(pu::ui::elm::HorizontalAlign::Center);
         this->no_entries_text->SetVerticalAlign(pu::ui::elm::VerticalAlign::Center);
         this->no_entries_text->SetVisible(false);
-        // TODONEW: g_MenuApplication->ApplyConfigForElement("main_menu", "banner_author_text", this->no_entries_text);
+        g_MenuApplication->ApplyConfigForElement("main_menu", "no_entries_text", this->no_entries_text);
         this->Add(this->no_entries_text);
 
-        this->entries_menu = EntryMenu::New(190, pu::ui::render::ScreenHeight - 190, g_MenuApplication->GetStatus().last_menu_path, g_MenuApplication->GetStatus().last_menu_index, std::bind(&MainMenuLayout::menu_EntryInputPressed, this, std::placeholders::_1), std::bind(&MainMenuLayout::menu_FocusedEntryChanged, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)); // SideMenu::New(pu::ui::Color(0, 255, 120, 0xFF), cfg::GetAssetByTheme(g_Theme, "ui/Cursor.png"), cfg::GetAssetByTheme(g_Theme, "ui/Suspended.png"), cfg::GetAssetByTheme(g_Theme, "ui/Multiselect.png"), menu_text_x, menu_text_y, pu::ui::MakeDefaultFontName(menu_text_size), g_MenuApplication->GetTextColor(), 294);
+        this->entries_menu = EntryMenu::New(0, 190, pu::ui::render::ScreenHeight - 190, g_MenuApplication->GetStatus().last_menu_path, g_MenuApplication->GetStatus().last_menu_index, std::bind(&MainMenuLayout::menu_EntryInputPressed, this, std::placeholders::_1), std::bind(&MainMenuLayout::menu_FocusedEntryChanged, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+        g_MenuApplication->ApplyConfigForElement("main_menu", "entries_menu", this->entries_menu);
         this->Add(this->entries_menu);
 
         this->Add(this->banner_img);
 
-        this->Add(this->selected_item_name_text);
-        this->Add(this->selected_item_author_text);
-        this->Add(this->selected_item_version_text);
+        this->Add(this->cur_entry_name_text);
+        this->Add(this->cur_entry_author_text);
+        this->Add(this->cur_entry_version_text);
 
         if(captured_screen_buf != nullptr) {
             this->Add(this->suspended_screen_img);
@@ -551,18 +539,18 @@ namespace ul::menu::ui {
 
         if(this->entries_menu->HasEntries()) {
             if(this->entries_menu->IsAnySelected()) {
-                this->input_bar->AddSetInput(HidNpadButton_A, "Move selection");
+                this->input_bar->AddSetInput(HidNpadButton_A, GetLanguageString("input_move_selection"));
             }
             else if(this->entries_menu->IsFocusedEntrySuspended()) {
-                this->input_bar->AddSetInput(HidNpadButton_A, "Resume");
+                this->input_bar->AddSetInput(HidNpadButton_A, GetLanguageString("input_resume_suspended"));
             }
             else if(this->entries_menu->HasEntries()) {
                 const auto &cur_entry = this->entries_menu->GetFocusedEntry();
                 if(cur_entry.Is<EntryType::Folder>()) {
-                    this->input_bar->AddSetInput(HidNpadButton_A, "Open");
+                    this->input_bar->AddSetInput(HidNpadButton_A, GetLanguageString("input_open_folder"));
                 }
                 else {
-                    this->input_bar->AddSetInput(HidNpadButton_A, "Launch");
+                    this->input_bar->AddSetInput(HidNpadButton_A, GetLanguageString("input_launch_entry"));
                 }
             }
             else {
@@ -570,25 +558,25 @@ namespace ul::menu::ui {
             }
 
             if(this->entries_menu->IsAnySelected()) {
-                this->input_bar->AddSetInput(HidNpadButton_X, "Cancel selection");
+                this->input_bar->AddSetInput(HidNpadButton_X, GetLanguageString("input_cancel_selection"));
             }
             else if(this->entries_menu->IsFocusedEntrySuspended()) {
-                this->input_bar->AddSetInput(HidNpadButton_X, "Close");
+                this->input_bar->AddSetInput(HidNpadButton_X, GetLanguageString("input_close_suspended"));
             }
             else if(this->entries_menu->HasEntries()) {
-                this->input_bar->AddSetInput(HidNpadButton_X, "Options");
+                this->input_bar->AddSetInput(HidNpadButton_X, GetLanguageString("input_entry_options"));
             }
             else {
                 this->input_bar->AddSetInput(HidNpadButton_X, "");
             }
 
-            this->input_bar->AddSetInput(HidNpadButton_Y, "Select");
+            this->input_bar->AddSetInput(HidNpadButton_Y, GetLanguageString("input_select_entry"));
 
             if(this->entries_menu->IsAnySelected()) {
-                this->input_bar->AddSetInput(HidNpadButton_B, "Cancel selection");
+                this->input_bar->AddSetInput(HidNpadButton_B, GetLanguageString("input_cancel_selection"));
             }
             else if(!this->entries_menu->IsInRoot()) {
-                this->input_bar->AddSetInput(HidNpadButton_B, "Go back");
+                this->input_bar->AddSetInput(HidNpadButton_B, GetLanguageString("input_folder_back"));
             }
             else {
                 this->input_bar->AddSetInput(HidNpadButton_B, "");
@@ -596,9 +584,9 @@ namespace ul::menu::ui {
 
             this->input_bar->AddSetInput(HidNpadButton_L | HidNpadButton_R | HidNpadButton_ZL | HidNpadButton_ZR, "Quick menu");
 
-            this->input_bar->AddSetInput(HidNpadButton_Plus | HidNpadButton_Minus, "Resize");
+            this->input_bar->AddSetInput(HidNpadButton_Plus | HidNpadButton_Minus, GetLanguageString("input_resize_menu"));
 
-            this->input_bar->AddSetInput(HidNpadButton_StickL, "New entry");
+            this->input_bar->AddSetInput(HidNpadButton_StickL, GetLanguageString("input_new_entry"));
         }
         else {
             this->input_bar->ClearInputs();
@@ -636,12 +624,19 @@ namespace ul::menu::ui {
             }
             else if(g_MenuApplication->HasChosenHomebrew()) {
                 const auto nro_path = g_MenuApplication->GetChosenHomebrew();
-                g_MenuApplication->CreateShowDialog("chosen hb", nro_path, { "K" }, true);
-
-                // TODONEW: custom argv option?
-                CreateHomebrewEntry(this->entries_menu->GetPath(), nro_path, nro_path);
-                g_MenuApplication->ShowNotification("Homebrew added");
-                this->MoveTo("", true);
+                const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("menu_chosen_hb"), GetLanguageString("menu_chosen_hb_info") + "\n\n" + nro_path + "\n\n" + GetLanguageString("menu_add_chosen_hb"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
+                if(option == 0) {
+                    // TODONEW: custom argv option?
+                    CreateHomebrewEntry(this->entries_menu->GetPath(), nro_path, nro_path);
+                    this->MoveTo("", true);
+                    g_MenuApplication->ShowNotification(GetLanguageString("menu_chosen_hb_added"));
+                }
+            }
+            else if(!g_CurrentThemeChecked) {
+                if(cfg::IsThemeOutdated(g_Theme)) {
+                    g_MenuApplication->CreateShowDialog("Theme", "The current theme is outdated...", {"K"}, true);
+                }
+                g_CurrentThemeChecked = true;
             }
         }
 
@@ -778,8 +773,8 @@ namespace ul::menu::ui {
     }
 
     void MainMenuLayout::HandleHomebrewLaunch(const Entry &hb_entry) {
-        u64 title_takeover_id;
-        UL_ASSERT_TRUE(g_Config.GetEntry(cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, title_takeover_id));
+        u64 app_takeover_id;
+        UL_ASSERT_TRUE(g_Config.GetEntry(cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, app_takeover_id));
         const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("hb_launch"), GetLanguageString("hb_launch_conf"), { GetLanguageString("hb_applet"), GetLanguageString("hb_app"), GetLanguageString("cancel") }, true);
         if(option == 0) {
             pu::audio::PlaySfx(this->title_launch_sfx);
@@ -791,7 +786,7 @@ namespace ul::menu::ui {
             g_MenuApplication->CloseWithFadeOut();
         }
         else if(option == 1) {
-            if(title_takeover_id != 0) {
+            if(app_takeover_id != 0) {
                 auto launch = true;
                 if(g_MenuApplication->IsSuspended()) {
                     launch = false;
@@ -822,30 +817,20 @@ namespace ul::menu::ui {
         }
     }
 
-    void MainMenuLayout::HandleMultiselectMoveToFolder(const std::string &new_path) {
-        if(this->entries_menu->IsAnySelected()) {
-            u32 cur_i = 0;
-            for(auto &entry : this->entries_menu->GetEntries()) {
-                if(this->entries_menu->IsEntrySelected(cur_i)) {
-                    entry.MoveTo(new_path);
-                }
-
-                cur_i++;
-            }
-
-            this->StopSelection();
-            this->MoveTo("", true);
-            // TODONEW: proper string
-            g_MenuApplication->ShowNotification("Move was done");
-        }
-    }
-
     void MainMenuLayout::StopSelection() {
         this->entries_menu->ResetSelection();
     }
 
     void MainMenuLayout::DoTerminateApplication() {
         UL_RC_ASSERT(smi::TerminateApplication());
+
+        for(auto &entry : this->entries_menu->GetEntries()) {
+            if(g_MenuApplication->IsEntrySuspended(entry)) {
+                // We need to reload the application record
+                // Its kind/type changed after closing it
+                entry.ReloadApplicationInfo();
+            }
+        }
 
         g_MenuApplication->ResetSuspendedApplication();
         

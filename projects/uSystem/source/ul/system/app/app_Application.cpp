@@ -35,7 +35,6 @@ namespace ul::system::app {
         const auto app_rc = serviceDispatch(&g_ApplicationHolder.s, 30);
         UL_LOG_WARN("Application terminated with result 0x%X", app_rc);
 
-        // TODONEW: something's not completely right about closing apps
         appletApplicationClose(&g_ApplicationHolder);
         g_ApplicationHasFocus = false;
         return rc;

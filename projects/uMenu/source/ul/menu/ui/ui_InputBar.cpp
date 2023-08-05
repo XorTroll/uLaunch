@@ -1,12 +1,14 @@
 #include <ul/menu/ui/ui_InputBar.hpp>
 #include <ul/cfg/cfg_Config.hpp>
+#include <ul/menu/ui/ui_MenuApplication.hpp>
 
 extern ul::cfg::Config g_Config;
 extern ul::cfg::Theme g_Theme;
+extern ul::menu::ui::MenuApplication::Ref g_MenuApplication;
 
 namespace ul::menu::ui {
 
-    InputBar::InputBar(const s32 y) : y(y) {
+    InputBar::InputBar(const s32 x, const s32 y) : x(x), y(y) {
         this->bg_img = pu::ui::render::LoadImage(cfg::GetAssetByTheme(g_Theme, "ui/InputBar.png"));
     }
 
@@ -23,7 +25,7 @@ namespace ul::menu::ui {
         }
 
         if(!text.empty()) {
-            this->inputs[key] = pu::ui::render::RenderText(pu::ui::GetDefaultFont(pu::ui::DefaultFontSize::Small), GetKeyString(key) + ") " + text, { 0xFF, 0xFF, 0xFF, 0xFF });
+            this->inputs[key] = pu::ui::render::RenderText(pu::ui::GetDefaultFont(pu::ui::DefaultFontSize::Small), GetKeyString(key) + " " + text, g_MenuApplication->GetTextColor());
         }
         else {
             this->inputs.erase(key);

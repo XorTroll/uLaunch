@@ -25,16 +25,15 @@ namespace ul::menu::ui {
                         break;
                     }
                     case smi::MenuMessage::GameCardMountFailure: {
-                        // TODONEW: proper strings, move elsewhere
-                        g_MenuApplication->CreateShowDialog("GC mount", "GC mount failed: " + util::FormatResultHex(first_msg.gc_mount_failure.mount_rc), { "K" }, true);
+                        // TODO: move somewhere else?
+                        g_MenuApplication->CreateShowDialog(GetLanguageString("gamecard"), GetLanguageString("gamecard_mount_failed") + " " + util::FormatResultHex(first_msg.gc_mount_failure.mount_rc), { GetLanguageString("ok") }, true);
                         this->msg_queue.pop();
                         break;
                     }
                     case smi::MenuMessage::SdCardEjected: {
-                        // TODONEW: proper strings
                         this->msg_queue.pop();
 
-                        const auto option = g_MenuApplication->CreateShowDialog("SD ejected", "SD ejected", { "Shutdown", "Reboot" }, false);
+                        const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("sd_card"), GetLanguageString("sd_card_ejected"), { GetLanguageString("shutdown"), GetLanguageString("reboot") }, false);
                         if(option == 1) {
                             RebootSystem();
                         }
@@ -74,7 +73,16 @@ namespace ul::menu::ui {
 
     void IMenuLayout::NotifyMessageContext(const smi::MenuMessageContext msg_ctx) {
         ScopedLock lk(this->msg_queue_lock);
-        // TODONEW: remove consequent homemenu requests?
+
+        // Remove consequent homemenu requests
+        if(msg_ctx.msg == smi::MenuMessage::HomeRequest) {
+            if(!this->msg_queue.empty()) {
+                if(this->msg_queue.front().msg == smi::MenuMessage::HomeRequest) {
+                    return;
+                }
+            }
+        }
+
         this->msg_queue.push(msg_ctx);
     }
 
