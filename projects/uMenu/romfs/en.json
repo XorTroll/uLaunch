@@ -129,6 +129,7 @@
     "theme_active_this": "This is the currently active theme.",
     "theme_set": "Set theme",
     "theme_set_conf": "Would you like to set this theme as the active one?",
+    "theme_outdated": "The current theme is outdated...",
     "lang_info_text": "Select the console's language.",
     "lang_selected": "(selected)",
     "lang_set": "Select console language",

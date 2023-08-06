@@ -634,7 +634,7 @@ namespace ul::menu::ui {
             }
             else if(!g_CurrentThemeChecked) {
                 if(cfg::IsThemeOutdated(g_Theme)) {
-                    g_MenuApplication->CreateShowDialog("Theme", "The current theme is outdated...", {"K"}, true);
+                    g_MenuApplication->CreateShowDialog(GetLanguageString("theme_current"), GetLanguageString("theme_outdated"), { GetLanguageString("ok") }, true);
                 }
                 g_CurrentThemeChecked = true;
             }
