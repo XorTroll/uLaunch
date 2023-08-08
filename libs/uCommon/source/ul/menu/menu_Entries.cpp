@@ -494,6 +494,8 @@ namespace ul::menu {
             const auto index_gap = UINT32_MAX / entries.size();
             u32 cur_start_idx = 0;
             for(auto &entry : entries) {
+                entry.Remove();
+
                 u32 new_idx;
                 entry.entry_path = AllocateEntryPath(cur_start_idx, cur_start_idx + index_gap, path, new_idx);
                 entry.index = new_idx;
