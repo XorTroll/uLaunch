@@ -163,7 +163,7 @@
     "menu_add_chosen_hb": "Would you like to add this homebrew to the menu?",
     "menu_chosen_hb_added": "The chosen homebrew was successfully added to the menu.",
     "gamecard": "Gamecard",
-    "gamecard_mount_failed": "Gamecad mount failed:",
+    "gamecard_mount_failed": "Gamecard mount failed:",
     "sd_card": "SD card",
     "sd_card_ejected": "SD card was ejected, you must shutdown or reboot the console",
     "shutdown": "Shutdown",
