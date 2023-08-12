@@ -165,7 +165,7 @@
     "gamecard": "Gamecard",
     "gamecard_mount_failed": "Gamecard mount failed:",
     "sd_card": "SD card",
-    "sd_card_ejected": "SD card was ejected, you must shutdown or reboot the console",
+    "sd_card_ejected": "SD card was ejected, you must shutdown or reboot the console.",
     "shutdown": "Shutdown",
     "reboot": "Reboot"
 }

@@ -721,7 +721,6 @@ namespace ul::menu::ui {
             }
         }
         else if(keys_down & HidNpadButton_Plus) {
-            // ShowAboutDialog();
             this->entries_menu->IncrementHorizontalCount();
         }
         else if(keys_down & HidNpadButton_Minus) {
@@ -822,18 +821,23 @@ namespace ul::menu::ui {
     }
 
     void MainMenuLayout::DoTerminateApplication() {
-        UL_RC_ASSERT(smi::TerminateApplication());
-
+        u32 i = 0;
         for(auto &entry : this->entries_menu->GetEntries()) {
             if(g_MenuApplication->IsEntrySuspended(entry)) {
-                // We need to reload the application record
-                // Its kind/type changed after closing it
-                entry.ReloadApplicationInfo();
+                break;
             }
+            i++;
         }
 
+        UL_RC_ASSERT(smi::TerminateApplication());
+
+        // We need to reload the application record
+        // Its kind/type changed after closing it
+        this->entries_menu->GetEntries().at(i).ReloadApplicationInfo();
+
         g_MenuApplication->ResetSuspendedApplication();
-        
+
+        this->mode = SuspendedImageMode::NotFocused;
         if(this->suspended_screen_img) {
             this->suspended_screen_img->SetAlpha(0);
         }
