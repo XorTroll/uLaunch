@@ -18,7 +18,7 @@ namespace ul::menu::ui {
     }
 
     LanguagesMenuLayout::LanguagesMenuLayout() {
-        this->SetBackgroundImage(cfg::GetAssetByTheme(g_Theme, "ui/Background.png"));
+        this->SetBackgroundImage(TryFindImage(g_Theme, "ui/Background"));
 
         g_SystemLanguage = os::GetSystemLanguage();
 

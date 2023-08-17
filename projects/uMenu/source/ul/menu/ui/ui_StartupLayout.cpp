@@ -26,7 +26,7 @@ namespace ul::menu::ui {
     }
 
     StartupLayout::StartupLayout() {
-        this->SetBackgroundImage(cfg::GetAssetByTheme(g_Theme, "ui/Background.png"));
+        this->SetBackgroundImage(TryFindImage(g_Theme, "ui/Background"));
         this->load_menu = false;
 
         this->info_text = pu::ui::elm::TextBlock::New(35, 650, GetLanguageString("startup_welcome_info"));

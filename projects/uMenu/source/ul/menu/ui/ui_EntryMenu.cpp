@@ -95,17 +95,19 @@ namespace ul::menu::ui {
         auto icon_path = entry.control.icon_path;
         if(icon_path.empty()) {
             if(entry.Is<EntryType::Folder>()) {
-                icon_path = cfg::GetAssetByTheme(g_Theme, "ui/Folder.png");
+                icon_path = "ui/Folder";
             }
             else if(entry.Is<EntryType::Application>()) {
-                icon_path = cfg::GetAssetByTheme(g_Theme, "ui/DefaultApplicationIcon.png");
+                icon_path = "ui/DefaultApplicationIcon";
             }
             else if(entry.Is<EntryType::Homebrew>()) {
-                icon_path = cfg::GetAssetByTheme(g_Theme, "ui/DefaultHomebrewIcon.png");
+                icon_path = "ui/DefaultHomebrewIcon";
             }
+            return TryFindLoadImage(g_Theme, icon_path);
         }
-        
-        return pu::ui::render::LoadImage(icon_path);
+        else {
+            return pu::ui::render::LoadImage(icon_path);
+        }
     }
 
     void EntryMenu::NotifyFocusedEntryChanged(const s32 prev_idx) {
@@ -116,9 +118,9 @@ namespace ul::menu::ui {
     }
 
     EntryMenu::EntryMenu(const s32 x, const s32 y, const s32 height, const std::string &path, const u32 last_idx, FocusedEntryInputPressedCallback cur_entry_input_cb, FocusedEntryChangedCallback cur_entry_changed_cb) : x(x), y(y), height(height), cur_entry_idx(0), entries_selected(), entry_idx_stack(), cur_entry_input_cb(cur_entry_input_cb), cur_entry_changed_cb(cur_entry_changed_cb), enabled(true) {
-        this->cursor_img = pu::ui::render::LoadImage(cfg::GetAssetByTheme(g_Theme, "ui/Cursor.png"));
-        this->suspended_img = pu::ui::render::LoadImage(cfg::GetAssetByTheme(g_Theme, "ui/Suspended.png"));
-        this->selected_img = pu::ui::render::LoadImage(cfg::GetAssetByTheme(g_Theme, "ui/Selected.png"));
+        this->cursor_img = TryFindLoadImage(g_Theme, "ui/Cursor");
+        this->suspended_img = TryFindLoadImage(g_Theme, "ui/Suspended");
+        this->selected_img = TryFindLoadImage(g_Theme, "ui/Selected");
 
         u64 menu_h_count;
         UL_ASSERT_TRUE(g_Config.GetEntry(cfg::ConfigEntryId::MenuEntryHorizontalCount, menu_h_count));

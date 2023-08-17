@@ -11,9 +11,9 @@ extern ul::cfg::Config g_Config;
 namespace ul::menu::ui {
 
     ThemeMenuLayout::ThemeMenuLayout() {
-        this->SetBackgroundImage(cfg::GetAssetByTheme(g_Theme, "ui/Background.png"));
+        this->SetBackgroundImage(TryFindImage(g_Theme, "ui/Background"));
 
-        this->cur_theme_banner = pu::ui::elm::Image::New(0, 585, cfg::GetAssetByTheme(g_Theme, "ui/BannerTheme.png"));
+        this->cur_theme_banner = pu::ui::elm::Image::New(0, 585, TryFindImage(g_Theme, "ui/BannerTheme"));
         g_MenuApplication->ApplyConfigForElement("themes_menu", "banner_image", this->cur_theme_banner);
         this->Add(this->cur_theme_banner);
 
@@ -89,7 +89,7 @@ namespace ul::menu::ui {
             this->cur_theme_version_text->SetText("v" + g_Theme.manifest.release);
             this->cur_theme_banner->SetVisible(true);
             this->cur_theme_icon->SetVisible(true);
-            this->cur_theme_icon->SetImage(g_Theme.path + "/theme/Icon.png");
+            this->cur_theme_icon->SetImage(TryFindImage(g_Theme, "/theme/Icon"));
             this->cur_theme_icon->SetWidth(100);
             this->cur_theme_icon->SetHeight(100);
         }
@@ -108,7 +108,7 @@ namespace ul::menu::ui {
             auto theme_item = pu::ui::elm::MenuItem::New(theme.manifest.name + " (v" + theme.manifest.release + ", " + GetLanguageString("theme_by") + " " + theme.manifest.author + ")");
             theme_item->AddOnKey(std::bind(&ThemeMenuLayout::theme_DefaultKey, this));
             theme_item->SetColor(g_MenuApplication->GetTextColor());
-            theme_item->SetIcon(theme.path + "/theme/Icon.png");
+            theme_item->SetIcon(TryFindImage(theme, "/theme/Icon"));
             this->themes_menu->AddItem(theme_item);
         }
 
@@ -137,7 +137,7 @@ namespace ul::menu::ui {
         }
         else {
             const auto selected_theme = this->loaded_themes.at(idx - 1);
-            const auto theme_icon_path = selected_theme.path + "/theme/Icon.png";
+            const auto theme_icon_path = TryFindImage(selected_theme, "/theme/Icon");
             if(selected_theme.base_name == g_Theme.base_name) {
                 g_MenuApplication->ShowNotification(GetLanguageString("theme_active_this"));
             }

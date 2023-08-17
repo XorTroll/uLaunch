@@ -110,6 +110,7 @@
     "set_nfc": "NFC enabled (amiibo)",
     "set_serial_no": "Console serial number",
     "set_mac_addr": "MAC address",
+    "set_ip_addr": "IP address",
     "swkbd_console_nick_guide": "Enter new console nickname",
     "set_enable_conf": "Do you want to enable it?",
     "set_disable_conf": "Do you want to disable it?",
@@ -167,5 +168,12 @@
     "sd_card": "SD card",
     "sd_card_ejected": "SD card was ejected, you must shutdown or reboot the console.",
     "shutdown": "Shutdown",
-    "reboot": "Reboot"
+    "reboot": "Reboot",
+    "quick_power_options": "Power options",
+    "quick_controller_options": "Controller options",
+    "quick_album": "Open album/hbmenu",
+    "quick_web_page": "Open web page",
+    "quick_user_menu": "User menu",
+    "quick_themes_menu": "Themes menu",
+    "quick_settings_menu": "Settings menu"
 }

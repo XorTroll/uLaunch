@@ -134,7 +134,7 @@ namespace ul::menu::ui {
         this->PushSettingItem(GetLanguageString("set_mac_addr"), EncodeForSettings(mac_addr_str), -1);
 
         const auto ip_str = net::GetConsoleIpAddress();
-        this->PushSettingItem("Console IP address", EncodeForSettings(ip_str), -1);
+        this->PushSettingItem(GetLanguageString("set_ip_addr"), EncodeForSettings(ip_str), -1);
 
         if(reset_idx) {
             this->settings_menu->SetSelectedIndex(0);
@@ -147,12 +147,14 @@ namespace ul::menu::ui {
         if(is_editable) {
             setting_item->AddOnKey(std::bind(&SettingsMenuLayout::setting_DefaultKey, this, id));
         }
-        setting_item->SetIcon(cfg::GetAssetByTheme(g_Theme, "ui/Setting" + std::string(is_editable ? "" : "No") + "Editable.png"));
+        setting_item->SetIcon(TryFindImage(g_Theme, "ui/Setting" + std::string(is_editable ? "" : "No") + "Editable"));
         setting_item->SetColor(g_MenuApplication->GetTextColor());
         this->settings_menu->AddItem(setting_item);
     }
 
     void SettingsMenuLayout::setting_DefaultKey(const u32 id) {
+        // TODONEW: check results here
+
         bool reload_need = false;
         switch(id) {
             case 0: {

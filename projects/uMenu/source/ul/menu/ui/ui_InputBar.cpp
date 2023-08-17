@@ -9,7 +9,7 @@ extern ul::menu::ui::MenuApplication::Ref g_MenuApplication;
 namespace ul::menu::ui {
 
     InputBar::InputBar(const s32 x, const s32 y) : x(x), y(y) {
-        this->bg_img = pu::ui::render::LoadImage(cfg::GetAssetByTheme(g_Theme, "ui/InputBar.png"));
+        this->bg_img = TryFindLoadImage(g_Theme, "ui/InputBar");
     }
 
     void InputBar::ClearInputs() {

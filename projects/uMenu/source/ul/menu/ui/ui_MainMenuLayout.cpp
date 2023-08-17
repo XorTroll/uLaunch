@@ -356,7 +356,7 @@ namespace ul::menu::ui {
 
         auto &cur_entry = this->entries_menu->GetFocusedEntry();
         if(cur_entry.Is<EntryType::Folder>()) {
-            this->banner_img->SetImage(cfg::GetAssetByTheme(g_Theme, "ui/BannerFolder.png"));
+            this->banner_img->SetImage(TryFindImage(g_Theme, "ui/BannerFolder"));
 
             // TODONEW: entry count?
             // this->cur_entry_author_text->SetText(std::to_string(folder_entry_count) + " " + ((folder_entry_count == 1) ? GetLanguageString("folder_entry_single") : GetLanguageString("folder_entry_mult")));
@@ -366,10 +366,10 @@ namespace ul::menu::ui {
         }
         else {
             if(cur_entry.Is<EntryType::Application>()) {
-                this->banner_img->SetImage(cfg::GetAssetByTheme(g_Theme, "ui/BannerInstalled.png"));
+                this->banner_img->SetImage(TryFindImage(g_Theme, "ui/BannerInstalled"));
             }
             else {
-                this->banner_img->SetImage(cfg::GetAssetByTheme(g_Theme, "ui/BannerHomebrew.png"));
+                this->banner_img->SetImage(TryFindImage(g_Theme, "ui/BannerHomebrew"));
             }
             
             cur_entry.TryLoadControlData();
@@ -407,7 +407,7 @@ namespace ul::menu::ui {
         }
 
         // Load banners first
-        this->top_menu_img = pu::ui::elm::Image::New(40, 35, cfg::GetAssetByTheme(g_Theme, "ui/TopMenu.png"));
+        this->top_menu_img = pu::ui::elm::Image::New(40, 35, TryFindImage(g_Theme, "ui/TopMenu"));
         g_MenuApplication->ApplyConfigForElement("main_menu", "top_menu_bg", this->top_menu_img);
         this->Add(this->top_menu_img);
 
@@ -419,7 +419,7 @@ namespace ul::menu::ui {
         g_MenuApplication->ApplyConfigForElement("main_menu", "logo_icon", this->logo_img, false); // Sorry theme makers... uLaunch's logo must be visible, but can be moved
         this->Add(this->logo_img);
 
-        this->connection_icon = pu::ui::elm::Image::New(80, 53, cfg::GetAssetByTheme(g_Theme, "ui/NoConnectionIcon.png"));
+        this->connection_icon = pu::ui::elm::Image::New(80, 53, TryFindImage(g_Theme, "ui/NoConnectionIcon"));
         g_MenuApplication->ApplyConfigForElement("main_menu", "connection_icon", this->connection_icon);
         this->Add(this->connection_icon);
 
@@ -428,7 +428,7 @@ namespace ul::menu::ui {
         g_MenuApplication->ApplyConfigForElement("main_menu", "user_icon", this->users_img);
         this->Add(this->users_img);
 
-        this->controller_img = ClickableImage::New(340, 53, cfg::GetAssetByTheme(g_Theme, "ui/ControllerIcon.png"));
+        this->controller_img = ClickableImage::New(340, 53, TryFindImage(g_Theme, "ui/ControllerIcon"));
         this->controller_img->SetOnClick(&ShowControllerSupport);
         g_MenuApplication->ApplyConfigForElement("main_menu", "controller_icon", this->controller_img);
         this->Add(this->controller_img);
@@ -444,16 +444,16 @@ namespace ul::menu::ui {
         g_MenuApplication->ApplyConfigForElement("main_menu", "battery_text", this->battery_text);
         this->Add(this->battery_text);
 
-        this->battery_icon = pu::ui::elm::Image::New(700, 80, cfg::GetAssetByTheme(g_Theme, "ui/BatteryNormalIcon.png"));
+        this->battery_icon = pu::ui::elm::Image::New(700, 80, TryFindImage(g_Theme, "ui/BatteryNormalIcon"));
         g_MenuApplication->ApplyConfigForElement("main_menu", "battery_icon", this->battery_icon);
         this->Add(this->battery_icon);
 
-        this->settings_img = ClickableImage::New(810, 53, cfg::GetAssetByTheme(g_Theme, "ui/SettingsIcon.png"));
+        this->settings_img = ClickableImage::New(810, 53, TryFindImage(g_Theme, "ui/SettingsIcon"));
         this->settings_img->SetOnClick(&ShowSettingsMenu);
         g_MenuApplication->ApplyConfigForElement("main_menu", "settings_icon", this->settings_img);
         this->Add(this->settings_img);
 
-        this->themes_img = ClickableImage::New(880, 53, cfg::GetAssetByTheme(g_Theme, "ui/ThemesIcon.png"));
+        this->themes_img = ClickableImage::New(880, 53, TryFindImage(g_Theme, "ui/ThemesIcon"));
         this->themes_img->SetOnClick(&ShowThemesMenu);
         g_MenuApplication->ApplyConfigForElement("main_menu", "themes_icon", this->themes_img);
         this->Add(this->themes_img);
@@ -473,7 +473,7 @@ namespace ul::menu::ui {
         g_MenuApplication->ApplyConfigForElement("main_menu", "cur_path_text", this->cur_path_text);
         this->Add(this->cur_path_text);
 
-        this->banner_img = pu::ui::elm::Image::New(0, 585, cfg::GetAssetByTheme(g_Theme, "ui/BannerInstalled.png"));
+        this->banner_img = pu::ui::elm::Image::New(0, 585, TryFindImage(g_Theme, "ui/BannerInstalled"));
         g_MenuApplication->ApplyConfigForElement("main_menu", "banner_image", this->banner_img);
 
         this->cur_entry_name_text = pu::ui::elm::TextBlock::New(40, 610, "...");
@@ -514,14 +514,14 @@ namespace ul::menu::ui {
             this->Add(this->suspended_screen_img);
         }
 
-        this->quick_menu = QuickMenu::New(cfg::GetAssetByTheme(g_Theme, "ui/QuickMenuMain.png"));
+        this->quick_menu = QuickMenu::New(TryFindImage(g_Theme, "ui/QuickMenuMain"));
         this->Add(this->quick_menu);
 
         this->startup_tp = std::chrono::steady_clock::now();
 
         this->title_launch_sfx = pu::audio::LoadSfx(cfg::GetAssetByTheme(g_Theme, "sound/TitleLaunch.wav"));
 
-        this->SetBackgroundImage(cfg::GetAssetByTheme(g_Theme, "ui/Background.png"));
+        this->SetBackgroundImage(TryFindImage(g_Theme, "ui/Background"));
 
         this->entries_menu->Initialize();
     }
@@ -595,8 +595,8 @@ namespace ul::menu::ui {
         const auto has_conn = net::HasConnection();
         if(this->last_has_connection != has_conn) {
             this->last_has_connection = has_conn;
-            const auto conn_img = has_conn ? "ui/ConnectionIcon.png" : "ui/NoConnectionIcon.png";
-            this->connection_icon->SetImage(cfg::GetAssetByTheme(g_Theme, conn_img));
+            const auto conn_img = has_conn ? "ui/ConnectionIcon" : "ui/NoConnectionIcon";
+            this->connection_icon->SetImage(TryFindImage(g_Theme, conn_img));
         }
 
         const auto cur_time = os::GetCurrentTime();
@@ -612,8 +612,8 @@ namespace ul::menu::ui {
         const auto is_charging = os::IsConsoleCharging();
         if(this->last_is_charging != is_charging) {
             this->last_is_charging = is_charging;
-            const auto battery_img = is_charging ? "ui/BatteryChargingIcon.png" : "ui/BatteryNormalIcon.png";
-            this->battery_icon->SetImage(cfg::GetAssetByTheme(g_Theme, battery_img));
+            const auto battery_img = is_charging ? "ui/BatteryChargingIcon" : "ui/BatteryNormalIcon";
+            this->battery_icon->SetImage(TryFindImage(g_Theme, battery_img));
         }
 
         const auto now_tp = std::chrono::steady_clock::now();

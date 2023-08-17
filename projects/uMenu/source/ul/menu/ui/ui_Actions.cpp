@@ -27,6 +27,31 @@ namespace ul::menu::ui {
             g_MenuApplication->FadeIn();
         }
 
+        const std::vector<std::string> g_ImageFormatList = { "png", "jpg", "jpeg", "webp" };
+
+    }
+
+    std::string TryFindImage(const cfg::Theme &theme, const std::string &path_no_ext) {
+        for(const auto &fmt: g_ImageFormatList) {
+            const auto path = cfg::GetAssetByTheme(theme, path_no_ext + "." + fmt);
+            if(!path.empty()) {
+                return path;
+            }
+        }
+
+        return "";
+    }
+    
+    pu::sdl2::Texture TryFindLoadImage(const cfg::Theme &theme, const std::string &path_no_ext) {
+        for(const auto &fmt: g_ImageFormatList) {
+            const auto path = cfg::GetAssetByTheme(theme, path_no_ext + "." + fmt);
+            const auto img = pu::ui::render::LoadImage(path);
+            if(img != nullptr) {
+                return img;
+            }
+        }
+
+        return nullptr;
     }
 
     void RebootSystem() {
