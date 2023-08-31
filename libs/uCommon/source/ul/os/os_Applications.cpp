@@ -19,12 +19,10 @@ namespace ul::os {
         return records;
     }
 
-    NsApplicationContentMetaStatus GetApplicationContentMetaStatus(const u64 app_id) {
+    Result GetApplicationContentMetaStatus(const u64 app_id, NsApplicationContentMetaStatus &out_status) {
         s32 tmp_count;
-        NsApplicationContentMetaStatus status;
-        UL_RC_ASSERT(nsListApplicationContentMetaStatus(app_id, 0, &status, 1, &tmp_count));
-        UL_ASSERT_TRUE(tmp_count > 0);
-        return status;
+        UL_RC_TRY(nsListApplicationContentMetaStatus(app_id, 0, std::addressof(out_status), 1, &tmp_count));
+        return ResultSuccess;
     }
 
 }

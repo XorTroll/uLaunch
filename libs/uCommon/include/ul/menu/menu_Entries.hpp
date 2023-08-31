@@ -14,6 +14,7 @@ namespace ul::menu {
     };
 
     struct EntryApplicationInfo {
+        u64 app_id;
         NsApplicationRecord record;
         NsApplicationContentMetaStatus meta_status;
 
@@ -105,5 +106,6 @@ namespace ul::menu {
     
     Entry CreateFolderEntry(const std::string &base_path, const std::string &folder_name);
     Entry CreateHomebrewEntry(const std::string &base_path, const std::string &nro_path, const std::string &nro_argv);
+    void DeleteApplicationEntry(const u64 app_id, const std::string &path);
 
 }

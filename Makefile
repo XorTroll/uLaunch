@@ -5,11 +5,14 @@ VERSION			:=	$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_MICRO)
 
 export UL_DEFS	:=	-DUL_VERSION=\"$(VERSION)\"
 
-.PHONY: all fresh clean usystem uloader umenu umanager
+.PHONY: all fresh clean pu usystem uloader umenu umanager
 
 all: usystem uloader umenu umanager
 
 fresh: clean all
+
+pu:
+	@$(MAKE) -C libs/Plutonium/
 
 clean:
 	@$(MAKE) clean -C projects/uSystem
@@ -42,7 +45,7 @@ umenu:
 	@cp projects/uMenu/uMenu.npdm SdOut/ulaunch/bin/uMenu/main.npdm
 	@build_romfs projects/uMenu/romfs SdOut/ulaunch/bin/uMenu/romfs.bin
 
-umanager:
+umanager: pu
 	@$(MAKE) -C projects/uManager
 	@mkdir -p SdOut/switch
 	@cp projects/uManager/uManager.nro SdOut/switch/uManager.nro

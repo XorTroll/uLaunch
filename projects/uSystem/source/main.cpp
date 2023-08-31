@@ -650,9 +650,17 @@ namespace {
 
                     const auto diff_records = ListChangedRecords();
                     for(const auto &record: diff_records) {
-                        UL_LOG_INFO("- 0x%lX", record.application_id);
-                        ul::menu::CacheSingleApplication(record.application_id);
-                        ul::menu::EnsureApplicationEntry(record);
+                        if(std::find_if(g_CurrentRecords.begin(), g_CurrentRecords.end(), [&](const NsApplicationRecord &rec) -> bool {
+                            return rec.application_id == record.application_id;
+                        }) != g_CurrentRecords.end()) {
+                            UL_LOG_INFO("- [new] 0x%lX", record.application_id);
+                            ul::menu::CacheSingleApplication(record.application_id);
+                            ul::menu::EnsureApplicationEntry(record);
+                        }
+                        else {
+                            UL_LOG_INFO("- [del] 0x%lX", record.application_id);
+                            ul::menu::DeleteApplicationEntry(record.application_id, ul::MenuPath);
+                        }
                     }
                 }
                 if(ev_idx == 1) {

@@ -152,6 +152,7 @@ namespace ul::menu {
                             case EntryType::Application: {
                                 const auto application_id_fmt = old_entry_json.value("application_id", "");
                                 const auto application_id = util::Get64FromString(application_id_fmt);
+                                entry.app_info.app_id = application_id;
 
                                 const auto find_rec = std::find_if(g_ApplicationRecords.begin(), g_ApplicationRecords.end(), [&](const NsApplicationRecord &rec) -> bool {
                                     return rec.application_id == application_id;
@@ -219,7 +220,9 @@ namespace ul::menu {
         if(this->Is<EntryType::Application>()) {
             const auto app_id = this->app_info.record.application_id;
 
-            this->app_info.meta_status = os::GetApplicationContentMetaStatus(app_id);
+            if(R_FAILED(os::GetApplicationContentMetaStatus(app_id, this->app_info.meta_status))) {
+                UL_LOG_WARN("Unable to reload application meta status (not found...?)");
+            }
 
             // Assume we need to reload here
             EnsureApplicationRecords(true);
@@ -333,6 +336,7 @@ namespace ul::menu {
                     .entry_path = MakeEntryPath(MenuPath, cur_start_idx + index_gap / 2),
 
                     .app_info = {
+                        .app_id = app_record.application_id,
                         .record = app_record
                     }
                 };
@@ -364,6 +368,7 @@ namespace ul::menu {
             .entry_path = AllocateEntryPath(start_idx, end_idx, MenuPath, tmp_idx),
 
             .app_info = {
+                .app_id = app_record.application_id,
                 .record = app_record
             }
         };
@@ -414,8 +419,11 @@ namespace ul::menu {
                             }
 
                             entry.app_info = {
-                                .meta_status = os::GetApplicationContentMetaStatus(application_id)
+                                .app_id = application_id
                             };
+                            if(R_FAILED(os::GetApplicationContentMetaStatus(application_id, entry.app_info.meta_status))) {
+                                UL_LOG_WARN("Invalid application entry with no application meta status");
+                            }
 
                             const auto find_rec = std::find_if(g_ApplicationRecords.begin(), g_ApplicationRecords.end(), [&](const NsApplicationRecord &rec) -> bool {
                                 return rec.application_id == application_id;
@@ -553,6 +561,19 @@ namespace ul::menu {
 
         hb_entry.Save();
         return hb_entry;
+    }
+
+    void DeleteApplicationEntry(const u64 app_id, const std::string &path) {
+        auto cur_entries = LoadEntries(path);
+        for(auto &entry: cur_entries) {
+            if(entry.Is<EntryType::Application>() && (entry.app_info.app_id == app_id)) {
+                entry.Remove();
+            }
+            else if(entry.Is<EntryType::Folder>()) {
+                const auto new_path = fs::JoinPath(path, entry.folder_info.fs_name);
+                DeleteApplicationEntry(app_id, new_path);
+            }
+        }
     }
 
 }
