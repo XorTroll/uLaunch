@@ -18,9 +18,7 @@ extern "C" {
     extern u32 __nx_applet_type;
     u32 __nx_fsdev_direntry_cache_size = 0;
 
-    // Needed by libnx's usbcomms to allocate internal buffers...
-    // Note: operator new(size_t, std::align_val_t) isn't redefined in ams, so we need to stick with C-style memory functions
-    // (by default that operator internally calls _memalign_r, which isn't redefined by ams either, so it leads to crashes)
+    // So that libstratosphere doesn't redefine them as invalid
 
     void *__libnx_alloc(size_t size) {
         return malloc(size);
@@ -75,8 +73,11 @@ namespace {
 
     constexpr size_t UsbPacketSize = PlainRgbaScreenBufferSize + sizeof(UsbMode);
 
-    constexpr size_t HeapSize = 10_MB;
-    alignas(ams::os::MemoryPageSize) constinit u8 g_HeapBuffer[HeapSize];
+    constexpr size_t LibstratosphereHeapSize = 4_MB;
+    alignas(ams::os::MemoryPageSize) constinit u8 g_LibstratosphereHeap[LibstratosphereHeapSize];
+
+    constexpr size_t LibnxHeapSize = 4_MB;
+    alignas(ams::os::MemoryPageSize) constinit u8 g_LibnxHeap[LibnxHeapSize];
 
 }
 
@@ -546,6 +547,13 @@ namespace {
 
 // TODO: consider stopping using Atmosphere-libs?
 
+extern "C" {
+
+    extern u8 *fake_heap_start;
+    extern u8 *fake_heap_end;
+
+}
+
 namespace ams {
 
     namespace init {
@@ -562,14 +570,16 @@ namespace ams {
             UL_RC_ASSERT(pmshellInitialize());
             UL_RC_ASSERT(setsysInitialize());
 
-            fsdevMountSdmc();
+            UL_RC_ASSERT(fsdevMountSdmc());
         }
 
         void FinalizeSystemModule() {}
 
         void Startup() {
-            // Initialize the global malloc-free/new-delete allocator
-            init::InitializeAllocator(g_HeapBuffer, HeapSize);
+            init::InitializeAllocator(g_LibstratosphereHeap, LibstratosphereHeapSize);
+
+            fake_heap_start = g_LibnxHeap;
+            fake_heap_end = fake_heap_start + LibnxHeapSize;
 
             os::SetThreadNamePointer(os::GetCurrentThread(), "ul.daemon.Main");
         }
