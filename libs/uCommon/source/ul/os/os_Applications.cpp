@@ -3,19 +3,35 @@
 
 namespace ul::os {
 
+    namespace {
+
+        constexpr size_t ApplicationRecordBufferCount = 30;
+        NsApplicationRecord g_ApplicationRecordBuffer[ApplicationRecordBufferCount];
+
+    }
+
     std::vector<NsApplicationRecord> ListApplicationRecords() {
         std::vector<NsApplicationRecord> records;
 
-        auto records_buf = new NsApplicationRecord[MaxApplicationCount]();
-        s32 record_count;
-        UL_RC_ASSERT(nsListApplicationRecord(records_buf, MaxApplicationCount, 0, &record_count));
-        for(s32 i = 0; i < record_count; i++) {
-            const auto &record = records_buf[i];
-            if(record.application_id != 0) {
-                records.push_back(record);
+        s32 cur_offset = 0;
+        while(true) {
+            s32 record_count = 0;
+            if(R_FAILED(nsListApplicationRecord(g_ApplicationRecordBuffer, ApplicationRecordBufferCount, cur_offset, &record_count))) {
+                break;
+            }
+            if(record_count == 0) {
+                break;
+            }
+
+            cur_offset += record_count;
+            for(s32 i = 0; i < record_count; i++) {
+                const auto &record = g_ApplicationRecordBuffer[i];
+                if(record.application_id != 0) {
+                    records.push_back(record);
+                }
             }
         }
-        delete[] records_buf;
+
         return records;
     }
 

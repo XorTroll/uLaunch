@@ -54,11 +54,9 @@ namespace ul {
     void InitializeLogging(const char *proc_name) {
         snprintf(g_LogPath, sizeof(g_LogPath), "%s/log_%s.log", RootPath, proc_name);
 
-        /*
         _UL_DO_WITH_FSDEV({
             remove(g_LogPath);
         });
-        */
     }
 
     void LogImpl(const LogKind kind, const char *log_fmt, ...) {

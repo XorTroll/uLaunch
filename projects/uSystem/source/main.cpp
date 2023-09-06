@@ -721,17 +721,11 @@ namespace {
     }
 
     void UsbViewerRgbaThread(void*) {
-        UL_LOG_INFO("usb rgba alive!");
         while(true) {
-            // auto last_t = armGetSystemTick();
             bool tmp_flag;
             appletGetLastForegroundCaptureImageEx(g_UsbViewerBufferDataOffset, PlainRgbaScreenBufferSize, &tmp_flag);
             appletUpdateLastForegroundCaptureImage();
             usbCommsWrite(g_UsbViewerBuffer, UsbPacketSize);
-
-            // auto cur_t = armGetSystemTick();
-            // const auto x = (double)armTicksToNs(cur_t - last_t) / 1e9;
-            // UL_LOG_INFO("Elapsed seconds between USB: %f", x);
         }
     }
 
@@ -780,17 +774,16 @@ namespace {
         bool viewer_usb_enabled;
         UL_ASSERT_TRUE(g_Config.GetEntry(ul::cfg::ConfigEntryId::ViewerUsbEnabled, viewer_usb_enabled));
 
-        UL_LOG_INFO("usb enabled: %d", viewer_usb_enabled);
-
         if(viewer_usb_enabled) {
             UL_RC_ASSERT(usbCommsInitialize());
             UL_RC_ASSERT(capsscInitialize());
+
             g_UsbViewerBuffer = reinterpret_cast<UsbPacketHeader*>(__libnx_aligned_alloc(ams::os::MemoryPageSize, UsbPacketSize));
             memset(g_UsbViewerBuffer, 0, UsbPacketSize);
 
             void(*thread_entry)(void*) = nullptr;
             g_UsbViewerBufferDataOffset = reinterpret_cast<u8*>(g_UsbViewerBuffer) + sizeof(UsbMode) + sizeof(UsbPacketHeader::jpeg);
-            if(R_SUCCEEDED(CaptureJpegScreenshot())) {
+            if(CaptureJpegScreenshot() > 0) {
                 g_UsbViewerBuffer->mode = UsbMode::Jpeg;
                 thread_entry = &UsbViewerJpegThread;
             }

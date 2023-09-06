@@ -143,7 +143,7 @@ public class MainApplication extends Application {
             public void run() {
                 UsbInterface usb_intf = showUsbFailReconnectDialogFromTask("", true);
 
-                ByteBuffer data = ByteBuffer.allocateDirect(1280 * 720 * 4 + 4);
+                ByteBuffer data = ByteBuffer.allocateDirect(8 + 1280 * 720 * 4);
                 data.order(ByteOrder.LITTLE_ENDIAN);
 
                 while(true) {
@@ -155,11 +155,11 @@ public class MainApplication extends Application {
 
                     int mode = data.getInt();
                     if(mode == UsbMode.RAW_RGBA) {
-                        System.out.println("rgba!");
                         controller.updateScreenRgba(data);
                     }
                     else if(mode == UsbMode.JPEG) {
-                        showOkDialogFromTask("Invalid mode", "JPEG mode is currently not supported", true);
+                        int jpeg_size = data.getInt();
+                        showOkDialogFromTask("Invalid mode", "JPEG mode is currently not supported (size: " + jpeg_size + ")", true);
                     }
                     else {
                         System.out.println("Invalid mode: " + mode);

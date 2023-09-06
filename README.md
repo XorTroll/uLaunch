@@ -107,6 +107,8 @@ Table of contents
 
   - Toggle between uLaunch and the original HOME menu (no permanent removal) using our `uManager` homebrew tool!
 
+  - Stream the screen via USB (although at low speeds, about ~9 FPS) via `uScreen`! (can be useful for taking quick screenshots, specially since uLaunch is able to capture more than SysDVR or usual game capture)
+
 ## Building
 
 You will need *devkitPro*, *devkitA64*, *libnx* and all SDL2 libraries for Switch development (make sure their packages are installed): `switch-sdl2 switch-freetype switch-glad switch-libdrm_nouveau switch-sdl2_gfx switch-sdl2_image switch-sdl2_ttf switch-sdl2_mixer`
