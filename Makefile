@@ -5,9 +5,9 @@ VERSION			:=	$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_MICRO)
 
 export UL_DEFS	:=	-DUL_VERSION=\"$(VERSION)\"
 
-.PHONY: all fresh clean pu usystem uloader umenu umanager
+.PHONY: all fresh clean pu usystem uloader umenu umanager uscreen
 
-all: usystem uloader umenu umanager
+all: usystem uloader umenu umanager uscreen
 
 fresh: clean all
 
@@ -19,6 +19,7 @@ clean:
 	@$(MAKE) clean -C projects/uLoader
 	@$(MAKE) clean -C projects/uMenu
 	@$(MAKE) clean -C projects/uManager
+	@cd projects/uScreen && mvn clean
 	@rm -rf SdOut
 
 usystem:
@@ -49,3 +50,6 @@ umanager: pu
 	@$(MAKE) -C projects/uManager
 	@mkdir -p SdOut/switch
 	@cp projects/uManager/uManager.nro SdOut/switch/uManager.nro
+
+uscreen:
+	@cd projects/uScreen && mvn package

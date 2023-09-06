@@ -1,0 +1,7 @@
+.root {
+    -fx-font-family: Helvetica, sans-serif;
+}
+
+Button {
+    -fx-background-color: rgb(185, 82, 212);
+}

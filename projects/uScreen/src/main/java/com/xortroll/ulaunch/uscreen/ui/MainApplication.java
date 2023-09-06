@@ -3,6 +3,7 @@ package com.xortroll.ulaunch.uscreen.ui;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Optional;
+import java.util.Properties;
 import javafx.scene.control.ButtonBar.ButtonData;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
@@ -118,20 +119,24 @@ public class MainApplication extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
         ClassLoader this_loader = getClass().getClassLoader();
-        FXMLLoader loader = new FXMLLoader(this_loader.getResource("Main.fxml"));
+        FXMLLoader loader = new FXMLLoader(this_loader.getResource("main.fxml"));
         Pane base = loader.load();
 
         double width = base.getPrefWidth();
         double height = base.getPrefHeight();
 
         this.scene = new Scene(base, width, height);
-        this.scene.getStylesheets().add(this_loader.getResource("Main.css").toExternalForm());
+        this.scene.getStylesheets().add(this_loader.getResource("main.css").toExternalForm());
 
         this.controller = loader.getController();
+
+        Properties main_props = new Properties();
+        main_props.load(this_loader.getResourceAsStream("main.properties"));
+        String version = main_props.getProperty("version");
         
         Stage stage = primaryStage;
-        stage.getIcons().add(new Image(this_loader.getResource("Icon.png").toExternalForm()));
-        stage.setTitle("uScreen");
+        stage.getIcons().add(new Image(this_loader.getResource("icon.png").toExternalForm()));
+        stage.setTitle("uScreen v" + version + " - uLaunch's USB screen utility");
         stage.setScene(this.scene);
         stage.setMinWidth(width);
         stage.setMinHeight(height);
