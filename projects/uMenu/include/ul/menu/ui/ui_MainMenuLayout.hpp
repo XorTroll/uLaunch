@@ -66,12 +66,10 @@ namespace ul::menu::ui {
 
             inline void PushFolder(const std::string &name) {
                 this->cur_folder_path = fs::JoinPath(this->cur_folder_path, name);
-                this->cur_path_text->SetText(this->cur_folder_path);
             }
 
             inline void PopFolder() {
                 this->cur_folder_path = fs::GetBaseDirectory(this->cur_folder_path);
-                this->cur_path_text->SetText(this->cur_folder_path);
             }
 
         public:

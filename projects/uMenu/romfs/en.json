@@ -115,7 +115,7 @@
     "set_enable_conf": "Do you want to enable it?",
     "set_disable_conf": "Do you want to disable it?",
     "set_changed_reboot": "Done. A reboot is required (the option won't be used until then)",
-    "set_viewer_info": "You must enable this if you want to use the PC screen viewer (uViewer). It is not necessary otherwise.",
+    "set_viewer_info": "You must enable this if you want to use the PC screen viewer (uScreen). It is not necessary otherwise.",
     "set_flog_info": "This must be enabled to be able to launch homebrew directly as applications. Note that this might involve BAN RISK.",
     "startup_welcome_info": "Welcome! Please select an account to use.",
     "startup_login_error": "Invalid password. Please try again.",

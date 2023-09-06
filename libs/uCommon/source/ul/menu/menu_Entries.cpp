@@ -108,11 +108,51 @@ namespace ul::menu {
             return test_path;
         }
 
+        void InitializeRemainingEntries(const std::vector<NsApplicationRecord> &remaining_apps) {
+            const std::vector<std::string> DefaultHomebrewRecordPaths = { HbmenuPath, ManagerPath };
+
+            // Reserve for all remaining apps + special homebrews
+            const auto index_gap = UINT32_MAX / (remaining_apps.size() + DefaultHomebrewRecordPaths.size());
+
+            // Add remaining app entries
+            u32 cur_start_idx = 0;
+            for(const auto &app_record : remaining_apps) {
+                Entry app_entry = {
+                    .type = EntryType::Application,
+                    .entry_path = MakeEntryPath(MenuPath, cur_start_idx + index_gap / 2),
+
+                    .app_info = {
+                        .app_id = app_record.application_id,
+                        .record = app_record
+                    }
+                };
+                app_entry.Save();
+                cur_start_idx += index_gap;
+            }
+
+            // Add special homebrew entries
+            for(const auto &nro_path : DefaultHomebrewRecordPaths) {
+                const Entry hb_entry = {
+                    .type = EntryType::Homebrew,
+                    .entry_path = MakeEntryPath(MenuPath, cur_start_idx + index_gap / 2),
+
+                    .hb_info = {
+                        .nro_target = loader::TargetInput::Create(nro_path, nro_path, true, "")
+                    }
+                };
+                hb_entry.Save();
+                cur_start_idx += index_gap;
+            }
+        }
+
         void ConvertOldMenu() {
             if(fs::ExistsDirectory(OldMenuPath)) {
                 if(!fs::ExistsDirectory(MenuPath)) {
                     fs::CreateDirectory(MenuPath);
                 }
+
+                EnsureApplicationRecords();
+                auto apps_copy = g_ApplicationRecords;
 
                 UL_FS_FOR(OldMenuPath, old_entry_name, old_entry_path, is_dir, is_file, {
                     util::JSON old_entry_json;
@@ -154,11 +194,12 @@ namespace ul::menu {
                                 const auto application_id = util::Get64FromString(application_id_fmt);
                                 entry.app_info.app_id = application_id;
 
-                                const auto find_rec = std::find_if(g_ApplicationRecords.begin(), g_ApplicationRecords.end(), [&](const NsApplicationRecord &rec) -> bool {
+                                const auto find_rec = std::find_if(apps_copy.begin(), apps_copy.end(), [&](const NsApplicationRecord &rec) -> bool {
                                     return rec.application_id == application_id;
                                 });
-                                if(find_rec != g_ApplicationRecords.end()) {
+                                if(find_rec != apps_copy.end()) {
                                     entry.app_info.record = *find_rec;
+                                    apps_copy.erase(find_rec);
 
                                     entry.Save();
                                 }
@@ -188,6 +229,8 @@ namespace ul::menu {
                         }
                     }
                 });
+
+                InitializeRemainingEntries(apps_copy);
 
                 fs::DeleteDirectory(OldMenuPath);
             }
@@ -325,38 +368,7 @@ namespace ul::menu {
         if(!fs::ExistsDirectory(MenuPath)) {
             fs::CreateDirectory(MenuPath);
 
-            const std::vector<std::string> DefaultHomebrewRecordPaths = { HbmenuPath, ManagerPath };
-
-            // Reserve for all apps + special homebrews
-            const auto index_gap = UINT32_MAX / (g_ApplicationRecords.size() + DefaultHomebrewRecordPaths.size());
-            u32 cur_start_idx = 0;
-            for(const auto &app_record : g_ApplicationRecords) {
-                Entry app_entry = {
-                    .type = EntryType::Application,
-                    .entry_path = MakeEntryPath(MenuPath, cur_start_idx + index_gap / 2),
-
-                    .app_info = {
-                        .app_id = app_record.application_id,
-                        .record = app_record
-                    }
-                };
-                app_entry.Save();
-                cur_start_idx += index_gap;
-            }
-
-            // Add special homebrew entries
-            for(const auto &nro_path : DefaultHomebrewRecordPaths) {
-                const Entry hb_entry = {
-                    .type = EntryType::Homebrew,
-                    .entry_path = MakeEntryPath(MenuPath, cur_start_idx + index_gap / 2),
-
-                    .hb_info = {
-                        .nro_target = loader::TargetInput::Create(nro_path, nro_path, true, "")
-                    }
-                };
-                hb_entry.Save();
-                cur_start_idx += index_gap;
-            }
+            InitializeRemainingEntries(g_ApplicationRecords);
         }
     }
 

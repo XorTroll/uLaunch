@@ -19,7 +19,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	source source/ul source/ul/menu source/ul/menu/am source/ul/menu/smi source/ul/menu/ui source/ul/menu/ui/menu # source/ul/menu/js source/ul/menu/js/quickjs source/ul/menu/thm source/ul/menu/thm/api
+SOURCES		:=	source source/ul source/ul/menu source/ul/menu/am source/ul/menu/smi source/ul/menu/ui source/ul/menu/ui/menu
 DATA		:=	data
 INCLUDES	:=	include
 EXEFS_SRC	:=	exefs_src
@@ -29,8 +29,7 @@ EXEFS_SRC	:=	exefs_src
 #---------------------------------------------------------------------------------
 ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE -Wl,-wrap,libappletLaunch -Wl,-wrap,libappletStart
 
-CFLAGS	:=	-g -Wall -Werror -O2 -ffunction-sections \
-			$(ARCH) $(DEFINES)
+CFLAGS	:=	-g -O2 -ffunction-sections -Wall -Werror $(ARCH) $(DEFINES)
 
 CFLAGS	+=	$(INCLUDE) -D__SWITCH__ $(UL_DEFS)
 

@@ -60,6 +60,7 @@ namespace {
         nsExit();
         accountExit();
     }
+
 }
 
 // uMenu procedure: read sent storages, initialize RomFs (externally), load config and other stuff, finally create the renderer and start the UI
@@ -73,8 +74,8 @@ int main() {
     UL_ASSERT_TRUE(start_mode != ul::smi::MenuStartMode::Invalid);
 
     // Information sent as an extra storage to uMenu
-    ul::smi::SystemStatus status = {};
-    UL_RC_ASSERT(ul::menu::am::ReadFromInputStorage(&status, sizeof(status)));
+    ul::smi::SystemStatus system_status = {};
+    UL_RC_ASSERT(ul::menu::am::ReadFromInputStorage(&system_status, sizeof(system_status)));
     
     // Check if our RomFs data exists...
     if(!ul::fs::ExistsFile(RomfsFile)) {
@@ -113,7 +114,7 @@ int main() {
     auto renderer = pu::ui::render::Renderer::New(renderer_opts);
     g_MenuApplication = ul::menu::ui::MenuApplication::New(renderer);
 
-    g_MenuApplication->Initialize(start_mode, status, ui_json);
+    g_MenuApplication->Initialize(start_mode, system_status, ui_json);
     g_MenuApplication->Prepare();
 
     // Register handlers for HOME button press detection

@@ -67,6 +67,7 @@ namespace ul::menu::ui {
     void SettingsMenuLayout::Reload(const bool reset_idx) {
         // TODONEW: more settings!
 
+        const auto prev_idx = this->settings_menu->GetSelectedIndex();
         this->settings_menu->ClearItems();
         
         SetSysDeviceNickName console_name = {};
@@ -76,7 +77,7 @@ namespace ul::menu::ui {
         TimeLocationName loc = {};
         timeGetDeviceLocationName(&loc);
         this->PushSettingItem(GetLanguageString("set_console_timezone"), EncodeForSettings<std::string>(loc.name), -1);
-        
+
         bool viewer_usb_enabled;
         UL_ASSERT_TRUE(g_Config.GetEntry(cfg::ConfigEntryId::ViewerUsbEnabled, viewer_usb_enabled));
         this->PushSettingItem(GetLanguageString("set_viewer_enabled"), EncodeForSettings(viewer_usb_enabled), 1);
@@ -84,8 +85,9 @@ namespace ul::menu::ui {
         auto connected_wifi_name = GetLanguageString("set_wifi_none");
         if(net::HasConnection()) {
             NifmNetworkProfileData prof_data = {};
-            nifmGetCurrentNetworkProfile(&prof_data);
-            connected_wifi_name = prof_data.network_name;
+            if(R_SUCCEEDED(nifmGetCurrentNetworkProfile(&prof_data))) {
+                connected_wifi_name = prof_data.wireless_setting_data.ssid;
+            }
         }
         this->PushSettingItem(GetLanguageString("set_wifi_name"), EncodeForSettings(connected_wifi_name), 2);
 
@@ -136,9 +138,7 @@ namespace ul::menu::ui {
         const auto ip_str = net::GetConsoleIpAddress();
         this->PushSettingItem(GetLanguageString("set_ip_addr"), EncodeForSettings(ip_str), -1);
 
-        if(reset_idx) {
-            this->settings_menu->SetSelectedIndex(0);
-        }
+        this->settings_menu->SetSelectedIndex(reset_idx ? 0 : prev_idx);
     }
 
     void SettingsMenuLayout::PushSettingItem(const std::string &name, const std::string &value_display, int id) {

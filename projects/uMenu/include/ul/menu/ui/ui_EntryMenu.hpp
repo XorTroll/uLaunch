@@ -1,7 +1,7 @@
 
 #pragma once
 #include <ul/menu/menu_Entries.hpp>
-#include <ul/ul_Include.hpp>
+#include <ul/ul_Result.hpp>
 #include <ul/util/util_Enum.hpp>
 #include <pu/Plutonium>
 
@@ -11,7 +11,7 @@ namespace ul::menu::ui {
         public:
             static constexpr u32 SideMargin = 15;
             static constexpr u32 EntryMargin = 10;
-            static constexpr u32 CursorTransitionIncrement = 50;
+            static constexpr u32 CursorTransitionIncrementSteps = 10;
             static constexpr u32 DefaultEntrySize = 256;
             static constexpr u32 DefaultCursorSize = 296;
             
@@ -30,9 +30,9 @@ namespace ul::menu::ui {
             u32 base_scroll_entry_idx;
             u32 cur_entry_idx;
             s32 cursor_transition_x;
+            pu::ui::SigmoidIncrementer<s32> cursor_transition_x_incr;
             s32 cursor_transition_y;
-            s32 cursor_transition_x_incr;
-            s32 cursor_transition_y_incr;
+            pu::ui::SigmoidIncrementer<s32> cursor_transition_y_incr;
             s32 pre_transition_base_scroll_entry_idx;
             s32 pre_transition_entry_idx;
             s32 after_transition_base_scroll_entry_idx;
@@ -58,7 +58,7 @@ namespace ul::menu::ui {
             void NotifyFocusedEntryChanged(const s32 prev_idx);
 
             inline bool IsCursorInTransition() {
-                return (this->cursor_transition_x_incr != 0) || (this->cursor_transition_y_incr != 0);
+                return !this->cursor_transition_x_incr.IsDone() || !this->cursor_transition_y_incr.IsDone();
             }
 
             inline void ComputeSizes(const u32 entry_h_count) {

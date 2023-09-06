@@ -38,7 +38,7 @@ uloader:
 	@cp projects/uLoader/uLoader.nso SdOut/ulaunch/bin/uLoader/application/main
 	@cp projects/uLoader/uLoader_application.npdm SdOut/ulaunch/bin/uLoader/application/main.npdm
 
-umenu:
+umenu: pu
 	@$(MAKE) -C projects/uMenu
 	@mkdir -p SdOut/ulaunch/bin/uMenu
 	@cp projects/uMenu/uMenu.nso SdOut/ulaunch/bin/uMenu/main

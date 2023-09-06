@@ -133,8 +133,8 @@ namespace ul::menu::ui {
         this->base_scroll_entry_idx = 0;
         this->cursor_transition_x = 0;
         this->cursor_transition_y = 0;
-        this->cursor_transition_x_incr = 0;
-        this->cursor_transition_y_incr = 0;
+        this->cursor_transition_x_incr = {};
+        this->cursor_transition_y_incr = {};
         this->after_transition_base_scroll_entry_idx = -1;
         this->after_transition_entry_idx = -1;
     }
@@ -188,15 +188,9 @@ namespace ul::menu::ui {
         }
 
         if(this->IsCursorInTransition()) {
-            this->cursor_transition_x += this->cursor_transition_x_incr;
-            this->cursor_transition_y += this->cursor_transition_y_incr;
-            const u32 abs_x = abs(this->cursor_transition_x);
-            const u32 abs_y = abs(this->cursor_transition_y);
-            if((abs_x >= (SideMargin + this->entry_size)) || (abs_y >= (SideMargin + this->entry_size))) {
+            if(this->cursor_transition_x_incr.Increment(this->cursor_transition_x) || this->cursor_transition_y_incr.Increment(this->cursor_transition_y)) {
                 this->cursor_transition_x = 0;
                 this->cursor_transition_y = 0;
-                this->cursor_transition_x_incr = 0;
-                this->cursor_transition_y_incr = 0;
 
                 if(this->after_transition_base_scroll_entry_idx >= 0) {
                     this->base_scroll_entry_idx = this->after_transition_base_scroll_entry_idx;
@@ -232,6 +226,8 @@ namespace ul::menu::ui {
             return;
         }
 
+        const auto cursor_transition_abs_incr = EntryMargin + this->entry_size;
+
         const auto prev_cur_i = this->cur_entry_idx;
         if((keys_down & HidNpadButton_Up) || (keys_held & HidNpadButton_StickLUp)) {
             if(!this->cur_entries.empty()) {
@@ -244,7 +240,7 @@ namespace ul::menu::ui {
                     else {
                         this->pre_transition_entry_idx = this->cur_entry_idx;
                         this->after_transition_entry_idx = this->cur_entry_idx - g_MenuEntryHorizontalCount;
-                        this->cursor_transition_y_incr = -CursorTransitionIncrement;
+                        this->cursor_transition_y_incr.Start(CursorTransitionIncrementSteps, 0, -cursor_transition_abs_incr);
                         this->NotifyFocusedEntryChanged(prev_cur_i);
                     }
                 }
@@ -261,44 +257,44 @@ namespace ul::menu::ui {
                     else {
                         this->pre_transition_entry_idx = this->cur_entry_idx;
                         this->after_transition_entry_idx = this->cur_entry_idx + g_MenuEntryHorizontalCount;
-                        this->cursor_transition_y_incr = CursorTransitionIncrement;
+                        this->cursor_transition_y_incr.Start(CursorTransitionIncrementSteps, 0, cursor_transition_abs_incr);
                         this->NotifyFocusedEntryChanged(this->pre_transition_entry_idx);
                     }
                 }
             }
         }
-        else if((keys_down & HidNpadButton_Left) || (keys_held & HidNpadButton_StickLLeft)) {
+        else if((keys_held & HidNpadButton_Left) || (keys_held & HidNpadButton_StickLLeft)) {
             if(!this->cur_entries.empty()) {
                 if(this->cur_entry_idx > 0) {
                     if((this->base_scroll_entry_idx > 0) && (this->base_scroll_entry_idx == this->cur_entry_idx)) {
                         this->pre_transition_entry_idx = this->cur_entry_idx;
                         this->after_transition_entry_idx = this->cur_entry_idx - 1;
-                        this->cursor_transition_x_incr = -CursorTransitionIncrement;
+                        this->cursor_transition_x_incr.Start(CursorTransitionIncrementSteps, 0, -cursor_transition_abs_incr);
                         this->after_transition_base_scroll_entry_idx = PseudoScrollUpIndex;
                     }
                     else {
                         this->pre_transition_entry_idx = this->cur_entry_idx;
                         this->after_transition_entry_idx = this->cur_entry_idx - 1;
-                        this->cursor_transition_x_incr = -CursorTransitionIncrement;
+                        this->cursor_transition_x_incr.Start(CursorTransitionIncrementSteps, 0, -cursor_transition_abs_incr);
                         this->NotifyFocusedEntryChanged(prev_cur_i);
                     }
                     
                 }
             }
         }
-        else if((keys_down & HidNpadButton_Right) || (keys_held & HidNpadButton_StickLRight)) {
+        else if((keys_held & HidNpadButton_Right) || (keys_held & HidNpadButton_StickLRight)) {
             if(!this->cur_entries.empty()) {
                 if((this->cur_entry_idx + 1) < this->cur_entries.size()) {
                     if(((this->cur_entry_idx - this->base_scroll_entry_idx) == (this->entry_v_count * g_MenuEntryHorizontalCount - 1))) {
                         this->pre_transition_entry_idx = this->cur_entry_idx;
                         this->after_transition_entry_idx = this->cur_entry_idx + 1;
-                        this->cursor_transition_x_incr = CursorTransitionIncrement;
+                        this->cursor_transition_x_incr.Start(CursorTransitionIncrementSteps, 0, cursor_transition_abs_incr);
                         this->after_transition_base_scroll_entry_idx = PseudoScrollDownIndex;
                     }
                     else {
                         this->pre_transition_entry_idx = this->cur_entry_idx;
                         this->after_transition_entry_idx = this->cur_entry_idx + 1;
-                        this->cursor_transition_x_incr = CursorTransitionIncrement;
+                        this->cursor_transition_x_incr.Start(CursorTransitionIncrementSteps, 0, cursor_transition_abs_incr);
                         this->NotifyFocusedEntryChanged(prev_cur_i);
                     }
                 }
@@ -317,7 +313,7 @@ namespace ul::menu::ui {
         }
 
         const auto old_entry_idx = this->cur_entry_idx;
-        
+
         this->cur_entries = LoadEntries(this->cur_path);
         this->LoadUpdateEntries();
 
