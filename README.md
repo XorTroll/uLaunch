@@ -105,7 +105,7 @@ Table of contents
 
   - Browse the Internet (via the normally hidden web-applet) directly from the main menu!
 
-  - Toggle between uLaunch and the original HOME menu (no permanent removal) using our `uManager` homebrew tool!
+  - Toggle between uLaunch and the original HOME menu (no permanent removal) and/or easily update uLaunch using our `uManager` homebrew tool!
 
   - Stream the screen via USB (although at low speeds, about ~9 FPS) via `uScreen`! (can be useful for taking quick screenshots, specially since uLaunch is able to capture more than SysDVR or usual game capture)
 

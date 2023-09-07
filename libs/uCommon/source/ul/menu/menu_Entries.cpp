@@ -111,24 +111,9 @@ namespace ul::menu {
         void InitializeRemainingEntries(const std::vector<NsApplicationRecord> &remaining_apps) {
             const std::vector<std::string> DefaultHomebrewRecordPaths = { HbmenuPath, ManagerPath };
 
-            // Reserve for all remaining apps + special homebrews
-            const auto index_gap = UINT32_MAX / (remaining_apps.size() + DefaultHomebrewRecordPaths.size());
-
-            // Add remaining app entries
+            // Reserve for special homebrews + all remaining apps
+            const auto index_gap = UINT32_MAX / (DefaultHomebrewRecordPaths.size() + remaining_apps.size());
             u32 cur_start_idx = 0;
-            for(const auto &app_record : remaining_apps) {
-                Entry app_entry = {
-                    .type = EntryType::Application,
-                    .entry_path = MakeEntryPath(MenuPath, cur_start_idx + index_gap / 2),
-
-                    .app_info = {
-                        .app_id = app_record.application_id,
-                        .record = app_record
-                    }
-                };
-                app_entry.Save();
-                cur_start_idx += index_gap;
-            }
 
             // Add special homebrew entries
             for(const auto &nro_path : DefaultHomebrewRecordPaths) {
@@ -141,6 +126,21 @@ namespace ul::menu {
                     }
                 };
                 hb_entry.Save();
+                cur_start_idx += index_gap;
+            }
+
+            // Add remaining app entries
+            for(const auto &app_record : remaining_apps) {
+                Entry app_entry = {
+                    .type = EntryType::Application,
+                    .entry_path = MakeEntryPath(MenuPath, cur_start_idx + index_gap / 2),
+
+                    .app_info = {
+                        .app_id = app_record.application_id,
+                        .record = app_record
+                    }
+                };
+                app_entry.Save();
                 cur_start_idx += index_gap;
             }
         }

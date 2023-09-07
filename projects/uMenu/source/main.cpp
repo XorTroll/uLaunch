@@ -89,16 +89,7 @@ int main() {
     Initialize();
 
     // Get system language and load translations (default one if not present)
-    u64 lang_code = 0;
-    UL_RC_ASSERT(setGetLanguageCode(&lang_code));
-    const auto lang_path = ul::cfg::GetLanguageJSONPath(reinterpret_cast<char*>(&lang_code));
-    UL_RC_ASSERT(ul::util::LoadJSONFromFile(g_DefaultLanguage, ul::DefaultLanguagePath));
-    g_MainLanguage = g_DefaultLanguage;
-    if(ul::fs::ExistsFile(lang_path)) {
-        auto lang_json = ul::util::JSON::object();
-        UL_RC_ASSERT(ul::util::LoadJSONFromFile(lang_json, lang_path));
-        g_MainLanguage = lang_json;
-    }
+    ul::cfg::LoadLanguageJsons(ul::MenuLanguagesPath, g_MainLanguage, g_DefaultLanguage);
 
     // Get the text sizes to initialize default fonts
     auto ui_json = ul::util::JSON::object();

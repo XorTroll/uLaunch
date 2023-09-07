@@ -1,8 +1,11 @@
 #include <ul/man/ui/ui_MainApplication.hpp>
+#include <ul/ul_Result.hpp>
 
 ul::man::ui::MainApplication::Ref g_MainApplication;
 
 int main() {
+    ul::InitializeLogging("uManager");
+
     auto renderer_opts = pu::ui::render::RendererInitOptions(SDL_INIT_EVERYTHING, pu::ui::render::RendererHardwareFlags);
     renderer_opts.UseImage(pu::ui::render::IMGAllFlags);
     renderer_opts.UseTTF();

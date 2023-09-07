@@ -1,10 +1,18 @@
 #include <ul/man/ui/ui_MainApplication.hpp>
+#include <ul/cfg/cfg_Config.hpp>
+#include <ul/util/util_Json.hpp>
 
 extern ul::man::ui::MainApplication::Ref g_MainApplication;
+ul::util::JSON g_DefaultLanguage;
+ul::util::JSON g_MainLanguage;
 
 namespace ul::man::ui {
 
     void MainApplication::OnLoad() {
+        UL_RC_ASSERT(setInitialize());
+        cfg::LoadLanguageJsons(ManagerLanguagesPath, g_MainLanguage, g_DefaultLanguage);
+        setExit();
+
         this->main_menu_lyt = MainMenuLayout::New();
         this->toast = pu::ui::extras::Toast::New("...", pu::ui::GetDefaultFont(pu::ui::DefaultFontSize::Medium), pu::ui::Color(225, 225, 225, 255), pu::ui::Color(40, 40, 40, 255));
 

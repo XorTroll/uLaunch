@@ -283,11 +283,15 @@ namespace ul::cfg {
     std::vector<Theme> LoadThemes();
     std::string GetAssetByTheme(const Theme &base, const std::string &resource_base);
 
-    inline std::string GetLanguageJSONPath(const std::string &lang) {
-        return fs::JoinPath(LanguagesPath, lang + ".json");
-    }
+    void LoadLanguageJsons(const std::string &lang_base, util::JSON &lang, util::JSON &def);
 
-    std::string GetLanguageString(const util::JSON &lang, const util::JSON &def, const std::string &name);
+    inline std::string GetLanguageString(const util::JSON &lang, const util::JSON &def, const std::string &name) {
+        auto str = lang.value(name, "");
+        if(str.empty()) {
+            str = def.value(name, "");
+        }
+        return str;
+    }
 
     Config CreateNewAndLoadConfig();
     Config LoadConfig();

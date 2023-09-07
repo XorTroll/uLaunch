@@ -9,7 +9,8 @@
 namespace ul {
 
     constexpr const char DefaultThemePath[] = "romfs:/default";
-    constexpr const char DefaultLanguagePath[] = "romfs:/en.json";
+    constexpr const char DefaultLanguagePath[] = "romfs:/lang";
+    constexpr const char DefaultLanguage[] = "en-US";
 
     constexpr const char RootPath[] = "sdmc:/ulaunch";
 
@@ -18,13 +19,14 @@ namespace ul {
     constexpr const char ThemesPath[] = "sdmc:/ulaunch/themes";
 
     constexpr const char MenuPath[] = "sdmc:/ulaunch/menu";
-
-    constexpr const char LanguagesPath[] = "sdmc:/ulaunch/lang";
+    constexpr const char MenuLanguagesPath[] = "sdmc:/ulaunch/lang/uMenu";
 
     constexpr const char RootCachePath[] = "sdmc:/ulaunch/cache";
     constexpr const char ApplicationCachePath[] = "sdmc:/ulaunch/cache/app";
     constexpr const char HomebrewCachePath[] = "sdmc:/ulaunch/cache/hb";
     constexpr const char AccountCachePath[] = "sdmc:/ulaunch/cache/acc";
+
+    constexpr const char ManagerLanguagesPath[] = "sdmc:/ulaunch/lang/uManager";
 
     constexpr const char OldMenuPath[] = "sdmc:/ulaunch/entries";
     constexpr const char OldApplicationCachePath[] = "sdmc:/ulaunch/titles";

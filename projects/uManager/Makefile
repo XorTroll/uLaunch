@@ -42,7 +42,7 @@ BUILD		:=	build
 SOURCES		:=	source source/ul source/ul/man source/ul/man/ui
 INCLUDES	:=	include
 DATA		:=	data
-# ROMFS		:=	romfs
+ROMFS		:=	romfs
 
 VER_MAJOR	:= 1
 VER_MINOR	:= 0
@@ -71,7 +71,7 @@ LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*
 LIBUCOMMON	:=	$(CURDIR)/../../libs/uCommon
 LIBPU		:=	$(CURDIR)/../../libs/Plutonium/Plutonium
 
-LIBS	:= -lnx -lpu -lfreetype -lSDL2_mixer -lopusfile -lopus -lmodplug -lmpg123 -lvorbisidec -lc -logg -lSDL2_ttf -lSDL2_gfx -lSDL2_image -lwebp -lpng -ljpeg `sdl2-config --libs` `freetype-config --libs`
+LIBS	:= -lpu -lzzip -lcurl -lfreetype -lSDL2_mixer -lopusfile -lopus -lmodplug -lmpg123 -lvorbisidec -lc -logg -lSDL2_ttf -lSDL2_gfx -lSDL2_image -lwebp -lpng -ljpeg `sdl2-config --libs` `freetype-config --libs` -luCommon -lnx
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing

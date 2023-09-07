@@ -42,12 +42,14 @@ uloader:
 umenu: pu
 	@$(MAKE) -C projects/uMenu
 	@mkdir -p SdOut/ulaunch/bin/uMenu
+	@mkdir -p SdOut/ulaunch/lang/uMenu
 	@cp projects/uMenu/uMenu.nso SdOut/ulaunch/bin/uMenu/main
 	@cp projects/uMenu/uMenu.npdm SdOut/ulaunch/bin/uMenu/main.npdm
 	@build_romfs projects/uMenu/romfs SdOut/ulaunch/bin/uMenu/romfs.bin
 
 umanager: pu
 	@$(MAKE) -C projects/uManager
+	@mkdir -p SdOut/ulaunch/lang/uManager
 	@mkdir -p SdOut/switch
 	@cp projects/uManager/uManager.nro SdOut/switch/uManager.nro
 

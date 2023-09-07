@@ -57,12 +57,20 @@ namespace ul::cfg {
         return "";
     }
 
-    std::string GetLanguageString(const util::JSON &lang, const util::JSON &def, const std::string &name) {
-        auto str = lang.value(name, "");
-        if(str.empty()) {
-            str = def.value(name, "");
+    void LoadLanguageJsons(const std::string &lang_base, util::JSON &lang, util::JSON &def) {
+        const auto default_lang_file_path = fs::JoinPath(DefaultLanguagePath, DefaultLanguage) + ".json";
+        UL_RC_ASSERT(ul::util::LoadJSONFromFile(def, default_lang_file_path));
+        
+        u64 lang_code = 0;
+        UL_RC_ASSERT(setGetLanguageCode(&lang_code));
+    
+        const auto ext_lang_path = fs::JoinPath(lang_base, reinterpret_cast<char*>(&lang_code)) + ".json";
+        if(R_FAILED(util::LoadJSONFromFile(lang, ext_lang_path))) {
+            const auto lang_path = fs::JoinPath(DefaultLanguagePath, reinterpret_cast<char*>(&lang_code)) + ".json";
+            if(R_FAILED(util::LoadJSONFromFile(lang, lang_path))) {
+                lang = def;
+            }
         }
-        return str;
     }
 
     Config CreateNewAndLoadConfig() {
