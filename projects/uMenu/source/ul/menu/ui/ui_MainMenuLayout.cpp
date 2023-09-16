@@ -76,10 +76,6 @@ namespace ul::menu::ui {
                     this->StopSelection();
                 }
             }
-            else if(!this->entries_menu->IsInRoot()) {
-                const auto parent_path = fs::GetBaseDirectory(this->entries_menu->GetPath());
-                this->MoveTo(parent_path, true);
-            }
         }
         else if(keys_down & HidNpadButton_A) {
             if(this->entries_menu->IsAnySelected()) {
@@ -252,7 +248,6 @@ namespace ul::menu::ui {
             if(this->entries_menu->IsAnySelected()) {
                 const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("menu_selection"), GetLanguageString("menu_select_cancel_conf"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
                 if(option == 0) {
-                    // TODONEW: above
                     g_MenuApplication->ShowNotification(GetLanguageString("menu_select_cancel"));
                     this->StopSelection();
                 }
@@ -266,20 +261,28 @@ namespace ul::menu::ui {
                 }
                 else {
                     if(cur_entry.Is<EntryType::Folder>()) {
-                        const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("entry_options"), GetLanguageString("entry_action"), { "Rename", GetLanguageString("entry_remove"), GetLanguageString("cancel") }, true);
+                        std::vector<std::string> options = { GetLanguageString("entry_rename"), GetLanguageString("entry_remove") };
+                        if(!this->entries_menu->IsInRoot()) {
+                            options.push_back(GetLanguageString("entry_move_parent"));
+                            options.push_back(GetLanguageString("entry_move_root"));
+                        }
+                        options.push_back(GetLanguageString("cancel"));
+                        const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("entry_options"), GetLanguageString("entry_action"), options, true);
                         if(option == 0) {
                             SwkbdConfig cfg;
-                            // TODONEW: check results here
-                            swkbdCreate(&cfg, 0);
+                            UL_RC_ASSERT(swkbdCreate(&cfg, 0));
                             swkbdConfigSetGuideText(&cfg, GetLanguageString("swkbd_rename_folder_guide").c_str());
                             char new_folder_name[500] = {};
                             const auto rc = swkbdShow(&cfg, new_folder_name, sizeof(new_folder_name));
                             swkbdClose(&cfg);
-                            // TODONEW: add confirmation?
+                            
                             if(R_SUCCEEDED(rc)) {
-                                util::CopyToStringBuffer(cur_entry.folder_info.name, new_folder_name);
-                                cur_entry.Save();
-                                this->MoveTo("", true);
+                                const auto option_2 = g_MenuApplication->CreateShowDialog(GetLanguageString("entry_options"), GetLanguageString("entry_rename_conf") + "\n" + GetLanguageString("entry_rename_conf_sub") + ": '" + new_folder_name + "'", { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
+                                if(option_2 == 0) {
+                                    util::CopyToStringBuffer(cur_entry.folder_info.name, new_folder_name);
+                                    cur_entry.Save();
+                                    this->MoveTo("", true);
+                                }    
                             }
                         }
                         else if(option == 1) {
@@ -290,9 +293,25 @@ namespace ul::menu::ui {
                                 g_MenuApplication->ShowNotification(GetLanguageString("entry_remove_ok"));
                             }
                         }
+                        else if(option == 2) {
+                            cur_entry.MoveToParentFolder();
+                            this->MoveTo("", true);
+                            g_MenuApplication->ShowNotification(GetLanguageString("menu_move_ok"));
+                        }
+                        else if(option == 3) {
+                            cur_entry.MoveToRoot();
+                            this->MoveTo("", true);
+                            g_MenuApplication->ShowNotification(GetLanguageString("menu_move_ok"));
+                        }
                     }
                     else if(cur_entry.Is<EntryType::Homebrew>()) {
-                        const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("entry_options"), GetLanguageString("entry_action"), { GetLanguageString("entry_remove"), GetLanguageString("cancel") }, true);
+                        std::vector<std::string> options = { GetLanguageString("entry_remove") };
+                        if(!this->entries_menu->IsInRoot()) {
+                            options.push_back(GetLanguageString("entry_move_parent"));
+                            options.push_back(GetLanguageString("entry_move_root"));
+                        }
+                        options.push_back(GetLanguageString("cancel"));
+                        const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("entry_options"), GetLanguageString("entry_action"), options, true);
                         if(option == 0) {
                             if((strcmp(cur_entry.hb_info.nro_target.nro_path, ul::HbmenuPath) == 0) || (strcmp(cur_entry.hb_info.nro_target.nro_path, ul::ManagerPath) == 0)) {
                                 g_MenuApplication->ShowNotification(GetLanguageString("entry_remove_special"));
@@ -306,26 +325,52 @@ namespace ul::menu::ui {
                                 }
                             }
                         }
+                        else if(option == 1) {
+                            cur_entry.MoveToParentFolder();
+                            this->MoveTo("", true);
+                            g_MenuApplication->ShowNotification(GetLanguageString("menu_move_ok"));
+                        }
+                        else if(option == 2) {
+                            cur_entry.MoveToRoot();
+                            this->MoveTo("", true);
+                            g_MenuApplication->ShowNotification(GetLanguageString("menu_move_ok"));
+                        }
                     }
                     else if(cur_entry.Is<EntryType::Application>()) {
-                        const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("app_launch"), GetLanguageString("app_take_over_select") + "\n" + GetLanguageString("app_take_over_selected"), { "Yes", "Cancel" }, true);
+                        std::vector<std::string> options = { GetLanguageString("app_take_over") };
+                        if(!this->entries_menu->IsInRoot()) {
+                            options.push_back(GetLanguageString("entry_move_parent"));
+                            options.push_back(GetLanguageString("entry_move_root"));
+                        }
+                        options.push_back(GetLanguageString("cancel"));
+                        const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("entry_options"), GetLanguageString("entry_action"), options, true);
                         if(option == 0) {
-                            UL_ASSERT_TRUE(g_Config.SetEntry(cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, cur_entry.app_info.record.application_id));
-                            cfg::SaveConfig(g_Config);
-                            g_MenuApplication->ShowNotification(GetLanguageString("app_take_over_done"));
+                            const auto option_2 = g_MenuApplication->CreateShowDialog(GetLanguageString("app_launch"), GetLanguageString("app_take_over_select") + "\n" + GetLanguageString("app_take_over_selected"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
+                            if(option_2 == 0) {
+                                UL_ASSERT_TRUE(g_Config.SetEntry(cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, cur_entry.app_info.record.application_id));
+                                cfg::SaveConfig(g_Config);
+                                g_MenuApplication->ShowNotification(GetLanguageString("app_take_over_done"));
+                            }
+                        }
+                        else if(option == 1) {
+                            cur_entry.MoveToParentFolder();
+                            this->MoveTo("", true);
+                            g_MenuApplication->ShowNotification(GetLanguageString("menu_move_ok"));
+                        }
+                        else if(option == 2) {
+                            cur_entry.MoveToRoot();
+                            this->MoveTo("", true);
+                            g_MenuApplication->ShowNotification(GetLanguageString("menu_move_ok"));
                         }
                     }
                 }
             }
         }
         else if(keys_down & HidNpadButton_StickL) { 
-            // pu::audio::PlaySfx(this->menu_toggle_sfx);
-
             const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("menu_new_entry_options"), GetLanguageString("menu_new_entry"), { GetLanguageString("menu_new_folder"), GetLanguageString("menu_add_hb"), GetLanguageString("cancel") }, true);
             if(option == 0) {
                 SwkbdConfig cfg;
-                // TODONEW: check results here
-                swkbdCreate(&cfg, 0);
+                UL_RC_ASSERT(swkbdCreate(&cfg, 0));
                 swkbdConfigSetGuideText(&cfg, GetLanguageString("swkbd_rename_folder_guide").c_str());
                 char new_folder_name[500] = {};
                 const auto rc = swkbdShow(&cfg, new_folder_name, sizeof(new_folder_name));
@@ -385,7 +430,7 @@ namespace ul::menu::ui {
                 }
             }
             else {
-                // TODONEW: anything better to show when control data doesnt load? (really shouldn't happen anyway)
+                // TODONEW: anything better to show when control data doesn't load? (really shouldn't happen anyway)
                 this->cur_entry_name_text->SetText("Unknown name...");
                 this->cur_entry_author_text->SetText("Unknown author...");
                 this->cur_entry_version_text->SetText("Unknown version...");
@@ -588,7 +633,7 @@ namespace ul::menu::ui {
                 this->input_bar->AddSetInput(HidNpadButton_B, "");
             }
 
-            this->input_bar->AddSetInput(HidNpadButton_L | HidNpadButton_R | HidNpadButton_ZL | HidNpadButton_ZR, "Quick menu");
+            this->input_bar->AddSetInput(HidNpadButton_L | HidNpadButton_R | HidNpadButton_ZL | HidNpadButton_ZR, GetLanguageString("input_quick_menu"));
 
             this->input_bar->AddSetInput(HidNpadButton_Plus | HidNpadButton_Minus, GetLanguageString("input_resize_menu"));
 

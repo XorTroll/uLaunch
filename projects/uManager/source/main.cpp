@@ -5,6 +5,7 @@ ul::man::ui::MainApplication::Ref g_MainApplication;
 
 int main() {
     ul::InitializeLogging("uManager");
+    UL_RC_ASSERT(nsInitialize());
 
     auto renderer_opts = pu::ui::render::RendererInitOptions(SDL_INIT_EVERYTHING, pu::ui::render::RendererHardwareFlags);
     renderer_opts.UseImage(pu::ui::render::IMGAllFlags);
@@ -17,5 +18,6 @@ int main() {
     g_MainApplication->Prepare();
     g_MainApplication->ShowWithFadeIn();
 
+    nsExit();
     return 0;
 }

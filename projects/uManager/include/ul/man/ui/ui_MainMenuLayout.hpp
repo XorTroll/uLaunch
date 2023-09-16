@@ -13,6 +13,8 @@ namespace ul::man::ui {
 
             pu::ui::elm::Menu::Ref options_menu;
             pu::ui::elm::MenuItem::Ref activate_menu_item;
+            pu::ui::elm::MenuItem::Ref reset_menu_menu_item;
+            pu::ui::elm::MenuItem::Ref reset_cache_menu_item;
             pu::ui::elm::MenuItem::Ref update_menu_item;
 
             inline void ResetInfoText() {
@@ -24,6 +26,8 @@ namespace ul::man::ui {
             PU_SMART_CTOR(MainMenuLayout)
 
             void activate_DefaultKey();
+            void resetMenu_DefaultKey();
+            void resetCache_DefaultKey();
             void update_DefaultKey();
     };
 

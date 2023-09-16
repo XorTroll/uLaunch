@@ -294,6 +294,25 @@ namespace ul::menu {
         this->entry_path = new_entry_path;
     }
 
+    void Entry::MoveToParentFolder() {
+        // Note: not moving the folder's actual fs folder (for folder entries) to avoid messy logic, this should work just fine
+
+        const auto cur_folder_path = fs::GetBaseDirectory(this->entry_path);
+        const auto cur_parent_folder_path = fs::GetBaseDirectory(cur_folder_path);
+
+        const auto new_entry_path = fs::JoinPath(cur_parent_folder_path, fs::GetBaseName(this->entry_path));
+        fs::RenameFile(this->entry_path, new_entry_path);
+        this->entry_path = new_entry_path;
+    }
+
+    void Entry::MoveToRoot() {
+        // Note: not moving the folder's actual fs folder (for folder entries) to avoid messy logic, this should work just fine
+
+        const auto new_entry_path = fs::JoinPath(MenuPath, fs::GetBaseName(this->entry_path));
+        fs::RenameFile(this->entry_path, new_entry_path);
+        this->entry_path = new_entry_path;
+    }
+
     void Entry::Save() const {
         auto entry_json = util::JSON::object();
         entry_json["type"] = static_cast<u32>(this->type);
@@ -503,7 +522,15 @@ namespace ul::menu {
             if(i < (entries.size() - 1)) {
                 auto &next_entry = entries.at(i + 1);
 
-                if((next_entry.index - cur_entry.index) == 1) {
+                if(next_entry.index == (cur_entry.index + 1)) {
+                    needs_reindexing = true;
+                    break;
+                }
+                if(cur_entry.index == (next_entry.index + 1)) {
+                    needs_reindexing = true;
+                    break;
+                }
+                if(next_entry.index == cur_entry.index) {
                     needs_reindexing = true;
                     break;
                 }
@@ -511,13 +538,14 @@ namespace ul::menu {
         }
 
         if(needs_reindexing) {
+            UL_LOG_INFO("Reindexing entries at '%s'...", path.c_str());
             const auto index_gap = UINT32_MAX / entries.size();
             u32 cur_start_idx = 0;
             for(auto &entry : entries) {
                 entry.Remove();
 
-                u32 new_idx;
-                entry.entry_path = AllocateEntryPath(cur_start_idx, cur_start_idx + index_gap, path, new_idx);
+                const auto new_idx = cur_start_idx + index_gap / 2;
+                entry.entry_path = MakeEntryPath(path, new_idx);
                 entry.index = new_idx;
                 entry.Save();
                 cur_start_idx += index_gap;

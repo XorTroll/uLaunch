@@ -1,8 +1,11 @@
 #include <ul/man/ui/ui_MainApplication.hpp>
+#include <ul/menu/menu_Cache.hpp>
+#include <ul/acc/acc_Accounts.hpp>
 #include <ul/util/util_Json.hpp>
 #include <ul/man/man_Manager.hpp>
 #include <ul/man/man_Network.hpp>
 #include <ul/cfg/cfg_Config.hpp>
+#include <ul/os/os_Applications.hpp>
 #include <zzip/lib.h>
 
 extern ul::man::ui::MainApplication::Ref g_MainApplication;
@@ -63,6 +66,16 @@ namespace ul::man::ui {
         this->activate_menu_item->AddOnKey(std::bind(&MainMenuLayout::activate_DefaultKey, this));
         this->options_menu->AddItem(this->activate_menu_item);
 
+        this->reset_menu_menu_item = pu::ui::elm::MenuItem::New(GetLanguageString("reset_menu_item"));
+        this->reset_menu_menu_item->SetColor(pu::ui::Color(225, 225, 225, 255));
+        this->reset_menu_menu_item->AddOnKey(std::bind(&MainMenuLayout::resetMenu_DefaultKey, this));
+        this->options_menu->AddItem(this->reset_menu_menu_item);
+
+        this->reset_cache_menu_item = pu::ui::elm::MenuItem::New(GetLanguageString("reset_cache_item"));
+        this->reset_cache_menu_item->SetColor(pu::ui::Color(225, 225, 225, 255));
+        this->reset_cache_menu_item->AddOnKey(std::bind(&MainMenuLayout::resetCache_DefaultKey, this));
+        this->options_menu->AddItem(this->reset_cache_menu_item);
+        
         this->update_menu_item = pu::ui::elm::MenuItem::New(GetLanguageString("update_item"));
         this->update_menu_item->SetColor(pu::ui::Color(225, 225, 225, 255));
         this->update_menu_item->AddOnKey(std::bind(&MainMenuLayout::update_DefaultKey, this));
@@ -94,6 +107,30 @@ namespace ul::man::ui {
         }
         else {
             g_MainApplication->CreateShowDialog(GetLanguageString("activate_changes_title"), GetLanguageString("activate_not_present"), { GetLanguageString("ok") }, true);
+        }
+    }
+
+    void MainMenuLayout::resetMenu_DefaultKey() {
+        const auto option = g_MainApplication->CreateShowDialog(GetLanguageString("reset_menu_title"), GetLanguageString("reset_menu_conf"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
+        if(option == 0) {
+            fs::DeleteDirectory(MenuPath);
+
+            // When returning to uMenu it will automatically regenerate the menu entries
+
+            g_MainApplication->ShowNotification(GetLanguageString("reset_menu_success"));
+        }
+    }
+
+    void MainMenuLayout::resetCache_DefaultKey() {
+        const auto option = g_MainApplication->CreateShowDialog(GetLanguageString("reset_cache_title"), GetLanguageString("reset_cache_conf"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
+        if(option == 0) {
+            // Regenerate cache
+            const auto cur_app_recs = os::ListApplicationRecords();
+            menu::CacheApplications(cur_app_recs);
+            menu::CacheHomebrew();
+            acc::CacheAccounts();
+
+            g_MainApplication->ShowNotification(GetLanguageString("reset_cache_success"));
         }
     }
 

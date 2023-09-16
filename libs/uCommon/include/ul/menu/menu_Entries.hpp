@@ -92,6 +92,8 @@ namespace ul::menu {
         void ReloadApplicationInfo();
 
         void MoveTo(const std::string &new_folder_path);
+        void MoveToParentFolder();
+        void MoveToRoot();
         void Save() const;
         void Remove();
 
