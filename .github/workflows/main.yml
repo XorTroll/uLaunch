@@ -15,7 +15,7 @@ jobs:
     - name: Update packages
       run: |
         sudo -n apt-get update
-        sudo -n apt-get upgrade -y git
+        sudo -n apt-get upgrade -y git maven
 
     - name: Silence all git safe directory warnings
       run: git config --system --add safe.directory '*'

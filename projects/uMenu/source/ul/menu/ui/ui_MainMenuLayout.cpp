@@ -447,7 +447,7 @@ namespace ul::menu::ui {
         }
     }
 
-    MainMenuLayout::MainMenuLayout(const u8 *captured_screen_buf, const u8 min_alpha) : last_has_connection(false), last_battery_lvl(0), last_is_charging(false), cur_folder_path(""), launch_fail_warn_shown(false), min_alpha(min_alpha), target_alpha(0), mode(SuspendedImageMode::ShowingAfterStart), suspended_screen_alpha(0xFF) {
+    MainMenuLayout::MainMenuLayout(const u8 *captured_screen_buf, const u8 min_alpha) : last_has_connection(false), last_battery_lvl(0), last_is_charging(false), cur_folder_path(""), start_time_elapsed(false), min_alpha(min_alpha), target_alpha(0), mode(SuspendedImageMode::ShowingAfterStart), suspended_screen_alpha(0xFF) {
         // TODONEW: like nxlink but for sending themes and quickly being able to test them?
 
         if(captured_screen_buf != nullptr) {
@@ -667,9 +667,15 @@ namespace ul::menu::ui {
             this->battery_icon->SetImage(TryFindImage(g_Theme, battery_img));
         }
 
-        const auto now_tp = std::chrono::steady_clock::now();
-        // Wait a bit before handling sent messages
-        if(std::chrono::duration_cast<std::chrono::milliseconds>(now_tp - this->startup_tp).count() >= 1000) {
+        if(!this->start_time_elapsed) {
+            const auto now_tp = std::chrono::steady_clock::now();
+            // Wait a bit before handling sent messages
+            if(std::chrono::duration_cast<std::chrono::seconds>(now_tp - this->startup_tp).count() >= MessagesWaitTimeoutSeconds) {
+                this->start_time_elapsed = true;
+            }
+        }
+
+        if(this->start_time_elapsed) {
             if(g_MenuApplication->GetLaunchFailed()) {
                 g_MenuApplication->CreateShowDialog(GetLanguageString("app_launch"), GetLanguageString("app_unexpected_error"), { GetLanguageString("ok") }, true);
             }

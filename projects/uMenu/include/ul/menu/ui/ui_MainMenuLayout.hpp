@@ -17,6 +17,8 @@ namespace ul::menu::ui {
             // TODONEW: config in theme?
             static constexpr u8 SuspendedScreenAlphaIncrement = 6;
 
+            static constexpr s64 MessagesWaitTimeoutSeconds = 1;
+
         private:
             enum class SuspendedImageMode {
                 ShowingAfterStart = 0,
@@ -53,7 +55,7 @@ namespace ul::menu::ui {
             QuickMenu::Ref quick_menu;
             InputBar::Ref input_bar;
             std::chrono::steady_clock::time_point startup_tp;
-            bool launch_fail_warn_shown;
+            bool start_time_elapsed;
             u8 min_alpha;
             u8 target_alpha;
             SuspendedImageMode mode;
