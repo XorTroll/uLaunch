@@ -11,6 +11,15 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+
+    - name: Update packages
+      run: |
+        sudo -n apt-get update
+        sudo -n apt-get upgrade -y git
+
+    - name: Silence all git safe directory warnings
+      run: git config --system --add safe.directory '*'
+
     - name: Update repository
       run: |
         git submodule update --init --recursive
