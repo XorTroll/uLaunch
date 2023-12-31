@@ -402,7 +402,7 @@ void loadNro(void)
         g_smCloseWorkaround = true;
     }
 
-    extern NORETURN void hbTargetImpl(u64 entries_ptr, u64 handle, u64 entrypoint);
+    extern NX_NORETURN void hbTargetImpl(u64 entries_ptr, u64 handle, u64 entrypoint);
     hbTargetImpl((u64) entries, -1, entrypoint);
 }
 

@@ -71,7 +71,7 @@ inline constexpr size_t operator ""_GB(unsigned long long n) {
 #include <ul_Result.hpp>
 
 template<typename ...Args>
-inline void NORETURN OnAssertionFailed(const char *log_fmt, Args &&...args) {
+inline void NX_NORETURN OnAssertionFailed(const char *log_fmt, Args &&...args) {
     // TODO: unique log file for each assertion faial (a la crash report?)
     auto log_f = fopen(UL_ASSERTION_LOG_FILE, "wb"); \
     if(log_f) {
