@@ -68,9 +68,7 @@ uLaunch is a project which aims to replace the console's **HOME menu** with a cu
 
 - *Users*
 
-  - PC-like login on startup (select user and use it for everything, log off, register/change/remove password...)
-
-  - **User password** support! (up to 15 characters)
+  - PC-like login on startup (select user and use it for everything, log off, register/change)
 
 - *Miscellaneous extras*
 

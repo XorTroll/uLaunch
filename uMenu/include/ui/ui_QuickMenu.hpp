@@ -5,6 +5,10 @@
 
 namespace ui {
 
+    namespace quickmenu_utils{
+        extern int quickMenuInputsToIgnore;
+    }
+
     class QuickMenu : public pu::ui::elm::Element {
         public:
             static constexpr s32 MainItemSize = 300;
@@ -30,12 +34,16 @@ namespace ui {
 
         private:
             bool on;
+            
             s32 bg_alpha;
             pu::ui::elm::Menu::Ref options_menu;
 
             static void OnHomeButtonDetection();
 
         public:
+            pu::audio::Sfx menu_open_sfx; //Used when opening the quick menu
+            pu::audio::Sfx menu_scroll_sfx; //Used when scrolling the quick menu
+            pu::audio::Sfx menu_close_sfx; //Used when closing the quick menu
             QuickMenu(const std::string &main_icon);
             PU_SMART_CTOR(QuickMenu)
 
@@ -56,7 +64,12 @@ namespace ui {
             }
             
             inline void Toggle() {
-                this->on = !this->on;
+                if(ui::quickmenu_utils::quickMenuInputsToIgnore>0){
+                    ui::quickmenu_utils::quickMenuInputsToIgnore--;
+                }else{
+                    ui::quickmenu_utils::quickMenuInputsToIgnore=0;
+                    this->on = !this->on;
+                }
             }
 
             inline constexpr bool IsOn() {

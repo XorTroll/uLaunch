@@ -128,5 +128,10 @@
     "help_multiselect": "Press Y to open the multiselect mode. Then, press Y to (de)select any title, Y to confirm the selection or B to cancel.",
     "help_back": "Press B or HOME on any menu (except the startup menu) to return to the main menu.",
     "help_minus": "Press Minus (-) on the main menu to swap between the normal menu and the homebrew menu.",
-    "help_plus": "Press Plus (+) to see uLaunch's information (project version, description...)"
+    "help_plus": "Press Plus (+) to see uLaunch's information (project version, description...)",
+    "web_dialog": "Web Browser",
+    "web_dialog_info": "What would you like to do?",
+    "web_enter_url": "Enter an URL",
+    "web_use_google": "Use Google",
+    "web_cancel": "Cancel"
 }

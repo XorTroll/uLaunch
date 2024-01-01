@@ -43,12 +43,14 @@ namespace ui {
             pu::ui::Color text_clr;
             pu::ui::Color menu_focus_clr;
             pu::ui::Color menu_bg_clr;
+            pu::audio::Sfx logout_sfx;
 
         public:
             using Application::Application;
 
             ~MenuApplication() {
                 pu::audio::DestroyMusic(this->bgm);
+                pu::audio::DestroySfx(this->logout_sfx);
             }
             
             PU_SMART_CTOR(MenuApplication)
@@ -58,6 +60,8 @@ namespace ui {
             }
 
             void OnLoad() override;
+
+            void PlayLogoutSfx();
 
             inline void SetInformation(const dmi::MenuStartMode start_mode, const dmi::DaemonStatus daemon_status, const JSON ui_json) {
                 this->start_mode = start_mode;

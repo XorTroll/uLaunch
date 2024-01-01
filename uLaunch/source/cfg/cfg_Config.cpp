@@ -384,6 +384,13 @@ namespace cfg {
         ofs.close();
     }
 
+    void DeleteRecord(const TitleRecord record){
+        const auto json_path = GetRecordJsonPath(record);
+        if(fs::ExistsFile(json_path)) {
+            fs::DeleteFile(json_path);
+        }
+    }
+
     bool MoveRecordTo(TitleList &list, const TitleRecord &record, const std::string &folder_name) {
         bool title_found = false;
         TitleRecord record_copy = {};
@@ -397,7 +404,6 @@ namespace cfg {
                 return true;
             }
             record_json_name = STL_UNWRAP(find_in_root).json_name;
-
             list.root.titles.erase(find_in_root);
             title_found = true;
         }
@@ -412,7 +418,6 @@ namespace cfg {
                         return true;
                     }
                     record_json_name = STL_UNWRAP(find_in_folder).json_name;
-
                     folder.titles.erase(find_in_folder);
                     title_found = true;
                     break;
@@ -425,7 +430,7 @@ namespace cfg {
             title.json_name = record_json_name;
             title.sub_folder = folder_name;
 
-            // Add (move) it to root again
+            // Add (move) it to root again if we are moving back from a folder
             if(folder_name.empty()) {
                 list.root.titles.push_back(title);
             }
