@@ -1,7 +1,7 @@
 
 #pragma once
 #include <ul/loader/loader_TargetTypes.hpp>
-#include <ul/smi/smi_Results.hpp>
+#include <ul/ul_Result.hpp>
 #include <functional>
 
 namespace ul::smi {

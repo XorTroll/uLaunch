@@ -41,6 +41,5 @@ namespace ul::util {
 
     std::string FormatAccount(const AccountUid value);
     std::string FormatResultDisplay(const Result rc);
-    std::string FormatResultHex(const Result rc);
 
 }

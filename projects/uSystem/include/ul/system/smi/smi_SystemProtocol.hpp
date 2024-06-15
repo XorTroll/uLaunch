@@ -1,7 +1,6 @@
 
 #pragma once
 #include <ul/smi/smi_Protocol.hpp>
-#include <ul/system/smi/smi_Results.hpp>
 
 namespace ul::system::smi {
 

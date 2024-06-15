@@ -1,4 +1,5 @@
 #include <ul/util/util_String.hpp>
+#include <ul/ul_Result.hpp>
 
 namespace ul::util {
 
@@ -37,14 +38,17 @@ namespace ul::util {
     }
 
     std::string FormatResultDisplay(const Result rc) {
-        char res[0x20] = {};
-        sprintf(res, "%04d-%04d", R_MODULE(rc) + 2000, R_DESCRIPTION(rc));   
-        return res;
-    }
+        char res[0x40] = {};
 
-    std::string FormatResultHex(const Result rc) {
-        char res[0x20] = {};
-        sprintf(res, "0x%X", rc);
+        const char *mod_name;
+        const char *rc_name;
+        if(rc::GetResultNameAny(rc, mod_name, rc_name)) {
+            sprintf(res, "%04d-%04d/0x%X/%s::%s", R_MODULE(rc) + 2000, R_DESCRIPTION(rc), R_VALUE(rc), mod_name, rc_name);
+        }
+        else {
+            sprintf(res, "%04d-%04d/0x%X", R_MODULE(rc) + 2000, R_DESCRIPTION(rc), R_VALUE(rc));
+        }
+        
         return res;
     }
 

@@ -26,7 +26,7 @@ namespace ul::menu::ui {
                     }
                     case smi::MenuMessage::GameCardMountFailure: {
                         // TODO: move somewhere else?
-                        g_MenuApplication->DisplayDialog(GetLanguageString("gamecard"), GetLanguageString("gamecard_mount_failed") + " " + util::FormatResultHex(first_msg.gc_mount_failure.mount_rc), { GetLanguageString("ok") }, true);
+                        g_MenuApplication->DisplayDialog(GetLanguageString("gamecard"), GetLanguageString("gamecard_mount_failed") + " " + util::FormatResultDisplay(first_msg.gc_mount_failure.mount_rc), { GetLanguageString("ok") }, true);
                         this->msg_queue.pop();
                         break;
                     }

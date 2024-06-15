@@ -9,6 +9,7 @@ SdOut/
 *.nacp
 *.nro
 *.lst
+*.gen.hpp
 .vs/
 bin/
 obj/

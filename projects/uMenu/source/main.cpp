@@ -7,7 +7,6 @@
 #include <ul/menu/smi/smi_MenuMessageHandler.hpp>
 #include <ul/menu/am/am_LibraryAppletUtils.hpp>
 #include <ul/menu/am/am_LibnxLibappletWrap.hpp>
-#include <ul/menu/menu_Results.hpp>
 
 using namespace ul::util::size;
 
@@ -79,7 +78,7 @@ int main() {
     
     // Check if our RomFs data exists...
     if(!ul::fs::ExistsFile(RomfsFile)) {
-        UL_RC_ASSERT(ul::menu::ResultRomfsNotFound);
+        UL_RC_ASSERT(ul::ResultRomfsNotFound);
     }
 
     // Try to mount it

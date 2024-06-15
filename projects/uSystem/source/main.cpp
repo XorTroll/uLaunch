@@ -340,13 +340,13 @@ namespace {
                             UL_RC_TRY(reader.Pop(launch_app_id));
 
                             if(app::IsActive()) {
-                                return smi::ResultApplicationActive;
+                                return ul::ResultApplicationActive;
                             }
                             if(!accountUidIsValid(&g_SelectedUser)) {
-                                return smi::ResultInvalidSelectedUser;
+                                return ul::ResultInvalidSelectedUser;
                             }
                             if(g_ApplicationLaunchFlag > 0) {
-                                return smi::ResultAlreadyQueued;
+                                return ul::ResultAlreadyQueued;
                             }
 
                             g_ApplicationLaunchFlag = launch_app_id;
@@ -354,7 +354,7 @@ namespace {
                         }
                         case ul::smi::SystemMessage::ResumeApplication: {
                             if(!app::IsActive()) {
-                                return smi::ResultApplicationNotActive;
+                                return ul::ResultApplicationNotActive;
                             }
 
                             UL_RC_TRY(app::SetForeground());
@@ -374,19 +374,19 @@ namespace {
                             UL_RC_TRY(reader.Pop(temp_ipt));
 
                             if(app::IsActive()) {
-                                return smi::ResultApplicationActive;
+                                return ul::ResultApplicationActive;
                             }
                             if(!accountUidIsValid(&g_SelectedUser)) {
-                                return smi::ResultInvalidSelectedUser;
+                                return ul::ResultInvalidSelectedUser;
                             }
                             if(g_ApplicationLaunchFlag > 0) {
-                                return smi::ResultAlreadyQueued;
+                                return ul::ResultAlreadyQueued;
                             }
 
                             u64 hb_application_takeover_program_id;
                             UL_ASSERT_TRUE(g_Config.GetEntry(ul::cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, hb_application_takeover_program_id));
                             if(hb_application_takeover_program_id == 0) {
-                                return smi::ResultNoHomebrewTakeoverApplication;
+                                return ul::ResultNoHomebrewTakeoverApplication;
                             }
 
                             g_LoaderApplicationLaunchFlag = temp_ipt;

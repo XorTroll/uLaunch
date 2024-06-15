@@ -21,15 +21,15 @@ namespace ul::system::ecs {
 
         FsFileSystem sd_fs;
         UL_RC_TRY(fsOpenSdCardFileSystem(&sd_fs));
-        std::shared_ptr<ams::fs::fsa::IFileSystem> remote_sd_fs = std::make_shared<ams::fs::RemoteFileSystem>(sd_fs);
-        auto subdir_fs = std::make_shared<ams::fssystem::SubDirectoryFileSystem>(std::move(remote_sd_fs));
-        ams::fs::Path exefs_fs_path;
+        std::shared_ptr<::ams::fs::fsa::IFileSystem> remote_sd_fs = std::make_shared<::ams::fs::RemoteFileSystem>(sd_fs);
+        auto subdir_fs = std::make_shared<::ams::fssystem::SubDirectoryFileSystem>(std::move(remote_sd_fs));
+        ::ams::fs::Path exefs_fs_path;
         UL_RC_TRY(exefs_fs_path.Initialize(exefs_path.c_str(), exefs_path.length()));
-        UL_RC_TRY(exefs_fs_path.Normalize(ams::fs::PathFlags{}));
+        UL_RC_TRY(exefs_fs_path.Normalize(::ams::fs::PathFlags{}));
         UL_RC_TRY(subdir_fs->Initialize(exefs_fs_path));
 
-        auto sd_ifs_ipc = sf::MakeShared<ams::fssrv::sf::IFileSystem, ams::fssrv::impl::FileSystemInterfaceAdapter>(std::move(subdir_fs), false);
-        UL_RC_TRY(sf::RegisterSession(move_h, ams::sf::cmif::ServiceObjectHolder(std::move(sd_ifs_ipc))));
+        auto sd_ifs_ipc = sf::MakeShared<::ams::fssrv::sf::IFileSystem, ::ams::fssrv::impl::FileSystemInterfaceAdapter>(std::move(subdir_fs), false);
+        UL_RC_TRY(sf::RegisterSession(move_h, ::ams::sf::cmif::ServiceObjectHolder(std::move(sd_ifs_ipc))));
         return ResultSuccess;
     }
 

@@ -6,37 +6,14 @@
 #include <stratosphere.hpp>
 #endif
 
+#include <ul/ul_Results.gen.hpp>
+
 namespace ul {
 
-    // All 2380-**** results are from us
-
-    constexpr u32 Module = 380;
-    constexpr u32 SubmoduleOffset = 100;
-
-    #define UL_RC_DEFINE_SUBMODULE(val) constexpr u32 Submodule = val
-    #define UL_RC_DEFINE(name, val) constexpr Result Result ## name = MAKERESULT(Module, Submodule * SubmoduleOffset + val)
-
-    constexpr Result ResultSuccess = 0;
-
-    /*
-    
-    Result submodules:
-    0 -> misc
-    1 -> smi
-    2 -> sf (ipc)
-    3 -> loader
-    4 -> smi
-    5 -> util
-    6 -> menu
-    
-    */
+    using namespace rc;
+    using namespace rc::ulaunch;
 
     namespace res {
-
-        UL_RC_DEFINE_SUBMODULE(0);
-
-        UL_RC_DEFINE(AssertionFailed, 1);
-        UL_RC_DEFINE(InvalidTransform, 2);
 
         template<typename T>
         inline ::Result TransformIntoResult(const T t) {
@@ -45,7 +22,7 @@ namespace ul {
 
         #ifdef ATMOSPHERE
         template<>
-        inline ::Result TransformIntoResult<ams::Result>(const ams::Result ams_rc) {
+        inline ::Result TransformIntoResult<::ams::Result>(const ::ams::Result ams_rc) {
             return ams_rc.GetValue();
         }
         #endif
@@ -90,7 +67,7 @@ namespace ul {
     #define UL_ASSERT_TRUE(expr) ({ \
         const auto _tmp_expr = (expr); \
         if(!_tmp_expr) { \
-            ::ul::OnAssertionFailed(::ul::res::ResultAssertionFailed, #expr " asserted to be false...\n"); \
+            ::ul::OnAssertionFailed(::rc::ulaunch::ResultAssertionFailed, #expr " asserted to be false...\n"); \
         } \
     })
 

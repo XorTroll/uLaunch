@@ -5,14 +5,18 @@ VERSION			:=	$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_MICRO)
 
 export UL_DEFS	:=	-DUL_VERSION=\"$(VERSION)\"
 
-.PHONY: all fresh clean pu usystem uloader umenu umanager uscreen
+.PHONY: all fresh clean pu arc usystem uloader umenu umanager uscreen
 
-all: usystem uloader umenu umanager uscreen
+all: arc usystem uloader umenu umanager uscreen
 
 fresh: clean all
 
 pu:
 	@$(MAKE) -C libs/Plutonium/
+
+arc:
+	@python arc/arc.py gen_db default+./libs/uCommon/include/ul/ul_Results.rc.hpp
+	@python arc/arc.py gen_cpp rc UL ./libs/uCommon/include/ul/ul_Results.gen.hpp
 
 clean:
 	@$(MAKE) clean -C projects/uSystem

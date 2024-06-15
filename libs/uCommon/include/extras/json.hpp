@@ -18,12 +18,16 @@
 #ifndef INCLUDE_NLOHMANN_JSON_HPP_
 #define INCLUDE_NLOHMANN_JSON_HPP_
 
+//////////////////////////////////////////////////////////////////////////////////
 // Custom config for this project
+
 #include <ul/ul_Result.hpp>
-#define JSON_THROW_USER(exception) ::ul::OnAssertionFailed(::ul::res::ResultAssertionFailed, "JSON libraries threw " #exception "...\n")
+#define JSON_THROW_USER(exception) ::ul::OnAssertionFailed(::rc::ulaunch::ResultAssertionFailed, "JSON libraries threw " #exception "...\n")
 #define JSON_TRY_USER if(true)
 #define JSON_CATCH_USER(exception) if(false)
 #define JSON_INTERNAL_CATCH_USER(exception) if(false)
+
+//////////////////////////////////////////////////////////////////////////////////
 
 #include <algorithm> // all_of, find, for_each
 #include <cstddef> // nullptr_t, ptrdiff_t, size_t

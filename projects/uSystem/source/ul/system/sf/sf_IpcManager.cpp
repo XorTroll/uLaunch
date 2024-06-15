@@ -37,10 +37,10 @@ namespace {
 
 namespace ul::system::sf {
 
-    ams::Result ServerManager::OnNeedsToAccept(int port_index, Server *server) {
+    ::ams::Result ServerManager::OnNeedsToAccept(int port_index, Server *server) {
         switch(port_index) {
             case Port_PrivateService: {
-                return this->AcceptImpl(server, MakeShared<ams::ul::system::sf::IPrivateService, PrivateService>());
+                return this->AcceptImpl(server, MakeShared<::ams::ul::system::sf::IPrivateService, PrivateService>());
             }
             AMS_UNREACHABLE_DEFAULT_CASE();
         }
@@ -48,8 +48,8 @@ namespace ul::system::sf {
 
     Result Initialize() {
         InitializeHeap();
-        UL_RC_TRY(ams::os::CreateThread(&g_ManagerThread, &IpcManagerThread, nullptr, g_ManagerThreadStack, sizeof(g_ManagerThreadStack), 10));
-        ams::os::StartThread(&g_ManagerThread);
+        UL_RC_TRY(::ams::os::CreateThread(&g_ManagerThread, &IpcManagerThread, nullptr, g_ManagerThreadStack, sizeof(g_ManagerThreadStack), 10));
+        ::ams::os::StartThread(&g_ManagerThread);
 
         return ResultSuccess;
     }
@@ -59,7 +59,7 @@ namespace ul::system::sf {
         return g_ManagerAllocator;
     }
 
-    ams::Result RegisterSession(const ams::os::NativeHandle session_handle, ams::sf::cmif::ServiceObjectHolder &&obj) {
+    ::ams::Result RegisterSession(const ::ams::os::NativeHandle session_handle, ::ams::sf::cmif::ServiceObjectHolder &&obj) {
         return g_Manager.RegisterSession(session_handle, std::move(obj));
     }
 

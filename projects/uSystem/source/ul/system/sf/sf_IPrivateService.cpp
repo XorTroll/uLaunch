@@ -1,5 +1,4 @@
 #include <ul/system/sf/sf_IPrivateService.hpp>
-#include <ul/system/sf/sf_Results.hpp>
 #include <ul/system/la/la_LibraryApplet.hpp>
 #include <queue>
 
@@ -8,7 +7,7 @@ extern std::queue<ul::smi::MenuMessageContext> *g_MenuMessageQueue;
 
 namespace ul::system::sf {
 
-    ams::Result PrivateService::Initialize(const ams::sf::ClientProcessId &client_pid) {
+    ::ams::Result PrivateService::Initialize(const ::ams::sf::ClientProcessId &client_pid) {
         if(!this->initialized) {
             u64 program_id = 0;
             UL_RC_TRY(pminfoInitialize());
@@ -28,7 +27,7 @@ namespace ul::system::sf {
         return ResultSuccess;
     }
 
-    ams::Result PrivateService::TryPopMessageContext(ams::sf::Out<MenuMessageContext> out_msg_ctx) {
+    ::ams::Result PrivateService::TryPopMessageContext(::ams::sf::Out<MenuMessageContext> out_msg_ctx) {
         if(!this->initialized) {
             return ResultInvalidProcess;
         }
