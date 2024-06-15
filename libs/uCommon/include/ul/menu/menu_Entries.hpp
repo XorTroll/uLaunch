@@ -30,7 +30,7 @@ namespace ul::menu {
             return this->IsInstalled() || this->IsInstalledNew();
         }
 
-        /* TODONEW
+        /* TODO (new)
         inline bool IsGamecard() const {
             return this->meta_status.storageID == NcmStorageId_GameCard;
         }

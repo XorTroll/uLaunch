@@ -36,7 +36,7 @@ namespace ul::menu::ui {
             static void OnHomeButtonDetection(const smi::MenuMessageContext _);
 
         public:
-            QuickMenu(const std::string &main_icon);
+            QuickMenu();
             PU_SMART_CTOR(QuickMenu)
 
             inline constexpr s32 GetX() override {

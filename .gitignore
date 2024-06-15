@@ -8,6 +8,7 @@ SdOut/
 *.nsp
 *.nacp
 *.nro
+*.lst
 .vs/
 bin/
 obj/

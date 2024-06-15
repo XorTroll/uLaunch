@@ -31,7 +31,7 @@ namespace ul::menu::ui {
             if(diff >= TouchActionTimeMilliseconds) {
                 this->touched = false;
                 if(this->cb) {
-                    (this->cb)();
+                    this->cb();
                 }
                 SDL_SetTextureColorMod(this->img_tex, 0xFF, 0xFF, 0xFF);
             }

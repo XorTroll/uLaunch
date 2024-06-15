@@ -16,7 +16,7 @@ extern "C" {
     u32 __nx_applet_type = AppletType_LibraryApplet; // Explicitly declare we're a library applet (need to do so for non-hbloader homebrew)
     TimeServiceType __nx_time_service_type = TimeServiceType_System;
     u32 __nx_fs_num_sessions = 1;
-    size_t __nx_heap_size = 176_MB;
+    size_t __nx_heap_size = 196_MB;
 
 }
 
@@ -94,14 +94,14 @@ int main() {
     // Get the text sizes to initialize default fonts
     auto ui_json = ul::util::JSON::object();
     UL_RC_ASSERT(ul::util::LoadJSONFromFile(ui_json, ul::cfg::GetAssetByTheme(g_Theme, "ui/UI.json")));
-    const auto menu_folder_text_size = ui_json.value<u32>("menu_folder_text_size", 25);
+    // const auto menu_folder_text_size = ui_json.value<u32>("menu_folder_text_size", 25);
     const auto default_font_path = ul::cfg::GetAssetByTheme(g_Theme, "ui/Font.ttf");
 
     auto renderer_opts = pu::ui::render::RendererInitOptions(SDL_INIT_EVERYTHING, pu::ui::render::RendererHardwareFlags);
     renderer_opts.UseTTF(default_font_path);
     renderer_opts.UseImage(pu::ui::render::IMGAllFlags);
     renderer_opts.UseAudio(pu::ui::render::MixerAllFlags);
-    renderer_opts.SetExtraDefaultFontSize(menu_folder_text_size);
+    // renderer_opts.SetExtraDefaultFontSize(menu_folder_text_size);
     auto renderer = pu::ui::render::Renderer::New(renderer_opts);
     g_MenuApplication = ul::menu::ui::MenuApplication::New(renderer);
 

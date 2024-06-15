@@ -1,5 +1,5 @@
 <p align="center">
-  <img alt="uLaunch" src="projects/uMenu/romfs/LogoLarge.png">
+  <img alt="uLaunch" src="projects/uMenu/romfs/Logo.png">
 </p
 
 <p align="center">
@@ -32,7 +32,7 @@
   </a>
 </p>
 
-> TODO: screenshots!
+![Screenshot](screenshot.jpg)
 
 uLaunch is a project which aims to replace the console's **HOME menu** with a custom, homebrew-oriented one.
 
@@ -61,7 +61,7 @@ Table of contents
 
 - General channel handling (basic functionality): sleep, shutdown, reboot, HOME menu press detection... 
 
-- System settings:
+- *System settings*:
 
   - Show connected WiFi network's name, MAC and IP address
   
@@ -71,7 +71,7 @@ Table of contents
 
   - Check and change the console's nickname
 
-- User features:
+- *User features*:
 
   - Create new users on the startup menu
 

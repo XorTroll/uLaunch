@@ -22,13 +22,12 @@ namespace ul::menu::ui {
 
         g_SystemLanguage = os::GetSystemLanguage();
 
-        this->info_text = pu::ui::elm::TextBlock::New(0, 100, GetLanguageString("lang_info_text"));
+        this->info_text = pu::ui::elm::TextBlock::New(0, 0, GetLanguageString("lang_info_text"));
         this->info_text->SetColor(g_MenuApplication->GetTextColor());
-        this->info_text->SetHorizontalAlign(pu::ui::elm::HorizontalAlign::Center);
         g_MenuApplication->ApplyConfigForElement("languages_menu", "info_text", this->info_text);
         this->Add(this->info_text);
 
-        this->langs_menu = pu::ui::elm::Menu::New(200, 160, 880, g_MenuApplication->GetMenuBackgroundColor(), g_MenuApplication->GetMenuFocusColor(), 100, 4);
+        this->langs_menu = pu::ui::elm::Menu::New(0, 0, 880, g_MenuApplication->GetMenuBackgroundColor(), g_MenuApplication->GetMenuFocusColor(), 100, 4);
         g_MenuApplication->ApplyConfigForElement("languages_menu", "languages_menu_item", this->langs_menu);
         this->Add(this->langs_menu);
     }
@@ -75,7 +74,7 @@ namespace ul::menu::ui {
             g_MenuApplication->ShowNotification(GetLanguageString("lang_active_this"));
         }
         else {
-            const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("lang_set"), GetLanguageString("lang_set_conf"), { GetLanguageString("yes"), GetLanguageString("no") }, true);
+            const auto option = g_MenuApplication->DisplayDialog(GetLanguageString("lang_set"), GetLanguageString("lang_set_conf"), { GetLanguageString("yes"), GetLanguageString("no") }, true);
             if(option == 0) {
                 u64 lang_codes[os::LanguageNameCount] = {};
                 s32 tmp;
@@ -83,7 +82,7 @@ namespace ul::menu::ui {
                 const auto lang_code = lang_codes[this->langs_menu->GetSelectedIndex()];
 
                 const auto rc = setsysSetLanguageCode(lang_code);
-                g_MenuApplication->CreateShowDialog(GetLanguageString("lang_set"), R_SUCCEEDED(rc) ? GetLanguageString("lang_set_ok") : GetLanguageString("lang_set_error") + ": " + util::FormatResultDisplay(rc), { GetLanguageString("ok") }, true);
+                g_MenuApplication->DisplayDialog(GetLanguageString("lang_set"), R_SUCCEEDED(rc) ? GetLanguageString("lang_set_ok") : GetLanguageString("lang_set_error") + ": " + util::FormatResultDisplay(rc), { GetLanguageString("ok") }, true);
                 if(R_SUCCEEDED(rc)) {
                     g_TransitionGuard.Run([]() {
                         g_MenuApplication->FadeOut();

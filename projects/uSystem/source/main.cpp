@@ -228,7 +228,7 @@ namespace {
                         break;
                     }
                     case GeneralChannelMessage::RequestToLaunchApplication: {
-                        // TODONEW: enum?
+                        // TODONEW (low priority): enum?
                         u32 launch_app_request_sender;
                         UL_RC_ASSERT(sams_st_reader.Read(launch_app_request_sender));
 
@@ -260,7 +260,7 @@ namespace {
                         break;
                     }
                     default:
-                        // TODONEW: try to find and implement more messages (mostly those sent by applets!)
+                        // TODONEW (long term): try to find and implement more messages (mostly those sent by applets!)
                         UL_LOG_WARN("Unhandled general channel message!");
                         break;
                 }
@@ -305,7 +305,7 @@ namespace {
                     }
                     else {
                         // Power off, since uMenu's UI relies on the SD card, so trying to use uMenu without the SD is not possible at all without any caching...
-                        // TODONEW: consider handling this in a better way?
+                        // TODONEW (low priority): consider handling this in a better way?
                         UL_RC_ASSERT(appletStartShutdownSequence());
                     }
                     break;
@@ -558,7 +558,7 @@ namespace {
                 u64 hb_applet_takeover_program_id;
                 UL_ASSERT_TRUE(g_Config.GetEntry(ul::cfg::ConfigEntryId::HomebrewAppletTakeoverProgramId, hb_applet_takeover_program_id));
 
-                // TODONEW: consider not asserting and sending the error result to menu instead?
+                // TODO (new): consider not asserting and sending the error result to menu instead?
                 UL_RC_ASSERT(ecs::RegisterLaunchAsApplet(hb_applet_takeover_program_id, 0, "/ulaunch/bin/uLoader/applet", &g_LoaderLaunchFlag, sizeof(g_LoaderLaunchFlag)));
                 
                 sth_done = true;
@@ -808,7 +808,7 @@ extern "C" {
 
 }
 
-// TODONEW: stop using Atmosphere-libs?
+// TODONEW (low priority): stop using Atmosphere-libs?
 
 namespace ams {
 

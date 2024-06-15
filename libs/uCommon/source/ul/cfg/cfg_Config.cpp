@@ -18,7 +18,7 @@ namespace ul::cfg {
         manifest_path = fs::JoinPath(theme_dir, "theme/Manifest.json");
 
         util::JSON manifest_json;
-        // TODONEW: error checking, make some fields required
+        // TODO (new): error checking, make some fields required
         if(R_SUCCEEDED(util::LoadJSONFromFile(manifest_json, manifest_path))) {
             theme.manifest.name = manifest_json.value("name", "'" + base_name + "'");
             theme.manifest.format_version = manifest_json.value("format_version", 0);

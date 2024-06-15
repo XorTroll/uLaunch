@@ -37,7 +37,7 @@ namespace ul::system {
         AlbumRecordingSaved = 93
     };
 
-    // TODONEW (low priority): official general channel message names? (unofficial names are preceded by Unk_*)
+    // TODO (low priority): official general channel message names? (unofficial names are preceded by Unk_*)
     enum class GeneralChannelMessage : u32 {
         Unk_Invalid,
         RequestHomeMenu = 2,
@@ -53,38 +53,6 @@ namespace ul::system {
         RequestToLaunchApplication = 32,
         RequestJumpToStory = 33
     };
-
-    /*
-    0: err
-    1: err
-    4: app launch?
-    7: nop
-    8: nop
-    9: nop
-    10: nop
-    12: nop
-    18: nop
-    19: nop
-    20: ????
-    21: nop
-    22: nop
-    23: ???? (home button?)
-    24: user transfer
-    25: nop
-    26: nop
-    27: ????
-    28: nop
-    29: nop
-    30: nop
-    31: damaged data?
-    34: nop
-    35: nop
-    36: nop
-    37: nop
-    38: nop
-    39: nop
-    40: nop
-    */
 
     struct SystemAppletMessageHeader {
         static constexpr u32 Magic = 0x534D4153; // "SAMS" -> System applet message...?

@@ -26,19 +26,21 @@ namespace ul::menu::ui {
                     }
                     case smi::MenuMessage::GameCardMountFailure: {
                         // TODO: move somewhere else?
-                        g_MenuApplication->CreateShowDialog(GetLanguageString("gamecard"), GetLanguageString("gamecard_mount_failed") + " " + util::FormatResultHex(first_msg.gc_mount_failure.mount_rc), { GetLanguageString("ok") }, true);
+                        g_MenuApplication->DisplayDialog(GetLanguageString("gamecard"), GetLanguageString("gamecard_mount_failed") + " " + util::FormatResultHex(first_msg.gc_mount_failure.mount_rc), { GetLanguageString("ok") }, true);
                         this->msg_queue.pop();
                         break;
                     }
                     case smi::MenuMessage::SdCardEjected: {
                         this->msg_queue.pop();
 
-                        const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("sd_card"), GetLanguageString("sd_card_ejected"), { GetLanguageString("shutdown"), GetLanguageString("reboot") }, false);
-                        if(option == 1) {
-                            RebootSystem();
-                        }
-                        else {
-                            ShutdownSystem();
+                        while(true) {
+                            const auto option = g_MenuApplication->DisplayDialog(GetLanguageString("sd_card"), GetLanguageString("sd_card_ejected"), { GetLanguageString("shutdown"), GetLanguageString("reboot") }, false);
+                            if(option == 0) {
+                                ShutdownSystem();
+                            }
+                            else if(option == 1) {
+                                RebootSystem();
+                            }
                         }
                         break;
                     }
@@ -62,7 +64,7 @@ namespace ul::menu::ui {
             }
         }
 
-        /* TODONEW
+        /* TODO (new)
         if(!hidIsControllerConnected(CONTROLLER_HANDHELD) && !hidIsControllerConnected(CONTROLLER_PLAYER_1)) {
             ShowControllerSupport();
         }

@@ -70,7 +70,7 @@ namespace ul::menu::ui {
 
         if(keys_down & HidNpadButton_B) {
             if(this->entries_menu->IsAnySelected()) {
-                const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("menu_selection"), GetLanguageString("menu_select_cancel_conf"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
+                const auto option = g_MenuApplication->DisplayDialog(GetLanguageString("menu_selection"), GetLanguageString("menu_select_cancel_conf"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
                 if(option == 0) {
                     g_MenuApplication->ShowNotification(GetLanguageString("menu_select_cancel"));
                     this->StopSelection();
@@ -84,7 +84,7 @@ namespace ul::menu::ui {
                         g_MenuApplication->ShowNotification(GetLanguageString("menu_move_folder_itself"));
                     }
                     else {
-                        const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("menu_selection"), GetLanguageString("menu_move_to_folder_conf"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
+                        const auto option = g_MenuApplication->DisplayDialog(GetLanguageString("menu_selection"), GetLanguageString("menu_move_to_folder_conf"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
                         if(option == 0) {
                             u32 cur_i = 0;
                             for(auto &entry : this->entries_menu->GetEntries()) {
@@ -106,8 +106,8 @@ namespace ul::menu::ui {
                     const auto cur_i = this->entries_menu->GetFocusedEntryIndex();
                     const auto last_i = cur_entries.size() - 1;
 
-                    // TODONEW: apply this to folders too? maybe pick better key inputs for this
-                    const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("menu_selection"), GetLanguageString("menu_move_around_entry_conf"), { GetLanguageString("menu_move_around_entry_before"), GetLanguageString("menu_move_around_entry_after"), GetLanguageString("menu_move_around_entry_swap"), GetLanguageString("cancel") }, true);
+                    // TODO (new): apply this to folders too? maybe pick better key inputs for this
+                    const auto option = g_MenuApplication->DisplayDialog(GetLanguageString("menu_selection"), GetLanguageString("menu_move_around_entry_conf"), { GetLanguageString("menu_move_around_entry_before"), GetLanguageString("menu_move_around_entry_after"), GetLanguageString("menu_move_around_entry_swap"), GetLanguageString("cancel") }, true);
                     if(option == 0) {
                         auto cur_start_idx = (cur_i == 0) ? InvalidEntryIndex : cur_entries.at(cur_i - 1).index;
                         const auto cur_end_idx = cur_entry.index;
@@ -214,8 +214,8 @@ namespace ul::menu::ui {
                     }
 
                     if(do_launch_entry && cur_entry.Is<EntryType::Application>() && !cur_entry.app_info.IsLaunchable()) {
-                        // TODONEW: gamecard detection?
-                        // TODONEW: support for "fixing" corrupted apps, like regular homemenu?
+                        // TODO: gamecard detection?
+                        // TODO: support for "fixing" corrupted apps, like regular homemenu?
                         g_MenuApplication->ShowNotification(GetLanguageString("app_not_launchable"));
                         do_launch_entry = false;
                     }
@@ -246,7 +246,7 @@ namespace ul::menu::ui {
         }
         else if(keys_down & HidNpadButton_X) {
             if(this->entries_menu->IsAnySelected()) {
-                const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("menu_selection"), GetLanguageString("menu_select_cancel_conf"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
+                const auto option = g_MenuApplication->DisplayDialog(GetLanguageString("menu_selection"), GetLanguageString("menu_select_cancel_conf"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
                 if(option == 0) {
                     g_MenuApplication->ShowNotification(GetLanguageString("menu_select_cancel"));
                     this->StopSelection();
@@ -267,7 +267,7 @@ namespace ul::menu::ui {
                             options.push_back(GetLanguageString("entry_move_root"));
                         }
                         options.push_back(GetLanguageString("cancel"));
-                        const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("entry_options"), GetLanguageString("entry_action"), options, true);
+                        const auto option = g_MenuApplication->DisplayDialog(GetLanguageString("entry_options"), GetLanguageString("entry_action"), options, true);
                         if(option == 0) {
                             SwkbdConfig cfg;
                             UL_RC_ASSERT(swkbdCreate(&cfg, 0));
@@ -277,7 +277,7 @@ namespace ul::menu::ui {
                             swkbdClose(&cfg);
                             
                             if(R_SUCCEEDED(rc)) {
-                                const auto option_2 = g_MenuApplication->CreateShowDialog(GetLanguageString("entry_options"), GetLanguageString("entry_rename_conf") + "\n" + GetLanguageString("entry_rename_conf_sub") + ": '" + new_folder_name + "'", { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
+                                const auto option_2 = g_MenuApplication->DisplayDialog(GetLanguageString("entry_options"), GetLanguageString("entry_rename_conf") + "\n" + GetLanguageString("entry_rename_conf_sub") + ": '" + new_folder_name + "'", { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
                                 if(option_2 == 0) {
                                     util::CopyToStringBuffer(cur_entry.folder_info.name, new_folder_name);
                                     cur_entry.Save();
@@ -286,7 +286,7 @@ namespace ul::menu::ui {
                             }
                         }
                         else if(option == 1) {
-                            const auto option_2 = g_MenuApplication->CreateShowDialog(GetLanguageString("entry_remove"), GetLanguageString("entry_remove_conf"), { GetLanguageString("yes"), GetLanguageString("no") }, true);
+                            const auto option_2 = g_MenuApplication->DisplayDialog(GetLanguageString("entry_remove"), GetLanguageString("entry_remove_conf"), { GetLanguageString("yes"), GetLanguageString("no") }, true);
                             if(option_2 == 0) {
                                 cur_entry.Remove();
                                 this->MoveTo("", true);
@@ -311,13 +311,13 @@ namespace ul::menu::ui {
                             options.push_back(GetLanguageString("entry_move_root"));
                         }
                         options.push_back(GetLanguageString("cancel"));
-                        const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("entry_options"), GetLanguageString("entry_action"), options, true);
+                        const auto option = g_MenuApplication->DisplayDialog(GetLanguageString("entry_options"), GetLanguageString("entry_action"), options, true);
                         if(option == 0) {
                             if((strcmp(cur_entry.hb_info.nro_target.nro_path, ul::HbmenuPath) == 0) || (strcmp(cur_entry.hb_info.nro_target.nro_path, ul::ManagerPath) == 0)) {
                                 g_MenuApplication->ShowNotification(GetLanguageString("entry_remove_special"));
                             }
                             else {
-                                const auto option_2 = g_MenuApplication->CreateShowDialog(GetLanguageString("entry_remove"), GetLanguageString("entry_remove_conf"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
+                                const auto option_2 = g_MenuApplication->DisplayDialog(GetLanguageString("entry_remove"), GetLanguageString("entry_remove_conf"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
                                 if(option_2 == 0) {
                                     cur_entry.Remove();
                                     this->MoveTo("", true);
@@ -343,9 +343,9 @@ namespace ul::menu::ui {
                             options.push_back(GetLanguageString("entry_move_root"));
                         }
                         options.push_back(GetLanguageString("cancel"));
-                        const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("entry_options"), GetLanguageString("entry_action"), options, true);
+                        const auto option = g_MenuApplication->DisplayDialog(GetLanguageString("entry_options"), GetLanguageString("entry_action"), options, true);
                         if(option == 0) {
-                            const auto option_2 = g_MenuApplication->CreateShowDialog(GetLanguageString("app_launch"), GetLanguageString("app_take_over_select") + "\n" + GetLanguageString("app_take_over_selected"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
+                            const auto option_2 = g_MenuApplication->DisplayDialog(GetLanguageString("app_launch"), GetLanguageString("app_take_over_select") + "\n" + GetLanguageString("app_take_over_selected"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
                             if(option_2 == 0) {
                                 UL_ASSERT_TRUE(g_Config.SetEntry(cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, cur_entry.app_info.record.application_id));
                                 cfg::SaveConfig(g_Config);
@@ -367,7 +367,7 @@ namespace ul::menu::ui {
             }
         }
         else if(keys_down & HidNpadButton_StickL) { 
-            const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("menu_new_entry_options"), GetLanguageString("menu_new_entry"), { GetLanguageString("menu_new_folder"), GetLanguageString("menu_add_hb"), GetLanguageString("cancel") }, true);
+            const auto option = g_MenuApplication->DisplayDialog(GetLanguageString("menu_new_entry_options"), GetLanguageString("menu_new_entry"), { GetLanguageString("menu_new_folder"), GetLanguageString("menu_add_hb"), GetLanguageString("cancel") }, true);
             if(option == 0) {
                 SwkbdConfig cfg;
                 UL_RC_ASSERT(swkbdCreate(&cfg, 0));
@@ -402,10 +402,10 @@ namespace ul::menu::ui {
         if(cur_entry.Is<EntryType::Folder>()) {
             this->banner_img->SetImage(TryFindImage(g_Theme, "ui/BannerFolder"));
 
-            // TODONEW: show folder entry count?
+            // TODO: show folder entry count?
             // this->cur_entry_author_text->SetText(std::to_string(folder_entry_count) + " " + ((folder_entry_count == 1) ? GetLanguageString("folder_entry_single") : GetLanguageString("folder_entry_mult")));
             this->cur_entry_name_text->SetText(cur_entry.folder_info.name);
-            this->cur_entry_author_text->SetText(cur_entry.folder_info.fs_name);
+            this->cur_entry_author_text->SetVisible(false);
             this->cur_entry_version_text->SetVisible(false);
         }
         else {
@@ -420,7 +420,7 @@ namespace ul::menu::ui {
             if(cur_entry.control.IsLoaded()) {
                 if(cur_entry.Is<EntryType::Application>()) {
                     this->cur_entry_name_text->SetText(cur_entry.control.name);
-                    this->cur_entry_author_text->SetText("App type " + std::to_string(cur_entry.app_info.record.type));
+                    this->cur_entry_author_text->SetText(cur_entry.control.author);
                     this->cur_entry_version_text->SetText(cur_entry.control.version);    
                 }
                 else {
@@ -430,10 +430,10 @@ namespace ul::menu::ui {
                 }
             }
             else {
-                // TODONEW: anything better to show when control data doesn't load? (really shouldn't happen anyway)
-                this->cur_entry_name_text->SetText("Unknown name...");
-                this->cur_entry_author_text->SetText("Unknown author...");
-                this->cur_entry_version_text->SetText("Unknown version...");
+                // TODO (low priority): anything better to show when control data doesn't load? (really shouldn't happen anyway)
+                this->cur_entry_name_text->SetText("???");
+                this->cur_entry_author_text->SetText("???");
+                this->cur_entry_version_text->SetText("???");
             }
         }
 
@@ -448,7 +448,7 @@ namespace ul::menu::ui {
     }
 
     MainMenuLayout::MainMenuLayout(const u8 *captured_screen_buf, const u8 min_alpha) : last_has_connection(false), last_battery_lvl(0), last_is_charging(false), cur_folder_path(""), start_time_elapsed(false), min_alpha(min_alpha), target_alpha(0), mode(SuspendedImageMode::ShowingAfterStart), suspended_screen_alpha(0xFF) {
-        // TODONEW: like nxlink but for sending themes and quickly being able to test them?
+        // TODO (low priority): like nxlink but for sending themes and quickly being able to test them?
 
         if(captured_screen_buf != nullptr) {
             this->suspended_screen_img = RawRgbaImage::New(0, 0, captured_screen_buf, 1280, 720, 4);
@@ -458,67 +458,67 @@ namespace ul::menu::ui {
         }
 
         // Load banners first
-        this->top_menu_img = pu::ui::elm::Image::New(40, 35, TryFindImage(g_Theme, "ui/TopMenu"));
+        this->top_menu_img = pu::ui::elm::Image::New(0, 0, TryFindImage(g_Theme, "ui/TopMenu"));
         g_MenuApplication->ApplyConfigForElement("main_menu", "top_menu_bg", this->top_menu_img);
         this->Add(this->top_menu_img);
 
         // Then load buttons and other UI elements
-        this->logo_img = ClickableImage::New(610, 13 + 35, "romfs:/Logo.png");
+        this->logo_img = ClickableImage::New(0, 0, "romfs:/Logo.png");
         this->logo_img->SetWidth(60);
         this->logo_img->SetHeight(60);
         this->logo_img->SetOnClick(&ShowAboutDialog);
         g_MenuApplication->ApplyConfigForElement("main_menu", "logo_icon", this->logo_img, false); // Sorry theme makers... uLaunch's logo must be visible, but can be moved
         this->Add(this->logo_img);
 
-        this->connection_icon = pu::ui::elm::Image::New(80, 53, TryFindImage(g_Theme, "ui/NoConnectionIcon"));
+        this->connection_icon = pu::ui::elm::Image::New(0, 0, TryFindImage(g_Theme, "ui/NoConnectionIcon"));
         g_MenuApplication->ApplyConfigForElement("main_menu", "connection_icon", this->connection_icon);
         this->Add(this->connection_icon);
 
-        this->users_img = ClickableImage::New(270, 53, ""); // On layout creation, no user is still selected...
+        this->users_img = ClickableImage::New(0, 0, ""); // On layout creation, no user is still selected...
         this->users_img->SetOnClick(&ShowUserMenu);
         g_MenuApplication->ApplyConfigForElement("main_menu", "user_icon", this->users_img);
         this->Add(this->users_img);
 
-        this->controller_img = ClickableImage::New(340, 53, TryFindImage(g_Theme, "ui/ControllerIcon"));
+        this->controller_img = ClickableImage::New(0, 0, TryFindImage(g_Theme, "ui/ControllerIcon"));
         this->controller_img->SetOnClick(&ShowControllerSupport);
         g_MenuApplication->ApplyConfigForElement("main_menu", "controller_icon", this->controller_img);
         this->Add(this->controller_img);
 
-        this->time_text = pu::ui::elm::TextBlock::New(515, 65, "...");
+        this->time_text = pu::ui::elm::TextBlock::New(0, 0, "...");
         this->time_text->SetColor(g_MenuApplication->GetTextColor());
         g_MenuApplication->ApplyConfigForElement("main_menu", "time_text", this->time_text);
         this->Add(this->time_text);
 
-        this->battery_text = pu::ui::elm::TextBlock::New(700, 55, "...");
+        this->battery_text = pu::ui::elm::TextBlock::New(0, 0, "...");
         this->battery_text->SetFont(pu::ui::GetDefaultFont(pu::ui::DefaultFontSize::Medium));
         this->battery_text->SetColor(g_MenuApplication->GetTextColor());
         g_MenuApplication->ApplyConfigForElement("main_menu", "battery_text", this->battery_text);
         this->Add(this->battery_text);
 
-        this->battery_icon = pu::ui::elm::Image::New(700, 80, TryFindImage(g_Theme, "ui/BatteryNormalIcon"));
+        this->battery_icon = pu::ui::elm::Image::New(0, 0, TryFindImage(g_Theme, "ui/BatteryNormalIcon"));
         g_MenuApplication->ApplyConfigForElement("main_menu", "battery_icon", this->battery_icon);
         this->Add(this->battery_icon);
 
-        this->settings_img = ClickableImage::New(810, 53, TryFindImage(g_Theme, "ui/SettingsIcon"));
+        this->settings_img = ClickableImage::New(0, 0, TryFindImage(g_Theme, "ui/SettingsIcon"));
         this->settings_img->SetOnClick(&ShowSettingsMenu);
         g_MenuApplication->ApplyConfigForElement("main_menu", "settings_icon", this->settings_img);
         this->Add(this->settings_img);
 
-        this->themes_img = ClickableImage::New(880, 53, TryFindImage(g_Theme, "ui/ThemesIcon"));
+        this->themes_img = ClickableImage::New(0, 0, TryFindImage(g_Theme, "ui/ThemesIcon"));
         this->themes_img->SetOnClick(&ShowThemesMenu);
         g_MenuApplication->ApplyConfigForElement("main_menu", "themes_icon", this->themes_img);
         this->Add(this->themes_img);
 
-        this->fw_text = pu::ui::elm::TextBlock::New(970, 65, g_MenuApplication->GetStatus().fw_version);
+        this->fw_text = pu::ui::elm::TextBlock::New(0, 0, g_MenuApplication->GetStatus().fw_version);
         this->fw_text->SetColor(g_MenuApplication->GetTextColor());
         g_MenuApplication->ApplyConfigForElement("main_menu", "firmware_text", this->fw_text);
         this->Add(this->fw_text);
 
-        this->input_bar = InputBar::New(0, 120);
+        this->input_bar = InputBar::New(0, 0);
         g_MenuApplication->ApplyConfigForElement("main_menu", "input_bar", this->input_bar);
         this->Add(this->input_bar);
 
-        this->cur_path_text = pu::ui::elm::TextBlock::New(10, 170, this->cur_folder_path);
+        this->cur_path_text = pu::ui::elm::TextBlock::New(0, 0, this->cur_folder_path);
         this->cur_path_text->SetFont(pu::ui::GetDefaultFont(pu::ui::DefaultFontSize::Medium));
         this->cur_path_text->SetColor(g_MenuApplication->GetTextColor());
         g_MenuApplication->ApplyConfigForElement("main_menu", "cur_path_text", this->cur_path_text);
@@ -545,13 +545,11 @@ namespace ul::menu::ui {
         this->no_entries_text = pu::ui::elm::TextBlock::New(0, 0, "No entries here");
         this->no_entries_text->SetFont(pu::ui::GetDefaultFont(pu::ui::DefaultFontSize::Medium));
         this->no_entries_text->SetColor(g_MenuApplication->GetTextColor());
-        this->no_entries_text->SetHorizontalAlign(pu::ui::elm::HorizontalAlign::Center);
-        this->no_entries_text->SetVerticalAlign(pu::ui::elm::VerticalAlign::Center);
         this->no_entries_text->SetVisible(false);
         g_MenuApplication->ApplyConfigForElement("main_menu", "no_entries_text", this->no_entries_text);
         this->Add(this->no_entries_text);
 
-        this->entries_menu = EntryMenu::New(0, 190, pu::ui::render::ScreenHeight - 190, g_MenuApplication->GetStatus().last_menu_path, g_MenuApplication->GetStatus().last_menu_index, std::bind(&MainMenuLayout::menu_EntryInputPressed, this, std::placeholders::_1), std::bind(&MainMenuLayout::menu_FocusedEntryChanged, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+        this->entries_menu = EntryMenu::New(0, 0, pu::ui::render::ScreenHeight - 190, g_MenuApplication->GetStatus().last_menu_path, g_MenuApplication->GetStatus().last_menu_index, std::bind(&MainMenuLayout::menu_EntryInputPressed, this, std::placeholders::_1), std::bind(&MainMenuLayout::menu_FocusedEntryChanged, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
         g_MenuApplication->ApplyConfigForElement("main_menu", "entries_menu", this->entries_menu);
         this->Add(this->entries_menu);
 
@@ -565,7 +563,7 @@ namespace ul::menu::ui {
             this->Add(this->suspended_screen_img);
         }
 
-        this->quick_menu = QuickMenu::New(TryFindImage(g_Theme, "ui/QuickMenuMain"));
+        this->quick_menu = QuickMenu::New();
         this->Add(this->quick_menu);
 
         this->startup_tp = std::chrono::steady_clock::now();
@@ -677,13 +675,13 @@ namespace ul::menu::ui {
 
         if(this->start_time_elapsed) {
             if(g_MenuApplication->GetLaunchFailed()) {
-                g_MenuApplication->CreateShowDialog(GetLanguageString("app_launch"), GetLanguageString("app_unexpected_error"), { GetLanguageString("ok") }, true);
+                g_MenuApplication->DisplayDialog(GetLanguageString("app_launch"), GetLanguageString("app_unexpected_error"), { GetLanguageString("ok") }, true);
             }
             else if(g_MenuApplication->HasChosenHomebrew()) {
                 const auto nro_path = g_MenuApplication->GetChosenHomebrew();
-                const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("menu_chosen_hb"), GetLanguageString("menu_chosen_hb_info") + "\n\n" + nro_path + "\n\n" + GetLanguageString("menu_add_chosen_hb"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
+                const auto option = g_MenuApplication->DisplayDialog(GetLanguageString("menu_chosen_hb"), GetLanguageString("menu_chosen_hb_info") + "\n\n" + nro_path + "\n\n" + GetLanguageString("menu_add_chosen_hb"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
                 if(option == 0) {
-                    // TODONEW: custom argv option?
+                    // TODO (low priority): custom argv option?
                     CreateHomebrewEntry(this->entries_menu->GetPath(), nro_path, nro_path);
                     this->MoveTo("", true);
                     g_MenuApplication->ShowNotification(GetLanguageString("menu_chosen_hb_added"));
@@ -691,7 +689,7 @@ namespace ul::menu::ui {
             }
             else if(!g_CurrentThemeChecked) {
                 if(cfg::IsThemeOutdated(g_Theme)) {
-                    g_MenuApplication->CreateShowDialog(GetLanguageString("theme_current"), GetLanguageString("theme_outdated"), { GetLanguageString("ok") }, true);
+                    g_MenuApplication->DisplayDialog(GetLanguageString("theme_current"), GetLanguageString("theme_outdated"), { GetLanguageString("ok") }, true);
                 }
                 g_CurrentThemeChecked = true;
             }
@@ -823,7 +821,7 @@ namespace ul::menu::ui {
     }
 
     void MainMenuLayout::HandleCloseSuspended() {
-        const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("suspended_app"), GetLanguageString("suspended_close"), { GetLanguageString("yes"), GetLanguageString("no") }, true);
+        const auto option = g_MenuApplication->DisplayDialog(GetLanguageString("suspended_app"), GetLanguageString("suspended_close"), { GetLanguageString("yes"), GetLanguageString("no") }, true);
         if(option == 0) {
             this->DoTerminateApplication();
         }
@@ -832,7 +830,7 @@ namespace ul::menu::ui {
     void MainMenuLayout::HandleHomebrewLaunch(const Entry &hb_entry) {
         u64 app_takeover_id;
         UL_ASSERT_TRUE(g_Config.GetEntry(cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, app_takeover_id));
-        const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("hb_launch"), GetLanguageString("hb_launch_conf"), { GetLanguageString("hb_applet"), GetLanguageString("hb_app"), GetLanguageString("cancel") }, true);
+        const auto option = g_MenuApplication->DisplayDialog(GetLanguageString("hb_launch"), GetLanguageString("hb_launch_conf"), { GetLanguageString("hb_applet"), GetLanguageString("hb_app"), GetLanguageString("cancel") }, true);
         if(option == 0) {
             pu::audio::PlaySfx(this->title_launch_sfx);
             
@@ -869,7 +867,7 @@ namespace ul::menu::ui {
                 }
             }
             else {
-                g_MenuApplication->CreateShowDialog(GetLanguageString("app_launch"), GetLanguageString("app_no_take_over_title") + "\n" + GetLanguageString("app_take_over_title_select"), { GetLanguageString("ok") }, true);
+                g_MenuApplication->DisplayDialog(GetLanguageString("app_launch"), GetLanguageString("app_no_take_over_title") + "\n" + GetLanguageString("app_take_over_title_select"), { GetLanguageString("ok") }, true);
             }
         }
     }

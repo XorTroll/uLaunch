@@ -14,7 +14,7 @@ namespace ul::menu::ui {
 
     class MainMenuLayout : public IMenuLayout {
         public:
-            // TODONEW: config in theme?
+            // TODO (new): config in theme?
             static constexpr u8 SuspendedScreenAlphaIncrement = 6;
 
             static constexpr s64 MessagesWaitTimeoutSeconds = 1;

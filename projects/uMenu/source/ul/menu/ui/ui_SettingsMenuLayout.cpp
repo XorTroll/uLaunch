@@ -35,13 +35,12 @@ namespace ul::menu::ui {
     SettingsMenuLayout::SettingsMenuLayout() {
         this->SetBackgroundImage(cfg::GetAssetByTheme(g_Theme, "ui/Background.png"));
 
-        this->info_text = pu::ui::elm::TextBlock::New(0, 25, GetLanguageString("set_info_text"));
+        this->info_text = pu::ui::elm::TextBlock::New(0, 0, GetLanguageString("set_info_text"));
         this->info_text->SetColor(g_MenuApplication->GetTextColor());
-        this->info_text->SetHorizontalAlign(pu::ui::elm::HorizontalAlign::Center);
         g_MenuApplication->ApplyConfigForElement("settings_menu", "info_text", this->info_text);
         this->Add(this->info_text);
 
-        this->settings_menu = pu::ui::elm::Menu::New(50, 80, 1180, g_MenuApplication->GetMenuBackgroundColor(), g_MenuApplication->GetMenuFocusColor(), 100, 6);
+        this->settings_menu = pu::ui::elm::Menu::New(0, 0, 1180, g_MenuApplication->GetMenuBackgroundColor(), g_MenuApplication->GetMenuFocusColor(), 100, 6);
         g_MenuApplication->ApplyConfigForElement("settings_menu", "settings_menu_item", this->settings_menu);
         this->Add(this->settings_menu);
     }
@@ -65,17 +64,17 @@ namespace ul::menu::ui {
     }
 
     void SettingsMenuLayout::Reload(const bool reset_idx) {
-        // TODONEW: more settings!
+        // TODONEW (long term): implement more settings!
 
         const auto prev_idx = this->settings_menu->GetSelectedIndex();
         this->settings_menu->ClearItems();
         
         SetSysDeviceNickName console_name = {};
-        setsysGetDeviceNickname(&console_name);
+        UL_RC_ASSERT(setsysGetDeviceNickname(&console_name));
         this->PushSettingItem(GetLanguageString("set_console_nickname"), EncodeForSettings<std::string>(console_name.nickname), 0);
         
         TimeLocationName loc = {};
-        timeGetDeviceLocationName(&loc);
+        UL_RC_ASSERT(timeGetDeviceLocationName(&loc));
         this->PushSettingItem(GetLanguageString("set_console_timezone"), EncodeForSettings<std::string>(loc.name), -1);
 
         bool viewer_usb_enabled;
@@ -93,45 +92,45 @@ namespace ul::menu::ui {
 
         u64 lang_code = 0;
         auto lang_val = SetLanguage_ENUS;
-        setGetSystemLanguage(&lang_code);
-        setMakeLanguage(lang_code, &lang_val);
+        UL_RC_ASSERT(setGetSystemLanguage(&lang_code));
+        UL_RC_ASSERT(setMakeLanguage(lang_code, &lang_val));
         const std::string lang_str = os::LanguageNameList[static_cast<u32>(lang_val)];
         this->PushSettingItem(GetLanguageString("set_console_lang"), EncodeForSettings(lang_str), 3);
 
         auto console_info_upload = false;
-        setsysGetConsoleInformationUploadFlag(&console_info_upload);
+        UL_RC_ASSERT(setsysGetConsoleInformationUploadFlag(&console_info_upload));
         this->PushSettingItem(GetLanguageString("set_console_info_upload"), EncodeForSettings(console_info_upload), 4);
         
         auto auto_titles_dl = false;
-        setsysGetAutomaticApplicationDownloadFlag(&auto_titles_dl);
+        UL_RC_ASSERT(setsysGetAutomaticApplicationDownloadFlag(&auto_titles_dl));
         this->PushSettingItem(GetLanguageString("set_auto_titles_dl"), EncodeForSettings(auto_titles_dl), 5);
         
         auto auto_update = false;
-        setsysGetAutoUpdateEnableFlag(&auto_update);
+        UL_RC_ASSERT(setsysGetAutoUpdateEnableFlag(&auto_update));
         this->PushSettingItem(GetLanguageString("set_auto_update"), EncodeForSettings(auto_update), 6);
         
         auto wireless_lan = false;
-        setsysGetWirelessLanEnableFlag(&wireless_lan);
+        UL_RC_ASSERT(setsysGetWirelessLanEnableFlag(&wireless_lan));
         this->PushSettingItem(GetLanguageString("set_wireless_lan"), EncodeForSettings(wireless_lan), 7);
         
         auto bluetooth = false;
-        setsysGetBluetoothEnableFlag(&bluetooth);
+        UL_RC_ASSERT(setsysGetBluetoothEnableFlag(&bluetooth));
         this->PushSettingItem(GetLanguageString("set_bluetooth"), EncodeForSettings(bluetooth), 8);
         
         auto usb_30 = false;
-        setsysGetUsb30EnableFlag(&usb_30);
+        UL_RC_ASSERT(setsysGetUsb30EnableFlag(&usb_30));
         this->PushSettingItem(GetLanguageString("set_usb_30"), EncodeForSettings(usb_30), 9);
         
         auto nfc = false;
-        setsysGetNfcEnableFlag(&nfc);
+        UL_RC_ASSERT(setsysGetNfcEnableFlag(&nfc));
         this->PushSettingItem(GetLanguageString("set_nfc"), EncodeForSettings(nfc), 10);
         
         SetSysSerialNumber serial = {};
-        setsysGetSerialNumber(&serial);
+        UL_RC_ASSERT(setsysGetSerialNumber(&serial));
         this->PushSettingItem(GetLanguageString("set_serial_no"), EncodeForSettings<std::string>(serial.number), -1);
         
         net::WlanMacAddress mac_addr = {};
-        net::GetMacAddress(mac_addr);
+        UL_RC_ASSERT(net::GetMacAddress(mac_addr));
         const auto mac_addr_str = net::FormatMacAddress(mac_addr);
         this->PushSettingItem(GetLanguageString("set_mac_addr"), EncodeForSettings(mac_addr_str), -1);
 
@@ -153,31 +152,30 @@ namespace ul::menu::ui {
     }
 
     void SettingsMenuLayout::setting_DefaultKey(const u32 id) {
-        // TODONEW: check results here
-
         bool reload_need = false;
         switch(id) {
             case 0: {
                 SwkbdConfig swkbd;
-                swkbdCreate(&swkbd, 0);
-                swkbdConfigSetGuideText(&swkbd, GetLanguageString("swkbd_console_nick_guide").c_str());
-                SetSysDeviceNickName console_name = {};
-                setsysGetDeviceNickname(&console_name);
-                swkbdConfigSetInitialText(&swkbd, console_name.nickname);
-                swkbdConfigSetStringLenMax(&swkbd, 32);
-                SetSysDeviceNickName new_name = {};
-                auto rc = swkbdShow(&swkbd, new_name.nickname, sizeof(new_name.nickname));
-                swkbdClose(&swkbd);
-                if(R_SUCCEEDED(rc)) {
-                    setsysSetDeviceNickname(&new_name);
-                    reload_need = true;
+                if(R_SUCCEEDED(swkbdCreate(&swkbd, 0))) {
+                    swkbdConfigSetGuideText(&swkbd, GetLanguageString("swkbd_console_nick_guide").c_str());
+                    SetSysDeviceNickName console_name = {};
+                    UL_RC_ASSERT(setsysGetDeviceNickname(&console_name));
+                    swkbdConfigSetInitialText(&swkbd, console_name.nickname);
+                    swkbdConfigSetStringLenMax(&swkbd, 32);
+                    SetSysDeviceNickName new_name = {};
+                    auto rc = swkbdShow(&swkbd, new_name.nickname, sizeof(new_name.nickname));
+                    swkbdClose(&swkbd);
+                    if(R_SUCCEEDED(rc)) {
+                        setsysSetDeviceNickname(&new_name);
+                        reload_need = true;
+                    }
                 }
                 break;
             }
             case 1: {
                 bool viewer_usb_enabled;
                 UL_ASSERT_TRUE(g_Config.GetEntry(cfg::ConfigEntryId::ViewerUsbEnabled, viewer_usb_enabled));
-                auto sopt = g_MenuApplication->CreateShowDialog(GetLanguageString("set_viewer_enabled"), GetLanguageString("set_viewer_info") + "\n" + (viewer_usb_enabled ? GetLanguageString("set_disable_conf") : GetLanguageString("set_enable_conf")), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
+                auto sopt = g_MenuApplication->DisplayDialog(GetLanguageString("set_viewer_enabled"), GetLanguageString("set_viewer_info") + "\n" + (viewer_usb_enabled ? GetLanguageString("set_disable_conf") : GetLanguageString("set_enable_conf")), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
                 if(sopt == 0) {
                     viewer_usb_enabled = !viewer_usb_enabled;
                     UL_ASSERT_TRUE(g_Config.SetEntry(cfg::ConfigEntryId::ViewerUsbEnabled, viewer_usb_enabled));
@@ -188,7 +186,7 @@ namespace ul::menu::ui {
             }
             case 2: {
                 u8 in[28] = {0};
-                // 0 = normal, 1 = qlaunch, 2 = starter...?
+                // TODONEW (low priority): 0 = normal, 1 = qlaunch, 2 = starter...? (consider documenting this better, maybe a PR to libnx even)
                 *reinterpret_cast<u32*>(in) = 1;
                 u8 out[8] = {0};
 
@@ -215,56 +213,56 @@ namespace ul::menu::ui {
             }
             case 4: {
                 auto console_info_upload = false;
-                setsysGetConsoleInformationUploadFlag(&console_info_upload);
-                setsysSetConsoleInformationUploadFlag(!console_info_upload);
+                UL_RC_ASSERT(setsysGetConsoleInformationUploadFlag(&console_info_upload));
+                UL_RC_ASSERT(setsysSetConsoleInformationUploadFlag(!console_info_upload));
 
                 reload_need = true;
                 break;
             }
             case 5: {
-                auto auto_titles_dl = false;
-                setsysGetAutomaticApplicationDownloadFlag(&auto_titles_dl);
-                setsysSetAutomaticApplicationDownloadFlag(!auto_titles_dl);
+                auto auto_app_dl = false;
+                UL_RC_ASSERT(setsysGetAutomaticApplicationDownloadFlag(&auto_app_dl));
+                UL_RC_ASSERT(setsysSetAutomaticApplicationDownloadFlag(!auto_app_dl));
 
                 reload_need = true;
                 break;
             }
             case 6: {
                 auto auto_update = false;
-                setsysGetAutoUpdateEnableFlag(&auto_update);
-                setsysSetAutoUpdateEnableFlag(!auto_update);
+                UL_RC_ASSERT(setsysGetAutoUpdateEnableFlag(&auto_update));
+                UL_RC_ASSERT(setsysSetAutoUpdateEnableFlag(!auto_update));
 
                 reload_need = true;
                 break;
             }
             case 7: {
                 auto wireless_lan = false;
-                setsysGetWirelessLanEnableFlag(&wireless_lan);
-                setsysSetWirelessLanEnableFlag(!wireless_lan);
+                UL_RC_ASSERT(setsysGetWirelessLanEnableFlag(&wireless_lan));
+                UL_RC_ASSERT(setsysSetWirelessLanEnableFlag(!wireless_lan));
 
                 reload_need = true;
                 break;
             }
             case 8: {
                 auto bluetooth = false;
-                setsysGetBluetoothEnableFlag(&bluetooth);
-                setsysSetBluetoothEnableFlag(!bluetooth);
+                UL_RC_ASSERT(setsysGetBluetoothEnableFlag(&bluetooth));
+                UL_RC_ASSERT(setsysSetBluetoothEnableFlag(!bluetooth));
 
                 reload_need = true;
                 break;
             }
             case 9: {
                 auto usb_30 = false;
-                setsysGetUsb30EnableFlag(&usb_30);
-                setsysSetUsb30EnableFlag(!usb_30);
+                UL_RC_ASSERT(setsysGetUsb30EnableFlag(&usb_30));
+                UL_RC_ASSERT(setsysSetUsb30EnableFlag(!usb_30));
 
                 reload_need = true;
                 break;
             }
             case 10: {
                 auto nfc = false;
-                setsysGetNfcEnableFlag(&nfc);
-                setsysSetNfcEnableFlag(!nfc);
+                UL_RC_ASSERT(setsysGetNfcEnableFlag(&nfc));
+                UL_RC_ASSERT(setsysSetNfcEnableFlag(!nfc));
 
                 reload_need = true;
                 break;

@@ -41,7 +41,11 @@ namespace ul::menu::ui {
 
         const auto toast_text_clr = pu::ui::Color::FromHex(GetUIConfigValue<std::string>("toast_text_color", "#e1e1e1ff"));
         const auto toast_base_clr = pu::ui::Color::FromHex(GetUIConfigValue<std::string>("toast_base_color", "#282828ff"));
-        this->notif_toast = pu::ui::extras::Toast::New("...", pu::ui::GetDefaultFont(pu::ui::DefaultFontSize::Medium), toast_text_clr, toast_base_clr);
+
+        auto notif_toast_text = pu::ui::elm::TextBlock::New(0, 0, "...");
+        notif_toast_text->SetFont(pu::ui::GetDefaultFont(pu::ui::DefaultFontSize::Medium));
+        notif_toast_text->SetColor(toast_text_clr);
+        this->notif_toast = pu::ui::extras::Toast::New(notif_toast_text, toast_base_clr);
 
         this->bgm = pu::audio::OpenMusic(cfg::GetAssetByTheme(g_Theme, "sound/BGM.mp3"));
 
@@ -49,11 +53,17 @@ namespace ul::menu::ui {
         this->menu_focus_clr = pu::ui::Color::FromHex(this->GetUIConfigValue<std::string>("menu_focus_color", "#5ebcffff"));
         this->menu_bg_clr = pu::ui::Color::FromHex(this->GetUIConfigValue<std::string>("menu_bg_color", "#0094ffff"));
 
+        this->dialog_title_clr = pu::ui::Color::FromHex(this->GetUIConfigValue<std::string>("dialog_title_color", "#0a0a0aff"));
+        this->dialog_cnt_clr = pu::ui::Color::FromHex(this->GetUIConfigValue<std::string>("dialog_cnt_color", "#141414ff"));
+        this->dialog_opt_clr = pu::ui::Color::FromHex(this->GetUIConfigValue<std::string>("dialog_opt_color", "#0a0a0aff"));
+        this->dialog_clr = pu::ui::Color::FromHex(this->GetUIConfigValue<std::string>("dialog_color", "#e1e1e1ff"));
+        this->dialog_over_clr = pu::ui::Color::FromHex(this->GetUIConfigValue<std::string>("dialog_over_color", "#b4b4c8ff"));
+
         this->launch_failed = false;
         memset(this->chosen_hb, 0, sizeof(this->chosen_hb));
 
         const u8 suspended_final_alpha = this->ui_json.value("suspended_final_alpha", 80);
-        this->startup_lyt = StartupLayout::New();
+        this->startup_lyt = StartupMenuLayout::New();
         this->main_menu_lyt = MainMenuLayout::New(screen_capture_buf, suspended_final_alpha);
         this->theme_menu_lyt = ThemeMenuLayout::New();
         this->settings_menu_lyt = SettingsMenuLayout::New();
@@ -103,6 +113,16 @@ namespace ul::menu::ui {
         this->system_status.selected_user = user_id;
 
         UL_RC_ASSERT(ul::menu::smi::SetSelectedUser(user_id));
+    }
+
+    int MenuApplication::DisplayDialog(const std::string &title, const std::string &content, const std::vector<std::string> &opts, const bool use_last_opt_as_cancel, const std::string &icon_path) {
+        return this->CreateShowDialog(title, content, opts, use_last_opt_as_cancel, icon_path, [&](pu::ui::Dialog::Ref &dialog) {
+            dialog->SetTitleColor(this->dialog_title_clr);
+            dialog->SetContentColor(this->dialog_title_clr);
+            dialog->SetOptionColor(this->dialog_opt_clr);
+            dialog->SetDialogColor(this->dialog_clr);
+            dialog->SetOverColor(this->dialog_over_clr);
+        });
     }
 
 }

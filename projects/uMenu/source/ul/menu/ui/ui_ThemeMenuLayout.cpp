@@ -13,39 +13,39 @@ namespace ul::menu::ui {
     ThemeMenuLayout::ThemeMenuLayout() {
         this->SetBackgroundImage(TryFindImage(g_Theme, "ui/Background"));
 
-        this->cur_theme_banner = pu::ui::elm::Image::New(0, 585, TryFindImage(g_Theme, "ui/BannerTheme"));
+        this->cur_theme_banner = pu::ui::elm::Image::New(0, 0, TryFindImage(g_Theme, "ui/BannerTheme"));
         g_MenuApplication->ApplyConfigForElement("themes_menu", "banner_image", this->cur_theme_banner);
         this->Add(this->cur_theme_banner);
 
-        this->themes_menu = pu::ui::elm::Menu::New(200, 60, 880, g_MenuApplication->GetMenuBackgroundColor(), g_MenuApplication->GetMenuFocusColor(), 100, 5);
+        this->themes_menu = pu::ui::elm::Menu::New(0, 0, 880, g_MenuApplication->GetMenuBackgroundColor(), g_MenuApplication->GetMenuFocusColor(), 100, 5);
         g_MenuApplication->ApplyConfigForElement("themes_menu", "themes_menu_item", this->themes_menu);
         this->Add(this->themes_menu);
 
-        this->cur_theme_text = pu::ui::elm::TextBlock::New(20, 540, GetLanguageString("theme_current") + ":");
+        this->cur_theme_text = pu::ui::elm::TextBlock::New(0, 0, GetLanguageString("theme_current") + ":");
         this->cur_theme_text->SetFont(pu::ui::GetDefaultFont(pu::ui::DefaultFontSize::Large));
         this->cur_theme_text->SetColor(g_MenuApplication->GetTextColor());
         g_MenuApplication->ApplyConfigForElement("themes_menu", "current_theme_text", this->cur_theme_text);
         this->Add(this->cur_theme_text);
 
-        this->cur_theme_name_text = pu::ui::elm::TextBlock::New(40, 610, "");
+        this->cur_theme_name_text = pu::ui::elm::TextBlock::New(0, 0, "");
         this->cur_theme_name_text->SetFont(pu::ui::GetDefaultFont(pu::ui::DefaultFontSize::Large));
         this->cur_theme_name_text->SetColor(g_MenuApplication->GetTextColor());
         g_MenuApplication->ApplyConfigForElement("themes_menu", "current_theme_name_text", this->cur_theme_name_text);
         this->Add(this->cur_theme_name_text);
 
-        this->cur_theme_author_text = pu::ui::elm::TextBlock::New(45, 650, "");
+        this->cur_theme_author_text = pu::ui::elm::TextBlock::New(0, 0, "");
         this->cur_theme_author_text->SetFont(pu::ui::GetDefaultFont(pu::ui::DefaultFontSize::Medium));
         this->cur_theme_author_text->SetColor(g_MenuApplication->GetTextColor());
         g_MenuApplication->ApplyConfigForElement("themes_menu", "current_theme_author_text", this->cur_theme_author_text);
         this->Add(this->cur_theme_author_text);
 
-        this->cur_theme_version_text = pu::ui::elm::TextBlock::New(45, 675, "");
+        this->cur_theme_version_text = pu::ui::elm::TextBlock::New(0, 0, "");
         this->cur_theme_version_text->SetFont(pu::ui::GetDefaultFont(pu::ui::DefaultFontSize::Large));
         this->cur_theme_version_text->SetColor(g_MenuApplication->GetTextColor());
         g_MenuApplication->ApplyConfigForElement("themes_menu", "current_theme_version_text", this->cur_theme_version_text);
         this->Add(this->cur_theme_version_text);
 
-        this->cur_theme_icon = pu::ui::elm::Image::New(1000, 605, "");
+        this->cur_theme_icon = pu::ui::elm::Image::New(0, 0, "");
         this->cur_theme_icon->SetWidth(100);
         this->cur_theme_icon->SetHeight(100);
         g_MenuApplication->ApplyConfigForElement("themes_menu", "current_theme_icon", this->cur_theme_icon);
@@ -122,7 +122,7 @@ namespace ul::menu::ui {
                 g_MenuApplication->ShowNotification(GetLanguageString("theme_no_custom"));
             }
             else {
-                const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("theme_reset"), GetLanguageString("theme_reset_conf"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
+                const auto option = g_MenuApplication->DisplayDialog(GetLanguageString("theme_reset"), GetLanguageString("theme_reset_conf"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
                 if(option == 0) {
                     UL_ASSERT_TRUE(g_Config.SetEntry(cfg::ConfigEntryId::ActiveThemeName, std::string()));
                     cfg::SaveConfig(g_Config);
@@ -142,7 +142,7 @@ namespace ul::menu::ui {
                 g_MenuApplication->ShowNotification(GetLanguageString("theme_active_this"));
             }
             else {
-                const auto option = g_MenuApplication->CreateShowDialog(GetLanguageString("theme_set"), GetLanguageString("theme_set_conf"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true, theme_icon_path);
+                const auto option = g_MenuApplication->DisplayDialog(GetLanguageString("theme_set"), GetLanguageString("theme_set_conf"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true, theme_icon_path);
                 if(option == 0) {
                     UL_ASSERT_TRUE(g_Config.SetEntry(cfg::ConfigEntryId::ActiveThemeName, selected_theme.base_name));
                     cfg::SaveConfig(g_Config);

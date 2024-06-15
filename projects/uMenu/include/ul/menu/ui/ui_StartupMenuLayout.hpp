@@ -4,7 +4,7 @@
 
 namespace ul::menu::ui {
 
-    class StartupLayout : public IMenuLayout {
+    class StartupMenuLayout : public IMenuLayout {
         private:
             bool load_menu;
             pu::ui::elm::TextBlock::Ref info_text;
@@ -14,8 +14,8 @@ namespace ul::menu::ui {
             void create_DefaultKey();
 
         public:
-            StartupLayout();
-            PU_SMART_CTOR(StartupLayout)
+            StartupMenuLayout();
+            PU_SMART_CTOR(StartupMenuLayout)
             
             void OnMenuInput(const u64 keys_down, const u64 keys_up, const u64 keys_held, const pu::ui::TouchPoint touch_pos) override;
             bool OnHomeButtonPress() override;

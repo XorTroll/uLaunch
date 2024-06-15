@@ -9,7 +9,7 @@ namespace ul::loader {
     }
 
     inline constexpr bool IsApplication(const u64 program_id) {
-        // TODONEW: shall we also be strict on the upper bound?
+        // TODO (pedantic): shall we also be strict on the upper bound?
         return (0x0100000000010000 <= program_id);
     }
 

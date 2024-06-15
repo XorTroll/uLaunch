@@ -6,7 +6,7 @@
 #include <ul/man/man_Network.hpp>
 #include <ul/cfg/cfg_Config.hpp>
 #include <ul/os/os_Applications.hpp>
-#include <zzip/lib.h>
+// #include <zzip/lib.h>
 
 extern ul::man::ui::MainApplication::Ref g_MainApplication;
 extern ul::util::JSON g_DefaultLanguage;
@@ -46,8 +46,8 @@ namespace ul::man::ui {
             g_MainApplication->CreateShowDialog(GetLanguageString("update_title"), GetLanguageString("update_error"), { GetLanguageString("ok") }, true);
         }
 
-        constexpr size_t TemporaryFileExtractBufferSize = 0x10000;
-        u8 g_TemporaryFileExtractBuffer[TemporaryFileExtractBufferSize];
+        // constexpr size_t TemporaryFileExtractBufferSize = 0x10000;
+        // u8 g_TemporaryFileExtractBuffer[TemporaryFileExtractBufferSize];
 
     }
 
@@ -135,6 +135,11 @@ namespace ul::man::ui {
     }
 
     void MainMenuLayout::update_DefaultKey() {
+        g_MainApplication->CreateShowDialog("Temp disabled", "Temp disabled", { GetLanguageString("ok") }, true);
+
+        // Wait for this issue to be fixed before uncommenting this: https://github.com/devkitPro/pacman-packages/issues/357
+
+        /*
         const auto json_data = man::RetrieveContent("https://api.github.com/repos/XorTroll/uLaunch/releases", "application/json");
         if(json_data.empty()) {
             ShowUpdateError();
@@ -222,6 +227,7 @@ namespace ul::man::ui {
         else if(last_ver.IsHigher(cur_ver)) {
             g_MainApplication->CreateShowDialog(GetLanguageString("update_title"), GetLanguageString("update_higher"), { GetLanguageString("ok") }, true);
         }
+        */
     }
 
 }

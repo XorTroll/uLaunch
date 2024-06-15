@@ -46,7 +46,7 @@ public class MainController {
     public void updateScreenRgba(ByteBuffer rgba_buf) {
         PixelWriter writer = ((WritableImage)this.ScreenImage.getImage()).getPixelWriter();
         
-        // TODONEW: gross way of converting from RGBA to BGRA, any better way to do it here in uScreen?
+        // TODO: gross way of converting from RGBA to BGRA, any better way to do it here in uScreen?
         for(int i = 0; i < 1280*720*4; i += 4) {
             byte tmp_r = rgba_buf.get(i + 0);
             byte tmp_b = rgba_buf.get(i + 2);

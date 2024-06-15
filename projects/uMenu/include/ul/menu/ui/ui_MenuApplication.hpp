@@ -1,7 +1,7 @@
 
 #pragma once
 #include <ul/menu/ui/ui_TransitionGuard.hpp>
-#include <ul/menu/ui/ui_StartupLayout.hpp>
+#include <ul/menu/ui/ui_StartupMenuLayout.hpp>
 #include <ul/menu/ui/ui_MainMenuLayout.hpp>
 #include <ul/menu/ui/ui_ThemeMenuLayout.hpp>
 #include <ul/menu/ui/ui_SettingsMenuLayout.hpp>
@@ -25,7 +25,7 @@ namespace ul::menu::ui {
     class MenuApplication : public pu::ui::Application {
         private:
             smi::MenuStartMode start_mode;
-            StartupLayout::Ref startup_lyt;
+            StartupMenuLayout::Ref startup_lyt;
             MainMenuLayout::Ref main_menu_lyt;
             ThemeMenuLayout::Ref theme_menu_lyt;
             SettingsMenuLayout::Ref settings_menu_lyt;
@@ -44,6 +44,11 @@ namespace ul::menu::ui {
             pu::ui::Color text_clr;
             pu::ui::Color menu_focus_clr;
             pu::ui::Color menu_bg_clr;
+            pu::ui::Color dialog_title_clr;
+            pu::ui::Color dialog_cnt_clr;
+            pu::ui::Color dialog_opt_clr;
+            pu::ui::Color dialog_clr;
+            pu::ui::Color dialog_over_clr;
 
         public:
             using Application::Application;
@@ -150,6 +155,40 @@ namespace ul::menu::ui {
                 return this->ui_json.value<T>(name, def);
             }
 
+            inline bool ParseHorizontalAlign(const std::string &align, pu::ui::elm::HorizontalAlign &out_align) {
+                if(align == "left") {
+                    out_align = pu::ui::elm::HorizontalAlign::Left;
+                    return true;
+                }
+                if(align == "center") {
+                    out_align = pu::ui::elm::HorizontalAlign::Center;
+                    return true;
+                }
+                if(align == "right") {
+                    out_align = pu::ui::elm::HorizontalAlign::Right;
+                    return true;
+                }
+
+                return false;
+            }
+
+            inline bool ParseVerticalAlign(const std::string &align, pu::ui::elm::VerticalAlign &out_align) {
+                if(align == "up") {
+                    out_align = pu::ui::elm::VerticalAlign::Up;
+                    return true;
+                }
+                if(align == "center") {
+                    out_align = pu::ui::elm::VerticalAlign::Center;
+                    return true;
+                }
+                if(align == "down") {
+                    out_align = pu::ui::elm::VerticalAlign::Down;
+                    return true;
+                }
+
+                return false;
+            }
+
             template<typename Elem>
             inline void ApplyConfigForElement(const std::string &menu, const std::string &name, std::shared_ptr<Elem> &elem, const bool apply_visible = true) {
                 if(this->ui_json.count(menu)) {
@@ -165,6 +204,18 @@ namespace ul::menu::ui {
                         }
                         else {
                             set_coords = true;
+                        }
+
+                        const auto h_align_str = elem_json.value("h_align", "");
+                        pu::ui::elm::HorizontalAlign h_align;
+                        if(ParseHorizontalAlign(h_align_str, h_align)) {
+                            elem->SetHorizontalAlign(h_align);
+                        }
+
+                        const auto v_align_str = elem_json.value("v_align", "");
+                        pu::ui::elm::VerticalAlign v_align;
+                        if(ParseVerticalAlign(v_align_str, v_align)) {
+                            elem->SetVerticalAlign(v_align);
                         }
 
                         if(set_coords) {
@@ -196,7 +247,7 @@ namespace ul::menu::ui {
             void StartPlayBGM();
             void StopPlayBGM();
 
-            inline StartupLayout::Ref &GetStartupLayout() {
+            inline StartupMenuLayout::Ref &GetStartupMenuLayout() {
                 return this->startup_lyt;
             }
 
@@ -223,7 +274,7 @@ namespace ul::menu::ui {
                     return entry.app_info.record.application_id == this->system_status.suspended_app_id;
                 }
                 else if(entry.Is<EntryType::Homebrew>()) {
-                    // TODONEW: better compare logic?
+                    // TODO (new): better compare logic?
                     return (strcmp(entry.hb_info.nro_target.nro_path, this->system_status.suspended_hb_target_ipt.nro_path) == 0) && (strcmp(entry.hb_info.nro_target.nro_argv, this->system_status.suspended_hb_target_ipt.nro_argv) == 0);
                 }
 
@@ -237,6 +288,8 @@ namespace ul::menu::ui {
             inline MenuType GetCurrentLoadedMenu() {
                 return this->loaded_menu;
             }
+
+            int DisplayDialog(const std::string &title, const std::string &content, const std::vector<std::string> &opts, const bool use_last_opt_as_cancel, const std::string &icon_path = "");
     };
 
     inline void RegisterOnMessageCallback() {

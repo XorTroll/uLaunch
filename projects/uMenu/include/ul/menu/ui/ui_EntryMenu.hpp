@@ -11,7 +11,7 @@ namespace ul::menu::ui {
         public:
             static constexpr u32 SideMargin = 15;
             static constexpr u32 EntryMargin = 10;
-            static constexpr u32 CursorTransitionIncrementSteps = 10;
+            static constexpr u32 CursorTransitionIncrementSteps = 6;
             static constexpr u32 DefaultEntrySize = 256;
             static constexpr u32 DefaultCursorSize = 296;
             

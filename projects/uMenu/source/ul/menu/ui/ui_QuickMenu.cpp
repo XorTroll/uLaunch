@@ -17,7 +17,7 @@ namespace ul::menu::ui {
         g_HomePressed = true;
     }
 
-    QuickMenu::QuickMenu(const std::string &main_icon) {
+    QuickMenu::QuickMenu() {
         this->on = false;
         this->bg_alpha = 0;
 
