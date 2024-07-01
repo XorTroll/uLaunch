@@ -48,28 +48,43 @@ namespace ul::menu::ui {
         this->loaded_themes.clear();
         
         this->loaded_themes = cfg::FindThemes();
+        this->loaded_themes.insert(this->loaded_themes.begin(), cfg::Theme{}); // For the "default theme" entry
 
-        auto theme_reset_item = pu::ui::elm::MenuItem::New(GetLanguageString("theme_reset"));
-        theme_reset_item->AddOnKey(std::bind(&ThemesMenuLayout::theme_DefaultKey, this));
-        theme_reset_item->SetColor(g_MenuApplication->GetTextColor());
-        theme_reset_item->SetIcon(GetLogoTexture());
-        this->themes_menu->AddItem(theme_reset_item);
+        // Move active theme to top
+        for(u32 i = 0; i < this->loaded_themes.size(); i++) {
+            const auto theme = this->loaded_themes.at(i);
+            if(theme.IsSame(g_ActiveTheme)) {
+                this->loaded_themes.erase(this->loaded_themes.begin() + i);
+                this->loaded_themes.insert(this->loaded_themes.begin(), theme);
+                break;
+            }
+        }
         
         for(const auto &theme: this->loaded_themes) {
-            std::string theme_icon_path;
-            const auto rc = cfg::TryCacheLoadThemeIcon(theme, theme_icon_path);
-            if(R_FAILED(rc)) {
-                UL_LOG_INFO("Theme '%s' unable to load image: %s", theme.name.c_str(), util::FormatResultDisplay(rc).c_str());
+            if(theme.IsValid()) {
+                std::string theme_icon_path;
+                const auto rc = cfg::TryCacheLoadThemeIcon(theme, theme_icon_path);
+                if(R_FAILED(rc)) {
+                    UL_LOG_WARN("Theme '%s' unable to load image: %s", theme.name.c_str(), util::FormatResultDisplay(rc).c_str());
+                }
+
+                auto theme_icon = pu::sdl2::TextureHandle::New(pu::ui::render::LoadImage(theme_icon_path));
+                this->loaded_theme_icons.push_back(theme_icon);
+
+                auto theme_item = pu::ui::elm::MenuItem::New(theme.manifest.name + " (v" + theme.manifest.release + ", " + theme.manifest.author + ")");
+                theme_item->AddOnKey(std::bind(&ThemesMenuLayout::theme_DefaultKey, this));
+                theme_item->SetColor(g_MenuApplication->GetTextColor());
+                theme_item->SetIcon(theme_icon);
+                this->themes_menu->AddItem(theme_item);
             }
-
-            auto theme_icon = pu::sdl2::TextureHandle::New(pu::ui::render::LoadImage(theme_icon_path));
-            this->loaded_theme_icons.push_back(theme_icon);
-
-            auto theme_item = pu::ui::elm::MenuItem::New(theme.manifest.name + " (v" + theme.manifest.release + ", " + theme.manifest.author + ")");
-            theme_item->AddOnKey(std::bind(&ThemesMenuLayout::theme_DefaultKey, this));
-            theme_item->SetColor(g_MenuApplication->GetTextColor());
-            theme_item->SetIcon(theme_icon);
-            this->themes_menu->AddItem(theme_item);
+            else {
+                this->loaded_theme_icons.emplace_back();
+                auto theme_reset_item = pu::ui::elm::MenuItem::New(GetLanguageString("theme_reset"));
+                theme_reset_item->AddOnKey(std::bind(&ThemesMenuLayout::theme_DefaultKey, this));
+                theme_reset_item->SetColor(g_MenuApplication->GetTextColor());
+                theme_reset_item->SetIcon(GetLogoTexture());
+                this->themes_menu->AddItem(theme_reset_item);
+            }
         }
 
         this->themes_menu->SetSelectedIndex(0);
@@ -77,7 +92,32 @@ namespace ul::menu::ui {
 
     void ThemesMenuLayout::theme_DefaultKey() {
         const auto idx = this->themes_menu->GetSelectedIndex();
-        if(idx == 0) {
+        const auto &selected_theme = this->loaded_themes.at(idx);
+        if(selected_theme.IsValid()) {
+            if(selected_theme.IsSame(g_ActiveTheme)) {
+                g_MenuApplication->ShowNotification(GetLanguageString("theme_active_this"));
+            }
+            else {
+                std::string theme_conf_msg = selected_theme.manifest.name + "\n";
+                theme_conf_msg += selected_theme.manifest.release + ", " + selected_theme.manifest.author + "\n\n";
+                theme_conf_msg += GetLanguageString("theme_set_conf");
+
+                const auto option = g_MenuApplication->DisplayDialog(selected_theme.manifest.name, theme_conf_msg, { GetLanguageString("yes"), GetLanguageString("cancel") }, true, this->loaded_theme_icons.at(idx));
+                if(option == 0) {
+                    g_ActiveTheme = selected_theme;
+                    UL_ASSERT_TRUE(g_Config.SetEntry(cfg::ConfigEntryId::ActiveThemeName, g_ActiveTheme.name));
+                    cfg::SaveConfig(g_Config);
+                    g_MenuApplication->ShowNotification(GetLanguageString("theme_cache"));
+                    cfg::CacheActiveTheme(g_Config);
+
+                    pu::audio::PlaySfx(this->theme_change_sfx);
+                    g_MenuApplication->ShowNotification(GetLanguageString("theme_changed"));
+                    g_MenuApplication->Finalize();
+                    UL_RC_ASSERT(ul::menu::smi::RestartMenu());
+                }
+            }
+        }
+        else {
             if(g_ActiveTheme.IsValid()) {
                 const auto option = g_MenuApplication->DisplayDialog(GetLanguageString("theme_reset"), GetLanguageString("theme_reset_conf"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
                 if(option == 0) {
@@ -95,32 +135,6 @@ namespace ul::menu::ui {
             }
             else {
                 g_MenuApplication->ShowNotification(GetLanguageString("theme_no_active"));
-            }
-        }
-        else {
-            const auto theme_i = idx - 1;
-            const auto selected_theme = this->loaded_themes.at(theme_i);
-            if(selected_theme.name == g_ActiveTheme.name) {
-                g_MenuApplication->ShowNotification(GetLanguageString("theme_active_this"));
-            }
-            else {
-                std::string theme_conf_msg = selected_theme.manifest.name + "\n";
-                theme_conf_msg += selected_theme.manifest.release + ", " + selected_theme.manifest.author + "\n\n";
-                theme_conf_msg += GetLanguageString("theme_set_conf");
-
-                const auto option = g_MenuApplication->DisplayDialog(selected_theme.manifest.name, theme_conf_msg, { GetLanguageString("yes"), GetLanguageString("cancel") }, true, this->loaded_theme_icons.at(theme_i));
-                if(option == 0) {
-                    g_ActiveTheme = selected_theme;
-                    UL_ASSERT_TRUE(g_Config.SetEntry(cfg::ConfigEntryId::ActiveThemeName, g_ActiveTheme.name));
-                    cfg::SaveConfig(g_Config);
-                    g_MenuApplication->ShowNotification(GetLanguageString("theme_cache"));
-                    cfg::CacheActiveTheme(g_Config);
-
-                    pu::audio::PlaySfx(this->theme_change_sfx);
-                    g_MenuApplication->ShowNotification(GetLanguageString("theme_changed"));
-                    g_MenuApplication->Finalize();
-                    UL_RC_ASSERT(ul::menu::smi::RestartMenu());
-                }
             }
         }
     }

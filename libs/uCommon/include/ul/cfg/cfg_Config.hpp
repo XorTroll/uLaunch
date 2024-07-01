@@ -20,8 +20,13 @@ namespace ul::cfg {
         std::string name;
         ThemeManifest manifest;
 
-        inline bool IsValid() {
+        inline bool IsValid() const {
             return !this->name.empty();
+        }
+
+        inline bool IsSame(const Theme &other) const {
+            // Compare filenames, those must be unique
+            return other.name == this->name;
         }
     };
 

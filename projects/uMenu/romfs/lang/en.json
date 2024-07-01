@@ -79,7 +79,7 @@
     "startup_welcome_info": "Welcome! Please select a user.",
     "startup_add_user": "Add user",
     "theme_info_text": "Available themes",
-    "theme_no_active": "You don't currently have a custom theme.",
+    "theme_no_active": "You don't currently have an active theme.",
     "theme_reset": "Reset theme (default theme)",
     "theme_reset_conf": "Would you like to return to uLaunch's default theme?",
     "theme_changed": "uLaunch's theme was reset.",
