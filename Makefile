@@ -26,14 +26,14 @@ clean:
 	@cd projects/uScreen && mvn clean
 	@rm -rf SdOut
 
-usystem:
+usystem: arc
 	@$(MAKE) -C projects/uSystem
 	@mkdir -p SdOut/atmosphere/contents/0100000000001000
 	@cp projects/uSystem/out/nintendo_nx_arm64_armv8a/release/uSystem.nsp SdOut/atmosphere/contents/0100000000001000/exefs.nsp
 	@mkdir -p SdOut/ulaunch/bin/uSystem
 	@cp projects/uSystem/out/nintendo_nx_arm64_armv8a/release/uSystem.nsp SdOut/ulaunch/bin/uSystem/exefs.nsp
 
-uloader:
+uloader: arc
 	@$(MAKE) -C projects/uLoader
 	@mkdir -p SdOut/ulaunch/bin/uLoader
 	@mkdir -p SdOut/ulaunch/bin/uLoader/applet
@@ -43,7 +43,7 @@ uloader:
 	@cp projects/uLoader/uLoader.nso SdOut/ulaunch/bin/uLoader/application/main
 	@cp projects/uLoader/uLoader_application.npdm SdOut/ulaunch/bin/uLoader/application/main.npdm
 
-umenu: pu
+umenu: arc pu
 	@$(MAKE) -C projects/uMenu
 	@mkdir -p SdOut/ulaunch/bin/uMenu
 	@mkdir -p SdOut/ulaunch/lang/uMenu
@@ -52,7 +52,7 @@ umenu: pu
 	@cp projects/uMenu/uMenu.npdm SdOut/ulaunch/bin/uMenu/main.npdm
 	@build_romfs projects/uMenu/romfs SdOut/ulaunch/bin/uMenu/romfs.bin
 
-umanager: pu
+umanager: arc pu
 	@$(MAKE) -C projects/uManager
 	@mkdir -p SdOut/ulaunch/lang/uManager
 	@mkdir -p SdOut/switch
