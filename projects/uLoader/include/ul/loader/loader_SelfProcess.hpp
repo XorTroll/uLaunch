@@ -4,9 +4,13 @@
 
 namespace ul::loader {
 
-    inline Result GetSelfProcessHandle(Handle &out_proc_h) {
+    namespace {
+
         constexpr u64 SvcInfoType_MesosphereCurrentProcess = 65001;
 
+    }
+
+    inline Result GetSelfProcessHandle(Handle &out_proc_h) {
         u64 raw_proc_handle;
         UL_RC_TRY(svcGetInfo(&raw_proc_handle, SvcInfoType_MesosphereCurrentProcess, INVALID_HANDLE, 0));
 

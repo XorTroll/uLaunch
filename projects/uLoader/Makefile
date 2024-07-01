@@ -40,6 +40,7 @@ ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 LIBUCOMMON	:=	$(CURDIR)/../../libs/uCommon
+INCLUDES 	+=	/../../libs/json/single_include/nlohmann
 
 LIBS	:= -luCommon -lnx
 

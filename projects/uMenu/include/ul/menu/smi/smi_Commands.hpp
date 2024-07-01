@@ -148,9 +148,10 @@ namespace ul::menu::smi {
         );
     }
 
-    inline Result UpdateMenuPath(const char (&menu_path)[FS_MAX_PATH]) {
-        return SendCommand(SystemMessage::UpdateMenuPath,
+    inline Result UpdateMenuPaths(const char (&menu_fs_path)[FS_MAX_PATH], const char (&menu_path)[FS_MAX_PATH]) {
+        return SendCommand(SystemMessage::UpdateMenuPaths,
             [&](ScopedStorageWriter &writer) {
+                writer.PushData(menu_fs_path, sizeof(menu_fs_path));
                 writer.PushData(menu_path, sizeof(menu_path));
                 return ResultSuccess;
             },
@@ -165,6 +166,42 @@ namespace ul::menu::smi {
         return SendCommand(SystemMessage::UpdateMenuIndex,
             [&](ScopedStorageWriter &writer) {
                 writer.Push(menu_index);
+                return ResultSuccess;
+            },
+            [](ScopedStorageReader &reader) {
+                // ...
+                return ResultSuccess;
+            }
+        );
+    }
+
+    inline Result OpenUserPage() {
+        return SendCommand(SystemMessage::OpenUserPage,
+            [&](ScopedStorageWriter &writer) {
+                return ResultSuccess;
+            },
+            [](ScopedStorageReader &reader) {
+                // ...
+                return ResultSuccess;
+            }
+        );
+    }
+
+    inline Result OpenMiiEdit() {
+        return SendCommand(SystemMessage::OpenMiiEdit,
+            [&](ScopedStorageWriter &writer) {
+                return ResultSuccess;
+            },
+            [](ScopedStorageReader &reader) {
+                // ...
+                return ResultSuccess;
+            }
+        );
+    }
+
+    inline Result OpenAddUser() {
+        return SendCommand(SystemMessage::OpenAddUser,
+            [&](ScopedStorageWriter &writer) {
                 return ResultSuccess;
             },
             [](ScopedStorageReader &reader) {

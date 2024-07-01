@@ -1,9 +1,9 @@
 VERSION_MAJOR	:=	1
 VERSION_MINOR	:=	0
 VERSION_MICRO	:=	0
-VERSION			:=	$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_MICRO)
+export VERSION	:=	$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_MICRO)
 
-export UL_DEFS	:=	-DUL_VERSION=\"$(VERSION)\"
+export UL_DEFS	:=	-DUL_MAJOR=$(VERSION_MAJOR) -DUL_MINOR=$(VERSION_MINOR) -DUL_MICRO=$(VERSION_MICRO) -DUL_VERSION=\"$(VERSION)\"
 
 .PHONY: all fresh clean pu arc usystem uloader umenu umanager uscreen
 
@@ -47,6 +47,7 @@ umenu: pu
 	@$(MAKE) -C projects/uMenu
 	@mkdir -p SdOut/ulaunch/bin/uMenu
 	@mkdir -p SdOut/ulaunch/lang/uMenu
+	@mkdir -p SdOut/ulaunch/themes
 	@cp projects/uMenu/uMenu.nso SdOut/ulaunch/bin/uMenu/main
 	@cp projects/uMenu/uMenu.npdm SdOut/ulaunch/bin/uMenu/main.npdm
 	@build_romfs projects/uMenu/romfs SdOut/ulaunch/bin/uMenu/romfs.bin

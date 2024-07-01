@@ -2,7 +2,7 @@
 
 namespace ul::menu::ui {
 
-    RawRgbaImage::RawRgbaImage(const s32 x, const s32 y, const u8 *rgba_data, const s32 w, const s32 h, const u32 pix_num) : x(x), y(y), w(w), h(h), alpha(0xFF) {
+    RawRgbaImage::RawRgbaImage(const s32 x, const s32 y, const u8 *rgba_data, const s32 data_w, const s32 data_h, const u32 pix_num) : x(x), y(y), w(data_w), h(data_h), alpha(0xFF) {
         if(rgba_data != nullptr) {
             this->img_tex = SDL_CreateTexture(pu::ui::render::GetMainRenderer(), SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING, this->w, this->h);
             if(this->img_tex != nullptr) {

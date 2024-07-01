@@ -7,21 +7,14 @@ namespace ul::menu::ui {
 
     class QuickMenu : public pu::ui::elm::Element {
         public:
-            static constexpr s32 MainItemSize = 300;
-            static constexpr s32 SubItemsSize = 150;
-            static constexpr s32 CommonAreaSize = 50;
-
-            static constexpr s32 MainItemX = (pu::ui::render::ScreenWidth - MainItemSize) / 2;
-            static constexpr s32 MainItemY = (pu::ui::render::ScreenHeight - MainItemSize) / 2;
-
             static constexpr u8 BackgroundAlphaMax = 0xDC;
             static constexpr u8 BackgroundAlphaIncrement = 20;
 
-            static constexpr u32 MenuMargin = 200;
+            static constexpr u32 MenuMargin = 300;
             static constexpr u32 MenuX = MenuMargin;
-            static constexpr u32 MenuY = 115;
+            static constexpr u32 MenuY = 172;
             static constexpr u32 MenuWidth = pu::ui::render::ScreenWidth - 2 * MenuMargin;
-            static constexpr u32 MenuItemHeight = 60;
+            static constexpr u32 MenuItemHeight = 90;
             static constexpr u32 MenuItemsToShow = 8;
 
             static inline constexpr pu::ui::Color MakeBackgroundColor(const u8 alpha) {
@@ -32,6 +25,14 @@ namespace ul::menu::ui {
             bool on;
             s32 bg_alpha;
             pu::ui::elm::Menu::Ref options_menu;
+            pu::ui::elm::MenuItem::Ref power_menu_item;
+            pu::ui::elm::MenuItem::Ref controller_menu_item;
+            pu::ui::elm::MenuItem::Ref album_menu_item;
+            pu::ui::elm::MenuItem::Ref web_menu_item;
+            pu::ui::elm::MenuItem::Ref user_menu_item;
+            pu::ui::elm::MenuItem::Ref themes_menu_item;
+            pu::ui::elm::MenuItem::Ref settings_menu_item;
+            pu::ui::elm::MenuItem::Ref mii_menu_item;
 
             static void OnHomeButtonDetection(const smi::MenuMessageContext _);
 
@@ -62,6 +63,8 @@ namespace ul::menu::ui {
             inline constexpr bool IsOn() {
                 return this->on && (this->bg_alpha > 0);
             }
+
+            void UpdateItems();
 
             void OnRender(pu::ui::render::Renderer::Ref &drawer, const s32 x, const s32 y) override;
             void OnInput(const u64 keys_down, const u64 keys_up, const u64 keys_held, const pu::ui::TouchPoint touch_pos) override;

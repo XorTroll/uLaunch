@@ -54,10 +54,54 @@ namespace ul::menu {
             }
         }
 
-        void EnsureApplicationRecords(const bool reload = false) {
+        inline void EnsureApplicationRecords(const bool reload = false) {
             if(reload || g_ApplicationRecords.empty()) {
                 g_ApplicationRecords = os::ListApplicationRecords();
             }
+        }
+
+        inline std::string MakeEntryPath(const std::string &base_path, const u32 idx) {
+            return fs::JoinPath(base_path, std::to_string(idx) + ".m.json");
+        }
+
+        inline std::string MakeEntryFolderPath(const std::string &base_path, const std::string &name, const u32 name_idx) {
+            return fs::JoinPath(base_path, "folder_" + name + "_" + std::to_string(name_idx));
+        }
+
+        u32 FindNextEntryIndex(const std::string &base_path) {
+            u32 cur_idx = 0;
+            while(fs::ExistsFile(MakeEntryPath(base_path, cur_idx))) {
+                cur_idx++;
+            }
+            return cur_idx;
+        }
+
+        u32 FindNextFolderNameIndex(const std::string &base_path, const std::string &name) {
+            u32 cur_idx = 0;
+            while(fs::ExistsFile(MakeEntryFolderPath(base_path, name, cur_idx))) {
+                cur_idx++;
+            }
+            return cur_idx;
+        }
+
+        std::string MakeAsciiString(const std::string &str) {
+            std::string ascii_str;
+            for(const auto c : str) {
+                if(isascii(c)) {
+                    ascii_str += c;
+                }
+            }
+            return ascii_str;
+        }
+
+        inline std::string MakeNextFolderPath(const std::string &base_path, const std::string &folder_name) {
+            // Ensure the filesystem folder name is ASCII for FS, while the actual folder name is saved in its JSON data
+            auto ascii_name = MakeAsciiString(folder_name);
+            if(ascii_name.empty()) {
+                ascii_name = "null";
+            }
+
+            return MakeEntryFolderPath(base_path, ascii_name, FindNextFolderNameIndex(base_path, ascii_name));
         }
 
         std::string FindRootFolderPath(const std::string &folder_name) {
@@ -78,62 +122,50 @@ namespace ul::menu {
             });
 
             // Not existing, create it
-            const auto new_folder_entry = CreateFolderEntry(MenuPath, folder_name);
+            const auto new_folder_idx = FindNextEntryIndex(MenuPath);
+            const auto new_folder_entry = CreateFolderEntry(MenuPath, folder_name, new_folder_idx);
             return fs::JoinPath(MenuPath, new_folder_entry.folder_info.fs_name);
         }
 
-        u32 RandomFromRange(const u32 min, const u32 max) {
-            const auto diff = max - min;
-            u32 random_val;
-            do {
-                randomGet(&random_val, sizeof(random_val));
-                random_val %= (diff + 1);
-                random_val += min;
-            } while((random_val == min) || (random_val == max));
-            return random_val;
-        }
-
-        inline std::string MakeEntryPath(const std::string &base_path, const u32 idx) {
-            return fs::JoinPath(base_path, std::to_string(idx) + ".m.json");
-        }
-
-        std::string AllocateEntryPath(const u32 start_idx, const u32 end_idx, const std::string &base_path, u32 &out_idx) {
-            u32 idx;
-            std::string test_path;
-            do {
-                idx = RandomFromRange((start_idx == InvalidEntryIndex) ? 0 : start_idx, end_idx);
-                test_path = MakeEntryPath(base_path, idx);
-            } while(fs::ExistsFile(test_path));
-            out_idx = idx;
-            return test_path;
-        }
-
-        void InitializeRemainingEntries(const std::vector<NsApplicationRecord> &remaining_apps) {
+        void InitializeRemainingEntries(const std::vector<NsApplicationRecord> &remaining_apps, u32 &entry_idx) {
             const std::vector<std::string> DefaultHomebrewRecordPaths = { HbmenuPath, ManagerPath };
-
-            // Reserve for special homebrews + all remaining apps
-            const auto index_gap = UINT32_MAX / (DefaultHomebrewRecordPaths.size() + remaining_apps.size());
-            u32 cur_start_idx = 0;
 
             // Add special homebrew entries
             for(const auto &nro_path : DefaultHomebrewRecordPaths) {
                 const Entry hb_entry = {
                     .type = EntryType::Homebrew,
-                    .entry_path = MakeEntryPath(MenuPath, cur_start_idx + index_gap / 2),
+                    .entry_path = MakeEntryPath(MenuPath, entry_idx),
 
                     .hb_info = {
                         .nro_target = loader::TargetInput::Create(nro_path, nro_path, true, "")
                     }
                 };
                 hb_entry.Save();
-                cur_start_idx += index_gap;
+                entry_idx++;
             }
+
+            // Add special uMenu entries
+            #define _UL_MENU_ADD_SPECIAL_ENTRY(kind) { \
+                const Entry special_entry = { \
+                    .type = kind, \
+                    .entry_path = MakeEntryPath(MenuPath, entry_idx) \
+                }; \
+                special_entry.Save(); \
+                entry_idx++; \
+            }
+            _UL_MENU_ADD_SPECIAL_ENTRY(EntryType::SpecialEntryMiiEdit);
+            _UL_MENU_ADD_SPECIAL_ENTRY(EntryType::SpecialEntryWebBrowser);
+            _UL_MENU_ADD_SPECIAL_ENTRY(EntryType::SpecialEntryUserPage);
+            _UL_MENU_ADD_SPECIAL_ENTRY(EntryType::SpecialEntrySettings);
+            _UL_MENU_ADD_SPECIAL_ENTRY(EntryType::SpecialEntryThemes);
+            _UL_MENU_ADD_SPECIAL_ENTRY(EntryType::SpecialEntryControllers);
+            _UL_MENU_ADD_SPECIAL_ENTRY(EntryType::SpecialEntryAlbum);
 
             // Add remaining app entries
             for(const auto &app_record : remaining_apps) {
                 Entry app_entry = {
                     .type = EntryType::Application,
-                    .entry_path = MakeEntryPath(MenuPath, cur_start_idx + index_gap / 2),
+                    .entry_path = MakeEntryPath(MenuPath, entry_idx),
 
                     .app_info = {
                         .app_id = app_record.application_id,
@@ -141,11 +173,11 @@ namespace ul::menu {
                     }
                 };
                 app_entry.Save();
-                cur_start_idx += index_gap;
+                entry_idx++;
             }
         }
 
-        void ConvertOldMenu() {
+        void ConvertOldMenu(u32 &entry_idx) {
             if(fs::ExistsDirectory(OldMenuPath)) {
                 if(!fs::ExistsDirectory(MenuPath)) {
                     fs::CreateDirectory(MenuPath);
@@ -169,10 +201,9 @@ namespace ul::menu {
                             base_path = FindRootFolderPath(folder_name);
                         }
 
-                        u32 tmp_idx;
                         Entry entry = {
                             .type = type,
-                            .entry_path = AllocateEntryPath(InvalidEntryIndex, InvalidEntryIndex, base_path, tmp_idx),
+                            .entry_path = MakeEntryPath(base_path, entry_idx),
                             .index = 0,
 
                             .control = {
@@ -186,7 +217,7 @@ namespace ul::menu {
                                 .custom_icon_path = !custom_name.empty(),
                             }
                         };
-                        entry.index = tmp_idx;
+                        entry_idx++;
 
                         switch(type) {
                             case EntryType::Application: {
@@ -230,7 +261,7 @@ namespace ul::menu {
                     }
                 });
 
-                InitializeRemainingEntries(apps_copy);
+                InitializeRemainingEntries(apps_copy, entry_idx);
 
                 fs::DeleteDirectory(OldMenuPath);
             }
@@ -249,11 +280,8 @@ namespace ul::menu {
                     LoadHomebrewControlData(this->hb_info.nro_target.nro_path, this->control);
                     break;
                 }
-                case EntryType::Folder: {
-                    // Folders do not use control data
-                    break;
-                }
                 default:
+                    // Folders and special entries do not use control data
                     break;
             }
         }
@@ -283,34 +311,47 @@ namespace ul::menu {
     }
 
     void Entry::MoveTo(const std::string &new_folder_path) {
+        // Must deal with folder renaming first, since the general moving code below will modify the folder path
         if(this->Is<EntryType::Folder>()) {
             const auto old_fs_path = this->GetFolderPath();
-            const auto new_fs_path = fs::JoinPath(new_folder_path, this->folder_info.fs_name);
+            const auto new_fs_path = MakeNextFolderPath(new_folder_path, this->folder_info.name);
+            util::CopyToStringBuffer(this->folder_info.fs_name, fs::GetBaseName(new_fs_path));
             fs::RenameDirectory(old_fs_path, new_fs_path);
         }
 
-        const auto new_entry_path = fs::JoinPath(new_folder_path, fs::GetBaseName(this->entry_path));
+        const auto new_idx = FindNextEntryIndex(new_folder_path);
+        this->index = new_idx;
+        const auto new_entry_path = MakeEntryPath(new_folder_path, new_idx);
         fs::RenameFile(this->entry_path, new_entry_path);
         this->entry_path = new_entry_path;
+
+        this->Save();
     }
 
-    void Entry::MoveToParentFolder() {
-        // Note: not moving the folder's actual fs folder (for folder entries) to avoid messy logic, this should work just fine
-
+    bool Entry::MoveToIndex(const u32 new_index) {
         const auto cur_folder_path = fs::GetBaseDirectory(this->entry_path);
-        const auto cur_parent_folder_path = fs::GetBaseDirectory(cur_folder_path);
+        const auto new_entry_path = MakeEntryPath(cur_folder_path, new_index);
+        if(fs::ExistsFile(new_entry_path)) {
+            return false;
+        }
 
-        const auto new_entry_path = fs::JoinPath(cur_parent_folder_path, fs::GetBaseName(this->entry_path));
         fs::RenameFile(this->entry_path, new_entry_path);
         this->entry_path = new_entry_path;
+        this->index = new_index;
+        return true;
     }
 
-    void Entry::MoveToRoot() {
-        // Note: not moving the folder's actual fs folder (for folder entries) to avoid messy logic, this should work just fine
+    void Entry::OrderSwap(Entry &other_entry) {
+        const auto tmp_entry_path = other_entry.entry_path + ".tmp";
+        fs::RenameDirectory(other_entry.entry_path, tmp_entry_path);
+        fs::RenameDirectory(this->entry_path, other_entry.entry_path);
+        fs::RenameDirectory(tmp_entry_path, this->entry_path);
 
-        const auto new_entry_path = fs::JoinPath(MenuPath, fs::GetBaseName(this->entry_path));
-        fs::RenameFile(this->entry_path, new_entry_path);
-        this->entry_path = new_entry_path;
+        std::swap(this->entry_path, other_entry.entry_path);
+        std::swap(this->index, other_entry.index);
+
+        this->Save();
+        other_entry.Save();
     }
 
     void Entry::Save() const {
@@ -352,51 +393,46 @@ namespace ul::menu {
         util::SaveJSON(this->entry_path, entry_json);
     }
 
-    void Entry::Remove() {
-        if(this->Is<EntryType::Folder>()) {
-            // Move all the items outside
-            const auto fs_path = this->GetFolderPath();
-            const auto parent_path = fs::GetBaseDirectory(fs_path);
-            fs::RenameDirectory(fs_path, parent_path);
-        }
-    
+    std::vector<Entry> Entry::Remove() {
         fs::DeleteFile(this->entry_path);
-    }
 
-    void Entry::OrderBetween(const u32 start_idx, const u32 end_idx) {
-        const auto new_entry_path = AllocateEntryPath(start_idx, end_idx, fs::GetBaseDirectory(this->entry_path), this->index);
-        fs::RenameFile(this->entry_path, new_entry_path);
-        this->entry_path = new_entry_path;
-    }
+        if(this->Is<EntryType::Folder>()) {
+            const auto fs_path = this->GetFolderPath();
 
-    void Entry::OrderSwap(Entry &other_entry) {
-        const auto tmp_entry_path = other_entry.entry_path + ".tmp";
-        fs::RenameDirectory(other_entry.entry_path, tmp_entry_path);
-        fs::RenameDirectory(this->entry_path, other_entry.entry_path);
-        fs::RenameDirectory(tmp_entry_path, this->entry_path);
+            auto folder_entries = LoadEntries(fs_path);
+            for(auto &entry: folder_entries) {
+                entry.MoveToParentFolder();
+            }
 
-        std::swap(this->entry_path, other_entry.entry_path);
-        std::swap(this->index, other_entry.index);
+            fs::DeleteDirectory(fs_path);
+
+            // Returns new entries present in the path where the entry (the folder actually) was removed
+            return folder_entries;
+        }
+
+        return {};
     }
 
     void InitializeEntries() {
+        u32 entry_idx = 0;
+
         EnsureApplicationRecords();
 
-        ConvertOldMenu();
+        ConvertOldMenu(entry_idx);
 
         if(!fs::ExistsDirectory(MenuPath)) {
             fs::CreateDirectory(MenuPath);
 
-            InitializeRemainingEntries(g_ApplicationRecords);
+            InitializeRemainingEntries(g_ApplicationRecords, entry_idx);
         }
     }
 
-    void EnsureApplicationEntry(const NsApplicationRecord &app_record, const u32 start_idx, const u32 end_idx) {
+    void EnsureApplicationEntry(const NsApplicationRecord &app_record) {
         // Just fill enough fields needed to save the path
-        u32 tmp_idx;
+        const auto entry_idx = FindNextEntryIndex(MenuPath);
         Entry app_entry = {
             .type = EntryType::Application,
-            .entry_path = AllocateEntryPath(start_idx, end_idx, MenuPath, tmp_idx),
+            .entry_path = MakeEntryPath(MenuPath, entry_idx),
 
             .app_info = {
                 .app_id = app_record.application_id,
@@ -507,6 +543,15 @@ namespace ul::menu {
                             }
                             break;
                         }
+                        case EntryType::SpecialEntryMiiEdit:
+                        case EntryType::SpecialEntryWebBrowser:
+                        case EntryType::SpecialEntryUserPage:
+                        case EntryType::SpecialEntrySettings:
+                        case EntryType::SpecialEntryThemes:
+                        case EntryType::SpecialEntryControllers:
+                        case EntryType::SpecialEntryAlbum:
+                            entries.push_back(entry);
+                            break;
                         default:
                             break;
                     }
@@ -514,63 +559,17 @@ namespace ul::menu {
             }
         });
 
-        std::sort(entries.begin(), entries.end());
-
-        auto needs_reindexing = false;
-        for(u32 i = 0; i < entries.size(); i++) {
-            auto &cur_entry = entries.at(i);
-            if(i < (entries.size() - 1)) {
-                auto &next_entry = entries.at(i + 1);
-
-                if(next_entry.index == (cur_entry.index + 1)) {
-                    needs_reindexing = true;
-                    break;
-                }
-                if(cur_entry.index == (next_entry.index + 1)) {
-                    needs_reindexing = true;
-                    break;
-                }
-                if(next_entry.index == cur_entry.index) {
-                    needs_reindexing = true;
-                    break;
-                }
-            }
-        }
-
-        if(needs_reindexing) {
-            UL_LOG_INFO("Reindexing entries at '%s'...", path.c_str());
-            const auto index_gap = UINT32_MAX / entries.size();
-            u32 cur_start_idx = 0;
-            for(auto &entry : entries) {
-                entry.Remove();
-
-                const auto new_idx = cur_start_idx + index_gap / 2;
-                entry.entry_path = MakeEntryPath(path, new_idx);
-                entry.index = new_idx;
-                entry.Save();
-                cur_start_idx += index_gap;
-            }
-        }
-
         return entries;
     }
 
-    Entry CreateFolderEntry(const std::string &base_path, const std::string &folder_name) {
-        // Ensure the filesystem folder name is ASCII for FS, while the actual folder name is saved in its JSON data
-        std::string folder_name_path = "folder";
-        for(const auto folder_name_c : folder_name) {
-            if(isascii(folder_name_c)) {
-                folder_name_path += folder_name_c;
-            }
-        }
-        
-        const auto folder_path = fs::JoinPath(base_path, folder_name_path);
+    Entry CreateFolderEntry(const std::string &base_path, const std::string &folder_name, const u32 index) {
+        const auto folder_path = MakeNextFolderPath(base_path, folder_name);
         fs::CreateDirectory(folder_path);
 
-        u32 tmp_idx;
         Entry folder_entry = {
             .type = EntryType::Folder,
-            .entry_path = AllocateEntryPath(InvalidEntryIndex, InvalidEntryIndex, base_path, tmp_idx),
+            .entry_path = MakeEntryPath(base_path, index),
+            .index = index,
 
             .control = {
                 .custom_name = false,
@@ -582,22 +581,37 @@ namespace ul::menu {
             .folder_info = {}
         };
         util::CopyToStringBuffer(folder_entry.folder_info.name, folder_name);
-        util::CopyToStringBuffer(folder_entry.folder_info.fs_name, folder_name_path);
+        util::CopyToStringBuffer(folder_entry.folder_info.fs_name, fs::GetBaseName(folder_path));
 
         folder_entry.Save();
         return folder_entry;
     }
 
-    Entry CreateHomebrewEntry(const std::string &base_path, const std::string &nro_path, const std::string &nro_argv) {
-        u32 tmp_idx;
-        const Entry hb_entry = {
+    Entry CreateHomebrewEntry(const std::string &base_path, const std::string &nro_path, const std::string &nro_argv, const u32 index) {
+        Entry hb_entry = {
             .type = EntryType::Homebrew,
-            .entry_path = AllocateEntryPath(InvalidEntryIndex, InvalidEntryIndex, base_path, tmp_idx),
+            .entry_path = MakeEntryPath(base_path, index),
+            .index = index,
+
+            .control = {
+                .custom_name = false,
+                .custom_author = false,
+                .custom_version = false,
+                .custom_icon_path = false
+            },
 
             .hb_info = {
                 .nro_target = loader::TargetInput::Create(nro_path, nro_argv, true, "")
             }
         };
+
+        hb_entry.TryLoadControlData();
+
+        // Only set the icon if it's valid
+        const auto cache_icon_path = GetHomebrewCacheIconPath(nro_path);
+        if(fs::ExistsFile(cache_icon_path)) {
+            hb_entry.control.icon_path = cache_icon_path;
+        }
 
         hb_entry.Save();
         return hb_entry;

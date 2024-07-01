@@ -1,6 +1,10 @@
 <p align="center">
-  <img alt="uLaunch" src="projects/uMenu/romfs/Logo.png">
+  <img alt="uLaunch" height="100" src="projects/uMenu/romfs/Logo.png">
 </p
+
+**uLaunch** is an open-source replacement for the *Nintendo Switch HOME menu* with a custom, homebrew-oriented one:
+
+![Screenshot](screenshot.jpg)
 
 <p align="center">
   <a title="Discord" href="https://discord.gg/3KpFyaH">
@@ -32,13 +36,9 @@
   </a>
 </p>
 
-![Screenshot](screenshot.jpg)
+### Want to find **themes** for uLaunch? Check the [r/uLaunchThemes subreddit](https://www.reddit.com/r/uLaunchThemes/)!
 
-uLaunch is a project which aims to replace the console's **HOME menu** with a custom, homebrew-oriented one.
-
-- This isn't some kind of HOME menu extension, injection, patch, etc.: uLaunch is an **entire** reimplementation (of key components), 100% open-source, which also (temporarily) takes over eShop and Parental control applets (by default, since all of them are pretty much useless here) for its extended functionality.
-
-- For those who are interested in how the UI was done, this project is, like [Goldleaf](https://github.com/XorTroll/Goldleaf), based on [Plutonium](https://github.com/XorTroll/Plutonium) UI libraries.
+### Want to make **themes** yourself? Want to know more about the **technical** side of the project? Check [our wiki](https://github.com/XorTroll/uLaunch/wiki)!
 
 <h3>
 Table of contents
@@ -46,70 +46,66 @@ Table of contents
 
 - [Features](#features)
 - [Building](#building)
-- [FAQ](#faq)
+- [Simple FAQ](#simple-faq)
 - [Credits](#credits)
-
-### Want to find **themes** for uLaunch? Check the [r/uLaunchThemes subreddit](https://www.reddit.com/r/uLaunchThemes/)!
-
-### Want to make **themes** yourself? Want to know more about the **technical** side of the project? Check [our wiki](https://github.com/XorTroll/uLaunch/wiki)!
 
 ## Features
 
-> TODO: add more I'm probably missing
+- Basic HOME menu aspects
 
-- Proper launching and foreground management: launch, suspend and close applications and library applets
+  - Foreground and background management: launch, suspend and close applications and library applets
 
-- General channel handling (basic functionality): sleep, shutdown, reboot, HOME menu press detection... 
+  - General channel handling (basic functionality): sleep, shutdown, reboot, HOME menu press detection... 
 
-- *System settings*:
+- *Settings*
 
-  - Show connected WiFi network's name, MAC and IP address
-  
-  - Open connections menu (connection applet), in case you wish to change network settings
+  - Various reimplemented system settings (several still need to be implemented)
 
-  - Check and change the console's language
+  - A few uLaunch-specific settings
 
-  - Check and change the console's nickname
+- *Users*
 
-- *User features*:
+  - PC-like login: select a user once in the startup menu, use it for everything afterwards!
 
   - Create new users on the startup menu
 
-  - Show user's page (in order to edit nickname/icon, browse friends...)
+  - Show user page (in order to edit nickname/icon, browse friends...)
 
 - *Homebrew support*
 
-  - Launch homebrew as applets (no need of the **album**!)
+  - Launch homebrew as applets (no need of using the *album*)
 
-  - Launch homebrew as **applications** (requires selecting a **donor title**!)
+  - Launch homebrew as *applications* (requires selecting a *donor/takeover application*)
 
-  - Add homebrew entries to the main menu (thus making homebrew or even custom entries easily accessible, no more need of **forwarders**!)
+  - Add homebrew entries to the main menu (thus making homebrew or even custom entries easily accessible, no more need of *forwarders*!)
 
 - *UI*
+
+  - Grid-like menu, deeply inspired by the 3DS menu (and partially DSi/Wii menus as well), easier than ever to navigate and customize
 
   - **Themes** (our own, different to official HOME menu themes, way more vibrant and colorful!)
 
     - Custom icons, menu assets and graphics: custom backgrounds, images, colors, sizes, positions...
 
-    - Custom **background music** and **sound effects**
+    - Custom *background music** and *sound effects*
 
-  - **Folders** (and **subfolders**) in order to keep your main menu neatly organized
+  - **Folders** (and *subfolders*) in order to keep your main menu neatly organized
 
-  - Grid, 3DS-like menu layout for easier browsing
-
-- *Users*
-
-  - PC-like login on startup: select a user once, use it for everything afterwards!
+  - Special menu entries, similar to old Nintendo console menus: settings, user page, album, mii editor, controllers, web browser...
 
 - *Miscellaneous extras*
 
   - Browse the Internet (via the normally hidden web-applet) directly from the main menu!
 
-  - Toggle between uLaunch and the original HOME menu (no permanent removal) and/or easily update uLaunch using our `uManager` homebrew tool!
+  - Toggle between uLaunch and the original HOME menu (no permanent removal), easily update uLaunch and more using our `uManager` homebrew tool!
 
-  - Stream the screen via USB (although at low speeds, about ~9 FPS) via `uScreen`! (can be useful for taking quick screenshots, specially since uLaunch is able to capture more than SysDVR or usual game capture)
+  - Stream the screen via USB (although at low speeds, about ~9 FPS) via `uScreen`! (mostly useful for taking quick screenshots, specially since uLaunch is able to capture more than SysDVR or usual game capture)
+
+- uLaunch is a 100% open-source **entire** reimplementation (of key components): this isn't some kind of HOME menu extension, injection, patch, etc.
 
 ## Building
+
+This project is, like [Goldleaf](https://github.com/XorTroll/Goldleaf), based on my [Plutonium](https://github.com/XorTroll/Plutonium) UI libraries.
 
 You will need *devkitPro*, *devkitA64*, *libnx* and all SDL2 libraries for Switch development (make sure their packages are installed): `switch-sdl2 switch-freetype switch-glad switch-libdrm_nouveau switch-sdl2_gfx switch-sdl2_image switch-sdl2_ttf switch-sdl2_mixer`
 
@@ -117,15 +113,25 @@ Clone **recursively** this repo and just enter `make` in the command line. It sh
 
 In order to only build a certain subproject, you can run `make` plus the subproject's name: `make usystem`, `make uloader`, `make umenu`, `make umanager`
 
-## FAQ
+## Simple FAQ
 
 - Why can't I access the usual system settings, while I can access other normal system menus like the album, mii editor, user page, etc.?
 
-  - This is a technical issue. While all these mentioned menus are separate applets (separate programs, independent from the HOME menu itself, which can be launched at will) system settings are actually part of HOME menu itself; therefore, we have to implement manually all of them... which requires its effort, so only a bunch of the available settings (plus a few extras) are currently available here, while the remaining settings are being implemented one by one.
+  - This is an unfortunate technical issue. While the web browser, user page, album... are separate applets (separate programs, independent from the HOME menu itself) system settings are *actually* part of HOME menu itself. Therefore, we have to implement manually all of them... which requires its effort, so only a bunch of the available settings (plus a few extras) are currently available here, while the remaining settings are being reversed and implemented.
 
 - Will using uLaunch get me banned online?
 
-  - While no bans have been reported related to using uLaunch, replacing the retail HOME menu's functionality is never a completely safe idea, so always use it at your own risk. Keep in mind that uLaunch doesn't perform any telemetry or communications with N's servers whatsoever, thus they might be able to notice you're running something different from the original HOME menu.
+  - There have been some cases where using uLaunch may have caused bans. Keep in mind that replacing the official HOME menu's functionality is never a completely safe idea, so always use it at your own risk. Since uLaunch doesn't perform any telemetry or communications with Nintendo servers, they might be able to notice you are running something different from the original HOME menu.
+
+- Why does uLaunch (sometimes) feel slower than the official HOME menu?
+
+  - There are several possible reasons:
+
+    - uLaunch loads more content than the official HOME menu when loading. Most of the official HOME menu's UI are solid colors, while uLaunch loads several images, etc. Being customizable comes with minor drawbacks, like this one.
+
+    - Icons are lazily loaded, so for menus with many entries (essentially for people having a ton of games) navigating through the menu will be slightly laggy until everything loads, which will just take a few seconds. The 3DS menu has similar laggy moments, by the way ;)
+
+    - Aside from the two excuses above, there is always room for further optimizations in uLaunch's code. Feel free to submit any issues of excessive lag/slowdowns, I'll do my best to improve it :)
 
 ## Credits
 
@@ -133,12 +139,12 @@ In order to only build a certain subproject, you can run `make` plus the subproj
 
 - Switchbrew team for [libnx](https://github.com/switchbrew/libnx) and [nx-hbloader](https://github.com/switchbrew/nx-hbloader), the base of `uLoader`.
 
-- C4Phoenix for the amazing design of this project's logo.
+- C4Phoenix for the original design of this project's logo.
 
-- [Icons8](https://icons8.com/) website for a big part of the icons used by the default menu theme.
+- [Iconos8](https://iconos8.es/), [WallpaperAccess](https://wallpaperaccess.com/), [Flaticon](https://www.flaticon.com/), [Iconfinder](https://www.iconfinder.com/) and [Icon Archive](https://www.iconarchive.com/) as the bases for most of the icons used by the default menu theme.
 
 - Several scene developers for their help with small issues or features.
 
-- Everyone who has halped translating the menu strings to other languages.
+- Everyone who has helped translating texts to other languages.
 
-- Everyone from Discord or other places whose suggestions made this project a little bit better! Specially all the testers, for reporting bugs and helping a lot with the project's development <3
+- Everyone from my Discord and other places whose suggestions made this project a little bit better! Specially all the testers for being essential in reporting bugs and helping a lot with the project's development <3

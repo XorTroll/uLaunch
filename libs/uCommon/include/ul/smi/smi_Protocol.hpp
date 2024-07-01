@@ -48,15 +48,18 @@ namespace ul::smi {
         OpenAlbum,
         RestartMenu,
         SetHomebrewTakeoverApplication,
-        UpdateMenuPath,
-        UpdateMenuIndex
+        UpdateMenuPaths,
+        UpdateMenuIndex,
+        OpenUserPage,
+        OpenMiiEdit,
+        OpenAddUser
     };
 
     struct SystemStatus {
         AccountUid selected_user;
         loader::TargetInput suspended_hb_target_ipt; // Set if homebrew (launched as an application) is currently suspended
         u64 suspended_app_id; // Set if any normal application is suspended
-        char fw_version[0x18]; // System version (sent by uSystem so that it contains Atmosphere/EmuMMC info)
+        char last_menu_fs_path[FS_MAX_PATH];
         char last_menu_path[FS_MAX_PATH];
         u32 last_menu_index;
     };

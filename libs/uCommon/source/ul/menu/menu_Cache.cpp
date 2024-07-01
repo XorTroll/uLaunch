@@ -4,29 +4,30 @@ namespace ul::menu {
 
     namespace {
 
-        std::string GetHomebrewCachePath(const std::string &nro_path, const std::string &ext) {
-            // TODO: cache this hash/path?
-            char path_copy[FS_MAX_PATH] = {};
-            util::CopyToStringBuffer(path_copy, nro_path);
-            u8 hash[SHA256_HASH_SIZE] = {};
-            sha256CalculateHash(hash, path_copy, FS_MAX_PATH);
+        // Identify homebrews by hashing their path and file size (the latter to re-cache basically any NROs that get modified)
 
-            std::stringstream strm;
-            strm << HomebrewCachePath << "/";
-            // Use the first half of the hash, like N does with NCAs
-            for(u32 i = 0; i < sizeof(hash) / 2; i++) {
-                strm << std::setw(2) << std::setfill('0') << std::hex << std::nouppercase << static_cast<u32>(hash[i]);
-            }
-            strm << "." << ext;
-            return strm.str();
+        struct HomebrewCacheHashContext {
+            char nro_path[FS_MAX_PATH];
+            size_t file_size;
+        };
+
+        std::string GetHomebrewCachePath(const std::string &nro_path, const std::string &ext) {
+            HomebrewCacheHashContext cache_hash_ctx = {};
+
+            util::CopyToStringBuffer(cache_hash_ctx.nro_path, nro_path);
+            cache_hash_ctx.file_size = fs::GetFileSize(nro_path);
+
+            u8 hash[SHA256_HASH_SIZE] = {};
+            sha256CalculateHash(hash, &cache_hash_ctx, sizeof(cache_hash_ctx));
+
+            return fs::JoinPath(HomebrewCachePath, util::FormatSha256Hash(hash, true) + "." + ext);
         }
 
         void CacheHomebrewEntry(const std::string &nro_path) {
             const auto cache_nro_icon_path = GetHomebrewCacheIconPath(nro_path);
             const auto cache_nro_nacp_path = GetHomebrewCacheNacpPath(nro_path);
             if(fs::ExistsFile(cache_nro_icon_path) && fs::ExistsFile(cache_nro_nacp_path)) {
-                // Since the cache icon/nacp filename is the SHA256 of the NRO, we know it's already cached
-                // (if the NRO were to have a different icon/nacp the SHA256 would also be different)
+                // We know it's already cached
                 return;
             }
 

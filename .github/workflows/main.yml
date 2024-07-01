@@ -1,28 +1,28 @@
 
 name: Build uLaunch
 
-on: [push]
+on: [push, pull_request]
+
 jobs:
   uLaunch:
     runs-on: ubuntu-latest
-
-    container:
-      image: devkitpro/devkita64
+    container: devkitpro/devkita64:latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@master
+      with:
+        submodules: recursive
 
-    - name: Update packages
+    - name: Update packages and install Python
       run: |
         sudo -n apt-get update
-        sudo -n apt-get upgrade -y git maven
+        sudo -n apt-get upgrade -y patch autoconf automake diffutils pkgconf fakeroot git maven file tar bzip2 zstd python3 python3-pip
+        python3 -m pip install requests
+        sudo -n dkp-pacman --noconfirm -U \
+          "https://wii.leseratte10.de/devkitPro/other-stuff/dkp-toolchain-vars-1.0.2-1-any.pkg.tar.xz"
 
-    - name: Silence all git safe directory warnings
-      run: git config --system --add safe.directory '*'
-
-    - name: Update repository
-      run: |
-        git submodule update --init --recursive
+    - name: Set workspace permissions
+      run: chmod 777 -R "$GITHUB_WORKSPACE"
     
     - name: Prepare master libnx
       run: |
@@ -39,3 +39,4 @@ jobs:
       with:
         name: SdOut
         path: SdOut.zip
+        if-no-files-found: error

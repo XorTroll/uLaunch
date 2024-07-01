@@ -2,9 +2,8 @@
 #include <ul/menu/smi/smi_Commands.hpp>
 
 extern ul::menu::ui::MenuApplication::Ref g_MenuApplication;
-extern ul::menu::ui::TransitionGuard g_TransitionGuard;
 
-extern ul::cfg::Theme g_Theme;
+extern ul::cfg::Config g_Config;
 
 extern ul::util::JSON g_DefaultLanguage;
 extern ul::util::JSON g_MainLanguage;
@@ -26,6 +25,11 @@ namespace ul::menu::ui {
     }
 
     void MenuApplication::OnLoad() {
+        this->pending_gc_mount_rc = ResultSuccess;
+        LoadCommonTextures();
+
+        UL_ASSERT_TRUE(g_Config.GetEntry(cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, this->takeover_app_id));
+
         u8 *screen_capture_buf = nullptr;
         if(this->IsSuspended()) {
             screen_capture_buf = new u8[RawScreenRgbaBufferSize]();
@@ -34,52 +38,169 @@ namespace ul::menu::ui {
         }
 
         this->bgm_json = ul::util::JSON::object();
-        ul::util::LoadJSONFromFile(this->bgm_json, cfg::GetAssetByTheme(g_Theme, "sound/BGM.json"));
-        this->bgm_loop = this->bgm_json.value("loop", true);
-        this->bgm_fade_in_ms = this->bgm_json.value("fade_in_ms", 1500);
-        this->bgm_fade_out_ms = this->bgm_json.value("fade_out_ms", 500);
+        ul::util::LoadJSONFromFile(this->bgm_json, TryGetActiveThemeResource("sound/BGM.json"));
 
-        const auto toast_text_clr = pu::ui::Color::FromHex(GetUIConfigValue<std::string>("toast_text_color", "#e1e1e1ff"));
-        const auto toast_base_clr = pu::ui::Color::FromHex(GetUIConfigValue<std::string>("toast_base_color", "#282828ff"));
+        #define _LOAD_MENU_BGM(menu, bgm_name) { \
+            if(this->bgm_json.count(#menu)) { \
+                const auto menu_json = this->bgm_json[#menu]; \
+                this->menu##_bgm.bgm_loop = menu_json.value("bgm_loop", DefaultBgmLoop); \
+                this->menu##_bgm.bgm_fade_in_ms = menu_json.value("bgm_fade_in_ms", DefaultBgmFadeInMs); \
+                this->menu##_bgm.bgm_fade_in_ms = menu_json.value("bgm_fade_out_ms", DefaultBgmFadeOutMs); \
+                this->menu##_bgm.bgm = nullptr; \
+                this->menu##_bgm.bgm = pu::audio::OpenMusic(TryGetActiveThemeResource("sound/" bgm_name "/Bgm.mp3")); \
+            } \
+        }
+        _LOAD_MENU_BGM(main_menu, "Main")
+        _LOAD_MENU_BGM(startup_menu, "Startup")
+        _LOAD_MENU_BGM(themes_menu, "Themes")
+        _LOAD_MENU_BGM(settings_menu, "Settings")
+
+        if(this->bgm_json.count("bgm_loop")) {
+            const auto global_loop = this->bgm_json.value("bgm_loop", DefaultBgmLoop);
+            this->main_menu_bgm.bgm_loop = global_loop;
+            this->startup_menu_bgm.bgm_loop = global_loop;
+            this->themes_menu_bgm.bgm_loop = global_loop;
+            this->settings_menu_bgm.bgm_loop = global_loop;
+        }
+        if(this->bgm_json.count("bgm_fade_in_ms")) {
+            const auto global_fade_in_ms = this->bgm_json.value("bgm_fade_in_ms", DefaultBgmFadeInMs);
+            this->main_menu_bgm.bgm_fade_in_ms = global_fade_in_ms;
+            this->startup_menu_bgm.bgm_fade_in_ms = global_fade_in_ms;
+            this->themes_menu_bgm.bgm_fade_in_ms = global_fade_in_ms;
+            this->settings_menu_bgm.bgm_fade_in_ms = global_fade_in_ms;
+        }
+        if(this->bgm_json.count("bgm_fade_out_ms")) {
+            const auto global_fade_out_ms = this->bgm_json.value("bgm_fade_out_ms", DefaultBgmFadeOutMs);
+            this->main_menu_bgm.bgm_fade_out_ms = global_fade_out_ms;
+            this->startup_menu_bgm.bgm_fade_out_ms = global_fade_out_ms;
+            this->themes_menu_bgm.bgm_fade_out_ms = global_fade_out_ms;
+            this->settings_menu_bgm.bgm_fade_out_ms = global_fade_out_ms;
+        }
+
+        // These UI values are required, we will assert otherwise (thus the error would be visible on our logs)
+
+        #define _GET_UI_VALUE(name, type, val) { \
+            UL_ASSERT_TRUE(this->ui_json.count(name)); \
+            val = this->ui_json[name].get<type>(); \
+        }
+        #define _GET_UI_COLOR(name, val) { \
+            std::string tmp_clr; \
+            _GET_UI_VALUE(name, std::string, tmp_clr); \
+            val = pu::ui::Color::FromHex(tmp_clr); \
+        }
+
+        pu::ui::Color toast_text_clr;
+        _GET_UI_COLOR("toast_text_color", toast_text_clr);
+        pu::ui::Color toast_base_clr;
+        _GET_UI_COLOR("toast_base_color", toast_base_clr);
 
         auto notif_toast_text = pu::ui::elm::TextBlock::New(0, 0, "...");
         notif_toast_text->SetFont(pu::ui::GetDefaultFont(pu::ui::DefaultFontSize::Medium));
         notif_toast_text->SetColor(toast_text_clr);
         this->notif_toast = pu::ui::extras::Toast::New(notif_toast_text, toast_base_clr);
 
-        this->bgm = pu::audio::OpenMusic(cfg::GetAssetByTheme(g_Theme, "sound/BGM.mp3"));
+        _GET_UI_COLOR("text_color", this->text_clr);
 
-        this->text_clr = pu::ui::Color::FromHex(this->GetUIConfigValue<std::string>("text_color", "#e1e1e1ff"));
-        this->menu_focus_clr = pu::ui::Color::FromHex(this->GetUIConfigValue<std::string>("menu_focus_color", "#5ebcffff"));
-        this->menu_bg_clr = pu::ui::Color::FromHex(this->GetUIConfigValue<std::string>("menu_bg_color", "#0094ffff"));
+        _GET_UI_COLOR("menu_focus_color", this->menu_focus_clr);
+        _GET_UI_COLOR("menu_bg_color", this->menu_bg_clr);
 
-        this->dialog_title_clr = pu::ui::Color::FromHex(this->GetUIConfigValue<std::string>("dialog_title_color", "#0a0a0aff"));
-        this->dialog_cnt_clr = pu::ui::Color::FromHex(this->GetUIConfigValue<std::string>("dialog_cnt_color", "#141414ff"));
-        this->dialog_opt_clr = pu::ui::Color::FromHex(this->GetUIConfigValue<std::string>("dialog_opt_color", "#0a0a0aff"));
-        this->dialog_clr = pu::ui::Color::FromHex(this->GetUIConfigValue<std::string>("dialog_color", "#e1e1e1ff"));
-        this->dialog_over_clr = pu::ui::Color::FromHex(this->GetUIConfigValue<std::string>("dialog_over_color", "#b4b4c8ff"));
+        _GET_UI_COLOR("dialog_title_color", this->dialog_title_clr);
+        _GET_UI_COLOR("dialog_cnt_color", this->dialog_cnt_clr);
+        _GET_UI_COLOR("dialog_opt_color", this->dialog_opt_clr);
+        _GET_UI_COLOR("dialog_color", this->dialog_clr);
+        _GET_UI_COLOR("dialog_over_color", this->dialog_over_clr);
 
         this->launch_failed = false;
         memset(this->chosen_hb, 0, sizeof(this->chosen_hb));
 
-        const u8 suspended_final_alpha = this->ui_json.value("suspended_final_alpha", 80);
-        this->startup_lyt = StartupMenuLayout::New();
-        this->main_menu_lyt = MainMenuLayout::New(screen_capture_buf, suspended_final_alpha);
-        this->theme_menu_lyt = ThemeMenuLayout::New();
-        this->settings_menu_lyt = SettingsMenuLayout::New();
-        this->languages_menu_lyt = LanguagesMenuLayout::New();
+        u32 suspended_app_final_alpha;
+        _GET_UI_VALUE("suspended_app_final_alpha", u32, suspended_app_final_alpha);
 
         switch(this->start_mode) {
             case smi::MenuStartMode::StartupScreen: {
-                this->LoadStartupMenu();
                 break;
             }
             default: {
-                this->StartPlayBGM();
-                this->LoadMainMenu();
+                LoadSelectedUserIconTexture();
                 break;
             }
         }
+
+        // TODO (low priority): do not create all layouts, only the loaded one?
+        this->startup_menu_lyt = StartupMenuLayout::New();
+        this->main_menu_lyt = MainMenuLayout::New(screen_capture_buf, static_cast<u8>(suspended_app_final_alpha));
+        this->themes_menu_lyt = ThemesMenuLayout::New();
+        this->settings_menu_lyt = SettingsMenuLayout::New();
+
+        switch(this->start_mode) {
+            case smi::MenuStartMode::StartupScreen: {
+                this->LoadMenuByType(MenuType::Startup, false);
+                break;
+            }
+            default: {
+                this->LoadMenuByType(MenuType::Main, false);
+                this->StartPlayBgm();
+                break;
+            }
+        }
+    }
+
+    void MenuApplication::SetBackgroundFade() {
+        if(!this->HasFadeBackgroundImage()) {
+            this->SetFadeBackgroundImage(GetBackgroundTexture());
+        }
+    }
+
+    void MenuApplication::LoadMenuByType(const MenuType type, const bool fade, MenuFadeCallback fade_cb) {
+        this->StopPlayBgm();
+
+        if(fade) {
+            this->SetBackgroundFade();
+            this->FadeOut();
+
+            if(fade_cb) {
+                fade_cb();
+            }
+        }
+        
+        switch(type) {
+            case MenuType::Startup: {
+                this->startup_menu_lyt->ReloadMenu();
+                this->LoadLayout(this->startup_menu_lyt);
+                break;
+            }
+            case MenuType::Main: {
+                this->main_menu_lyt->NotifyLoad(this->system_status.selected_user);
+                this->LoadLayout(this->main_menu_lyt);
+                break;
+            }
+            case MenuType::Settings: {
+                this->settings_menu_lyt->Reload(true);
+                this->LoadLayout(this->settings_menu_lyt);
+                break;
+            }
+            case MenuType::Themes: {
+                this->themes_menu_lyt->Reload();
+                this->LoadLayout(this->themes_menu_lyt);
+                break;
+            }
+        }
+
+        this->loaded_menu = type;
+
+        this->StartPlayBgm();
+
+        if(fade) {
+            this->FadeIn();
+        }
+    }
+
+    void MenuApplication::SetTakeoverApplicationId(const u64 app_id) {
+        this->takeover_app_id = app_id;
+
+        // No need to save config, uSystem deals with that
+        UL_ASSERT_TRUE(g_Config.SetEntry(cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, this->takeover_app_id));
+        UL_RC_ASSERT(smi::SetHomebrewTakeoverApplication(this->takeover_app_id));
     }
 
     void MenuApplication::ShowNotification(const std::string &text, const u64 timeout) {
@@ -88,21 +209,23 @@ namespace ul::menu::ui {
         this->StartOverlayWithTimeout(this->notif_toast, timeout);
     }
 
-    void MenuApplication::StartPlayBGM() {
-        if(this->bgm != nullptr) {
-            const int loops = this->bgm_loop ? -1 : 1;
-            if(this->bgm_fade_in_ms > 0) {
-                pu::audio::PlayMusicWithFadeIn(this->bgm, loops, this->bgm_fade_in_ms);
+    void MenuApplication::StartPlayBgm() {
+        const auto &bgm = this->GetCurrentMenuBgm();
+        if(bgm.bgm != nullptr) {
+            const int loops = bgm.bgm_loop ? -1 : 1;
+            if(bgm.bgm_fade_in_ms > 0) {
+                pu::audio::PlayMusicWithFadeIn(bgm.bgm, loops, bgm.bgm_fade_in_ms);
             }
             else {
-                pu::audio::PlayMusic(this->bgm, loops);
+                pu::audio::PlayMusic(bgm.bgm, loops);
             }
         }
     }
 
-    void MenuApplication::StopPlayBGM() {
-        if(this->bgm_fade_out_ms > 0) {
-            pu::audio::FadeOutMusic(this->bgm_fade_out_ms);
+    void MenuApplication::StopPlayBgm() {
+        const auto &bgm = this->GetCurrentMenuBgm();
+        if(bgm.bgm_fade_out_ms > 0) {
+            pu::audio::FadeOutMusic(bgm.bgm_fade_out_ms);
         }
         else {
             pu::audio::StopMusic();
@@ -111,12 +234,12 @@ namespace ul::menu::ui {
     
     void MenuApplication::SetSelectedUser(const AccountUid user_id) {
         this->system_status.selected_user = user_id;
-
         UL_RC_ASSERT(ul::menu::smi::SetSelectedUser(user_id));
+        LoadSelectedUserIconTexture();
     }
 
-    int MenuApplication::DisplayDialog(const std::string &title, const std::string &content, const std::vector<std::string> &opts, const bool use_last_opt_as_cancel, const std::string &icon_path) {
-        return this->CreateShowDialog(title, content, opts, use_last_opt_as_cancel, icon_path, [&](pu::ui::Dialog::Ref &dialog) {
+    int MenuApplication::DisplayDialog(const std::string &title, const std::string &content, const std::vector<std::string> &opts, const bool use_last_opt_as_cancel, pu::sdl2::TextureHandle::Ref icon) {
+        return this->CreateShowDialog(title, content, opts, use_last_opt_as_cancel, icon, [&](pu::ui::Dialog::Ref &dialog) {
             dialog->SetTitleColor(this->dialog_title_clr);
             dialog->SetContentColor(this->dialog_title_clr);
             dialog->SetOptionColor(this->dialog_opt_clr);

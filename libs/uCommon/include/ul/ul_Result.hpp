@@ -60,7 +60,14 @@ namespace ul {
     #define UL_RC_ASSERT(expr) ({ \
         const auto _tmp_rc = ::ul::res::TransformIntoResult(expr); \
         if(R_FAILED(_tmp_rc)) { \
-            ::ul::OnAssertionFailed(_tmp_rc, #expr " asserted 0x%X...\n", _tmp_rc); \
+            const char *mod_name; \
+            const char *rc_name; \
+            if(rc::GetResultNameAny(_tmp_rc, mod_name, rc_name)) { \
+                ::ul::OnAssertionFailed(_tmp_rc, #expr " asserted %04d-%04d/0x%X/%s::%s...\n", R_MODULE(_tmp_rc) + 2000, R_DESCRIPTION(_tmp_rc), R_VALUE(_tmp_rc), mod_name, rc_name); \
+            } \
+            else { \
+                ::ul::OnAssertionFailed(_tmp_rc, #expr " asserted %04d-%04d/0x%X...\n", R_MODULE(_tmp_rc) + 2000, R_DESCRIPTION(_tmp_rc), R_VALUE(_tmp_rc)); \
+            } \
         } \
     })
 

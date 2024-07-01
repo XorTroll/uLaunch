@@ -11,7 +11,7 @@ namespace ul::net {
     Result Initialize();
     void Finalize();
     Result GetInternetConnectionStatus(NifmInternetConnectionStatus &out_status);
-    bool HasConnection();
+    bool HasConnection(u32 &out_strength);
     Result GetMacAddress(WlanMacAddress &out_addr);
 
     std::string FormatMacAddress(const WlanMacAddress &addr);

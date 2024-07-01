@@ -3,6 +3,12 @@
 
 namespace ul::util {
 
+    std::string FormatProgramId(const u64 program_id) {
+        std::stringstream strm;
+        strm << std::uppercase << std::setfill('0') << std::setw(16) << std::hex << program_id;
+        return strm.str();
+    }
+
     std::string FormatAccount(const AccountUid value) {
         auto bytes_v = reinterpret_cast<const u8*>(value.uid);
         std::stringstream strm;
@@ -43,13 +49,24 @@ namespace ul::util {
         const char *mod_name;
         const char *rc_name;
         if(rc::GetResultNameAny(rc, mod_name, rc_name)) {
-            sprintf(res, "%04d-%04d/0x%X/%s::%s", R_MODULE(rc) + 2000, R_DESCRIPTION(rc), R_VALUE(rc), mod_name, rc_name);
+            sprintf(res, "%04d-%04d/0x%X/%s::Result%s", R_MODULE(rc) + 2000, R_DESCRIPTION(rc), R_VALUE(rc), mod_name, rc_name);
         }
         else {
             sprintf(res, "%04d-%04d/0x%X", R_MODULE(rc) + 2000, R_DESCRIPTION(rc), R_VALUE(rc));
         }
         
         return res;
+    }
+
+    std::string FormatSha256Hash(const u8 *hash, const bool only_half) {
+        std::stringstream strm;
+        strm << std::setw(2) << std::setfill('0') << std::hex << std::nouppercase;
+        // Use the first half of the hash, like N does with NCAs
+        const u32 count = only_half ? (SHA256_HASH_SIZE / 2) : SHA256_HASH_SIZE;
+        for(u32 i = 0; i < count; i++) {
+            strm << static_cast<u32>(hash[i]);
+        }
+        return strm.str();
     }
 
 }

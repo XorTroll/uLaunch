@@ -17,12 +17,11 @@ namespace ul::cfg {
     };
 
     struct Theme {
-        std::string base_name;
-        std::string path;
+        std::string name;
         ThemeManifest manifest;
 
-        inline bool IsDefault() {
-            return this->base_name.empty();
+        inline bool IsValid() {
+            return !this->name.empty();
         }
     };
 
@@ -32,7 +31,7 @@ namespace ul::cfg {
         HomebrewApplicationTakeoverApplicationId,
         ViewerUsbEnabled,
         ActiveThemeName,
-        MenuEntryHorizontalCount
+        MenuEntryHeightCount
     };
 
     enum class ConfigEntryType : u8 {
@@ -183,7 +182,7 @@ namespace ul::cfg {
                         return false;
                     }
                 }
-                case ConfigEntryId::MenuEntryHorizontalCount: {
+                case ConfigEntryId::MenuEntryHeightCount: {
                     if constexpr(std::is_same_v<T, u64>) {
                         new_entry.header.type = ConfigEntryType::U64;
                         new_entry.header.size = sizeof(t);
@@ -259,9 +258,9 @@ namespace ul::cfg {
                         return false;
                     }
                 }
-                case ConfigEntryId::MenuEntryHorizontalCount: {
+                case ConfigEntryId::MenuEntryHeightCount: {
                     if constexpr(std::is_same_v<T, u64>) {
-                        out_t = 4;
+                        out_t = 3;
                         return true;
                     }
                     else {
@@ -279,9 +278,18 @@ namespace ul::cfg {
         return theme.manifest.format_version < CurrentThemeFormatVersion;
     }
 
-    Theme LoadTheme(const std::string &base_name);
-    std::vector<Theme> LoadThemes();
-    std::string GetAssetByTheme(const Theme &base, const std::string &resource_base);
+    Result TryLoadTheme(const std::string &theme_name, Theme &out_theme);
+    Result TryCacheLoadThemeIcon(const Theme &theme, std::string &out_icon_path);
+
+    std::vector<Theme> FindThemes();
+
+    void EnsureCacheActiveTheme(const Config &cfg);
+    void CacheActiveTheme(const Config &cfg);
+    void RemoveActiveThemeCache();
+    
+    inline std::string GetActiveThemeResource(const std::string &resource_base) {
+        return fs::JoinPath(ActiveThemeCachePath, resource_base);
+    }
 
     void LoadLanguageJsons(const std::string &lang_base, util::JSON &lang, util::JSON &def);
 

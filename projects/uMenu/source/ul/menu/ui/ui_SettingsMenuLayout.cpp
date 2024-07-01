@@ -4,70 +4,121 @@
 #include <ul/net/net_Service.hpp>
 #include <ul/acc/acc_Accounts.hpp>
 #include <ul/os/os_System.hpp>
+#include <ul/util/util_Scope.hpp>
+
+extern SetSysFirmwareVersion g_FwVersion;
 
 extern ul::menu::ui::MenuApplication::Ref g_MenuApplication;
-extern ul::menu::ui::TransitionGuard g_TransitionGuard;
-extern ul::cfg::Theme g_Theme;
 extern ul::cfg::Config g_Config;
 
 namespace ul::menu::ui {
-    
-    template<typename T>
-    inline std::string EncodeForSettings(const T &t) {
-        return GetLanguageString("set_unknown_value");
+
+    namespace {
+
+        template<typename T>
+        inline std::string EncodeForSettings(const T &t) {
+            return GetLanguageString("set_unknown_value");
+        }
+
+        template<>
+        inline std::string EncodeForSettings<std::string>(const std::string &t) {
+            return "\"" + t + "\"";
+        }
+        
+        template<>
+        inline std::string EncodeForSettings<u32>(const u32 &t) {
+            return "\"" + std::to_string(t) + "\"";
+        }
+
+        template<>
+        inline std::string EncodeForSettings<bool>(const bool &t) {
+            return t ? GetLanguageString("set_true_value") : GetLanguageString("set_false_value");
+        }
+
+        constexpr u32 ExosphereApiVersionConfigItem = 65000;
+        constexpr u32 ExosphereEmummcType = 65007;
+        constexpr u32 ExosphereSupportedHosVersion = 65011;
+
+        bool g_AmsEmummcInfoLoaded = false;
+        ul::Version g_AmsVersion;
+        bool g_AmsIsEmummc;
+
+        void LoadAmsEmummcInfo() {
+            if(!g_AmsEmummcInfoLoaded) {
+                UL_RC_ASSERT(splInitialize());
+                UL_ON_SCOPE_EXIT(
+                    splExit();
+                );
+
+                // Since we rely on ams for uLaunch to work, it *must* be present
+
+                u64 raw_ams_ver;
+                UL_RC_ASSERT(splGetConfig(static_cast<SplConfigItem>(ExosphereApiVersionConfigItem), &raw_ams_ver));
+                g_AmsVersion = {
+                    .major = static_cast<u8>((raw_ams_ver >> 56) & 0xFF),
+                    .minor = static_cast<u8>((raw_ams_ver >> 48) & 0xFF),
+                    .micro = static_cast<u8>((raw_ams_ver >> 40) & 0xFF)
+                };
+
+                u64 emummc_type;
+                UL_RC_ASSERT(splGetConfig(static_cast<SplConfigItem>(ExosphereEmummcType), &emummc_type));
+                g_AmsIsEmummc = emummc_type != 0;
+                g_AmsEmummcInfoLoaded = true;
+            }
+        }
+
     }
 
-    template<>
-    inline std::string EncodeForSettings<std::string>(const std::string &t) {
-        return "\"" + t + "\"";
-    }
-    
-    template<>
-    inline std::string EncodeForSettings<u32>(const u32 &t) {
-        return "\"" + std::to_string(t) + "\"";
-    }
-
-    template<>
-    inline std::string EncodeForSettings<bool>(const bool &t) {
-        return t ? GetLanguageString("set_true_value") : GetLanguageString("set_false_value");
-    }
-
-    SettingsMenuLayout::SettingsMenuLayout() {
-        this->SetBackgroundImage(cfg::GetAssetByTheme(g_Theme, "ui/Background.png"));
+    SettingsMenuLayout::SettingsMenuLayout() : IMenuLayout() {
+        LoadAmsEmummcInfo();
 
         this->info_text = pu::ui::elm::TextBlock::New(0, 0, GetLanguageString("set_info_text"));
+
         this->info_text->SetColor(g_MenuApplication->GetTextColor());
         g_MenuApplication->ApplyConfigForElement("settings_menu", "info_text", this->info_text);
         this->Add(this->info_text);
 
-        this->settings_menu = pu::ui::elm::Menu::New(0, 0, 1180, g_MenuApplication->GetMenuBackgroundColor(), g_MenuApplication->GetMenuFocusColor(), 100, 6);
-        g_MenuApplication->ApplyConfigForElement("settings_menu", "settings_menu_item", this->settings_menu);
+        this->settings_menu = pu::ui::elm::Menu::New(0, 0, SettingsMenuWidth, g_MenuApplication->GetMenuBackgroundColor(), g_MenuApplication->GetMenuFocusColor(), SettingsMenuItemSize, SettingsMenuItemsToShow);
+        g_MenuApplication->ApplyConfigForElement("settings_menu", "settings_menu", this->settings_menu);
         this->Add(this->settings_menu);
+
+        this->setting_edit_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Settings/SettingEdit.wav"));
+        this->setting_save_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Settings/SettingSave.wav"));
+        this->back_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Settings/Back.wav"));
+    }
+
+    SettingsMenuLayout::~SettingsMenuLayout() {
+        pu::audio::DestroySfx(this->setting_edit_sfx);
+        pu::audio::DestroySfx(this->setting_save_sfx);
+        pu::audio::DestroySfx(this->back_sfx);
     }
 
     void SettingsMenuLayout::OnMenuInput(const u64 keys_down, const u64 keys_up, const u64 keys_held, const pu::ui::TouchPoint touch_pos) {
         if(keys_down & HidNpadButton_B) {
-            g_TransitionGuard.Run([]() {
-                g_MenuApplication->FadeOut();
-                g_MenuApplication->LoadMainMenu();
-                g_MenuApplication->FadeIn();
-            });
+            pu::audio::PlaySfx(this->back_sfx);
+
+            g_MenuApplication->LoadMenuByType(MenuType::Main);
         }
     }
 
     bool SettingsMenuLayout::OnHomeButtonPress() {
-        return g_TransitionGuard.Run([]() {
-            g_MenuApplication->FadeOut();
-            g_MenuApplication->LoadMainMenu();
-            g_MenuApplication->FadeIn();
-        });
+        pu::audio::PlaySfx(this->back_sfx);
+
+        g_MenuApplication->LoadMenuByType(MenuType::Main);
+        return true;
     }
 
     void SettingsMenuLayout::Reload(const bool reset_idx) {
-        // TODONEW (long term): implement more settings!
+        // TODO (long term): implement more settings!
 
         const auto prev_idx = this->settings_menu->GetSelectedIndex();
         this->settings_menu->ClearItems();
+
+        this->PushSettingItem(GetLanguageString("set_console_fw"), EncodeForSettings<std::string>(std::string(g_FwVersion.display_version) + " (" + g_FwVersion.display_title + ")"), -1);
+
+        this->PushSettingItem(GetLanguageString("set_ams_fw"), EncodeForSettings<std::string>(g_AmsVersion.Format()), -1);
+
+        this->PushSettingItem(GetLanguageString("set_ams_emummc"), EncodeForSettings(g_AmsIsEmummc), -1);
         
         SetSysDeviceNickName console_name = {};
         UL_RC_ASSERT(setsysGetDeviceNickname(&console_name));
@@ -82,7 +133,8 @@ namespace ul::menu::ui {
         this->PushSettingItem(GetLanguageString("set_viewer_enabled"), EncodeForSettings(viewer_usb_enabled), 1);
 
         auto connected_wifi_name = GetLanguageString("set_wifi_none");
-        if(net::HasConnection()) {
+        u32 strength;
+        if(net::HasConnection(strength)) {
             NifmNetworkProfileData prof_data = {};
             if(R_SUCCEEDED(nifmGetCurrentNetworkProfile(&prof_data))) {
                 connected_wifi_name = prof_data.wireless_setting_data.ssid;
@@ -146,12 +198,13 @@ namespace ul::menu::ui {
         if(is_editable) {
             setting_item->AddOnKey(std::bind(&SettingsMenuLayout::setting_DefaultKey, this, id));
         }
-        setting_item->SetIcon(TryFindImage(g_Theme, "ui/Setting" + std::string(is_editable ? "" : "No") + "Editable"));
+        setting_item->SetIcon(is_editable ? GetEditableSettingIconTexture() : GetNonEditableSettingIconTexture());
         setting_item->SetColor(g_MenuApplication->GetTextColor());
         this->settings_menu->AddItem(setting_item);
     }
 
     void SettingsMenuLayout::setting_DefaultKey(const u32 id) {
+        pu::audio::PlaySfx(this->setting_edit_sfx);
         bool reload_need = false;
         switch(id) {
             case 0: {
@@ -175,7 +228,7 @@ namespace ul::menu::ui {
             case 1: {
                 bool viewer_usb_enabled;
                 UL_ASSERT_TRUE(g_Config.GetEntry(cfg::ConfigEntryId::ViewerUsbEnabled, viewer_usb_enabled));
-                auto sopt = g_MenuApplication->DisplayDialog(GetLanguageString("set_viewer_enabled"), GetLanguageString("set_viewer_info") + "\n" + (viewer_usb_enabled ? GetLanguageString("set_disable_conf") : GetLanguageString("set_enable_conf")), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
+                auto sopt = g_MenuApplication->DisplayDialog(GetLanguageString("set_viewer_enabled"), GetLanguageString("set_viewer_info") + "\n" + (viewer_usb_enabled ? GetLanguageString("set_viewer_disable_conf") : GetLanguageString("set_viewer_enable_conf")), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
                 if(sopt == 0) {
                     viewer_usb_enabled = !viewer_usb_enabled;
                     UL_ASSERT_TRUE(g_Config.SetEntry(cfg::ConfigEntryId::ViewerUsbEnabled, viewer_usb_enabled));
@@ -186,7 +239,7 @@ namespace ul::menu::ui {
             }
             case 2: {
                 u8 in[28] = {0};
-                // TODONEW (low priority): 0 = normal, 1 = qlaunch, 2 = starter...? (consider documenting this better, maybe a PR to libnx even)
+                // TODO (low priority): 0 = normal, 1 = qlaunch, 2 = starter...? (consider documenting this better, maybe a PR to libnx even)
                 *reinterpret_cast<u32*>(in) = 1;
                 u8 out[8] = {0};
 
@@ -203,12 +256,31 @@ namespace ul::menu::ui {
                 break;
             }
             case 3: {
-                g_TransitionGuard.Run([]() {
-                    g_MenuApplication->FadeOut();
-                    g_MenuApplication->LoadSettingsLanguagesMenu();
-                    g_MenuApplication->FadeIn();
-                });
+                std::vector<std::string> lang_opts = {};
+                for(u32 i = 0; i < os::LanguageNameCount; i++) {
+                    lang_opts.push_back(os::LanguageNameList[i]);
+                }
+                lang_opts.push_back(GetLanguageString("cancel"));
 
+                const auto opt = g_MenuApplication->DisplayDialog(GetLanguageString("set_lang_select"), GetLanguageString("set_lang_conf"), lang_opts, true);
+                if(opt >= 0) {
+                    const auto sys_lang = os::GetSystemLanguage();
+                    if(sys_lang == opt) {
+                        g_MenuApplication->ShowNotification(GetLanguageString("set_lang_active"));
+                    }
+                    else {
+                        u64 lang_codes[os::LanguageNameCount] = {};
+                        s32 tmp;
+                        setGetAvailableLanguageCodes(&tmp, lang_codes, os::LanguageNameCount);
+                        const auto lang_code = lang_codes[opt];
+
+                        const auto rc = setsysSetLanguageCode(lang_code);
+                        g_MenuApplication->DisplayDialog(GetLanguageString("set_lang"), R_SUCCEEDED(rc) ? GetLanguageString("set_lang_select_ok") : GetLanguageString("set_lang_select_error") + ": " + util::FormatResultDisplay(rc), { GetLanguageString("ok") }, true);
+                        if(R_SUCCEEDED(rc)) {
+                            RebootSystem();
+                        }
+                    }
+                }
                 break;
             }
             case 4: {
@@ -270,6 +342,7 @@ namespace ul::menu::ui {
         }
 
         if(reload_need) {
+            pu::audio::PlaySfx(this->setting_save_sfx);
             cfg::SaveConfig(g_Config);
             this->Reload(false);
         }

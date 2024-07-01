@@ -39,19 +39,15 @@ include $(DEVKITPRO)/libnx/switch_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	source source/ul source/ul/man source/ul/man/ui
+SOURCES		:=	source source/ul source/ul/man source/ul/man/ui source/ul/sf
 INCLUDES	:=	include
 DATA		:=	data
 ROMFS		:=	romfs
 
-VER_MAJOR	:= 1
-VER_MINOR	:= 0
-VER_MICRO	:= 0
-
 APP_TITLE   := uManager
 APP_AUTHOR  := XorTroll
 
-APP_VERSION := $(VER_MAJOR).$(VER_MINOR).$(VER_MICRO)
+APP_VERSION := $(VERSION)
 
 #---------------------------------------------------------------------------------
 # options for code generation
@@ -61,15 +57,15 @@ ARCH	:=	-march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 CFLAGS	:=	-g -O2 -ffunction-sections -Wall -Werror $(ARCH) $(DEFINES)
 
 CFLAGS	+=	$(INCLUDE) -D__SWITCH__ $(UL_DEFS) `sdl2-config --cflags`
-CFLAGS	+=	-DGOLDLEAF_MAJOR=$(VER_MAJOR) -DGOLDLEAF_MINOR=$(VER_MINOR) -DGOLDLEAF_MICRO=$(VER_MICRO) -DGOLDLEAF_VERSION=\"$(APP_VERSION)\"
 
-CXXFLAGS	:= $(CFLAGS) -fno-rtti -fexceptions -std=gnu++17
+CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++20
 
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 LIBUCOMMON	:=	$(CURDIR)/../../libs/uCommon
 LIBPU		:=	$(CURDIR)/../../libs/Plutonium/Plutonium
+INCLUDES 	+=	/../../libs/json/single_include/nlohmann /../../libs/zip/src
 
 LIBS	:= -lpu -lcurl -lfreetype -lSDL2_mixer -lopusfile -lopus -lmodplug -lmpg123 -lvorbisidec -lc -logg -lSDL2_ttf -lSDL2_gfx -lSDL2_image -lwebp -lpng -ljpeg `sdl2-config --libs` `freetype-config --libs` -luCommon -lnx
 

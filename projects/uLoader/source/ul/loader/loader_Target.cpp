@@ -1,6 +1,7 @@
 #include <ul/loader/loader_Target.hpp>
 #include <ul/loader/loader_ProgramIdUtils.hpp>
 #include <ul/loader/loader_SelfProcess.hpp>
+#include <ul/loader/loader_Input.hpp>
 #include <ul/loader/loader_HbAbi.hpp>
 #include <ul/ul_Result.hpp>
 #include <ul/util/util_Size.hpp>
@@ -11,9 +12,10 @@
 
 extern "C" {
 
-    extern u64 __stack_top;
-
     u64 g_TargetMapAddress = 0;
+    Result g_LastTargetResult = ul::ResultSuccess;
+
+    NX_NORETURN void nroEntrypointTrampoline(const ul::loader::ConfigEntry *entries, u64 handle, u64 entrypoint);
 
 }
 
@@ -24,7 +26,12 @@ namespace ul::loader {
     namespace {
 
         u8 g_SavedTls[0x100];
-        Result g_LastTargetResult = ResultSuccess;
+
+        TargetInput g_TargetInput;
+        u8 *g_TargetHeapAddress;
+        size_t g_TargetHeapSize;
+        u32 g_TargetTimes = 0;
+        Handle g_SelfProcessHandle;
 
         ConfigEntry g_TargetConfigEntries[13] = {};
         NroHeader g_TargetHeader = {};
@@ -146,7 +153,7 @@ namespace ul::loader {
 
             const auto rc = svcSetHeapSize(&heap_addr, heap_size);
             if(R_FAILED(rc) || (heap_addr == nullptr)) {
-                return MAKERESULT(Module_HomebrewLoader, 9);
+                UL_RC_ASSERT(hbloader::ResultAllocateHeapFailure);
             }
 
             out_heap_addr = reinterpret_cast<u8*>(heap_addr);
@@ -168,44 +175,42 @@ namespace ul::loader {
             smExit();
         }
 
-        Result DoTarget(const TargetInput &target_ipt, u8 *heap_addr, const u64 heap_size) {
+        NX_NORETURN void LoadTarget() {
             RestoreTls();
-            Handle self_proc_handle;
-            UL_RC_TRY(GetSelfProcessHandle(self_proc_handle));
 
             if(g_TargetMapAddress > 0) {
                 // Unmap previous target
                 const auto rw_size = AlignUp<PageAlignment>(g_TargetHeader.segments[2].size + g_TargetHeader.bss_size);
 
-                if(R_FAILED(svcUnmapProcessCodeMemory(self_proc_handle, g_TargetMapAddress + g_TargetHeader.segments[0].file_off, reinterpret_cast<u64>(heap_addr) + g_TargetHeader.segments[0].file_off, g_TargetHeader.segments[0].size))) {
-                    return MAKERESULT(Module_HomebrewLoader, 24);
+                if(R_FAILED(svcUnmapProcessCodeMemory(g_SelfProcessHandle, g_TargetMapAddress + g_TargetHeader.segments[0].file_off, reinterpret_cast<u64>(g_TargetHeapAddress) + g_TargetHeader.segments[0].file_off, g_TargetHeader.segments[0].size))) {
+                    UL_RC_ASSERT(hbloader::ResultUnmapTextFailure);
                 }
 
-                if(R_FAILED(svcUnmapProcessCodeMemory(self_proc_handle, g_TargetMapAddress + g_TargetHeader.segments[1].file_off, reinterpret_cast<u64>(heap_addr) + g_TargetHeader.segments[1].file_off, g_TargetHeader.segments[1].size))) {
-                    return MAKERESULT(Module_HomebrewLoader, 25);
+                if(R_FAILED(svcUnmapProcessCodeMemory(g_SelfProcessHandle, g_TargetMapAddress + g_TargetHeader.segments[1].file_off, reinterpret_cast<u64>(g_TargetHeapAddress) + g_TargetHeader.segments[1].file_off, g_TargetHeader.segments[1].size))) {
+                    UL_RC_ASSERT(hbloader::ResultUnmapRodataFailure);
                 }
 
-                if(R_FAILED(svcUnmapProcessCodeMemory(self_proc_handle, g_TargetMapAddress + g_TargetHeader.segments[2].file_off, reinterpret_cast<u64>(heap_addr) + g_TargetHeader.segments[2].file_off, rw_size))) {
-                    return MAKERESULT(Module_HomebrewLoader, 26);
+                if(R_FAILED(svcUnmapProcessCodeMemory(g_SelfProcessHandle, g_TargetMapAddress + g_TargetHeader.segments[2].file_off, reinterpret_cast<u64>(g_TargetHeapAddress) + g_TargetHeader.segments[2].file_off, rw_size))) {
+                    UL_RC_ASSERT(hbloader::ResultUnmapDataBssFailure);
                 }
 
                 g_TargetMapAddress = 0;
             }
 
             if(g_NextTargetPath[0] == '\0') {
-                util::CopyToStringBuffer(g_NextTargetPath, target_ipt.nro_path);
-                util::CopyToStringBuffer(g_NextTargetArgv, target_ipt.nro_argv);
+                util::CopyToStringBuffer(g_NextTargetPath, g_TargetInput.nro_path);
+                util::CopyToStringBuffer(g_NextTargetArgv, g_TargetInput.nro_argv);
             }
 
             util::CopyToStringBuffer(g_TargetCurrentArgv, g_NextTargetArgv);
 
-            auto target_base = heap_addr;
+            auto target_base = g_TargetHeapAddress;
             auto target_start = reinterpret_cast<NroStart*>(target_base);
             auto target_header = reinterpret_cast<NroHeader*>(target_base + sizeof(NroStart));
             auto rest = target_base + sizeof(NroStart) + sizeof(NroHeader);
 
             {
-                UL_RC_TRY(InitializeFsdev());
+                UL_RC_ASSERT(InitializeFsdev());
                 util::OnScopeExit exit_fsdev([]() {
                     FinalizeFsdev();
                 });
@@ -213,27 +218,27 @@ namespace ul::loader {
                 {
                     auto f = fopen(g_NextTargetPath, "rb");
                     if(f == nullptr) {
-                        return MAKERESULT(333, 900 + errno);
-                        return MAKERESULT(Module_HomebrewLoader, 3);
+                        UL_RC_ASSERT(MAKERESULT(333, 900 + errno));
+                        UL_RC_ASSERT(hbloader::ResultNroOpenFailure);
                     }
                     util::OnScopeExit file_close([&]() {
                         fclose(f);
                     });
 
                     if(fread(target_start, sizeof(NroStart), 1, f) != 1) {
-                        return MAKERESULT(Module_HomebrewLoader, 4);
+                        UL_RC_ASSERT(hbloader::ResultNroHeaderReadFailure);
                     }
                     if(fread(target_header, sizeof(NroHeader), 1, f) != 1) {
-                        return MAKERESULT(Module_HomebrewLoader, 4);
+                        UL_RC_ASSERT(hbloader::ResultNroHeaderReadFailure);
                     }
 
                     if(target_header->magic != NROHEADER_MAGIC) {
-                        return MAKERESULT(Module_HomebrewLoader, 5);
+                        UL_RC_ASSERT(hbloader::ResultInvalidNroMagic);
                     }
 
                     const auto rest_size = target_header->size - (sizeof(NroStart) + sizeof(NroHeader));
                     if(fread(rest, rest_size, 1, f) != 1) {
-                        return MAKERESULT(Module_HomebrewLoader, 7);
+                        UL_RC_ASSERT(hbloader::ResultNroReadFailure);
                     }
                 }
             }
@@ -246,7 +251,7 @@ namespace ul::loader {
 
             for(u32 i = 0; i < 3; i++) {
                 if((target_header->segments[i].file_off >= target_header->size) || (target_header->segments[i].size > target_header->size) || ((target_header->segments[i].file_off + target_header->segments[i].size) > target_header->size)) {
-                    return MAKERESULT(Module_HomebrewLoader, 6);
+                    UL_RC_ASSERT(hbloader::ResultInvalidNroSegments);
                 }
             }
 
@@ -259,33 +264,33 @@ namespace ul::loader {
             virtmemLock();
             const auto map_addr = reinterpret_cast<u64>(virtmemFindCodeMemory(total_size, 0));
             virtmemUnlock();
-            if(R_FAILED(svcMapProcessCodeMemory(self_proc_handle, map_addr, reinterpret_cast<u64>(target_base), total_size))) {
-                return MAKERESULT(Module_HomebrewLoader, 18);
+            if(R_FAILED(svcMapProcessCodeMemory(g_SelfProcessHandle, map_addr, reinterpret_cast<u64>(target_base), total_size))) {
+                UL_RC_ASSERT(hbloader::ResultMapCodeMemoryFailure);
             }
 
             // Setup .text
-            if(R_FAILED(svcSetProcessMemoryPermission(self_proc_handle, map_addr + g_TargetHeader.segments[0].file_off, g_TargetHeader.segments[0].size, Perm_Rx))) {
-                return MAKERESULT(Module_HomebrewLoader, 19);
+            if(R_FAILED(svcSetProcessMemoryPermission(g_SelfProcessHandle, map_addr + g_TargetHeader.segments[0].file_off, g_TargetHeader.segments[0].size, Perm_Rx))) {
+                UL_RC_ASSERT(hbloader::ResultMapTextFailure);
             }
 
             // Setup .rodata
-            if(R_FAILED(svcSetProcessMemoryPermission(self_proc_handle, map_addr + g_TargetHeader.segments[1].file_off, g_TargetHeader.segments[1].size, Perm_R))) {
-                return MAKERESULT(Module_HomebrewLoader, 20);
+            if(R_FAILED(svcSetProcessMemoryPermission(g_SelfProcessHandle, map_addr + g_TargetHeader.segments[1].file_off, g_TargetHeader.segments[1].size, Perm_R))) {
+                UL_RC_ASSERT(hbloader::ResultMapRodataFailure);
             }
 
             // Setup .data and .bss
-            if(R_FAILED(svcSetProcessMemoryPermission(self_proc_handle, map_addr + g_TargetHeader.segments[2].file_off, rw_size, Perm_Rw))) {
-                return MAKERESULT(Module_HomebrewLoader, 21);
+            if(R_FAILED(svcSetProcessMemoryPermission(g_SelfProcessHandle, map_addr + g_TargetHeader.segments[2].file_off, rw_size, Perm_Rw))) {
+                UL_RC_ASSERT(hbloader::ResultMapDataBssFailure);
             }
 
             const auto target_size = g_TargetHeader.segments[2].file_off + rw_size;
-            const auto target_heap_addr = reinterpret_cast<u64>(heap_addr) + target_size;
-            const auto target_heap_size = heap_size - target_size;
+            const auto target_heap_addr = reinterpret_cast<u64>(g_TargetHeapAddress) + target_size;
+            const auto target_heap_size = g_TargetHeapSize - target_size;
 
             auto syscall_available_hint_1 = UINT64_MAX;
             auto syscall_available_hint_2 = UINT64_MAX;
             auto syscall_available_hint_3 = UINT64_MAX;
-            const auto code_mem_capability = DetermineCodeMemoryCapability(heap_addr);
+            const auto code_mem_capability = DetermineCodeMemoryCapability(g_TargetHeapAddress);
             if(!static_cast<bool>(code_mem_capability & CodeMemoryCapability::Available)) {
                 // Revoke access to svcCreateCodeMemory (syscall 0x4B) if it's not available
                 syscall_available_hint_2 &= ~(1ul << (0x4B % 0x40));
@@ -306,15 +311,15 @@ namespace ul::loader {
                 {
                     EntryKind::ProcessHandle,
                     static_cast<u32>(EntryFlags::None), {
-                        static_cast<u64>(self_proc_handle),
+                        static_cast<u64>(g_SelfProcessHandle),
                         0
                     }
                 },
                 {
                     EntryKind::AppletType,
-                    static_cast<u32>(SelfIsApplication() ? EntryAppletFlags::ApplicationOverride : EntryAppletFlags::None), {
+                    static_cast<u32>(EntryFlags::None), {
                         static_cast<u64>(GetSelfAppletType()),
-                        0
+                        static_cast<u64>(SelfIsApplication() ? EntryAppletFlags::ApplicationOverride : EntryAppletFlags::None)
                     }
                 },
                 {
@@ -377,7 +382,7 @@ namespace ul::loader {
                     EntryKind::HosVersion,
                     static_cast<u32>(EntryFlags::None), {
                         static_cast<u64>(hosversionGet()),
-                        hosversionIsAtmosphere() ? 0x41544D4F53504852ul : 0 // 'ATMOSPHR'
+                        0x41544D4F53504852ul // 'ATMOSPHR'
                     }
                 },
                 {
@@ -393,26 +398,53 @@ namespace ul::loader {
 
             g_TargetMapAddress = map_addr;
 
-            auto entrypoint = reinterpret_cast<Result(*)(ConfigEntry*, s64)>(g_TargetMapAddress);
-            g_LastTargetResult = entrypoint(g_TargetConfigEntries, -1);
-
-            return ResultSuccess;
+            svcBreak(BreakReason_NotificationOnlyFlag | BreakReason_PostLoadDll, g_TargetMapAddress, target_size);
+            nroEntrypointTrampoline(g_TargetConfigEntries, -1, g_TargetMapAddress);
         }
+
+        NX_NORETURN void LoadTargetImpl() {
+            if(g_TargetInput.target_once && (g_TargetTimes >= 1)) {
+                auto target_opt = TargetOutput::Create(g_NextTargetPath, g_NextTargetArgv);
+                if(strlen(target_opt.nro_argv) == 0) {
+                    util::CopyToStringBuffer(target_opt.nro_argv, target_opt.nro_path);
+                }
+
+                UL_RC_ASSERT(smInitialize());
+                UL_LOG_INFO("Sending target output... '%s' with argv '%s'", target_opt.nro_path, target_opt.nro_argv);
+                UL_RC_ASSERT(WriteTargetOutput(target_opt));
+                smExit();
+
+                exit(0);
+            }
+
+            g_TargetTimes++;
+            LoadTarget();
+        }
+        
     }
 
-    Result Target(const TargetInput &target_ipt, const bool is_auto_gameplay_recording, const u64 applet_heap_size, const u64 applet_heap_reservation_size) {
+}
+
+extern "C" {
+
+    NX_NORETURN void ext_LoadTargetImpl() {
+        ul::loader::LoadTargetImpl();
+    }
+
+}
+
+namespace ul::loader {
+
+    void Target(const TargetInput &target_ipt, const bool is_auto_gameplay_recording, const u64 applet_heap_size, const u64 applet_heap_reservation_size) {
         util::CopyToStringBuffer(g_NoticeText, target_ipt.menu_caption);
         BackupTls();
 
-        u8 *heap_addr;
-        u64 heap_size;
-        UL_RC_TRY(SetupTargetHeap(is_auto_gameplay_recording, applet_heap_size, applet_heap_reservation_size, heap_addr, heap_size));
+        UL_RC_ASSERT(GetSelfProcessHandle(g_SelfProcessHandle));
 
-        do {
-            UL_RC_TRY(DoTarget(target_ipt, heap_addr, heap_size));
-        } while(!target_ipt.target_once);
+        g_TargetInput = target_ipt;
+        UL_RC_ASSERT(SetupTargetHeap(is_auto_gameplay_recording, applet_heap_size, applet_heap_reservation_size, g_TargetHeapAddress, g_TargetHeapSize));
 
-        return ResultSuccess;
+        LoadTargetImpl();
     }
 
     void LoadTargetOutput(TargetOutput &out_target_opt) {

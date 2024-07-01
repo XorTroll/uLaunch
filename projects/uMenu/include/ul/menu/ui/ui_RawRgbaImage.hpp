@@ -14,7 +14,7 @@ namespace ul::menu::ui {
             u8 alpha;
         
         public:
-            RawRgbaImage(const s32 x, const s32 y, const u8 *rgba_data, const s32 w, const s32 h, const u32 pix_num);
+            RawRgbaImage(const s32 x, const s32 y, const u8 *rgba_data, const s32 data_w, const s32 data_h, const u32 pix_num);
             PU_SMART_CTOR(RawRgbaImage)
             ~RawRgbaImage();
 

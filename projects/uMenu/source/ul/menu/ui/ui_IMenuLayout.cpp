@@ -1,12 +1,19 @@
 #include <ul/menu/ui/ui_IMenuLayout.hpp>
-#include <ul/menu/ui/ui_Actions.hpp>
+#include <ul/menu/ui/ui_Common.hpp>
 #include <ul/menu/ui/ui_MenuApplication.hpp>
 
 extern ul::menu::ui::MenuApplication::Ref g_MenuApplication;
 
 namespace ul::menu::ui {
 
-    IMenuLayout::IMenuLayout() : msg_queue_lock(), msg_queue() {
+    namespace {
+
+        s32 g_HomeButtonPressHandleCount = 0;
+
+    }
+
+    IMenuLayout::IMenuLayout() : Layout(), msg_queue_lock(), msg_queue() {
+        this->SetBackgroundImage(GetBackgroundTexture());
         this->SetOnInput(std::bind(&IMenuLayout::OnInput, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
     }
 
@@ -19,14 +26,17 @@ namespace ul::menu::ui {
 
                 switch(first_msg.msg) {
                     case smi::MenuMessage::HomeRequest: {
-                        if(this->OnHomeButtonPress()) {
-                            this->msg_queue.pop();
+                        g_HomeButtonPressHandleCount++;
+                        if(g_HomeButtonPressHandleCount == 1) {
+                            if(this->OnHomeButtonPress()) {
+                                g_HomeButtonPressHandleCount = 0;
+                                this->msg_queue.pop();
+                            }
                         }
                         break;
                     }
                     case smi::MenuMessage::GameCardMountFailure: {
-                        // TODO: move somewhere else?
-                        g_MenuApplication->DisplayDialog(GetLanguageString("gamecard"), GetLanguageString("gamecard_mount_failed") + " " + util::FormatResultDisplay(first_msg.gc_mount_failure.mount_rc), { GetLanguageString("ok") }, true);
+                        g_MenuApplication->NotifyGameCardMountFailure(first_msg.gc_mount_failure.mount_rc);
                         this->msg_queue.pop();
                         break;
                     }

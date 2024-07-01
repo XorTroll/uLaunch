@@ -8,15 +8,14 @@ namespace ul::menu::ui {
         public:
             using OnClickCallback = std::function<void()>;
 
-            static constexpr u64 TouchActionTimeMilliseconds = 200;
+            static constexpr u64 TouchActionTimeMs = 200;
 
             static constexpr u8 RedColorMod = 0xC8;
             static constexpr u8 GreenColorMod = 0xC8;
             static constexpr u8 BlueColorMod = 0xFF;
 
         protected:
-            std::string img;
-            pu::sdl2::Texture img_tex;
+            pu::sdl2::TextureHandle::Ref img_tex;
             s32 x;
             s32 y;
             s32 w;
@@ -26,7 +25,7 @@ namespace ul::menu::ui {
             bool touched;
 
         public:
-            ClickableImage(const s32 x, const s32 y, const std::string &img) : Element(), img_tex(nullptr), x(x), y(y), w(0), h(0), cb(), touched(false) {
+            ClickableImage(const s32 x, const s32 y, pu::sdl2::TextureHandle::Ref img) : Element(), img_tex(), x(x), y(y), w(0), h(0), cb(), touched(false) {
                 this->SetImage(img);
             }
             PU_SMART_CTOR(ClickableImage)
@@ -64,12 +63,8 @@ namespace ul::menu::ui {
             inline void SetHeight(const s32 h) {
                 this->h = h;
             }
-
-            inline std::string GetImage() {
-                return this->img;
-            }
             
-            void SetImage(const std::string &img);
+            void SetImage(pu::sdl2::TextureHandle::Ref img);
             
             inline bool IsImageValid() {
                 return this->img_tex != nullptr;

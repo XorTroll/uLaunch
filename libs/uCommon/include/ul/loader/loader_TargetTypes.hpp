@@ -6,8 +6,11 @@ namespace ul::loader {
 
     constexpr size_t NroPathSize = 512;
     constexpr size_t NroArgvSize = 2048;
+
+    // We take advantage of this "text" support hbloader/hbmenu have, uMenu can show custom captions
+
     constexpr size_t MenuCaptionSize = 1024;
-    constexpr char MenuCaptionHeader[] = "Loaded by uLoader v" UL_VERSION " - uLaunch's custom hbloader replacement!";
+    constexpr char MenuCaptionHeader[] = "Loaded by uLoader v" UL_VERSION " - uLaunch's custom hbloader replacement ;)";
 
     struct TargetInput {
         static constexpr u32 Magic = 0x49444C55; // "ULDI"

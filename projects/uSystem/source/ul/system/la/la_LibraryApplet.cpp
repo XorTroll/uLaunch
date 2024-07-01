@@ -52,7 +52,7 @@ namespace ul::system::la {
         return appletHolderRequestExitOrTerminate(&g_AppletHolder, 15'000'000'000ul);
     }
 
-    Result Start(const AppletId id, const u32 la_version, const void *in_data, const size_t in_size) {
+    Result Start(const AppletId id, const s32 la_version, const void *in_data, const size_t in_size) {
         if(IsActive()) {
             Terminate();
         }
@@ -60,11 +60,14 @@ namespace ul::system::la {
     
         UL_RC_TRY(appletCreateLibraryApplet(&g_AppletHolder, id, LibAppletMode_AllForeground));
 
-        LibAppletArgs la_args;
-        libappletArgsCreate(&la_args, la_version);
-        // TODO (low priority): does this make any difference?
-        libappletArgsSetPlayStartupSound(&la_args, true);
-        UL_RC_TRY(libappletArgsPush(&la_args, &g_AppletHolder));
+        // Treat -1/any negative pseudovalue as to not push these args
+        if(la_version >= 0) {
+            LibAppletArgs la_args;
+            libappletArgsCreate(&la_args, (u32)la_version);
+            // TODO (low priority): does this make any difference?
+            libappletArgsSetPlayStartupSound(&la_args, true);
+            UL_RC_TRY(libappletArgsPush(&la_args, &g_AppletHolder));
+        }
 
         if(in_size > 0) {
             UL_RC_TRY(Send(in_data, in_size));

@@ -43,6 +43,24 @@ std::queue<ul::smi::MenuMessageContext> *g_MenuMessageQueue;
 
 namespace {
 
+    constexpr AppletId UsedLibraryAppletList[] = {
+        AppletId_LibraryAppletPhotoViewer,
+        AppletId_LibraryAppletWeb,
+        AppletId_LibraryAppletMyPage,
+        AppletId_LibraryAppletMiiEdit,
+        AppletId_LibraryAppletPlayerSelect
+    };
+
+    inline bool IsUsedLibraryApplet(const AppletId applet_id) {
+        for(u32 i = 0; i < std::size(UsedLibraryAppletList); i++) {
+            if(applet_id == UsedLibraryAppletList[i]) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     AccountUid g_SelectedUser = {};
     ul::loader::TargetInput g_LoaderLaunchFlag = {};
     bool g_LoaderChooseFlag = false;
@@ -51,12 +69,17 @@ namespace {
     u64 g_ApplicationLaunchFlag = 0;
     WebCommonConfig g_WebAppletLaunchFlag = {};
     bool g_AlbumAppletLaunchFlag = false;
+    bool g_UserPageAppletLaunchFlag = false;
+    bool g_MiiEditAppletLaunchFlag = false;
+    bool g_AddUserAppletLaunchFlag = false;
+    bool g_NextMenuLaunchStartupFlag = false;
     bool g_MenuRestartFlag = false;
     bool g_LoaderOpenedAsApplication = false;
     bool g_AppletActive = false;
     AppletOperationMode g_OperationMode;
     ul::cfg::Config g_Config = {};
 
+    char g_CurrentMenuFsPath[FS_MAX_PATH] = {};
     char g_CurrentMenuPath[FS_MAX_PATH] = {};
     u32 g_CurrentMenuIndex = 0;
 
@@ -84,14 +107,15 @@ namespace {
     constexpr size_t PlainRgbaScreenBufferSize = 1280 * 720 * sizeof(u32);
     constexpr size_t UsbPacketSize = sizeof(UsbPacketHeader) + PlainRgbaScreenBufferSize;
 
-    alignas(ams::os::ThreadStackAlignment) constinit u8 g_UsbViewerThreadStack[16_KB];
-    Thread g_UsbViewerThread;
+    alignas(ams::os::ThreadStackAlignment) constinit u8 g_UsbViewerReadThreadStack[16_KB];
+    Thread g_UsbViewerReadThread;
+    alignas(ams::os::ThreadStackAlignment) constinit u8 g_UsbViewerWriteThreadStack[16_KB];
+    Thread g_UsbViewerWriteThread;
+    RwLock g_UsbRwLock;
     UsbPacketHeader *g_UsbViewerBuffer = nullptr;
     u8 *g_UsbViewerBufferDataOffset = nullptr;
 
     std::vector<NsApplicationRecord> g_CurrentRecords;
-
-    SetSysFirmwareVersion g_FwVersion = {};
 
     constexpr size_t LibstratosphereHeapSize = 4_MB;
     alignas(ams::os::MemoryPageSize) constinit u8 g_LibstratosphereHeap[LibstratosphereHeapSize];
@@ -122,9 +146,7 @@ namespace {
             .last_menu_index = g_CurrentMenuIndex
         };
 
-        // Note: uMenu could itself get this from setsys services, but only qlaunch (thus uSystem) is intercepted by Atmosphere to get the extra emuNAND/AMS versions
-        ul::util::CopyToStringBuffer(status.fw_version, g_FwVersion.display_version);
-
+        ul::util::CopyToStringBuffer(status.last_menu_fs_path, g_CurrentMenuFsPath);
         ul::util::CopyToStringBuffer(status.last_menu_path, g_CurrentMenuPath);
 
         if(app::IsActive()) {
@@ -139,6 +161,13 @@ namespace {
         }
 
         return status;
+    }
+
+    inline void CacheAccounts() {
+        // Do it this way to avoid wasting a service session all the time
+        UL_RC_ASSERT(accountInitialize(AccountServiceType_System));
+        UL_RC_ASSERT(ul::acc::CacheAccounts());
+        accountExit();
     }
 
     void HandleSleep() {
@@ -228,7 +257,7 @@ namespace {
                         break;
                     }
                     case GeneralChannelMessage::RequestToLaunchApplication: {
-                        // TODONEW (low priority): enum?
+                        // TODO (low priority): enum?
                         u32 launch_app_request_sender;
                         UL_RC_ASSERT(sams_st_reader.Read(launch_app_request_sender));
 
@@ -260,7 +289,7 @@ namespace {
                         break;
                     }
                     default:
-                        // TODONEW (long term): try to find and implement more messages (mostly those sent by applets!)
+                        // TODO (long term): try to find and implement more messages (mostly those sent by applets!)
                         UL_LOG_WARN("Unhandled general channel message!");
                         break;
                 }
@@ -287,6 +316,7 @@ namespace {
             - ChangeIntoForeground
             - ChangeIntoBackground
             - ApplicationExited
+            - AutoPowerDown
             - DetectShortPressingHomeButton
             - DetectShortPressingPowerButton
             - FinishedSleepSequence
@@ -305,7 +335,7 @@ namespace {
                     }
                     else {
                         // Power off, since uMenu's UI relies on the SD card, so trying to use uMenu without the SD is not possible at all without any caching...
-                        // TODONEW (low priority): consider handling this in a better way?
+                        // TODO (low priority): consider handling this in a better way?
                         UL_RC_ASSERT(appletStartShutdownSequence());
                     }
                     break;
@@ -396,8 +426,7 @@ namespace {
                             break;
                         }
                         case ul::smi::SystemMessage::ChooseHomebrew: {
-                            constexpr auto hbmenu_nro = "sdmc:/hbmenu.nro";
-                            g_LoaderLaunchFlag = ul::loader::TargetInput::Create(hbmenu_nro, hbmenu_nro, true, "Choose a homebrew for uMenu");
+                            g_LoaderLaunchFlag = ul::loader::TargetInput::Create(ul::HbmenuPath, ul::HbmenuPath, true, "Choose a homebrew for uMenu");
                             g_LoaderChooseFlag = true;
                             break;
                         }
@@ -425,10 +454,14 @@ namespace {
                             ul::cfg::SaveConfig(g_Config);
                             break;
                         }
-                        case ul::smi::SystemMessage::UpdateMenuPath: {
+                        case ul::smi::SystemMessage::UpdateMenuPaths: {
+                            char menu_fs_path[FS_MAX_PATH];
+                            UL_RC_TRY(reader.PopData(menu_fs_path, sizeof(menu_fs_path)));
+
                             char menu_path[FS_MAX_PATH];
                             UL_RC_TRY(reader.PopData(menu_path, sizeof(menu_path)));
 
+                            ul::util::CopyToStringBuffer(g_CurrentMenuFsPath, menu_fs_path);
                             ul::util::CopyToStringBuffer(g_CurrentMenuPath, menu_path);
                             break;
                         }
@@ -437,6 +470,18 @@ namespace {
                             UL_RC_TRY(reader.Pop(menu_index));
 
                             g_CurrentMenuIndex = menu_index;
+                            break;
+                        }
+                        case ul::smi::SystemMessage::OpenUserPage: {
+                            g_UserPageAppletLaunchFlag = true;
+                            break;
+                        }
+                        case ul::smi::SystemMessage::OpenMiiEdit: {
+                            g_MiiEditAppletLaunchFlag = true;
+                            break;
+                        }
+                        case ul::smi::SystemMessage::OpenAddUser: {
+                            g_AddUserAppletLaunchFlag = true;
                             break;
                         }
                         default: {
@@ -489,6 +534,18 @@ namespace {
                             // ...
                             break;
                         }
+                        case ul::smi::SystemMessage::OpenUserPage: {
+                            // ...
+                            break;
+                        }
+                        case ul::smi::SystemMessage::OpenMiiEdit: {
+                            // ...
+                            break;
+                        }
+                        case ul::smi::SystemMessage::OpenAddUser: {
+                            // ...
+                            break;
+                        }
                         default: {
                             // ...
                             break;
@@ -534,13 +591,72 @@ namespace {
                 g_AlbumAppletLaunchFlag = false;
             }
         }
+        if(g_UserPageAppletLaunchFlag) {
+            if(!la::IsActive()) {
+                FriendsLaArgHeader arg_hdr = {
+                    .type = FriendsLaArgType_ShowMyProfile,
+                    .uid = g_SelectedUser
+                };
+
+                if(hosversionAtLeast(9,0,0)) {
+                    FriendsLaArg arg = {
+                        .hdr = arg_hdr
+                    };
+                    UL_RC_ASSERT(la::Start(AppletId_LibraryAppletMyPage, 0x10000, &arg, sizeof(arg)));
+                }
+                else {
+                    FriendsLaArgV1 arg = {
+                        .hdr = arg_hdr
+                    };
+                    UL_RC_ASSERT(la::Start(AppletId_LibraryAppletMyPage, 0x1, &arg, sizeof(arg)));
+                }
+
+                sth_done = true;
+                g_UserPageAppletLaunchFlag = false;
+            }
+        }
+        if(g_MiiEditAppletLaunchFlag) {
+            if(!la::IsActive()) {
+                const auto mii_ver = hosversionAtLeast(10,2,0) ? 0x4 : 0x3;
+                MiiLaAppletInput mii_in = {
+                    .version = mii_ver,
+                    .mode = MiiLaAppletMode_ShowMiiEdit,
+                    .special_key_code = MiiSpecialKeyCode_Normal
+                };
+                UL_RC_ASSERT(la::Start(AppletId_LibraryAppletMiiEdit, -1, &mii_in, sizeof(mii_in)));
+
+                sth_done = true;
+                g_MiiEditAppletLaunchFlag = false;
+            }
+        }
+        if(g_AddUserAppletLaunchFlag) {
+            if(!la::IsActive()) {
+                PselUiSettings psel_ui;
+                UL_RC_ASSERT(pselUiCreate(&psel_ui, PselUiMode_UserCreator));
+
+                // Thanks again libnx for not exposing version stuff :P
+                if(hosversionAtLeast(6,0,0)) {
+                    UL_RC_ASSERT(la::Start(AppletId_LibraryAppletPlayerSelect, 0x20000, &psel_ui, sizeof(psel_ui)));
+                }
+                else if (hosversionAtLeast(2,0,0)) {
+                    UL_RC_ASSERT(la::Start(AppletId_LibraryAppletPlayerSelect, 0x10000, &psel_ui, sizeof(psel_ui)));
+                }
+                else {
+                    UL_RC_ASSERT(la::Start(AppletId_LibraryAppletPlayerSelect, 0x20000, &psel_ui.settings, sizeof(psel_ui.settings)));
+                }
+
+                sth_done = true;
+                g_AddUserAppletLaunchFlag = false;
+                g_NextMenuLaunchStartupFlag = true;
+            }
+        }
         if(g_ApplicationLaunchFlag > 0) {
             if(!la::IsActive()) {
                 // Ensure the application is launchable
                 UL_RC_ASSERT(nsTouchApplication(g_ApplicationLaunchFlag));
 
                 if(g_LoaderApplicationLaunchFlag.magic == ul::loader::TargetInput::Magic) {
-                    UL_RC_ASSERT(ecs::RegisterLaunchAsApplication(g_ApplicationLaunchFlag, "/umad/bin/uLoader/application", &g_LoaderApplicationLaunchFlag, sizeof(g_LoaderApplicationLaunchFlag), g_SelectedUser));
+                    UL_RC_ASSERT(ecs::RegisterLaunchAsApplication(g_ApplicationLaunchFlag, "/ulaunch/bin/uLoader/application", &g_LoaderApplicationLaunchFlag, sizeof(g_LoaderApplicationLaunchFlag), g_SelectedUser));
 
                     g_LoaderOpenedAsApplication = true;
                     g_LoaderApplicationLaunchFlag = {};
@@ -558,7 +674,7 @@ namespace {
                 u64 hb_applet_takeover_program_id;
                 UL_ASSERT_TRUE(g_Config.GetEntry(ul::cfg::ConfigEntryId::HomebrewAppletTakeoverProgramId, hb_applet_takeover_program_id));
 
-                // TODO (new): consider not asserting and sending the error result to menu instead?
+                // TODO (new): consider not asserting and sending the error result to menu instead? same for various other asserts in this code...
                 UL_RC_ASSERT(ecs::RegisterLaunchAsApplet(hb_applet_takeover_program_id, 0, "/ulaunch/bin/uLoader/applet", &g_LoaderLaunchFlag, sizeof(g_LoaderLaunchFlag)));
                 
                 sth_done = true;
@@ -569,7 +685,12 @@ namespace {
             const auto cur_id = la::GetLastAppletId();
             u64 hb_applet_takeover_program_id;
             UL_ASSERT_TRUE(g_Config.GetEntry(ul::cfg::ConfigEntryId::HomebrewAppletTakeoverProgramId, hb_applet_takeover_program_id));
-            if((cur_id == AppletId_LibraryAppletWeb) || (cur_id == AppletId_LibraryAppletPhotoViewer) || (cur_id == la::GetAppletIdForProgramId(hb_applet_takeover_program_id))) {
+            if(IsUsedLibraryApplet(cur_id) || (cur_id == la::GetAppletIdForProgramId(hb_applet_takeover_program_id))) {
+                // A user may have been created...
+                if(cur_id == AppletId_LibraryAppletPlayerSelect) {
+                    CacheAccounts();
+                }
+
                 ul::loader::TargetOutput target_opt;
                 if(g_LoaderChooseFlag) {
                     AppletStorage target_opt_st;
@@ -577,7 +698,9 @@ namespace {
                     UL_RC_ASSERT(appletStorageRead(&target_opt_st, 0, &target_opt, sizeof(target_opt)));
                 }
                 
-                UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::Menu, CreateStatus()));
+                const auto menu_start_mode = g_NextMenuLaunchStartupFlag ? ul::smi::MenuStartMode::StartupScreen : ul::smi::MenuStartMode::Menu;
+                g_NextMenuLaunchStartupFlag = false;
+                UL_RC_ASSERT(LaunchMenu(menu_start_mode, CreateStatus()));
 
                 if(g_LoaderChooseFlag) {
                     ul::smi::MenuMessageContext msg_ctx = {
@@ -720,29 +843,38 @@ namespace {
         }
     }
 
-    void UsbViewerRgbaThread(void*) {
+    void UsbViewerWriteThread(void*) {
         while(true) {
-            bool tmp_flag;
+            rwlockWriteLock(&g_UsbRwLock);
+            usbCommsWrite(g_UsbViewerBuffer, UsbPacketSize);
+            rwlockWriteUnlock(&g_UsbRwLock);
+            svcSleepThread(1'000'000ul);
+        }
+    }
+
+    void UsbViewerRgbaThread(void*) {
+        bool tmp_flag;
+        while(true) {
+            rwlockReadLock(&g_UsbRwLock);
             appletGetLastForegroundCaptureImageEx(g_UsbViewerBufferDataOffset, PlainRgbaScreenBufferSize, &tmp_flag);
             appletUpdateLastForegroundCaptureImage();
-            usbCommsWrite(g_UsbViewerBuffer, UsbPacketSize);
+            rwlockReadUnlock(&g_UsbRwLock);
+            svcSleepThread(1'000'000ul);
         }
     }
 
     void UsbViewerJpegThread(void*) {
         while(true) {
+            rwlockReadLock(&g_UsbRwLock);
             g_UsbViewerBuffer->jpeg.size = (u32)CaptureJpegScreenshot();
-            usbCommsWrite(g_UsbViewerBuffer, UsbPacketSize);
+            rwlockReadUnlock(&g_UsbRwLock);
+            svcSleepThread(1'000'000ul);
         }
     }
 
     void Initialize() {
         UL_RC_ASSERT(appletLoadAndApplyIdlePolicySettings());
         UL_RC_ASSERT(UpdateOperationMode());
-
-        UL_RC_ASSERT(setsysInitialize());
-        UL_RC_ASSERT(setsysGetFirmwareVersion(&g_FwVersion));
-        setsysExit();
 
         // Remove old cache
         ul::fs::DeleteDirectory(ul::OldApplicationCachePath);
@@ -751,11 +883,9 @@ namespace {
 
         ul::fs::CleanDirectory(ul::RootCachePath);
 
-        ul::util::CopyToStringBuffer(g_CurrentMenuPath, ul::MenuPath);
+        ul::util::CopyToStringBuffer(g_CurrentMenuFsPath, ul::MenuPath);
 
-        UL_RC_ASSERT(accountInitialize(AccountServiceType_System));
-        UL_RC_ASSERT(ul::acc::CacheAccounts());
-        accountExit();
+        CacheAccounts();
 
         g_CurrentRecords = ul::os::ListApplicationRecords();
         ul::menu::CacheApplications(g_CurrentRecords);
@@ -781,21 +911,23 @@ namespace {
             g_UsbViewerBuffer = reinterpret_cast<UsbPacketHeader*>(__libnx_aligned_alloc(ams::os::MemoryPageSize, UsbPacketSize));
             memset(g_UsbViewerBuffer, 0, UsbPacketSize);
 
-            void(*thread_entry)(void*) = nullptr;
+            void(*thread_read_fn)(void*) = nullptr;
             g_UsbViewerBufferDataOffset = reinterpret_cast<u8*>(g_UsbViewerBuffer) + sizeof(UsbMode) + sizeof(UsbPacketHeader::jpeg);
             if(CaptureJpegScreenshot() > 0) {
                 g_UsbViewerBuffer->mode = UsbMode::Jpeg;
-                thread_entry = &UsbViewerJpegThread;
+                thread_read_fn = &UsbViewerJpegThread;
             }
             else {
                 g_UsbViewerBuffer->mode = UsbMode::Rgba;
                 g_UsbViewerBufferDataOffset = reinterpret_cast<u8*>(g_UsbViewerBuffer) + sizeof(UsbMode);
-                thread_entry = &UsbViewerRgbaThread;
+                thread_read_fn = &UsbViewerRgbaThread;
                 capsscExit();
             }
 
-            UL_RC_ASSERT(threadCreate(&g_UsbViewerThread, thread_entry, nullptr, g_UsbViewerThreadStack, sizeof(g_UsbViewerThreadStack), 0x2A, -2));
-            UL_RC_ASSERT(threadStart(&g_UsbViewerThread));
+            UL_RC_ASSERT(threadCreate(&g_UsbViewerReadThread, thread_read_fn, nullptr, g_UsbViewerReadThreadStack, sizeof(g_UsbViewerReadThreadStack), 30, -2));
+            UL_RC_ASSERT(threadStart(&g_UsbViewerReadThread));
+            UL_RC_ASSERT(threadCreate(&g_UsbViewerWriteThread, &UsbViewerWriteThread, nullptr, g_UsbViewerWriteThreadStack, sizeof(g_UsbViewerWriteThreadStack), 28, -2));
+            UL_RC_ASSERT(threadStart(&g_UsbViewerWriteThread));
         }
     }
 
@@ -808,7 +940,7 @@ extern "C" {
 
 }
 
-// TODONEW (low priority): stop using Atmosphere-libs?
+// TODO (low priority): stop using Atmosphere-libs?
 
 namespace ams {
 

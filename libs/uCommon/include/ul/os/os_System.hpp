@@ -36,6 +36,8 @@ namespace ul::os {
 
     u32 GetBatteryLevel();
     bool IsConsoleCharging();
-    std::string GetCurrentTime();
+
+    void GetCurrentTime(u32 &out_h, u32 &out_min, u32 &out_sec);
+    std::string GetCurrentDate(const std::vector<std::string> &weekday_list);
 
 }

@@ -35,4 +35,16 @@ namespace ulaunch {
     R_DEFINE_ERROR_RANGE(Menu, 601, 699);
     R_DEFINE_ERROR_RESULT(RomfsNotFound, 601);
 
+    R_DEFINE_ERROR_RANGE(Config, 701, 799);
+    R_DEFINE_ERROR_RESULT(InvalidThemeZipFile, 701);
+    R_DEFINE_ERROR_RESULT(ThemeManifestNotFound, 702);
+    R_DEFINE_ERROR_RESULT(InvalidThemeZipFileRead, 703);
+    R_DEFINE_ERROR_RESULT(ThemeManifestVersionNotFound, 704);
+    R_DEFINE_ERROR_RESULT(ThemeManifestNameNotFound, 705);
+    R_DEFINE_ERROR_RESULT(ThemeManifestAuthorNotFound, 706);
+    R_DEFINE_ERROR_RESULT(ThemeManifestDescriptionNotFound, 707);
+    R_DEFINE_ERROR_RESULT(ThemeManifestReleaseNotFound, 708);
+    R_DEFINE_ERROR_RESULT(ThemeIconNotFound, 709);
+    R_DEFINE_ERROR_RESULT(ThemeIconCacheFail, 710);
+
 }

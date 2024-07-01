@@ -1,3 +1,5 @@
+// From https://github.com/switchbrew/nx-hbloader, slightly modified
+
 .section .text.__libnx_exception_entry, "ax", %progbits
 .global __libnx_exception_entry
 .type __libnx_exception_entry, %function

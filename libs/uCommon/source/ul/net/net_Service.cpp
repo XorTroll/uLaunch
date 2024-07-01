@@ -65,9 +65,11 @@ namespace ul::net {
         nifmExit();
     }
 
-    bool HasConnection() {
+    bool HasConnection(u32 &out_strength) {
         auto status = NifmInternetConnectionStatus_ConnectingUnknown1;
-        nifmGetInternetConnectionStatus(nullptr, nullptr, &status);
+        u32 strength = 0;
+        nifmGetInternetConnectionStatus(nullptr, &strength, &status);
+        out_strength = strength;
         return status == NifmInternetConnectionStatus_Connected;
     }
 

@@ -20,7 +20,7 @@ namespace ul::system::sf {
 
     enum Port {
         Port_PrivateService,
-        /* Port_PublicService, */
+        Port_PublicService,
 
         Port_Count
     };
@@ -28,10 +28,8 @@ namespace ul::system::sf {
     constexpr size_t MaxPrivateSessions = 1;
     constexpr ::ams::sm::ServiceName PrivateServiceName = ::ams::sm::ServiceName::Encode(ul::sf::PrivateServiceName);
 
-    /*
     constexpr size_t MaxPublicSessions = 0x20;
     constexpr ::ams::sm::ServiceName PublicServiceName = ::ams::sm::ServiceName::Encode(ul::sf::PublicServiceName);
-    */
 
     constexpr size_t MaxEcsExtraSessions = 5;
     constexpr size_t MaxSessions = MaxPrivateSessions + MaxEcsExtraSessions;

@@ -18,7 +18,8 @@ include $(DEVKITPRO)/libnx/switch_rules
 BUILD		:=	build
 TARGET		:=  $(notdir $(CURDIR))
 SOURCES		:=	source source/ul source/ul/fs source/ul/cfg source/ul/menu source/ul/smi source/ul/system source/ul/acc source/ul/net source/ul/os source/ul/util
-INCLUDES	:=	include
+INCLUDES	:=	include ../json/single_include/nlohmann ../zip/src
+SOURCES		+=	../zip/src
 OUT_LIB		:=	lib
 
 #---------------------------------------------------------------------------------

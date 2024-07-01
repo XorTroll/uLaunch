@@ -12,6 +12,7 @@ LIBUCOMMON	:=	$(CURDIR)/../../libs/uCommon
 
 CXXFLAGS	+=	$(UL_DEFS)
 
+INCLUDES 	+=	/../../libs/json/single_include/nlohmann
 LIBDIRS		+=	$(LIBUCOMMON)
 LIBS		+=	-luCommon
 

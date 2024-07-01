@@ -2,6 +2,7 @@
 #pragma once
 #include <ul/loader/loader_TargetTypes.hpp>
 #include <ul/fs/fs_Stdio.hpp>
+#include <ul/ul_Include.hpp>
 #include <vector>
 
 namespace ul::menu {
@@ -10,7 +11,14 @@ namespace ul::menu {
         Invalid,
         Application,
         Homebrew,
-        Folder
+        Folder,
+        SpecialEntryMiiEdit,
+        SpecialEntryWebBrowser,
+        SpecialEntryUserPage,
+        SpecialEntrySettings,
+        SpecialEntryThemes,
+        SpecialEntryControllers,
+        SpecialEntryAlbum
     };
 
     struct EntryApplicationInfo {
@@ -25,9 +33,13 @@ namespace ul::menu {
         inline bool IsInstalled() const {
             return this->record.type == 0x10;
         }
+
+        inline bool IsRunning() const {
+            return this->record.type == 0x0; // Not really an ideal state, might be after a uLaunch crash, but whatever
+        }
         
         inline bool IsLaunchable() const {
-            return this->IsInstalled() || this->IsInstalledNew();
+            return this->IsInstalled() || this->IsInstalledNew() || this->IsRunning();
         }
 
         /* TODO (new)
@@ -61,8 +73,6 @@ namespace ul::menu {
         }
     };
 
-    constexpr u32 InvalidEntryIndex = UINT32_MAX;
-
     struct Entry {
         EntryType type;
         std::string entry_path;
@@ -80,6 +90,16 @@ namespace ul::menu {
             return this->type == Type;
         }
 
+        inline constexpr bool IsSpecial() const {
+            return this->Is<EntryType::SpecialEntryMiiEdit>()
+                || this->Is<EntryType::SpecialEntryWebBrowser>()
+                || this->Is<EntryType::SpecialEntryUserPage>()
+                || this->Is<EntryType::SpecialEntrySettings>()
+                || this->Is<EntryType::SpecialEntryThemes>()
+                || this->Is<EntryType::SpecialEntryControllers>()
+                || this->Is<EntryType::SpecialEntryAlbum>();
+        }
+
         inline bool operator<(const Entry &other) const {
             return this->index < other.index;
         }
@@ -92,22 +112,29 @@ namespace ul::menu {
         void ReloadApplicationInfo();
 
         void MoveTo(const std::string &new_folder_path);
-        void MoveToParentFolder();
-        void MoveToRoot();
-        void Save() const;
-        void Remove();
-
-        void OrderBetween(const u32 start_idx, const u32 end_idx);
+        bool MoveToIndex(const u32 new_index);
         void OrderSwap(Entry &other_entry);
+        
+        inline void MoveToParentFolder() {
+            const auto parent_path = fs::GetBaseDirectory(fs::GetBaseDirectory(this->entry_path));
+            this->MoveTo(parent_path);
+        }
+        
+        inline void MoveToRoot() {
+            this->MoveTo(MenuPath);
+        }
+
+        void Save() const;
+        std::vector<Entry> Remove();
     };
 
     void InitializeEntries();
-    void EnsureApplicationEntry(const NsApplicationRecord &app_record, const u32 start_idx = InvalidEntryIndex, const u32 end_idx = InvalidEntryIndex);
+    void EnsureApplicationEntry(const NsApplicationRecord &app_record);
 
     std::vector<Entry> LoadEntries(const std::string &path);
     
-    Entry CreateFolderEntry(const std::string &base_path, const std::string &folder_name);
-    Entry CreateHomebrewEntry(const std::string &base_path, const std::string &nro_path, const std::string &nro_argv);
+    Entry CreateFolderEntry(const std::string &base_path, const std::string &folder_name, const u32 index);
+    Entry CreateHomebrewEntry(const std::string &base_path, const std::string &nro_path, const std::string &nro_argv, const u32 index);
     void DeleteApplicationEntry(const u64 app_id, const std::string &path);
 
 }

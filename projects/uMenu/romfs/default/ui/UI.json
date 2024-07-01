@@ -1,5 +1,8 @@
 {
-    "suspended_final_alpha": 80,
+    "suspended_app_final_alpha": 80,
+    "text_color": "#e1e1e1ff",
+    "toast_base_color": "#282828ff",
+    "toast_text_color": "#e1e1e1ff",
     "menu_focus_color": "#0094ffff",
     "menu_bg_color": "#046dd0ff",
     "dialog_title_color": "#e1e1e1ff",
@@ -9,144 +12,146 @@
     "dialog_over_color": "#046dd0ff",
     "main_menu": {
         "top_menu_bg": {
-            "x": 41,
+            "x": 61,
             "y": 31
         },
-        "logo_icon": {
-            "x": 610,
-            "y": 44
-        },
-        "connection_icon": {
-            "x": 80,
-            "y": 53
-        },
-        "user_icon": {
-            "x": 270,
-            "y": 53
-        },
-        "controller_icon": {
-            "x": 340,
-            "y": 53
-        },
-        "time_text": {
-            "x": 515,
-            "y": 65
-        },
-        "battery_text": {
-            "x": 700,
+        "logo_top_icon": {
+            "x": 1717,
             "y": 55
         },
-        "battery_icon": {
-            "x": 700,
-            "y": 80
+        "connection_top_icon": {
+            "x": 120,
+            "y": 52
         },
-        "settings_icon": {
-            "x": 810,
-            "y": 53
+        "time_text": {
+            "x": 262,
+            "y": 105,
+            "font_size": "medium"
         },
-        "themes_icon": {
-            "x": 880,
-            "y": 53
+        "date_text": {
+            "x": 262,
+            "y": 68,
+            "font_size": "small"
         },
-        "firmware_text": {
-            "x": 970,
+        "battery_text": {
+            "x": 1612,
+            "y": 60,
+            "font_size": "small"
+        },
+        "battery_top_icon": {
+            "x": 1590,
             "y": 65
         },
         "input_bar": {
-            "x": 41,
-            "y": 121
+            "x": 61,
+            "y": 166
         },
         "cur_path_text": {
-            "x": 10,
-            "y": 170
-        },
-        "banner_image": {
             "x": 0,
-            "y": 585
-        },
-        "banner_name_text": {
-            "x": 40,
-            "y": 610
-        },
-        "banner_author_text": {
-            "x": 45,
-            "y": 650
-        },
-        "banner_version_text": {
-            "x": 45,
-            "y": 675
-        },
-        "no_entries_text": {
-            "x": 0,
-            "y": 0,
+            "y": 40,
             "h_align": "center",
-            "v_align": "center"
+            "font_size": "small"
         },
-        "entries_menu": {
+        "cur_entry_main_text": {
             "x": 0,
-            "y": 190
+            "y": 69,
+            "h_align": "center",
+            "font_size": "large"
+        },
+        "cur_entry_sub_text": {
+            "x": 0,
+            "y": 122,
+            "h_align": "center",
+            "font_size": "medium"
+        },
+        "entry_menu_bg": {
+            "x": 0,
+            "y": 233
+        },
+        "entry_menu_left_icon": {
+            "x": 0,
+            "y": 233
+        },
+        "entry_menu_right_icon": {
+            "x": 1830,
+            "y": 233
+        },
+        "entry_menu": {
+            "x": 0,
+            "y": 233
         }
     },
     "startup_menu": {
         "info_text": {
-            "x": 35,
-            "y": 650
+            "x": 0,
+            "y": 75,
+            "h_align": "center",
+            "font_size": "medium"
         },
-        "users_menu_item": {
-            "x": 200,
-            "y": 60
+        "users_menu": {
+            "x": 0,
+            "y": 180,
+            "h_align": "center"
         }
     },
     "themes_menu": {
         "banner_image": {
             "x": 0,
-            "y": 585
+            "y": 876
         },
-        "themes_menu_item": {
-            "x": 200,
-            "y": 60
+        "themes_menu": {
+            "x": 0,
+            "y": 135,
+            "h_align": "center"
         },
-        "current_theme_text": {
-            "x": 20,
-            "y": 540
+        "info_text": {
+            "x": 0,
+            "y": 37,
+            "h_align": "center",
+            "font_size": "large"
         },
         "current_theme_name_text": {
-            "x": 40,
-            "y": 610
+            "x": 60,
+            "y": 915,
+            "font_size": "large"
         },
         "current_theme_author_text": {
-            "x": 45,
-            "y": 650
+            "x": 67,
+            "y": 975,
+            "font_size": "medium"
         },
         "current_theme_version_text": {
-            "x": 45,
-            "y": 675
+            "x": 67,
+            "y": 1013,
+            "font_size": "large"
         },
         "current_theme_icon": {
-            "x": 1000,
-            "y": 605
+            "x": 1500,
+            "y": 907
         }
     },
     "settings_menu": {
-        "settings_menu_item": {
-            "x": 50,
-            "y": 80
+        "settings_menu": {
+            "x": 75,
+            "y": 120
         },
         "info_text": {
             "x": 0,
-            "y": 25,
-            "h_align": "center"
+            "y": 37,
+            "h_align": "center",
+            "font_size": "medium"
         }
     },
     "languages_menu": {
-        "languages_menu_item": {
-            "x": 200,
-            "y": 160
+        "languages_menu": {
+            "x": 300,
+            "y": 240
         },
         "info_text": {
             "x": 0,
-            "y": 100,
-            "h_align": "center"
+            "y": 150,
+            "h_align": "center",
+            "font_size": "medium"
         }
     }
 }

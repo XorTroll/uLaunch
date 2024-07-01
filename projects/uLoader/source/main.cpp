@@ -40,7 +40,7 @@ namespace {
         return ul::ResultSuccess;
     }
 
-    constexpr size_t HeapSize = 32_KB;
+    constexpr size_t HeapSize = 64_KB;
     u8 g_Heap[HeapSize] = {};
 
 }
@@ -50,6 +50,7 @@ extern "C" {
     u32 __nx_applet_exit_mode = 2;
 
     u32 __nx_fs_num_sessions = 1;
+    u32 __nx_fsdev_direntry_cache_size = 1;
     bool __nx_fsdev_support_cwd = false;
 
     extern u8 *fake_heap_start;
@@ -66,18 +67,19 @@ extern "C" {
 }
 
 int main() {
-    ul::InitializeLogging("uLoader");
-
     UL_RC_ASSERT(smInitialize());
 
     UL_RC_ASSERT(fsInitialize());
     UL_RC_ASSERT(fsdevMountSdmc());
 
+    ul::InitializeLogging("uLoader");
+
     UL_RC_ASSERT(setsysInitialize());
     
     SetSysFirmwareVersion fw_ver;
     UL_RC_ASSERT(setsysGetFirmwareVersion(&fw_ver));
-    hosversionSet(MAKEHOSVERSION(fw_ver.major, fw_ver.minor, fw_ver.micro));
+    // Atmosphere is always assumed to be present (was used to launch us actually :P)
+    hosversionSet(MAKEHOSVERSION(fw_ver.major, fw_ver.minor, fw_ver.micro) | BIT(31));
 
     u64 applet_heap_size;
     UL_RC_ASSERT(GetHbloaderSetting("applet_heap_size", applet_heap_size));
@@ -105,16 +107,5 @@ int main() {
     fsExit();
     smExit();
 
-    UL_RC_ASSERT(ul::loader::Target(target_ipt, is_auto_game_recording, applet_heap_size, applet_heap_reservation_size));
-
-    ul::loader::TargetOutput target_opt;
-    ul::loader::LoadTargetOutput(target_opt);
-
-    UL_LOG_INFO("Sending target output... '%s' with argv '%s'", target_opt.nro_path, target_opt.nro_argv);
-
-    UL_RC_ASSERT(smInitialize());
-    UL_RC_ASSERT(ul::loader::WriteTargetOutput(target_opt));
-    smExit();
-
-    return 0;
+    ul::loader::Target(target_ipt, is_auto_game_recording, applet_heap_size, applet_heap_reservation_size);
 }

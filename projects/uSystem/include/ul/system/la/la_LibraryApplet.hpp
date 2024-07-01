@@ -6,7 +6,7 @@ namespace ul::system::la {
 
     bool IsActive();
     Result Terminate();
-    Result Start(const AppletId id, const u32 la_version, const void *in_data, const size_t in_size);
+    Result Start(const AppletId id, const s32 la_version, const void *in_data, const size_t in_size);
     Result Send(const void *data, const size_t size);
     Result Read(void *data, const size_t size);
     Result Push(AppletStorage *st);

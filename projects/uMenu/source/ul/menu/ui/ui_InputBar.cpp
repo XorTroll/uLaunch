@@ -3,13 +3,12 @@
 #include <ul/menu/ui/ui_MenuApplication.hpp>
 
 extern ul::cfg::Config g_Config;
-extern ul::cfg::Theme g_Theme;
 extern ul::menu::ui::MenuApplication::Ref g_MenuApplication;
 
 namespace ul::menu::ui {
 
     InputBar::InputBar(const s32 x, const s32 y) : x(x), y(y) {
-        this->bg_img = TryFindLoadImage(g_Theme, "ui/InputBar");
+        this->bar_bg = TryFindLoadImage("ui/InputBarBackground");
     }
 
     void InputBar::ClearInputs() {
@@ -25,7 +24,7 @@ namespace ul::menu::ui {
         }
 
         if(!text.empty()) {
-            this->inputs[key] = pu::ui::render::RenderText(pu::ui::GetDefaultFont(pu::ui::DefaultFontSize::Small), GetKeyString(key) + " " + text, g_MenuApplication->GetTextColor());
+            this->inputs[key] = pu::ui::render::RenderText(pu::ui::GetDefaultFont(pu::ui::DefaultFontSize::Small), GetKeyString(key) + text, g_MenuApplication->GetTextColor());
         }
         else {
             this->inputs.erase(key);
@@ -33,7 +32,7 @@ namespace ul::menu::ui {
     }
 
     void InputBar::OnRender(pu::ui::render::Renderer::Ref &drawer, const s32 x, const s32 y) {
-        drawer->RenderTexture(this->bg_img, x, y, pu::ui::render::TextureRenderOptions::WithCustomAlpha(Alpha));
+        drawer->RenderTexture(this->bar_bg, x, y, pu::ui::render::TextureRenderOptions::WithCustomAlpha(Alpha));
 
         auto cur_x = x + SideMargin;
         for(const auto &[_, text] : this->inputs) {
