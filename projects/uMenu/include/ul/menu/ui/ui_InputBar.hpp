@@ -11,6 +11,7 @@ namespace ul::menu::ui {
             static constexpr u8 Alpha = 200;
             static constexpr u32 MetaDpadNpadButton = HidNpadButton_Left | HidNpadButton_Right | HidNpadButton_Up | HidNpadButton_Down;
             static constexpr u32 MetaAnyStickNpadButton = HidNpadButton_StickL | HidNpadButton_StickR;
+            static constexpr u32 MetaHomeNpadButton = HidNpadButton_Verification; // Random unused bit for us
 
         private:
             s32 x;
@@ -22,6 +23,10 @@ namespace ul::menu::ui {
                 std::string str;
 
                 // Order is intentional
+
+                if(key & MetaHomeNpadButton) {
+                    str += "\uE0F4 ";
+                }
 
                 if(key & MetaDpadNpadButton) {
                     str += "\uE0EA ";

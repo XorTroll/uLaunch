@@ -715,7 +715,7 @@ namespace ul::menu::ui {
                 this->input_bar->AddSetInput(HidNpadButton_A, GetLanguageString("input_move_selected"));
             }
             else if(this->entry_menu->IsFocusedEntrySuspended()) {
-                this->input_bar->AddSetInput(HidNpadButton_A, GetLanguageString("input_resume_suspended"));
+                this->input_bar->AddSetInput(HidNpadButton_A | InputBar::MetaHomeNpadButton, GetLanguageString("input_resume_suspended"));
             }
             else {
                 const auto &cur_entry = this->entry_menu->GetFocusedEntry();
@@ -771,6 +771,10 @@ namespace ul::menu::ui {
 
         if(this->entry_menu->IsInRoot() && !this->entry_menu->IsAnySelected()) {
             this->input_bar->AddSetInput(HidNpadButton_B, GetLanguageString("input_logoff"));
+        }
+
+        if(g_MenuApplication->IsSuspended() && !this->entry_menu->IsFocusedEntrySuspended()) {
+            this->input_bar->AddSetInput(InputBar::MetaHomeNpadButton, GetLanguageString("input_resume_suspended"));
         }
 
         this->input_bar->AddSetInput(HidNpadButton_Plus | HidNpadButton_Minus, GetLanguageString("input_resize_menu"));
