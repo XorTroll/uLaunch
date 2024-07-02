@@ -67,7 +67,7 @@
     "set_wireless_lan": "무선 LAN 활성화됨",
     "set_bluetooth": "블루투스 활성화됨",
     "set_usb_30": "USB 3.0 활성화됨",
-    "set_nfc": "NFC 활성화됨 (amiibo)",
+    "set_nfc": "NFC 활성화됨",
     "set_serial_no": "콘솔 시리얼 번호",
     "set_mac_addr": "MAC 주소",
     "set_ip_addr": "IP 주소",
