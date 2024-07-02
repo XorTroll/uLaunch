@@ -343,7 +343,7 @@ namespace ul::menu::ui {
 
         if(reload_need) {
             pu::audio::PlaySfx(this->setting_save_sfx);
-            cfg::SaveConfig(g_Config);
+            SaveConfig();
             this->Reload(false);
         }
     }

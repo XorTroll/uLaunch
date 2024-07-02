@@ -47,7 +47,7 @@ namespace ul::smi {
         OpenWebPage,
         OpenAlbum,
         RestartMenu,
-        SetHomebrewTakeoverApplication,
+        ReloadConfig,
         UpdateMenuPaths,
         UpdateMenuIndex,
         OpenUserPage,

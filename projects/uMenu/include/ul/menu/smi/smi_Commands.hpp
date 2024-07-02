@@ -135,10 +135,9 @@ namespace ul::menu::smi {
         );
     }
 
-    inline Result SetHomebrewTakeoverApplication(const u64 app_id) {
-        return SendCommand(SystemMessage::SetHomebrewTakeoverApplication,
+    inline Result ReloadConfig() {
+        return SendCommand(SystemMessage::ReloadConfig,
             [&](ScopedStorageWriter &writer) {
-                writer.Push(app_id);
                 return ResultSuccess;
             },
             [](ScopedStorageReader &reader) {

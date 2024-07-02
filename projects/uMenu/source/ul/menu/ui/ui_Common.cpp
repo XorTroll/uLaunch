@@ -115,6 +115,11 @@ namespace ul::menu::ui {
         return g_UserIconTexture;
     }
 
+    void SaveConfig() {
+        cfg::SaveConfig(g_Config);
+        UL_RC_ASSERT(smi::ReloadConfig());
+    }
+
     void RebootSystem() {
         PushPowerSystemAppletMessage(system::GeneralChannelMessage::Unk_Reboot);
     }

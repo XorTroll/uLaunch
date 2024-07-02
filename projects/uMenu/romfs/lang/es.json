@@ -81,7 +81,7 @@
     "theme_info_text": "Temas disponibles",
     "theme_no_active": "No tiene actualmente un tema activo.",
     "theme_reset": "Restablecer tema (tema por defecto)",
-    "theme_reset_conf": "Would you like to return to uLaunch's default theme?",
+    "theme_reset_conf": "¿Le gustaría restablecer el tema por defecto de uLaunch?",
     "theme_changed": "El tema de uLaunch ha sido restablecido.",
     "theme_active_this": "Este es el actual tema activo.",
     "theme_set_conf": "¿Le gustaría establecer este tema?",

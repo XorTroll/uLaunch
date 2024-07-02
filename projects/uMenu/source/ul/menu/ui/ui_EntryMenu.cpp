@@ -16,7 +16,7 @@ namespace ul::menu::ui {
 
         void SetEntryHeightCount(const u32 count) {
             UL_ASSERT_TRUE(g_Config.SetEntry(cfg::ConfigEntryId::MenuEntryHeightCount, static_cast<u64>(count)));
-            cfg::SaveConfig(g_Config);
+            SaveConfig();
 
             g_EntryHeightCount = count;
         }

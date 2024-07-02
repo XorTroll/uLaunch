@@ -77,7 +77,7 @@ namespace {
     bool g_LoaderOpenedAsApplication = false;
     bool g_AppletActive = false;
     AppletOperationMode g_OperationMode;
-    ul::cfg::Config g_Config = {};
+    ul::cfg::Config g_Config;
 
     char g_CurrentMenuFsPath[FS_MAX_PATH] = {};
     char g_CurrentMenuPath[FS_MAX_PATH] = {};
@@ -126,6 +126,14 @@ namespace {
 }
 
 namespace {
+
+    void LoadConfig() {
+        g_Config = ul::cfg::LoadConfig();
+
+        u64 menu_program_id;
+        UL_ASSERT_TRUE(g_Config.GetEntry(ul::cfg::ConfigEntryId::MenuTakeoverProgramId, menu_program_id));
+        la::SetMenuProgramId(menu_program_id);
+    }
 
     inline void PushMenuMessageContext(const ul::smi::MenuMessageContext msg_ctx) {
         ul::ScopedLock lk(g_MenuMessageQueueLock);
@@ -446,12 +454,8 @@ namespace {
                             g_MenuRestartFlag = true;
                             break;
                         }
-                        case ul::smi::SystemMessage::SetHomebrewTakeoverApplication: {
-                            u64 takeover_app_id;
-                            UL_RC_TRY(reader.Pop(takeover_app_id));
-
-                            UL_ASSERT_TRUE(g_Config.SetEntry(ul::cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, takeover_app_id));
-                            ul::cfg::SaveConfig(g_Config);
+                        case ul::smi::SystemMessage::ReloadConfig: {
+                            LoadConfig();
                             break;
                         }
                         case ul::smi::SystemMessage::UpdateMenuPaths: {
@@ -530,7 +534,7 @@ namespace {
                             // ...
                             break;
                         }
-                        case ul::smi::SystemMessage::SetHomebrewTakeoverApplication: {
+                        case ul::smi::SystemMessage::ReloadConfig: {
                             // ...
                             break;
                         }
@@ -891,10 +895,7 @@ namespace {
         ul::menu::CacheApplications(g_CurrentRecords);
         ul::menu::CacheHomebrew();
 
-        g_Config = ul::cfg::LoadConfig();
-        u64 menu_program_id;
-        UL_ASSERT_TRUE(g_Config.GetEntry(ul::cfg::ConfigEntryId::MenuTakeoverProgramId, menu_program_id));
-        la::SetMenuProgramId(menu_program_id);
+        LoadConfig();
 
         UL_RC_ASSERT(sf::Initialize());
 

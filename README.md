@@ -145,6 +145,6 @@ In order to only build a certain subproject, you can run `make` plus the subproj
 
 - Several scene developers for their help with small issues or features.
 
-- `uMenu` translations: [DDinghoya]() for Korean translations
+- `uMenu` translations: [DDinghoya](https://github.com/DDinghoya) for Korean translations
 
 - Everyone from my Discord and other places whose suggestions made this project a little bit better! Specially all the testers for being essential in reporting bugs and helping a lot with the project's development <3

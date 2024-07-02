@@ -24,6 +24,8 @@ namespace ul::menu::ui {
     void LoadSelectedUserIconTexture();
     pu::sdl2::TextureHandle::Ref GetSelectedUserIconTexture();
 
+    void SaveConfig();
+
     void RebootSystem();
     void ShutdownSystem();
     void SleepSystem();

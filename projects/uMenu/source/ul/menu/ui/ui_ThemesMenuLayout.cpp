@@ -106,7 +106,7 @@ namespace ul::menu::ui {
                 if(option == 0) {
                     g_ActiveTheme = selected_theme;
                     UL_ASSERT_TRUE(g_Config.SetEntry(cfg::ConfigEntryId::ActiveThemeName, g_ActiveTheme.name));
-                    cfg::SaveConfig(g_Config);
+                    SaveConfig();
                     g_MenuApplication->ShowNotification(GetLanguageString("theme_cache"));
                     cfg::CacheActiveTheme(g_Config);
 
@@ -123,7 +123,7 @@ namespace ul::menu::ui {
                 if(option == 0) {
                     g_ActiveTheme = {};
                     UL_ASSERT_TRUE(g_Config.SetEntry(cfg::ConfigEntryId::ActiveThemeName, g_ActiveTheme.name));
-                    cfg::SaveConfig(g_Config);
+                    SaveConfig();
                     g_MenuApplication->ShowNotification(GetLanguageString("theme_cache"));
                     cfg::CacheActiveTheme(g_Config);
 

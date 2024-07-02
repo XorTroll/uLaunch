@@ -200,7 +200,7 @@ namespace ul::menu::ui {
 
         // No need to save config, uSystem deals with that
         UL_ASSERT_TRUE(g_Config.SetEntry(cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, this->takeover_app_id));
-        UL_RC_ASSERT(smi::SetHomebrewTakeoverApplication(this->takeover_app_id));
+        SaveConfig();
     }
 
     void MenuApplication::ShowNotification(const std::string &text, const u64 timeout) {
