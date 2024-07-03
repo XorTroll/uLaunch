@@ -136,7 +136,7 @@ namespace {
         // With the handlers ready, initialize uSystem message handling
         UL_RC_ASSERT(ul::menu::smi::InitializeMenuMessageHandler());
 
-        if(g_StartMode == ul::smi::MenuStartMode::MenuApplicationSuspended) {
+        if(g_StartMode == ul::smi::MenuStartMode::MainMenuApplicationSuspended) {
             g_MenuApplication->Show();
         }
         else {

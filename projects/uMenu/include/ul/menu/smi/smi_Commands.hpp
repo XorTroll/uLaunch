@@ -210,4 +210,16 @@ namespace ul::menu::smi {
         );
     }
 
+    inline Result OpenNetConnect() {
+        return SendCommand(SystemMessage::OpenNetConnect,
+            [&](ScopedStorageWriter &writer) {
+                return ResultSuccess;
+            },
+            [](ScopedStorageReader &reader) {
+                // ...
+                return ResultSuccess;
+            }
+        );
+    }
+
 }

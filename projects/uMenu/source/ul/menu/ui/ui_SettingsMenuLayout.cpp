@@ -238,21 +238,8 @@ namespace ul::menu::ui {
                 break;
             }
             case 2: {
-                u8 in[28] = {0};
-                // TODO (low priority): 0 = normal, 1 = qlaunch, 2 = starter...? (consider documenting this better, maybe a PR to libnx even)
-                *reinterpret_cast<u32*>(in) = 1;
-                u8 out[8] = {0};
-
-                LibAppletArgs netargs;
-                libappletArgsCreate(&netargs, 0);
-
-                auto rc = libappletLaunch(AppletId_LibraryAppletNetConnect, &netargs, in, sizeof(in), out, sizeof(out), nullptr);
-                if(R_SUCCEEDED(rc)) {
-                    rc = *reinterpret_cast<Result*>(out);
-                    if(R_SUCCEEDED(rc)) {
-                        reload_need = true;
-                    }
-                }
+                // Close uMenu and launch the applet
+                ShowNetConnect();
                 break;
             }
             case 3: {

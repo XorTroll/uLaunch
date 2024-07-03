@@ -31,6 +31,7 @@ namespace ul::menu::ui {
     void SleepSystem();
 
     void ShowAboutDialog();
+
     void ShowSettingsMenu();
     void ShowThemesMenu();
     void ShowUserPage();
@@ -38,6 +39,8 @@ namespace ul::menu::ui {
     void ShowWebPage();
     void ShowAlbum();
     void ShowMiiEdit();
+    void ShowNetConnect();
+
     void ShowPowerDialog();
 
 }

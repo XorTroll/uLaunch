@@ -77,7 +77,7 @@ namespace ul::menu::ui {
             this->settings_menu_bgm.bgm_fade_out_ms = global_fade_out_ms;
         }
 
-        // These UI values are required, we will assert otherwise (thus the error would be visible on our logs)
+        // These UI values are required, we will assert otherwise (thus the error will be visible on our logs)
 
         #define _GET_UI_VALUE(name, type, val) { \
             UL_ASSERT_TRUE(this->ui_json.count(name)); \
@@ -117,7 +117,7 @@ namespace ul::menu::ui {
         _GET_UI_VALUE("suspended_app_final_alpha", u32, suspended_app_final_alpha);
 
         switch(this->start_mode) {
-            case smi::MenuStartMode::StartupScreen: {
+            case smi::MenuStartMode::StartupMenu: {
                 break;
             }
             default: {
@@ -133,16 +133,20 @@ namespace ul::menu::ui {
         this->settings_menu_lyt = SettingsMenuLayout::New();
 
         switch(this->start_mode) {
-            case smi::MenuStartMode::StartupScreen: {
+            case smi::MenuStartMode::StartupMenu: {
                 this->LoadMenuByType(MenuType::Startup, false);
+                break;
+            }
+            case smi::MenuStartMode::SettingsMenu: {
+                this->LoadMenuByType(MenuType::Settings, false);
                 break;
             }
             default: {
                 this->LoadMenuByType(MenuType::Main, false);
-                this->StartPlayBgm();
                 break;
             }
         }
+        this->StartPlayBgm();
     }
 
     void MenuApplication::SetBackgroundFade() {

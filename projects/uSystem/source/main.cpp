@@ -48,7 +48,8 @@ namespace {
         AppletId_LibraryAppletWeb,
         AppletId_LibraryAppletMyPage,
         AppletId_LibraryAppletMiiEdit,
-        AppletId_LibraryAppletPlayerSelect
+        AppletId_LibraryAppletPlayerSelect,
+        AppletId_LibraryAppletNetConnect
     };
 
     inline bool IsUsedLibraryApplet(const AppletId applet_id) {
@@ -72,7 +73,9 @@ namespace {
     bool g_UserPageAppletLaunchFlag = false;
     bool g_MiiEditAppletLaunchFlag = false;
     bool g_AddUserAppletLaunchFlag = false;
+    bool g_NetConnectAppletLaunchFlag = false;
     bool g_NextMenuLaunchStartupFlag = false;
+    bool g_NextMenuLaunchSettingsFlag = false;
     bool g_MenuRestartFlag = false;
     bool g_LoaderOpenedAsApplication = false;
     bool g_AppletActive = false;
@@ -190,12 +193,12 @@ namespace {
         if(la::IsActive() && !la::IsMenu()) {
             // An applet is opened (which is not our menu), thus close it and reopen the menu
             UL_RC_ASSERT(la::Terminate());
-            UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::Menu, CreateStatus()));
+            UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::MainMenu, CreateStatus()));
         }
         else if(app::IsActive() && app::HasForeground()) {
             // Hide the application currently on focus and open our menu
             UL_RC_ASSERT(sys::SetForeground());
-            UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::MenuApplicationSuspended, CreateStatus()));
+            UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::MainMenuApplicationSuspended, CreateStatus()));
         }
         else if(la::IsMenu()) {
             // Send a message to our menu to handle itself the home press
@@ -488,6 +491,10 @@ namespace {
                             g_AddUserAppletLaunchFlag = true;
                             break;
                         }
+                        case ul::smi::SystemMessage::OpenNetConnect: {
+                            g_NetConnectAppletLaunchFlag = true;
+                            break;
+                        }
                         default: {
                             // ...
                             break;
@@ -578,7 +585,7 @@ namespace {
         }
         if(g_MenuRestartFlag) {
             if(!la::IsActive()) {
-                UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::StartupScreen, CreateStatus()));
+                UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::StartupMenu, CreateStatus()));
 
                 sth_done = true;
                 g_MenuRestartFlag = false;
@@ -654,6 +661,23 @@ namespace {
                 g_NextMenuLaunchStartupFlag = true;
             }
         }
+        if(g_NetConnectAppletLaunchFlag) {
+            if(!la::IsActive()) {
+                u8 in[28] = {};
+                // TODO (low priority): 0 = normal, 1 = qlaunch, 2 = starter...? (consider documenting this better, maybe a PR to libnx even)
+                *reinterpret_cast<u32*>(in) = 1;
+                UL_RC_ASSERT(la::Start(AppletId_LibraryAppletNetConnect, 0, &in, sizeof(in)));
+
+                /* TODO: send this to uMenu? is it really needed, since it will reload anyway?
+                    u8 out[8] = {0};
+                    rc = *reinterpret_cast<Result*>(out);
+                */
+
+                sth_done = true;
+                g_NetConnectAppletLaunchFlag = false;
+                g_NextMenuLaunchSettingsFlag = true;
+            }
+        }
         if(g_ApplicationLaunchFlag > 0) {
             if(!la::IsActive()) {
                 // Ensure the application is launchable
@@ -701,9 +725,16 @@ namespace {
                     UL_RC_ASSERT(la::Pop(&target_opt_st));
                     UL_RC_ASSERT(appletStorageRead(&target_opt_st, 0, &target_opt, sizeof(target_opt)));
                 }
-                
-                const auto menu_start_mode = g_NextMenuLaunchStartupFlag ? ul::smi::MenuStartMode::StartupScreen : ul::smi::MenuStartMode::Menu;
-                g_NextMenuLaunchStartupFlag = false;
+
+                auto menu_start_mode = ul::smi::MenuStartMode::MainMenu;
+                if(g_NextMenuLaunchStartupFlag) {
+                    menu_start_mode = ul::smi::MenuStartMode::StartupMenu;
+                    g_NextMenuLaunchStartupFlag = false;
+                }
+                if(g_NextMenuLaunchSettingsFlag) {
+                    menu_start_mode = ul::smi::MenuStartMode::SettingsMenu;
+                    g_NextMenuLaunchSettingsFlag = false;
+                }
                 UL_RC_ASSERT(LaunchMenu(menu_start_mode, CreateStatus()));
 
                 if(g_LoaderChooseFlag) {
@@ -729,11 +760,12 @@ namespace {
                 // Throw the application's result if it actually ended with a result
                 auto terminate_rc = ul::ResultSuccess;
                 if(R_SUCCEEDED(nsGetApplicationTerminateResult(app::GetId(), &terminate_rc))) {
+                    // TODO: send result to uMenu instead of asserting it here!
                     UL_RC_ASSERT(terminate_rc);
                 }
 
                 // Reopen uMenu, notify failure
-                UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::Menu, CreateStatus()));
+                UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::MainMenu, CreateStatus()));
                 PushSimpleMenuMessage(ul::smi::MenuMessage::PreviousLaunchFailure);
                 g_LoaderOpenedAsApplication = false;
             }
@@ -997,7 +1029,7 @@ namespace ams {
         Initialize();
 
         // After having initialized everything, launch our menu
-        UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::StartupScreen, CreateStatus()));
+        UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::StartupMenu, CreateStatus()));
 
         // Loop forever, since qlaunch should NEVER terminate (AM would crash in that case)
         while(true) {

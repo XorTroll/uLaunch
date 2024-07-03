@@ -25,25 +25,25 @@ namespace ul::menu::ui {
         g_MenuApplication->ApplyConfigForElement("quick_menu", "quick_menu", this->options_menu);
 
         this->power_menu_item = pu::ui::elm::MenuItem::New(GetLanguageString("quick_power_options"));
-        this->power_menu_item->SetIcon(TryFindLoadImageHandle("ui/PowerQuickIcon"));
+        this->power_menu_item->SetIcon(TryFindLoadImageHandle("ui/Main/QuickIcon/Power"));
         this->power_menu_item->AddOnKey(&ShowPowerDialog);
         this->power_menu_item->SetColor(g_MenuApplication->GetTextColor());
         this->options_menu->AddItem(this->power_menu_item);
 
         this->controller_menu_item = pu::ui::elm::MenuItem::New(GetLanguageString("quick_controller_options"));
-        this->controller_menu_item->SetIcon(TryFindLoadImageHandle("ui/ControllersQuickIcon"));
+        this->controller_menu_item->SetIcon(TryFindLoadImageHandle("ui/Main/QuickIcon/Controllers"));
         this->controller_menu_item->AddOnKey(&ShowControllerSupport);
         this->controller_menu_item->SetColor(g_MenuApplication->GetTextColor());
         this->options_menu->AddItem(this->controller_menu_item);
 
         this->album_menu_item = pu::ui::elm::MenuItem::New(GetLanguageString("quick_album"));
-        this->album_menu_item->SetIcon(TryFindLoadImageHandle("ui/AlbumQuickIcon"));
+        this->album_menu_item->SetIcon(TryFindLoadImageHandle("ui/Main/QuickIcon/Album"));
         this->album_menu_item->AddOnKey(&ShowAlbum);
         this->album_menu_item->SetColor(g_MenuApplication->GetTextColor());
         this->options_menu->AddItem(this->album_menu_item);
 
         this->web_menu_item = pu::ui::elm::MenuItem::New(GetLanguageString("quick_web_page"));
-        this->web_menu_item->SetIcon(TryFindLoadImageHandle("ui/WebBrowserQuickIcon"));
+        this->web_menu_item->SetIcon(TryFindLoadImageHandle("ui/Main/QuickIcon/WebBrowser"));
         this->web_menu_item->AddOnKey(&ShowWebPage);
         this->web_menu_item->SetColor(g_MenuApplication->GetTextColor());
         this->options_menu->AddItem(this->web_menu_item);
@@ -55,19 +55,19 @@ namespace ul::menu::ui {
         this->options_menu->AddItem(this->user_menu_item);
 
         this->themes_menu_item = pu::ui::elm::MenuItem::New(GetLanguageString("quick_themes_menu"));
-        this->themes_menu_item->SetIcon(TryFindLoadImageHandle("ui/ThemesQuickIcon"));
+        this->themes_menu_item->SetIcon(TryFindLoadImageHandle("ui/Main/QuickIcon/Themes"));
         this->themes_menu_item->AddOnKey(&ShowThemesMenu);
         this->themes_menu_item->SetColor(g_MenuApplication->GetTextColor());
         this->options_menu->AddItem(this->themes_menu_item);
 
         this->settings_menu_item = pu::ui::elm::MenuItem::New(GetLanguageString("quick_settings_menu"));
-        this->settings_menu_item->SetIcon(TryFindLoadImageHandle("ui/SettingsQuickIcon"));
+        this->settings_menu_item->SetIcon(TryFindLoadImageHandle("ui/Main/QuickIcon/Settings"));
         this->settings_menu_item->AddOnKey(&ShowSettingsMenu);
         this->settings_menu_item->SetColor(g_MenuApplication->GetTextColor());
         this->options_menu->AddItem(this->settings_menu_item);
 
         this->mii_menu_item = pu::ui::elm::MenuItem::New(GetLanguageString("quick_mii_edit"));
-        this->mii_menu_item->SetIcon(TryFindLoadImageHandle("ui/MiiEditQuickIcon"));
+        this->mii_menu_item->SetIcon(TryFindLoadImageHandle("ui/Main/QuickIcon/MiiEdit"));
         this->mii_menu_item->AddOnKey(&ShowMiiEdit);
         this->mii_menu_item->SetColor(g_MenuApplication->GetTextColor());
         this->options_menu->AddItem(this->mii_menu_item);

@@ -8,9 +8,10 @@ namespace ul::smi {
 
     enum class MenuStartMode : u32 {
         Invalid,
-        StartupScreen,
-        Menu,
-        MenuApplicationSuspended
+        StartupMenu,
+        MainMenu,
+        MainMenuApplicationSuspended,
+        SettingsMenu
     };
 
     enum class MenuMessage : u32 {
@@ -52,7 +53,8 @@ namespace ul::smi {
         UpdateMenuIndex,
         OpenUserPage,
         OpenMiiEdit,
-        OpenAddUser
+        OpenAddUser,
+        OpenNetConnect
     };
 
     struct SystemStatus {

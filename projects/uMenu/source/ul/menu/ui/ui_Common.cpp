@@ -82,9 +82,8 @@ namespace ul::menu::ui {
             g_BackgroundTexture = TryFindLoadImageHandle("ui/Background");
             g_LogoTexture = pu::sdl2::TextureHandle::New(pu::ui::render::LoadImage("romfs:/Logo.png"));
 
-            g_NonEditableSettingIconTexture = TryFindLoadImageHandle("ui/SettingNonEditableIcon");
-            g_EditableSettingIconTexture = TryFindLoadImageHandle("ui/SettingEditableIcon");
-            g_BackgroundTexture = TryFindLoadImageHandle("ui/Background");
+            g_NonEditableSettingIconTexture = TryFindLoadImageHandle("ui/Settings/SettingNonEditableIcon");
+            g_EditableSettingIconTexture = TryFindLoadImageHandle("ui/Settings/SettingEditableIcon");
 
             g_CommonTexturesLoaded = true;
         }
@@ -185,6 +184,12 @@ namespace ul::menu::ui {
 
     void ShowMiiEdit() {
         UL_RC_ASSERT(ul::menu::smi::OpenMiiEdit());
+
+        g_MenuApplication->Finalize();
+    }
+
+    void ShowNetConnect() {
+        UL_RC_ASSERT(ul::menu::smi::OpenNetConnect());
 
         g_MenuApplication->Finalize();
     }

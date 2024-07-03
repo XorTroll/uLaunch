@@ -527,10 +527,10 @@ namespace ul::menu::ui {
         this->quick_menu = nullptr;
 
         // Load banners first
-        this->top_menu_default_bg = pu::ui::elm::Image::New(0, 0, TryFindLoadImageHandle("ui/TopMenuDefaultBackground"));
-        this->top_menu_folder_bg = pu::ui::elm::Image::New(0, 0, TryFindLoadImageHandle("ui/TopMenuFolderBackground"));
-        this->top_menu_app_bg = pu::ui::elm::Image::New(0, 0, TryFindLoadImageHandle("ui/TopMenuApplicationBackground"));
-        this->top_menu_hb_bg = pu::ui::elm::Image::New(0, 0, TryFindLoadImageHandle("ui/TopMenuHomebrewBackground"));
+        this->top_menu_default_bg = pu::ui::elm::Image::New(0, 0, TryFindLoadImageHandle("ui/Main/TopMenuBackground/Default"));
+        this->top_menu_folder_bg = pu::ui::elm::Image::New(0, 0, TryFindLoadImageHandle("ui/Main/TopMenuBackground/Folder"));
+        this->top_menu_app_bg = pu::ui::elm::Image::New(0, 0, TryFindLoadImageHandle("ui/Main/TopMenuBackground/Application"));
+        this->top_menu_hb_bg = pu::ui::elm::Image::New(0, 0, TryFindLoadImageHandle("ui/Main/TopMenuBackground/Homebrew"));
         g_MenuApplication->ApplyConfigForElement("main_menu", "top_menu_bg", this->top_menu_default_bg);
         g_MenuApplication->ApplyConfigForElement("main_menu", "top_menu_bg", this->top_menu_folder_bg);
         g_MenuApplication->ApplyConfigForElement("main_menu", "top_menu_bg", this->top_menu_app_bg);
@@ -548,7 +548,7 @@ namespace ul::menu::ui {
         g_MenuApplication->ApplyConfigForElement("main_menu", "logo_top_icon", this->logo_top_icon, false); // Sorry theme makers... uLaunch's logo must be visible, but can be moved
         this->Add(this->logo_top_icon);
 
-        this->connection_top_icon = pu::ui::elm::Image::New(0, 0, TryFindLoadImageHandle("ui/ConnectionTopIcon/None"));
+        this->connection_top_icon = pu::ui::elm::Image::New(0, 0, TryFindLoadImageHandle("ui/Main/TopIcon/Connection/None"));
         g_MenuApplication->ApplyConfigForElement("main_menu", "connection_top_icon", this->connection_top_icon);
         this->Add(this->connection_top_icon);
 
@@ -567,8 +567,8 @@ namespace ul::menu::ui {
         g_MenuApplication->ApplyConfigForElement("main_menu", "battery_text", this->battery_text);
         this->Add(this->battery_text);
 
-        this->battery_top_icon = pu::ui::elm::Image::New(0, 0, TryFindLoadImageHandle("ui/BatteryTopIcon/100"));
-        this->battery_charging_top_icon = pu::ui::elm::Image::New(0, 0, TryFindLoadImageHandle("ui/BatteryTopIcon/Charging"));
+        this->battery_top_icon = pu::ui::elm::Image::New(0, 0, TryFindLoadImageHandle("ui/Main/TopIcon/Battery/100"));
+        this->battery_charging_top_icon = pu::ui::elm::Image::New(0, 0, TryFindLoadImageHandle("ui/Main/TopIcon/Battery/Charging"));
         this->battery_charging_top_icon->SetVisible(false);
         g_MenuApplication->ApplyConfigForElement("main_menu", "battery_top_icon", this->battery_top_icon);
         g_MenuApplication->ApplyConfigForElement("main_menu", "battery_top_icon", this->battery_charging_top_icon);
@@ -591,15 +591,15 @@ namespace ul::menu::ui {
         this->cur_entry_sub_text->SetColor(g_MenuApplication->GetTextColor());
         g_MenuApplication->ApplyConfigForElement("main_menu", "cur_entry_sub_text", this->cur_entry_sub_text);
 
-        this->entry_menu_bg = pu::ui::elm::Image::New(0, 0, TryFindLoadImageHandle("ui/EntryMenuBackground"));
+        this->entry_menu_bg = pu::ui::elm::Image::New(0, 0, TryFindLoadImageHandle("ui/Main/EntryMenuBackground"));
         g_MenuApplication->ApplyConfigForElement("main_menu", "entry_menu_bg", this->entry_menu_bg);
         this->Add(this->entry_menu_bg);
 
-        this->entry_menu_left_icon = pu::ui::elm::Image::New(0, 0, TryFindLoadImageHandle("ui/EntryMenuLeftIcon"));
+        this->entry_menu_left_icon = pu::ui::elm::Image::New(0, 0, TryFindLoadImageHandle("ui/Main/EntryMenuLeftIcon"));
         g_MenuApplication->ApplyConfigForElement("main_menu", "entry_menu_left_icon", this->entry_menu_left_icon);
         this->Add(this->entry_menu_left_icon);
 
-        this->entry_menu_right_icon = pu::ui::elm::Image::New(0, 0, TryFindLoadImageHandle("ui/EntryMenuRightIcon"));
+        this->entry_menu_right_icon = pu::ui::elm::Image::New(0, 0, TryFindLoadImageHandle("ui/Main/EntryMenuRightIcon"));
         g_MenuApplication->ApplyConfigForElement("main_menu", "entry_menu_right_icon", this->entry_menu_right_icon);
         this->Add(this->entry_menu_right_icon);
 
@@ -791,10 +791,10 @@ namespace ul::menu::ui {
             this->last_has_connection = has_conn;
             this->last_connection_strength = conn_strength;
             if(has_conn) {
-                this->connection_top_icon->SetImage(TryFindLoadImageHandle("ui/ConnectionTopIcon/" + std::to_string(conn_strength)));
+                this->connection_top_icon->SetImage(TryFindLoadImageHandle("ui/Main/TopIcon/Connection/" + std::to_string(conn_strength)));
             }
             else {
-                this->connection_top_icon->SetImage(TryFindLoadImageHandle("ui/ConnectionTopIcon/None"));
+                this->connection_top_icon->SetImage(TryFindLoadImageHandle("ui/Main/TopIcon/Connection/None"));
             }
         }
 
@@ -823,7 +823,7 @@ namespace ul::menu::ui {
             if(battery_lvl_norm > 100) {
                 battery_lvl_norm = 100;
             }
-            const auto battery_img = "ui/BatteryTopIcon/" + std::to_string(battery_lvl_norm);
+            const auto battery_img = "ui/Main/TopIcon/Battery/" + std::to_string(battery_lvl_norm);
             this->battery_top_icon->SetImage(TryFindLoadImageHandle(battery_img));
             this->battery_charging_top_icon->SetVisible(is_charging);
         }

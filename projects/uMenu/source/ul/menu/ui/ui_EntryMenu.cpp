@@ -82,35 +82,35 @@ namespace ul::menu::ui {
         auto icon_path = entry.control.icon_path;
         if(icon_path.empty()) {
             if(entry.Is<EntryType::Application>()) {
-                icon_path = "ui/DefaultApplicationEntryIcon";
+                icon_path = "ui/Main/EntryIcon/DefaultApplication";
             }
             else if(entry.Is<EntryType::Homebrew>()) {
-                icon_path = "ui/DefaultHomebrewEntryIcon";
+                icon_path = "ui/Main/EntryIcon/DefaultHomebrew";
             }
             else if(entry.Is<EntryType::Folder>()) {
                 return this->folder_entry_icon;
             }
             else if(entry.Is<EntryType::SpecialEntryMiiEdit>()) {
-                icon_path = "ui/MiiEditEntryIcon";
+                icon_path = "ui/Main/EntryIcon/MiiEdit";
             }
             else if(entry.Is<EntryType::SpecialEntryWebBrowser>()) {
-                icon_path = "ui/WebBrowserEntryIcon";
+                icon_path = "ui/Main/EntryIcon/WebBrowser";
             }
             else if(entry.Is<EntryType::SpecialEntryUserPage>()) {
                 // Not a theme asset
                 return GetSelectedUserIconTexture();
             }
             else if(entry.Is<EntryType::SpecialEntrySettings>()) {
-                icon_path = "ui/SettingsEntryIcon";
+                icon_path = "ui/Main/EntryIcon/Settings";
             }
             else if(entry.Is<EntryType::SpecialEntryThemes>()) {
-                icon_path = "ui/ThemesEntryIcon";
+                icon_path = "ui/Main/EntryIcon/Themes";
             }
             else if(entry.Is<EntryType::SpecialEntryControllers>()) {
-                icon_path = "ui/ControllersEntryIcon";
+                icon_path = "ui/Main/EntryIcon/Controllers";
             }
             else if(entry.Is<EntryType::SpecialEntryAlbum>()) {
-                icon_path = "ui/AlbumEntryIcon";
+                icon_path = "ui/Main/EntryIcon/Album";
             }
             return TryFindLoadImageHandle(icon_path);
         }
@@ -176,19 +176,19 @@ namespace ul::menu::ui {
     }
 
     EntryMenu::EntryMenu(const s32 x, const s32 y, const std::string &path, FocusedEntryInputPressedCallback cur_entry_input_cb, FocusedEntryChangedCallback cur_entry_changed_cb, FocusedEntryChangeStartedCallback cur_entry_change_started_cb) : x(x), y(y), cur_entry_idx(0), entry_idx_stack(), cur_entry_input_cb(cur_entry_input_cb), cur_entry_changed_cb(cur_entry_changed_cb), cur_entry_change_started_cb(cur_entry_change_started_cb), enabled(true), selected_entry_idx(-1), empty_entry_icon(nullptr), selected_entry_icon(nullptr), entry_h_margin(EntryVerticalMargin), entries_to_add(), entries_to_remove(), pending_load_img_entry_start_idx(UINT32_MAX), pending_load_img_entry_ext_idx(UINT32_MAX), pending_load_img_done(false), entry_page_count(0), entry_total_count(0), swipe_mode(SwipeMode::None), entries_base_swipe_neg_offset(0), entries_base_swipe_neg_offset_incr(), extra_entry_swipe_show_h_count(0) {
-        this->cursor_over_icon = TryFindLoadImage("ui/CursorOverIcon");
+        this->cursor_over_icon = TryFindLoadImage("ui/Main/OverIcon/Cursor");
         this->cursor_size = 0;
-        this->border_over_icon = TryFindLoadImage("ui/BorderOverIcon");
+        this->border_over_icon = TryFindLoadImage("ui/Main/OverIcon/Border");
         this->border_size = 0;
-        this->suspended_over_icon = TryFindLoadImage("ui/SuspendedOverIcon");
+        this->suspended_over_icon = TryFindLoadImage("ui/Main/OverIcon/Suspended");
         this->suspended_size = 0;
-        this->selected_over_icon = TryFindLoadImage("ui/SelectedOverIcon");
+        this->selected_over_icon = TryFindLoadImage("ui/Main/OverIcon/Selected");
         this->selected_size = 0;
-        this->hb_takeover_app_over_icon = TryFindLoadImage("ui/HomebrewTakeoverApplicationOverIcon");
+        this->hb_takeover_app_over_icon = TryFindLoadImage("ui/Main/OverIcon/HomebrewTakeoverApplication");
         this->hb_takeover_app_size = 0;
 
-        this->empty_entry_icon = TryFindLoadImageHandle("ui/EmptyEntryIcon");
-        this->folder_entry_icon = TryFindLoadImageHandle("ui/FolderEntryIcon");
+        this->empty_entry_icon = TryFindLoadImageHandle("ui/Main/EntryIcon/Empty");
+        this->folder_entry_icon = TryFindLoadImageHandle("ui/Main/EntryIcon/Folder");
 
         this->cur_path = path;
 
