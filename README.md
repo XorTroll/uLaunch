@@ -4,7 +4,7 @@
 
 ***uLaunch*** is an open-source, customizable and homebrew-oriented replacement for the *Nintendo Switch HOME menu*:
 
-![ulaunch](demos/uLaunch.jpg)
+![uLaunch](demos/uLaunch.gif)
 
 <p align="center">
   <a title="Discord" href="https://discord.gg/3KpFyaH">
