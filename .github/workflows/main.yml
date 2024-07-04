@@ -32,7 +32,7 @@ jobs:
     
     - name: Compile
       run: |
-        make -j$(nproc) LIBNX=$PWD/libnx/nx/
+        make -j$(nproc) LIBNX=$PWD/libnx/nx/ usystem uloader umenu umanager
         zip -r SdOut.zip SdOut
         
     - uses: actions/upload-artifact@master

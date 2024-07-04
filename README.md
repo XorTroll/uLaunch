@@ -1,15 +1,10 @@
 <p align="center">
-  <img alt="uLaunch" height="100" src="projects/uMenu/romfs/Logo.png">
+  <img alt="uLaunch" height="100" src="assets/Logo.png">
 </p
 
 ***uLaunch*** is an open-source, customizable and homebrew-oriented replacement for the *Nintendo Switch HOME menu*:
 
-![Screenshot](demos/uLaunch.jpg)
-
-<figure class="video_container">
-  <iframe src="demos/uDesigner.mp4" frameborder="0" allowfullscreen="true"> 
-</iframe>
-</figure>
+![ulaunch](demos/uLaunch.jpg)
 
 <p align="center">
   <a title="Discord" href="https://discord.gg/3KpFyaH">
@@ -44,6 +39,8 @@
 ### Want to find **themes** for uLaunch? Check the [r/uLaunchThemes subreddit](https://www.reddit.com/r/uLaunchThemes/) or the [Discord server](https://discord.gg/3KpFyaH)!
 
 ### Want to make your own uLaunch **themes**? Check our [web theme editor](https://xortroll.github.io/uLaunch/) or the [wiki](https://github.com/XorTroll/uLaunch/wiki)!
+
+![uDesigner](demos/uDesigner.mp4)
 
 - [Features](#features)
   - [Custom features](#custom-features)
