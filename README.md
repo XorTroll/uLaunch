@@ -62,6 +62,9 @@
   - [uLoader](#uloader)
   - [uManager](#umanager)
   - [uScreen](#uscreen)
+    - [Windows](#windows)
+    - [Linux](#linux)
+    - [Mac](#mac)
   - [uDesigner](#udesigner)
 - [Building](#building)
 - [Credits](#credits)
@@ -263,7 +266,63 @@ Only those tasks which cannot be performed outside uLaunch are controlled (like 
 
 ### uScreen
 
-uScreen is a PC tool that communicates via USB with uSystem in order to capture the screen.
+uScreen is a PC tool that communicates via USB with uSystem in order to capture the screen. Requires Java 8 or higher, but versions above that are recommended.
+
+Note that USB screen capture is disabled by default, and has to be enabled in settings.
+
+You also need to install libusbK drivers for USB to work fine:
+
+#### Windows
+
+The best way to install Java 9 in Windows (or a very simple one) is to install [AdoptOpenJDK 11 or higher](https://adoptopenjdk.net).
+
+> Note: make sure that the JDK/JRE you choose contains JavaFX! You can always install it manually otherwise
+
+After installing it, double-clicking the JAR should be enough to start it.
+
+Otherwise, run ```java -jar uScreen.jar``` in the command prompt.
+
+For the USB to get recognized, follow the following steps:
+
+- Download [Zadig](https://zadig.akeo.ie)
+
+- Boot your console with uLaunch (first ensure USB screen capture is enabled in settings), connect it to the PC via USB
+
+- With Zadig, select the device named "Nintendo Switch"
+
+- Install **libusbK** to that device (any other driver won't work fine)
+
+#### Linux
+
+Install OpenJDK 11 (or higher) in the terminal:
+
+- Run ```sudo add-apt-repository ppa:openjdk-r/ppa```
+
+- Run ```sudo apt-get update```
+
+- Finally, run ```sudo apt-get install openjdk-11-jdk``` (if you just want the JRE, install `openjdk-11-jre` instead)
+
+- Create the file ```/etc/udev/rules.d/99-switch.rules``` with the following contents: ```SUBSYSTEM=="usb", ATTRS{idVendor}=="057e", ATTRS{idProduct}=="3000", GROUP="plugdev"```
+
+- Reload udev rules with: ```sudo udevadm control --reload-rules && sudo udevadm trigger```
+
+Now you can run uScreen using ```java -jar uScreen.jar```.
+
+#### Mac
+
+Install OpenJDK 11 (or higher) in the terminal:
+
+- Install brew ```/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"```
+
+- Run ```brew tap AdoptOpenJDK/openjdk```
+
+- Run ```brew install adoptopenjdk11 --cask```
+
+- Finally, run ```java -version``` to check the JDK version
+
+Now you can run uScreen using ```java -jar uScreen.jar```.
+
+Having done all this, the USB connection should work fine.
 
 ### uDesigner
 
