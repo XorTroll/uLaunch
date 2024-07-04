@@ -182,6 +182,9 @@ namespace ul::cfg {
 
     void RemoveActiveThemeCache() {
         fs::CleanDirectory(ActiveThemeCachePath);
+        for(u32 i = 0; i < std::size(ActiveThemeCacheSubfolderPaths); i++) {
+            fs::CreateDirectory(ActiveThemeCacheSubfolderPaths[i]);
+        }
     }
 
     void LoadLanguageJsons(const std::string &lang_base, util::JSON &lang, util::JSON &def) {

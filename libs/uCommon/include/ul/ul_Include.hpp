@@ -26,8 +26,28 @@ namespace ul {
     constexpr const char ApplicationCachePath[] = "sdmc:/ulaunch/cache/app";
     constexpr const char HomebrewCachePath[] = "sdmc:/ulaunch/cache/hb";
     constexpr const char AccountCachePath[] = "sdmc:/ulaunch/cache/acc";
-    constexpr const char ActiveThemeCachePath[] = "sdmc:/ulaunch/cache/theme";
-    constexpr const char ThemePreviewCachePath[] = "sdmc:/ulaunch/cache/themepreview";
+    constexpr const char ThemePreviewCachePath[] = "sdmc:/ulaunch/cache/preview";
+    constexpr const char ActiveThemeCachePath[] = "sdmc:/ulaunch/cache/active";
+    constexpr const char *ActiveThemeCacheSubfolderPaths[] = {
+        "sdmc:/ulaunch/cache/active/theme",
+        "sdmc:/ulaunch/cache/active/ui",
+        "sdmc:/ulaunch/cache/active/ui/Main",
+        "sdmc:/ulaunch/cache/active/ui/Main/EntryIcon",
+        "sdmc:/ulaunch/cache/active/ui/Main/OverIcon",
+        "sdmc:/ulaunch/cache/active/ui/Main/QuickIcon",
+        "sdmc:/ulaunch/cache/active/ui/Main/TopIcon",
+        "sdmc:/ulaunch/cache/active/ui/Main/TopIcon/Battery",
+        "sdmc:/ulaunch/cache/active/ui/Main/TopIcon/Connection",
+        "sdmc:/ulaunch/cache/active/ui/Main/TopMenuBackground",
+        "sdmc:/ulaunch/cache/active/ui/Startup"
+        "sdmc:/ulaunch/cache/active/ui/Themes",
+        "sdmc:/ulaunch/cache/active/ui/Settings",
+        "sdmc:/ulaunch/cache/active/sound",
+        "sdmc:/ulaunch/cache/active/sound/Main",
+        "sdmc:/ulaunch/cache/active/sound/Startup"
+        "sdmc:/ulaunch/cache/active/sound/Themes",
+        "sdmc:/ulaunch/cache/active/sound/Settings",
+    };
 
     constexpr const char ManagerLanguagesPath[] = "sdmc:/ulaunch/lang/uManager";
 

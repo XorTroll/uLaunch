@@ -31,8 +31,8 @@ int main() {
 
     auto renderer_opts = pu::ui::render::RendererInitOptions(SDL_INIT_EVERYTHING, pu::ui::render::RendererHardwareFlags);
     renderer_opts.UseImage(pu::ui::render::IMGAllFlags);
-    renderer_opts.UseTTF();
-    renderer_opts.SetExtraDefaultFontSize(35);
+    renderer_opts.AddDefaultAllSharedFonts();
+    renderer_opts.AddExtraDefaultFontSize(35);
     renderer_opts.UseRomfs();
     auto renderer = pu::ui::render::Renderer::New(renderer_opts);
 

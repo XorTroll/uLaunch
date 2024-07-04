@@ -120,13 +120,25 @@ namespace {
         // Get the text sizes to initialize default fonts
         auto ui_json = ul::util::JSON::object();
         UL_RC_ASSERT(ul::util::LoadJSONFromFile(ui_json, ul::menu::ui::TryGetActiveThemeResource("ui/UI.json")));
-        const auto default_font_path = ul::menu::ui::TryGetActiveThemeResource("ui/Font.ttf");
 
         auto renderer_opts = pu::ui::render::RendererInitOptions(SDL_INIT_EVERYTHING, pu::ui::render::RendererHardwareFlags);
-        renderer_opts.UseTTF(default_font_path);
+
+        const auto default_font_path = ul::menu::ui::TryGetActiveThemeResource("ui/Font.ttf");
+        if(!default_font_path.empty()) {
+            renderer_opts.AddDefaultFontPath(default_font_path);
+        }
+        else {
+            renderer_opts.AddDefaultSharedFont(PlSharedFontType_Standard);
+            renderer_opts.AddDefaultSharedFont(PlSharedFontType_ChineseSimplified);
+            renderer_opts.AddDefaultSharedFont(PlSharedFontType_ExtChineseSimplified);
+            renderer_opts.AddDefaultSharedFont(PlSharedFontType_ChineseTraditional);
+            renderer_opts.AddDefaultSharedFont(PlSharedFontType_KO);
+        }
+        renderer_opts.AddDefaultSharedFont(PlSharedFontType_NintendoExt);
+
         renderer_opts.UseImage(pu::ui::render::IMGAllFlags);
         renderer_opts.UseAudio(pu::ui::render::MixerAllFlags);
-        // renderer_opts.SetExtraDefaultFontSize(menu_folder_text_size);
+
         auto renderer = pu::ui::render::Renderer::New(renderer_opts);
         g_MenuApplication = ul::menu::ui::MenuApplication::New(renderer);
 

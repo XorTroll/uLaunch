@@ -120,7 +120,6 @@ namespace ul::menu::ui {
     }
 
     bool EntryMenu::LoadEntry(const u32 idx) {
-        UL_LOG_WARN("Loading entry %d", idx);
         if(idx < this->cur_entries.size()) {
             const auto &entry = this->cur_entries.at(idx);
             if(!entry.Is<EntryType::Invalid>()) {

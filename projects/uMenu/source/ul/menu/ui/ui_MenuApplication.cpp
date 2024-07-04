@@ -38,43 +38,47 @@ namespace ul::menu::ui {
         }
 
         this->bgm_json = ul::util::JSON::object();
-        ul::util::LoadJSONFromFile(this->bgm_json, TryGetActiveThemeResource("sound/BGM.json"));
+        const auto rc = ul::util::LoadJSONFromFile(this->bgm_json, TryGetActiveThemeResource("sound/BGM.json"));
+        if(R_SUCCEEDED(rc)) {
+            #define _LOAD_MENU_BGM(menu, bgm_name) { \
+                if(this->bgm_json.count(#menu)) { \
+                    const auto menu_json = this->bgm_json[#menu]; \
+                    this->menu##_bgm.bgm_loop = menu_json.value("bgm_loop", DefaultBgmLoop); \
+                    this->menu##_bgm.bgm_fade_in_ms = menu_json.value("bgm_fade_in_ms", DefaultBgmFadeInMs); \
+                    this->menu##_bgm.bgm_fade_in_ms = menu_json.value("bgm_fade_out_ms", DefaultBgmFadeOutMs); \
+                    this->menu##_bgm.bgm = nullptr; \
+                    this->menu##_bgm.bgm = pu::audio::OpenMusic(TryGetActiveThemeResource("sound/" bgm_name "/Bgm.mp3")); \
+                } \
+            }
+            _LOAD_MENU_BGM(main_menu, "Main")
+            _LOAD_MENU_BGM(startup_menu, "Startup")
+            _LOAD_MENU_BGM(themes_menu, "Themes")
+            _LOAD_MENU_BGM(settings_menu, "Settings")
 
-        #define _LOAD_MENU_BGM(menu, bgm_name) { \
-            if(this->bgm_json.count(#menu)) { \
-                const auto menu_json = this->bgm_json[#menu]; \
-                this->menu##_bgm.bgm_loop = menu_json.value("bgm_loop", DefaultBgmLoop); \
-                this->menu##_bgm.bgm_fade_in_ms = menu_json.value("bgm_fade_in_ms", DefaultBgmFadeInMs); \
-                this->menu##_bgm.bgm_fade_in_ms = menu_json.value("bgm_fade_out_ms", DefaultBgmFadeOutMs); \
-                this->menu##_bgm.bgm = nullptr; \
-                this->menu##_bgm.bgm = pu::audio::OpenMusic(TryGetActiveThemeResource("sound/" bgm_name "/Bgm.mp3")); \
-            } \
+            if(this->bgm_json.count("bgm_loop")) {
+                const auto global_loop = this->bgm_json.value("bgm_loop", DefaultBgmLoop);
+                this->main_menu_bgm.bgm_loop = global_loop;
+                this->startup_menu_bgm.bgm_loop = global_loop;
+                this->themes_menu_bgm.bgm_loop = global_loop;
+                this->settings_menu_bgm.bgm_loop = global_loop;
+            }
+            if(this->bgm_json.count("bgm_fade_in_ms")) {
+                const auto global_fade_in_ms = this->bgm_json.value("bgm_fade_in_ms", DefaultBgmFadeInMs);
+                this->main_menu_bgm.bgm_fade_in_ms = global_fade_in_ms;
+                this->startup_menu_bgm.bgm_fade_in_ms = global_fade_in_ms;
+                this->themes_menu_bgm.bgm_fade_in_ms = global_fade_in_ms;
+                this->settings_menu_bgm.bgm_fade_in_ms = global_fade_in_ms;
+            }
+            if(this->bgm_json.count("bgm_fade_out_ms")) {
+                const auto global_fade_out_ms = this->bgm_json.value("bgm_fade_out_ms", DefaultBgmFadeOutMs);
+                this->main_menu_bgm.bgm_fade_out_ms = global_fade_out_ms;
+                this->startup_menu_bgm.bgm_fade_out_ms = global_fade_out_ms;
+                this->themes_menu_bgm.bgm_fade_out_ms = global_fade_out_ms;
+                this->settings_menu_bgm.bgm_fade_out_ms = global_fade_out_ms;
+            }
         }
-        _LOAD_MENU_BGM(main_menu, "Main")
-        _LOAD_MENU_BGM(startup_menu, "Startup")
-        _LOAD_MENU_BGM(themes_menu, "Themes")
-        _LOAD_MENU_BGM(settings_menu, "Settings")
-
-        if(this->bgm_json.count("bgm_loop")) {
-            const auto global_loop = this->bgm_json.value("bgm_loop", DefaultBgmLoop);
-            this->main_menu_bgm.bgm_loop = global_loop;
-            this->startup_menu_bgm.bgm_loop = global_loop;
-            this->themes_menu_bgm.bgm_loop = global_loop;
-            this->settings_menu_bgm.bgm_loop = global_loop;
-        }
-        if(this->bgm_json.count("bgm_fade_in_ms")) {
-            const auto global_fade_in_ms = this->bgm_json.value("bgm_fade_in_ms", DefaultBgmFadeInMs);
-            this->main_menu_bgm.bgm_fade_in_ms = global_fade_in_ms;
-            this->startup_menu_bgm.bgm_fade_in_ms = global_fade_in_ms;
-            this->themes_menu_bgm.bgm_fade_in_ms = global_fade_in_ms;
-            this->settings_menu_bgm.bgm_fade_in_ms = global_fade_in_ms;
-        }
-        if(this->bgm_json.count("bgm_fade_out_ms")) {
-            const auto global_fade_out_ms = this->bgm_json.value("bgm_fade_out_ms", DefaultBgmFadeOutMs);
-            this->main_menu_bgm.bgm_fade_out_ms = global_fade_out_ms;
-            this->startup_menu_bgm.bgm_fade_out_ms = global_fade_out_ms;
-            this->themes_menu_bgm.bgm_fade_out_ms = global_fade_out_ms;
-            this->settings_menu_bgm.bgm_fade_out_ms = global_fade_out_ms;
+        else {
+            UL_LOG_WARN("Unable to load active theme sound settings (%s), theme might have no sound features", util::FormatResultDisplay(rc).c_str());
         }
 
         // These UI values are required, we will assert otherwise (thus the error will be visible on our logs)
