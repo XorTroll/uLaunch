@@ -72,8 +72,6 @@ namespace {
         strm << std::setw(2) << std::setfill('0') << std::hex << (u32)(color.Value.z * 255.0f);
         strm << std::setw(2) << std::setfill('0') << std::hex << (u32)(color.Value.w * 255.0f);
 
-        emscripten_log(EM_LOG_CONSOLE, "Generated color '%s'", strm.str().c_str());
-
         return strm.str();
     }
 
@@ -149,7 +147,7 @@ bool LoadThemeJsonAsset(const char *path, nlohmann::json &out_json) {
         emscripten_log(EM_LOG_CONSOLE, "Unable to open theme ZIP JSON asset at '%s'...: %d", path, zip_rc);
         return false;
     }
-    emscripten_log(EM_LOG_CONSOLE, "gluglu");
+
     void *json_data;
     size_t json_data_size;
     zip_rc = zip_entry_read(g_ThemeZip, &json_data, &json_data_size);
@@ -158,7 +156,7 @@ bool LoadThemeJsonAsset(const char *path, nlohmann::json &out_json) {
         emscripten_log(EM_LOG_CONSOLE, "Unable to read theme ZIP JSON asset at '%s'...: %d", path, zip_rc);
         return false;
     }
-    emscripten_log(EM_LOG_CONSOLE, "json data %p size %ld", json_data, json_data_size);
+
     std::string json_str(reinterpret_cast<const char*>(json_data), json_data_size);
     free(json_data);
     zip_entry_close(g_ThemeZip);
@@ -1910,7 +1908,7 @@ namespace {
 
                 LoadEditableElement(&elem_background);
 
-                ImGui::InputInt("Suspended application final alpha", &g_suspended_app_final_alpha);
+                ImGui::DragInt("Suspended application final alpha", &g_suspended_app_final_alpha, 1.0f, 0, 255);
 
                 LoadColorPicker("Text color", &g_text_color);
                 LoadColorPicker("Menu focus color", &g_menu_focus_color);

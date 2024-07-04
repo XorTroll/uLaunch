@@ -43,7 +43,7 @@
 
 ### Want to find **themes** for uLaunch? Check the [r/uLaunchThemes subreddit](https://www.reddit.com/r/uLaunchThemes/) or the [Discord server](https://discord.gg/3KpFyaH)!
 
-### Want to make your own uLaunch **themes**? Check the [wiki](https://github.com/XorTroll/uLaunch/wiki)!
+### Want to make your own uLaunch **themes**? Check our [web theme editor](https://xortroll.github.io/uLaunch/) or the [wiki](https://github.com/XorTroll/uLaunch/wiki)!
 
 - [Features](#features)
   - [Custom features](#custom-features)
