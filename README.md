@@ -57,6 +57,8 @@
   - [uMenu](#umenu)
   - [uLoader](#uloader)
   - [uManager](#umanager)
+  - [uScreen](#uscreen)
+  - [uDesigner](#udesigner)
 - [Building](#building)
 - [Credits](#credits)
 
@@ -255,6 +257,14 @@ uManager is a homebrew NRO used for controlling key uLaunch aspects.
 
 Only those tasks which cannot be performed outside uLaunch are controlled (like enabling or disabling uLaunch itself, hence why this is a separate NRO and not part of uMenu/etc), while everything else is controlled and managed on uLaunch itself.
 
+### uScreen
+
+uScreen is a PC tool that communicates via USB with uSystem in order to capture the screen.
+
+### uDesigner
+
+uDesigner is an (experimental) [web theme editor](https://github.com/XorTroll/uLaunch/wiki) to make themeing more easier.
+
 ## Building
 
 > Note that [workflows](https://github.com/XorTroll/uLaunch/actions) automatically build and upload nightly builds for every commit!
@@ -265,7 +275,7 @@ You will need *devkitPro*, *devkitA64*, *libnx* and all SDL2 libraries for Switc
 
 Clone **recursively** this repository and just enter `make` in the command line. It should build everything and generate a `SdOut` folder whose contents sould directly be copied to the root of a console SD card.
 
-In order to only build a certain subproject, you can run `make` plus the subproject's name: `make usystem`, `make uloader`, `make umenu`, `make umanager`
+In order to only build a certain subproject, you can run `make` plus the subproject's name: `make usystem`, `make uloader`, `make umenu`, `make umanager`, `make uscreen`, `make udesigner`
 
 ## Credits
 

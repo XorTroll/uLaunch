@@ -52,6 +52,7 @@ umenu: arc pu
 	@cp projects/uMenu/uMenu.nso SdOut/ulaunch/bin/uMenu/main
 	@cp projects/uMenu/uMenu.npdm SdOut/ulaunch/bin/uMenu/main.npdm
 	@cp assets/Logo.png projects/uMenu/romfs/Logo.png
+	@rm -rf projects/uMenu/romfs/default
 	@cp -r default-theme/ projects/uMenu/romfs/default/
 	@cp projects/uMenu/romfs/Logo.png projects/uDesigner/assets/Logo.png
 	@build_romfs projects/uMenu/romfs SdOut/ulaunch/bin/uMenu/romfs.bin
