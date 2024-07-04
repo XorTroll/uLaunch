@@ -40,7 +40,7 @@
 
 ### Want to make your own uLaunch **themes**? Check our [web theme editor](https://xortroll.github.io/uLaunch/) or the [wiki](https://github.com/XorTroll/uLaunch/wiki)!
 
-https://github.com/XorTroll/uLaunch/raw/unew/demos/uDesigner.mp4
+![uDesigner](demos/uDesigner.gif)
 
 - [Features](#features)
   - [Custom features](#custom-features)
