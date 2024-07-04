@@ -4,7 +4,9 @@
 
 ***uLaunch*** is an open-source, customizable and homebrew-oriented replacement for the *Nintendo Switch HOME menu*:
 
-![uLaunch](demos/uLaunch.gif)
+<p align="center">
+  <img src="demos/uLaunch.gif"/>
+</p>
 
 <p align="center">
   <a title="Discord" href="https://discord.gg/3KpFyaH">
@@ -40,7 +42,9 @@
 
 ### Want to make your own uLaunch **themes**? Check our [web theme editor](https://xortroll.github.io/uLaunch/) or the [wiki](https://github.com/XorTroll/uLaunch/wiki)!
 
-![uDesigner](demos/uDesigner.gif)
+<p align="center">
+  <img src="demos/uDesigner.gif"/>
+</p>
 
 - [Features](#features)
   - [Custom features](#custom-features)
