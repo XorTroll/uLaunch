@@ -105,7 +105,7 @@ namespace {
             }
             else {
                 g_ActiveTheme = {};
-                UL_LOG_WARN("Unable to load active entry '%s', resetting to default: %s", active_theme_name.c_str(), ul::util::FormatResultDisplay(rc).c_str());
+                UL_LOG_WARN("Unable to load active theme '%s': %s, resetting to default theme...", active_theme_name.c_str(), ul::util::FormatResultDisplay(rc).c_str());
                 UL_ASSERT_TRUE(g_Config.SetEntry(ul::cfg::ConfigEntryId::ActiveThemeName, g_ActiveTheme.name));
                 ul::cfg::RemoveActiveThemeCache();
             }

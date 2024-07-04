@@ -1,0 +1,122 @@
+{
+    "suspended_app_final_alpha": 80,
+    "text_color": "#e1e1e1ff",
+    "toast_base_color": "#282828ff",
+    "toast_text_color": "#e1e1e1ff",
+    "menu_focus_color": "#0094ffff",
+    "menu_bg_color": "#046dd0ff",
+    "dialog_title_color": "#e1e1e1ff",
+    "dialog_cnt_color": "#e9e9e9ff",
+    "dialog_opt_color": "#ebebebff",
+    "dialog_color": "#0094ffff",
+    "dialog_over_color": "#046dd0ff",
+    "main_menu": {
+        "top_menu_bg": {
+            "x": 61,
+            "y": 31
+        },
+        "logo_top_icon": {
+            "x": 1717,
+            "y": 55
+        },
+        "connection_top_icon": {
+            "x": 120,
+            "y": 52
+        },
+        "time_text": {
+            "x": 262,
+            "y": 105,
+            "font_size": "medium"
+        },
+        "date_text": {
+            "x": 262,
+            "y": 68,
+            "font_size": "small"
+        },
+        "battery_text": {
+            "x": 1612,
+            "y": 60,
+            "font_size": "small"
+        },
+        "battery_top_icon": {
+            "x": 1590,
+            "y": 65
+        },
+        "input_bar": {
+            "x": 61,
+            "y": 166
+        },
+        "cur_path_text": {
+            "x": 0,
+            "y": 40,
+            "h_align": "center",
+            "font_size": "small"
+        },
+        "cur_entry_main_text": {
+            "x": 0,
+            "y": 69,
+            "h_align": "center",
+            "font_size": "large"
+        },
+        "cur_entry_sub_text": {
+            "x": 0,
+            "y": 122,
+            "h_align": "center",
+            "font_size": "medium"
+        },
+        "entry_menu_bg": {
+            "x": 0,
+            "y": 233
+        },
+        "entry_menu_left_icon": {
+            "x": 0,
+            "y": 233
+        },
+        "entry_menu_right_icon": {
+            "x": 1830,
+            "y": 233
+        },
+        "entry_menu": {
+            "x": 0,
+            "y": 233
+        }
+    },
+    "startup_menu": {
+        "info_text": {
+            "x": 0,
+            "y": 75,
+            "h_align": "center",
+            "font_size": "medium"
+        },
+        "users_menu": {
+            "x": 0,
+            "y": 180,
+            "h_align": "center"
+        }
+    },
+    "themes_menu": {
+        "info_text": {
+            "x": 0,
+            "y": 37,
+            "h_align": "center",
+            "font_size": "large"
+        },
+        "themes_menu": {
+            "x": 0,
+            "y": 135,
+            "h_align": "center"
+        }
+    },
+    "settings_menu": {
+        "info_text": {
+            "x": 0,
+            "y": 37,
+            "h_align": "center",
+            "font_size": "medium"
+        },
+        "settings_menu": {
+            "x": 75,
+            "y": 120
+        }
+    }
+}

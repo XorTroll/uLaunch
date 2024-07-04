@@ -144,6 +144,8 @@ namespace ul::man::ui {
             UL_RC_ASSERT(acc::CacheAccounts());
             accountExit();
 
+            cfg::RemoveActiveThemeCache();
+
             g_MainApplication->ShowNotification(GetLanguageString("reset_cache_success"));
         }
     }

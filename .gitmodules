@@ -13,3 +13,9 @@
 [submodule "libs/zip"]
 	path = libs/zip
 	url = https://github.com/kuba--/zip
+[submodule "libs/imgui"]
+	path = libs/imgui
+	url = https://github.com/ocornut/imgui
+[submodule "libs/stb"]
+	path = libs/stb
+	url = https://github.com/nothings/stb

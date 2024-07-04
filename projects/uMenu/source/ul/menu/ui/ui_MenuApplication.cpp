@@ -45,7 +45,7 @@ namespace ul::menu::ui {
                     const auto menu_json = this->bgm_json[#menu]; \
                     this->menu##_bgm.bgm_loop = menu_json.value("bgm_loop", DefaultBgmLoop); \
                     this->menu##_bgm.bgm_fade_in_ms = menu_json.value("bgm_fade_in_ms", DefaultBgmFadeInMs); \
-                    this->menu##_bgm.bgm_fade_in_ms = menu_json.value("bgm_fade_out_ms", DefaultBgmFadeOutMs); \
+                    this->menu##_bgm.bgm_fade_out_ms = menu_json.value("bgm_fade_out_ms", DefaultBgmFadeOutMs); \
                     this->menu##_bgm.bgm = nullptr; \
                     this->menu##_bgm.bgm = pu::audio::OpenMusic(TryGetActiveThemeResource("sound/" bgm_name "/Bgm.mp3")); \
                 } \
