@@ -170,7 +170,7 @@ namespace ul::man::ui {
         }
 
         const auto last_ver = Version::FromString(last_id);
-        const auto cur_ver = Version::FromString("0.3.1");
+        const auto cur_ver = Version::FromString(UL_VERSION);
         if(last_ver.IsEqual(cur_ver)) {
             g_MainApplication->CreateShowDialog(GetLanguageString("update_title"), GetLanguageString("update_equal"), { GetLanguageString("ok") }, true);
         }

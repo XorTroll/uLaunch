@@ -57,7 +57,10 @@ umenu: arc pu
 	@build_romfs projects/uMenu/romfs SdOut/ulaunch/bin/uMenu/romfs.bin
 
 umanager: arc pu
-	@$(MAKE) -C libs/Plutonium/
+	@$(MAKE) -C projects/uManager
+	@mkdir -p SdOut/ulaunch/lang/uManager
+	@mkdir -p SdOut/switch
+	@cp projects/uManager/uManager.nro SdOut/switch/uManager.nro
 
 uscreen:
 	@cd projects/uScreen && mvn package

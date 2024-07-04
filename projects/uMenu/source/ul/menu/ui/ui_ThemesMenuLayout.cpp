@@ -99,7 +99,8 @@ namespace ul::menu::ui {
             }
             else {
                 std::string theme_conf_msg = selected_theme.manifest.name + "\n";
-                theme_conf_msg += selected_theme.manifest.release + ", " + selected_theme.manifest.author + "\n\n";
+                theme_conf_msg += selected_theme.manifest.description + "\n";
+                theme_conf_msg += "(" + selected_theme.manifest.release + ", " + selected_theme.manifest.author + ")\n\n";
                 theme_conf_msg += GetLanguageString("theme_set_conf");
 
                 const auto option = g_MenuApplication->DisplayDialog(selected_theme.manifest.name, theme_conf_msg, { GetLanguageString("yes"), GetLanguageString("cancel") }, true, this->loaded_theme_icons.at(idx));
