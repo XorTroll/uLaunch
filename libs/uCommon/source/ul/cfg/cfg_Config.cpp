@@ -150,10 +150,7 @@ namespace ul::cfg {
 
                 const auto entry_path = fs::JoinPath(ActiveThemeCachePath, zip_entry_name(zip_file));
                 const auto is_dir = zip_entry_isdir(zip_file);
-                if(is_dir) {
-                    fs::CreateDirectory(entry_path);
-                }
-                else {
+                if(!is_dir) {
                     void *read_buf;
                     size_t read_buf_size;
                     const auto read_size = zip_entry_read(zip_file, &read_buf, &read_buf_size);

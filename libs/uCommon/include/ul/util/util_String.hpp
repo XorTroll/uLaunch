@@ -8,6 +8,16 @@
 
 namespace ul::util {
 
+    template<typename S>
+    inline const char *GetCString(const S &s) {
+        return s;
+    }
+    
+    template<>
+    inline const char *GetCString<std::string>(const std::string &s) {
+        return s.c_str();
+    }
+
     inline bool StringEndsWith(const std::string &value, const std::string &ending) {
         if(ending.size() > value.size()) {
             return false;

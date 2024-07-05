@@ -23,10 +23,10 @@ namespace ul::menu::ui {
         public:
             StartupMenuLayout();
             PU_SMART_CTOR(StartupMenuLayout)
-            ~StartupMenuLayout();
             
             void OnMenuInput(const u64 keys_down, const u64 keys_up, const u64 keys_held, const pu::ui::TouchPoint touch_pos) override;
             bool OnHomeButtonPress() override;
+            void DisposeAudio() override;
 
             void ReloadMenu();
     };

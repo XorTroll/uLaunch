@@ -123,9 +123,10 @@ namespace ul::menu::smi {
         );
     }
 
-    inline Result RestartMenu() {
+    inline Result RestartMenu(const bool reload_theme_cache) {
         return SendCommand(SystemMessage::RestartMenu,
             [&](ScopedStorageWriter &writer) {
+                writer.Push(reload_theme_cache);
                 return ResultSuccess;
             },
             [](ScopedStorageReader &reader) {

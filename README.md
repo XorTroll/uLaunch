@@ -182,6 +182,8 @@ List of not implemented official HOME menu features:
 
 - Application (game) updates
 
+> Note that a lot of features could be considered in principle (savedata support, title removing, user management, activity log stuff...), but uLaunch's philosophy is to mainly avoid considering this features or, more generally, features already provided by existing homebrews or potentially providable by them. uLaunch is a custom HOME menu, whose aim partially is to be extended with mostly HOME-menu-related features.
+
 ## Setup
 
 ### Installing uLaunch

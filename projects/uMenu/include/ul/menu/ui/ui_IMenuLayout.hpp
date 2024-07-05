@@ -17,6 +17,7 @@ namespace ul::menu::ui {
             void NotifyMessageContext(const smi::MenuMessageContext msg_ctx);
             virtual void OnMenuInput(const u64 keys_down, const u64 keys_up, const u64 keys_held, const pu::ui::TouchPoint touch_pos) = 0;
             virtual bool OnHomeButtonPress() = 0;
+            virtual void DisposeAudio() = 0;
     };
 
 }

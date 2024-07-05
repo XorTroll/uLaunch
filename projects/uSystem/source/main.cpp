@@ -76,6 +76,7 @@ namespace {
     bool g_NetConnectAppletLaunchFlag = false;
     bool g_NextMenuLaunchStartupFlag = false;
     bool g_NextMenuLaunchSettingsFlag = false;
+    bool g_MenuRestartReloadThemeCacheFlag = false;
     bool g_MenuRestartFlag = false;
     bool g_LoaderOpenedAsApplication = false;
     bool g_AppletActive = false;
@@ -156,6 +157,11 @@ namespace {
             .selected_user = g_SelectedUser,
             .last_menu_index = g_CurrentMenuIndex
         };
+
+        if(g_MenuRestartReloadThemeCacheFlag) {
+            status.reload_theme_cache = true;
+            g_MenuRestartReloadThemeCacheFlag = false;
+        }
 
         ul::util::CopyToStringBuffer(status.last_menu_fs_path, g_CurrentMenuFsPath);
         ul::util::CopyToStringBuffer(status.last_menu_path, g_CurrentMenuPath);
@@ -454,6 +460,7 @@ namespace {
                             break;
                         }
                         case ul::smi::SystemMessage::RestartMenu: {
+                            UL_RC_TRY(reader.Pop(g_MenuRestartReloadThemeCacheFlag));
                             g_MenuRestartFlag = true;
                             break;
                         }
@@ -757,11 +764,9 @@ namespace {
         if(!sth_done && !prev_applet_active) {
             // If nothing was done but nothing is active, an application or applet might have crashed, terminated, failed to launch...
             if(!app::IsActive() && !la::IsActive()) {
-                // Throw the application's result if it actually ended with a result
                 auto terminate_rc = ul::ResultSuccess;
                 if(R_SUCCEEDED(nsGetApplicationTerminateResult(app::GetId(), &terminate_rc))) {
-                    // TODO: send result to uMenu instead of asserting it here!
-                    UL_RC_ASSERT(terminate_rc);
+                    UL_LOG_WARN("Application 0x%016X terminated with result %s", app::GetId(), ul::util::FormatResultDisplay(terminate_rc).c_str());
                 }
 
                 // Reopen uMenu, notify failure

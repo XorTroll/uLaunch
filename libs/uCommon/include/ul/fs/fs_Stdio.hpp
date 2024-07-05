@@ -3,15 +3,14 @@
 #include <switch.h>
 #include <sys/stat.h>
 #include <dirent.h>
-#include <cstdio>
-#include <string>
+#include <ul/util/util_String.hpp>
 
 namespace ul::fs {
 
-    template<mode_t Mode>
-    inline bool ExistsBase(const std::string &path) {
+    template<typename S, mode_t Mode>
+    inline bool ExistsBase(const S &path) {
         struct stat st;
-        if(stat(path.c_str(), &st) == 0) {
+        if(stat(util::GetCString(path), &st) == 0) {
             return st.st_mode & Mode;
         }
         else {
@@ -19,41 +18,50 @@ namespace ul::fs {
         }
     }
 
-    inline bool ExistsFile(const std::string &path) {
-        return ExistsBase<S_IFREG>(path);
+    template<typename S>
+    inline bool ExistsFile(const S &path) {
+        return ExistsBase<S, S_IFREG>(path);
     }
 
-    inline bool ExistsDirectory(const std::string &path) {
-        return ExistsBase<S_IFDIR>(path);
+    template<typename S>
+    inline bool ExistsDirectory(const S &path) {
+        return ExistsBase<S, S_IFDIR>(path);
     }
 
-    inline void CreateDirectory(const std::string &path) {
-        mkdir(path.c_str(), 777);
+    template<typename S>
+    inline void CreateDirectory(const S &path) {
+        mkdir(util::GetCString(path), 777);
     }
 
-    inline void CreateFile(const std::string &path) {
-        fsdevCreateFile(path.c_str(), 0, 0);
+    template<typename S>
+    inline void CreateFile(const S &path) {
+        fsdevCreateFile(util::GetCString(path), 0, 0);
     }
 
-    inline void DeleteDirectory(const std::string &path) {
-        fsdevDeleteDirectoryRecursively(path.c_str());
+    template<typename S>
+    inline void DeleteDirectory(const S &path) {
+        fsdevDeleteDirectoryRecursively(util::GetCString(path));
     }
 
-    inline void DeleteFile(const std::string &path) {
-        remove(path.c_str());
+    template<typename S>
+    inline void DeleteFile(const S &path) {
+        remove(util::GetCString(path));
     }
 
-    inline void CleanDirectory(const std::string &path) {
+    template<typename S>
+    inline void CleanDirectory(const S &path) {
         DeleteDirectory(path);
         CreateDirectory(path);
     }
 
-    inline bool RenameFile(const std::string &old_path, const std::string &new_path) {
-        return rename(old_path.c_str(), new_path.c_str()) == 0;
+    template<typename S>
+    inline bool RenameFile(const S &old_path, const S &new_path) {
+        return rename(util::GetCString(old_path), util::GetCString(new_path)) == 0;
     }
 
-    inline bool WriteFile(const std::string &path, const void *data, const size_t size, const bool overwrite) {
-        auto f = fopen(path.c_str(), overwrite ? "wb" : "ab+");
+    template<typename S>
+    inline bool WriteFile(const S &path, const void *data, const size_t size, const bool overwrite) {
+        auto f = fopen(util::GetCString(path), overwrite ? "wb" : "ab+");
         if(f) {
             fwrite(data, size, 1, f);
             fclose(f);
@@ -64,8 +72,9 @@ namespace ul::fs {
         }
     }
 
-    inline bool ReadFile(const std::string &path, void *data, const size_t size) {
-        auto f = fopen(path.c_str(), "rb");
+    template<typename S>
+    inline bool ReadFile(const S &path, void *data, const size_t size) {
+        auto f = fopen(util::GetCString(path), "rb");
         if(f) {
             const auto ok = fread(data, size, 1, f) == 1;
             fclose(f);
@@ -76,8 +85,9 @@ namespace ul::fs {
         }
     }
 
-    inline bool ReadFileAtOffset(const std::string &path, const size_t offset, void *data, const size_t size) {
-        auto f = fopen(path.c_str(), "rb");
+    template<typename S>
+    inline bool ReadFileAtOffset(const S &path, const size_t offset, void *data, const size_t size) {
+        auto f = fopen(util::GetCString(path), "rb");
         if(f) {
             fseek(f, offset, SEEK_SET);
             const auto ok = fread(data, size, 1, f) == 1;
@@ -89,9 +99,10 @@ namespace ul::fs {
         }
     }
 
-    inline size_t GetFileSize(const std::string &path) {
+    template<typename S>
+    inline size_t GetFileSize(const S &path) {
         struct stat st;
-        if(stat(path.c_str(), &st) == 0) {
+        if(stat(util::GetCString(path), &st) == 0) {
             return st.st_size;
         }
         else {
@@ -99,7 +110,8 @@ namespace ul::fs {
         }
     }
 
-    inline bool ReadFileString(const std::string &path, std::string &out) {
+    template<typename S>
+    inline bool ReadFileString(const S &path, std::string &out) {
         const auto f_size = GetFileSize(path);
         if(f_size == 0) {
             return false;
@@ -114,7 +126,8 @@ namespace ul::fs {
         return ok;
     }
 
-    inline bool WriteFileString(const std::string &path, const std::string &str, const bool overwrite) {
+    template<typename S>
+    inline bool WriteFileString(const S &path, const std::string &str, const bool overwrite) {
         return WriteFile(path, str.c_str(), str.length(), overwrite);
     }
 

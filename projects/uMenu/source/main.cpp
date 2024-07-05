@@ -95,6 +95,11 @@ namespace {
         // Load menu config
         g_Config = ul::cfg::LoadConfig();
 
+        // Cache active theme if needed
+        if(g_SystemStatus.reload_theme_cache) {
+            ul::cfg::CacheActiveTheme(g_Config);
+        }
+
         // Load active theme if set
         std::string active_theme_name;
         UL_ASSERT_TRUE(g_Config.GetEntry(ul::cfg::ConfigEntryId::ActiveThemeName, active_theme_name));

@@ -99,6 +99,7 @@ namespace ul::menu::ui {
             inline void Finalize() {
                 this->StopPlayBgm();
                 this->ResetFade();
+                this->DisposeAllAudio();
                 this->CloseWithFadeOut();
             }
 
@@ -303,6 +304,13 @@ namespace ul::menu::ui {
 
             void StartPlayBgm();
             void StopPlayBgm();
+
+            inline void DisposeAllAudio() {
+                this->main_menu_lyt->DisposeAudio();
+                this->startup_menu_lyt->DisposeAudio();
+                this->themes_menu_lyt->DisposeAudio();
+                this->settings_menu_lyt->DisposeAudio();
+            }
 
             void SetSelectedUser(const AccountUid user_id);
 

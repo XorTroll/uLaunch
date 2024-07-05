@@ -41,7 +41,8 @@ namespace ul::menu::ui {
         this->user_create_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Startup/UserCreate.wav"));
         this->user_select_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Startup/UserSelect.wav"));
     }
-    StartupMenuLayout::~StartupMenuLayout() {
+
+    void StartupMenuLayout::DisposeAudio() {
         pu::audio::DestroySfx(this->user_create_sfx);
         pu::audio::DestroySfx(this->user_select_sfx);
     }

@@ -54,7 +54,8 @@ namespace ul::smi {
         OpenUserPage,
         OpenMiiEdit,
         OpenAddUser,
-        OpenNetConnect
+        OpenNetConnect,
+        ReloadThemeCache
     };
 
     struct SystemStatus {
@@ -64,6 +65,7 @@ namespace ul::smi {
         char last_menu_fs_path[FS_MAX_PATH];
         char last_menu_path[FS_MAX_PATH];
         u32 last_menu_index;
+        bool reload_theme_cache;
     };
 
     using CommandFunction = Result(*)(void*, const size_t, const bool);

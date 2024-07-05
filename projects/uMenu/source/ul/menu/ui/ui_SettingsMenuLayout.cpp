@@ -87,7 +87,7 @@ namespace ul::menu::ui {
         this->back_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Settings/Back.wav"));
     }
 
-    SettingsMenuLayout::~SettingsMenuLayout() {
+    void SettingsMenuLayout::DisposeAudio() {
         pu::audio::DestroySfx(this->setting_edit_sfx);
         pu::audio::DestroySfx(this->setting_save_sfx);
         pu::audio::DestroySfx(this->back_sfx);

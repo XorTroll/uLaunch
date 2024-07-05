@@ -658,7 +658,7 @@ namespace ul::menu::ui {
         }
     }
 
-    MainMenuLayout::~MainMenuLayout() {
+    void MainMenuLayout::DisposeAudio() {
         pu::audio::DestroySfx(this->post_suspend_sfx);
         pu::audio::DestroySfx(this->cursor_move_sfx);
         pu::audio::DestroySfx(this->page_move_sfx);

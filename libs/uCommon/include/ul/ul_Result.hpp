@@ -44,6 +44,7 @@ namespace ul {
 
     void InitializeLogging(const char *proc_name);
     void LogImpl(const LogKind kind, const char *log_fmt, ...);
+    void NX_NORETURN AbortImpl(const Result rc);
 
     #define UL_LOG_INFO(log_fmt, ...) ::ul::LogImpl(::ul::LogKind::Information, log_fmt, ##__VA_ARGS__)
 
@@ -53,23 +54,25 @@ namespace ul {
     inline void NX_NORETURN OnAssertionFailed(const Result rc, const char *log_fmt, Args &&...args) {
         LogImpl(LogKind::Critical, log_fmt, args...);
 
-        svcBreak(0, reinterpret_cast<uintptr_t>(&rc), sizeof(rc));
+        AbortImpl(rc);
         __builtin_unreachable();
     }
 
-    #define UL_RC_ASSERT(expr) ({ \
+    #define UL_RC_LOG_ASSERT(log, expr) ({ \
         const auto _tmp_rc = ::ul::res::TransformIntoResult(expr); \
         if(R_FAILED(_tmp_rc)) { \
             const char *mod_name; \
             const char *rc_name; \
             if(rc::GetResultNameAny(_tmp_rc, mod_name, rc_name)) { \
-                ::ul::OnAssertionFailed(_tmp_rc, #expr " asserted %04d-%04d/0x%X/%s::%s...\n", R_MODULE(_tmp_rc) + 2000, R_DESCRIPTION(_tmp_rc), R_VALUE(_tmp_rc), mod_name, rc_name); \
+                ::ul::OnAssertionFailed(_tmp_rc, log " asserted %04d-%04d/0x%X/%s::%s...\n", R_MODULE(_tmp_rc) + 2000, R_DESCRIPTION(_tmp_rc), R_VALUE(_tmp_rc), mod_name, rc_name); \
             } \
             else { \
-                ::ul::OnAssertionFailed(_tmp_rc, #expr " asserted %04d-%04d/0x%X...\n", R_MODULE(_tmp_rc) + 2000, R_DESCRIPTION(_tmp_rc), R_VALUE(_tmp_rc)); \
+                ::ul::OnAssertionFailed(_tmp_rc, log " asserted %04d-%04d/0x%X...\n", R_MODULE(_tmp_rc) + 2000, R_DESCRIPTION(_tmp_rc), R_VALUE(_tmp_rc)); \
             } \
         } \
     })
+    
+    #define UL_RC_ASSERT(expr) UL_RC_LOG_ASSERT(#expr, expr)
 
     #define UL_ASSERT_TRUE(expr) ({ \
         const auto _tmp_expr = (expr); \
@@ -77,6 +80,5 @@ namespace ul {
             ::ul::OnAssertionFailed(::rc::ulaunch::ResultAssertionFailed, #expr " asserted to be false...\n"); \
         } \
     })
-
 
 }

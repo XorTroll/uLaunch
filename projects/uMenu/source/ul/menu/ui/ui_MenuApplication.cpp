@@ -37,23 +37,32 @@ namespace ul::menu::ui {
             appletGetLastApplicationCaptureImageEx(screen_capture_buf, RawScreenRgbaBufferSize, &flag);
         }
 
+        #define _LOAD_MENU_BGM(menu, bgm_name) { \
+            this->menu##_bgm.bgm_loop = DefaultBgmLoop; \
+            this->menu##_bgm.bgm_fade_in_ms = DefaultBgmFadeInMs; \
+            this->menu##_bgm.bgm_fade_out_ms = DefaultBgmFadeOutMs; \
+            this->menu##_bgm.bgm = pu::audio::OpenMusic(TryGetActiveThemeResource("sound/" bgm_name "/Bgm.mp3")); \
+        }
+        _LOAD_MENU_BGM(main_menu, "Main")
+        _LOAD_MENU_BGM(startup_menu, "Startup")
+        _LOAD_MENU_BGM(themes_menu, "Themes")
+        _LOAD_MENU_BGM(settings_menu, "Settings")
+
         this->bgm_json = ul::util::JSON::object();
         const auto rc = ul::util::LoadJSONFromFile(this->bgm_json, TryGetActiveThemeResource("sound/BGM.json"));
         if(R_SUCCEEDED(rc)) {
-            #define _LOAD_MENU_BGM(menu, bgm_name) { \
+            #define _LOAD_MENU_BGM_SETTINGS(menu, bgm_name) { \
                 if(this->bgm_json.count(#menu)) { \
                     const auto menu_json = this->bgm_json[#menu]; \
                     this->menu##_bgm.bgm_loop = menu_json.value("bgm_loop", DefaultBgmLoop); \
                     this->menu##_bgm.bgm_fade_in_ms = menu_json.value("bgm_fade_in_ms", DefaultBgmFadeInMs); \
                     this->menu##_bgm.bgm_fade_out_ms = menu_json.value("bgm_fade_out_ms", DefaultBgmFadeOutMs); \
-                    this->menu##_bgm.bgm = nullptr; \
-                    this->menu##_bgm.bgm = pu::audio::OpenMusic(TryGetActiveThemeResource("sound/" bgm_name "/Bgm.mp3")); \
                 } \
             }
-            _LOAD_MENU_BGM(main_menu, "Main")
-            _LOAD_MENU_BGM(startup_menu, "Startup")
-            _LOAD_MENU_BGM(themes_menu, "Themes")
-            _LOAD_MENU_BGM(settings_menu, "Settings")
+            _LOAD_MENU_BGM_SETTINGS(main_menu, "Main")
+            _LOAD_MENU_BGM_SETTINGS(startup_menu, "Startup")
+            _LOAD_MENU_BGM_SETTINGS(themes_menu, "Themes")
+            _LOAD_MENU_BGM_SETTINGS(settings_menu, "Settings")
 
             if(this->bgm_json.count("bgm_loop")) {
                 const auto global_loop = this->bgm_json.value("bgm_loop", DefaultBgmLoop);
@@ -78,7 +87,7 @@ namespace ul::menu::ui {
             }
         }
         else {
-            UL_LOG_WARN("Unable to load active theme sound settings (%s), theme might have no sound features", util::FormatResultDisplay(rc).c_str());
+            UL_LOG_WARN("Unable to load active theme sound settings (%s)", util::FormatResultDisplay(rc).c_str());
         }
 
         // These UI values are required, we will assert otherwise (thus the error will be visible on our logs)
@@ -222,10 +231,16 @@ namespace ul::menu::ui {
         if(bgm.bgm != nullptr) {
             const int loops = bgm.bgm_loop ? -1 : 1;
             if(bgm.bgm_fade_in_ms > 0) {
-                pu::audio::PlayMusicWithFadeIn(bgm.bgm, loops, bgm.bgm_fade_in_ms);
+                auto tt = Mix_FadeInMusic(bgm.bgm, loops, bgm.bgm_fade_in_ms);
+                if(tt < 0) {
+                    UL_LOG_WARN("MP3 fadein play error: '%s'", Mix_GetError());
+                }
             }
             else {
-                pu::audio::PlayMusic(bgm.bgm, loops);
+                auto tt = Mix_PlayMusic(bgm.bgm, loops);
+                if(tt < 0) {
+                    UL_LOG_WARN("MP3 play error: '%s'", Mix_GetError());
+                }
             }
         }
     }

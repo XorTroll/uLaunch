@@ -23,7 +23,7 @@ namespace ul::menu::ui {
         this->back_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Themes/Back.wav"));
     }
 
-    ThemesMenuLayout::~ThemesMenuLayout() {
+    void ThemesMenuLayout::DisposeAudio() {
         pu::audio::DestroySfx(this->theme_change_sfx);
         pu::audio::DestroySfx(this->back_sfx);
     }
@@ -109,12 +109,11 @@ namespace ul::menu::ui {
                     UL_ASSERT_TRUE(g_Config.SetEntry(cfg::ConfigEntryId::ActiveThemeName, g_ActiveTheme.name));
                     SaveConfig();
                     g_MenuApplication->ShowNotification(GetLanguageString("theme_cache"));
-                    cfg::CacheActiveTheme(g_Config);
 
                     pu::audio::PlaySfx(this->theme_change_sfx);
                     g_MenuApplication->ShowNotification(GetLanguageString("theme_changed"));
                     g_MenuApplication->Finalize();
-                    UL_RC_ASSERT(ul::menu::smi::RestartMenu());
+                    UL_RC_ASSERT(ul::menu::smi::RestartMenu(true));
                 }
             }
         }
@@ -126,12 +125,11 @@ namespace ul::menu::ui {
                     UL_ASSERT_TRUE(g_Config.SetEntry(cfg::ConfigEntryId::ActiveThemeName, g_ActiveTheme.name));
                     SaveConfig();
                     g_MenuApplication->ShowNotification(GetLanguageString("theme_cache"));
-                    cfg::CacheActiveTheme(g_Config);
 
                     pu::audio::PlaySfx(this->theme_change_sfx);
                     g_MenuApplication->ShowNotification(GetLanguageString("theme_changed"));
                     g_MenuApplication->Finalize();
-                    UL_RC_ASSERT(ul::menu::smi::RestartMenu());
+                    UL_RC_ASSERT(ul::menu::smi::RestartMenu(true));
                 }
             }
             else {
