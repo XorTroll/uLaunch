@@ -455,7 +455,8 @@ struct Element {
         }
     }
 
-    inline void SavePositionAndAlignmentSettings(nlohmann::json &el_json) {
+    inline void SavePositionAndAlignmentSettings() {
+        auto &el_json = this->GetSettingsReference();
         el_json["x"] = this->x;
         el_json["y"] = this->y;
 
@@ -719,8 +720,13 @@ struct Element {
         return true;
     }
 
+    inline nlohmann::json &GetSettingsReference() {
+        return g_UiSettings[ul::design::MenuSettingsNames[static_cast<u32>(this->menu)]][this->ui_name];
+    }
+
     inline bool SaveAsText(zip_t *theme_zip) {
-        auto text_json = g_UiSettings[ul::design::MenuSettingsNames[static_cast<u32>(this->menu)]][this->ui_name];
+        // All texts must have UI settings
+        auto &text_json = this->GetSettingsReference();
 
         switch(static_cast<ul::design::FontSize>(this->el_text.font_size)) {
             case ul::design::FontSize::Small:
@@ -747,7 +753,7 @@ struct Element {
 
     inline bool Save(zip_t *theme_zip) {
         if(!this->ui_name.empty() && (this->menu != ul::design::MenuType::None)) {
-            this->SavePositionAndAlignmentSettings(g_UiSettings[ul::design::MenuSettingsNames[static_cast<u32>(this->menu)]][this->ui_name]);
+            this->SavePositionAndAlignmentSettings();
         }
 
         switch(this->type) {

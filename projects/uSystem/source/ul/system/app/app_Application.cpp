@@ -9,6 +9,41 @@ namespace ul::system::app {
         AppletApplication g_ApplicationHolder;
         u64 g_LastApplicationId;
 
+        inline void EnsureSaveData(const u64 app_id, const u64 owner_id, const AccountUid user_id, const FsSaveDataType type, const FsSaveDataSpaceId space_id, const u64 savedata_size, const u64 savedata_journal_size) {
+            if(savedata_size > 0) {
+                const FsSaveDataAttribute attr = {
+                    .application_id = app_id,
+                    .uid = user_id,
+                    .system_save_data_id = 0,
+                    .save_data_type = type,
+                    .save_data_rank = FsSaveDataRank_Primary,
+                    .save_data_index = 0
+                };
+                const FsSaveDataCreationInfo cr_info = {
+                    .save_data_size = (s64)savedata_size,
+                    .journal_size = (s64)savedata_journal_size,
+                    .available_size = 0x4000, // Fixed value on all savedata creation in qlaunch
+                    .owner_id = owner_id,
+                    .flags = 0,
+                    .save_data_space_id = (u8)space_id
+                };
+                const FsSaveDataMetaInfo meta_info = {
+                    .size = (type == FsSaveDataType_Bcat) ? 0u : 0x40060u,
+                    .type = (type == FsSaveDataType_Bcat) ? FsSaveDataMetaType_None : FsSaveDataMetaType_Thumbnail
+                };
+
+                // Note: qlaunch uses a dedicated command (FindSaveData...), we just check if it exists by trying to open it
+                FsFileSystem dummy_fs;
+                if(R_SUCCEEDED(fsOpenSaveDataFileSystem(&dummy_fs, space_id, &attr))) {
+                    fsFsClose(&dummy_fs);
+                }
+                else {
+                    // Not yet created, create it then
+                    UL_RC_ASSERT(fsCreateSaveDataFileSystem(&attr, &cr_info, &meta_info));
+                }
+            }
+        }
+
     }
 
     bool g_ApplicationHasFocus;
@@ -25,6 +60,7 @@ namespace ul::system::app {
     }
 
     Result Terminate() {
+        UL_RC_TRY(appletApplicationTerminateAllLibraryApplets(&g_ApplicationHolder));
         UL_RC_TRY(appletApplicationRequestExit(&g_ApplicationHolder));
 
         const auto rc = eventWait(&g_ApplicationHolder.StateChangedEvent, 15'000'000'000ul);
@@ -47,48 +83,30 @@ namespace ul::system::app {
             UL_RC_TRY(appletCreateSystemApplication(&g_ApplicationHolder, app_id));
         }
         else {
-            // Ensure it's launchable
-            UL_RC_TRY(nsTouchApplication(app_id));
-
-            auto ct_data = new NsApplicationControlData;
-            UL_ON_SCOPE_EXIT({ delete[] ct_data; });
+            fsDeleteSaveDataFileSystem(app_id);
+            auto control_data = new NsApplicationControlData;
+            UL_ON_SCOPE_EXIT({ delete[] control_data; });
 
             size_t dummy_size;
-            UL_RC_TRY(nsGetApplicationControlData(NsApplicationControlSource_Storage, app_id, ct_data, sizeof(NsApplicationControlData), &dummy_size));
+            UL_RC_TRY(nsGetApplicationControlData(NsApplicationControlSource_Storage, app_id, control_data, sizeof(NsApplicationControlData), &dummy_size));
 
-            // Note: why isn't TemporaryStorage automatically created with nsTouchApplication like regular savedata?
-            // Let's create it ourselves if it doesn't exist yet
-            if(ct_data->nacp.temporary_storage_size > 0) {
-                const FsSaveDataAttribute attr = {
-                    .application_id = app_id,
-                    .system_save_data_id = 0,
-                    .save_data_type = FsSaveDataType_Temporary,
-                    .save_data_rank = FsSaveDataRank_Primary,
-                    .save_data_index = 0
-                };
-                constexpr auto space_id = FsSaveDataSpaceId_Temporary;
-                const FsSaveDataCreationInfo cr_info = {
-                    .save_data_size = (s64)ct_data->nacp.temporary_storage_size,
-                    .journal_size = 0,
-                    .available_size = 0x4000,
-                    .owner_id = app_id,
-                    .flags = 0,
-                    .save_data_space_id = space_id
-                };
-                const FsSaveDataMetaInfo meta_info = {
-                    .size = 0,
-                    .type = FsSaveDataMetaType_None
-                };
+            // Ensure it's launchable (TODO: does this do anything at all?)
+            UL_RC_TRY(nsTouchApplication(app_id));
 
-                FsFileSystem dummy_fs;
-                if(R_SUCCEEDED(fsOpenSaveDataFileSystem(&dummy_fs, space_id, &attr))) {
-                    fsFsClose(&dummy_fs);
-                }
-                else {
-                    // Not yet created, create it then
-                    UL_RC_TRY(fsCreateSaveDataFileSystem(&attr, &cr_info, &meta_info));
-                }
-            }
+            // Ensure Account savedata
+            EnsureSaveData(app_id, control_data->nacp.save_data_owner_id, user_id, FsSaveDataType_Account, FsSaveDataSpaceId_User, control_data->nacp.user_account_save_data_size, control_data->nacp.user_account_save_data_journal_size);
+
+            // Ensure Device savedata
+            EnsureSaveData(app_id, control_data->nacp.save_data_owner_id, {}, FsSaveDataType_Device, FsSaveDataSpaceId_User, control_data->nacp.device_save_data_size, control_data->nacp.device_save_data_journal_size);
+            
+            // Ensure Temporary savedata
+            EnsureSaveData(app_id, control_data->nacp.save_data_owner_id, {}, FsSaveDataType_Temporary, FsSaveDataSpaceId_Temporary, control_data->nacp.temporary_storage_size, 0);
+
+            // Ensure Cache savedata
+            EnsureSaveData(app_id, control_data->nacp.save_data_owner_id, {}, FsSaveDataType_Cache, FsSaveDataSpaceId_User, control_data->nacp.cache_storage_size, control_data->nacp.cache_storage_journal_size);
+
+            // Ensure Bcat savedata
+            EnsureSaveData(app_id, 0x010000000000000C, {}, FsSaveDataType_Bcat, FsSaveDataSpaceId_User, control_data->nacp.bcat_delivery_cache_storage_size, 0x200000);
 
             UL_RC_TRY(appletCreateApplication(&g_ApplicationHolder, app_id));
         }

@@ -30,10 +30,17 @@ int main() {
     Initialize();
 
     auto renderer_opts = pu::ui::render::RendererInitOptions(SDL_INIT_EVERYTHING, pu::ui::render::RendererHardwareFlags);
+
     renderer_opts.UseImage(pu::ui::render::IMGAllFlags);
     renderer_opts.AddDefaultAllSharedFonts();
     renderer_opts.AddExtraDefaultFontSize(35);
     renderer_opts.UseRomfs();
+
+    renderer_opts.SetInputPlayerCount(1);
+    renderer_opts.AddInputNpadStyleTag(HidNpadStyleSet_NpadStandard);
+    renderer_opts.AddInputNpadIdType(HidNpadIdType_Handheld);
+    renderer_opts.AddInputNpadIdType(HidNpadIdType_No1);
+
     auto renderer = pu::ui::render::Renderer::New(renderer_opts);
 
     g_MainApplication = ul::man::ui::MainApplication::New(renderer);

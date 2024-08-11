@@ -64,10 +64,10 @@ namespace ul {
             const char *mod_name; \
             const char *rc_name; \
             if(rc::GetResultNameAny(_tmp_rc, mod_name, rc_name)) { \
-                ::ul::OnAssertionFailed(_tmp_rc, log " asserted %04d-%04d/0x%X/%s::%s...\n", R_MODULE(_tmp_rc) + 2000, R_DESCRIPTION(_tmp_rc), R_VALUE(_tmp_rc), mod_name, rc_name); \
+                ::ul::OnAssertionFailed(_tmp_rc, log " asserted %04d-%04d/0x%X/%s::%s...", R_MODULE(_tmp_rc) + 2000, R_DESCRIPTION(_tmp_rc), R_VALUE(_tmp_rc), mod_name, rc_name); \
             } \
             else { \
-                ::ul::OnAssertionFailed(_tmp_rc, log " asserted %04d-%04d/0x%X...\n", R_MODULE(_tmp_rc) + 2000, R_DESCRIPTION(_tmp_rc), R_VALUE(_tmp_rc)); \
+                ::ul::OnAssertionFailed(_tmp_rc, log " asserted %04d-%04d/0x%X...", R_MODULE(_tmp_rc) + 2000, R_DESCRIPTION(_tmp_rc), R_VALUE(_tmp_rc)); \
             } \
         } \
     })
@@ -77,7 +77,7 @@ namespace ul {
     #define UL_ASSERT_TRUE(expr) ({ \
         const auto _tmp_expr = (expr); \
         if(!_tmp_expr) { \
-            ::ul::OnAssertionFailed(::rc::ulaunch::ResultAssertionFailed, #expr " asserted to be false...\n"); \
+            ::ul::OnAssertionFailed(::rc::ulaunch::ResultAssertionFailed, #expr " asserted to be false..."); \
         } \
     })
 

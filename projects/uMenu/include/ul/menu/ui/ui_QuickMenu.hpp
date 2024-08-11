@@ -34,7 +34,7 @@ namespace ul::menu::ui {
             pu::ui::elm::MenuItem::Ref settings_menu_item;
             pu::ui::elm::MenuItem::Ref mii_menu_item;
 
-            static void OnHomeButtonDetection(const smi::MenuMessageContext _);
+            static void OnHomeButtonDetection(const smi::MenuMessageContext &_);
 
         public:
             QuickMenu();

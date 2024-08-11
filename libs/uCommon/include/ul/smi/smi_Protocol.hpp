@@ -8,7 +8,7 @@ namespace ul::smi {
 
     enum class MenuStartMode : u32 {
         Invalid,
-        StartupMenu,
+        Start,
         MainMenu,
         MainMenuApplicationSuspended,
         SettingsMenu
@@ -20,7 +20,11 @@ namespace ul::smi {
         SdCardEjected,
         GameCardMountFailure,
         PreviousLaunchFailure,
-        ChosenHomebrew
+        ChosenHomebrew,
+        FinishedSleep,
+        ApplicationRecordsChanged,
+        ApplicationVerifyProgress,
+        ApplicationVerifyResult
     };
 
     struct MenuMessageContext {
@@ -33,6 +37,19 @@ namespace ul::smi {
             struct {
                 char nro_path[FS_MAX_PATH];
             } chosen_hb;
+            struct {
+                bool records_added_or_deleted;
+            } app_records_changed;
+            struct {
+                u64 app_id;
+                u64 done;
+                u64 total;
+            } app_verify_progress;
+            struct {
+                u64 app_id;
+                Result rc;
+                Result detail_rc;
+            } app_verify_rc;
         };
     };
 
@@ -55,7 +72,11 @@ namespace ul::smi {
         OpenMiiEdit,
         OpenAddUser,
         OpenNetConnect,
-        ReloadThemeCache
+        ListAddedApplications,
+        ListDeletedApplications,
+        OpenCabinet,
+        StartVerifyApplication,
+        ListInVerifyApplications
     };
 
     struct SystemStatus {
@@ -66,6 +87,9 @@ namespace ul::smi {
         char last_menu_path[FS_MAX_PATH];
         u32 last_menu_index;
         bool reload_theme_cache;
+        u32 last_added_app_count;
+        u32 last_deleted_app_count;
+        u32 in_verify_app_count;
     };
 
     using CommandFunction = Result(*)(void*, const size_t, const bool);

@@ -8,9 +8,8 @@
 #include <ul/menu/smi/smi_Commands.hpp>
 #include <ul/acc/acc_Accounts.hpp>
 
+extern ul::menu::ui::GlobalSettings g_GlobalSettings;
 extern ul::menu::ui::MenuApplication::Ref g_MenuApplication;
-extern ul::cfg::Config g_Config;
-extern ul::cfg::Theme g_ActiveTheme;
 
 namespace ul::menu::ui {
 
@@ -41,13 +40,12 @@ namespace ul::menu::ui {
 
     std::string TryGetActiveThemeResource(const std::string &resource_base) {
         std::string path;
-        if(g_ActiveTheme.IsValid()) {
+        if(g_GlobalSettings.active_theme.IsValid()) {
             path = cfg::GetActiveThemeResource(resource_base);
         }
-        else {
+        if(!fs::ExistsFile(path)) {
             path = fs::JoinPath(DefaultThemePath, resource_base);
         }
-
         if(!fs::ExistsFile(path)) {
             path = "";
         }
@@ -106,17 +104,12 @@ namespace ul::menu::ui {
     }
 
     void LoadSelectedUserIconTexture() {
-        const auto icon_path = acc::GetIconCacheImagePath(g_MenuApplication->GetSelectedUser());
+        const auto icon_path = acc::GetIconCacheImagePath(g_GlobalSettings.system_status.selected_user);
         g_UserIconTexture = pu::sdl2::TextureHandle::New(pu::ui::render::LoadImage(icon_path));
     }
 
     pu::sdl2::TextureHandle::Ref GetSelectedUserIconTexture() {
         return g_UserIconTexture;
-    }
-
-    void SaveConfig() {
-        cfg::SaveConfig(g_Config);
-        UL_RC_ASSERT(smi::ReloadConfig());
     }
 
     void RebootSystem() {
@@ -192,6 +185,28 @@ namespace ul::menu::ui {
         UL_RC_ASSERT(ul::menu::smi::OpenNetConnect());
 
         g_MenuApplication->Finalize();
+    }
+
+    void ShowCabinet() {
+        const auto option = g_MenuApplication->DisplayDialog(GetLanguageString("special_entry_text_amiibo"), GetLanguageString("amiibo_entry_info"), { GetLanguageString("amiibo_entry_nickname_owner_settings"), GetLanguageString("amiibo_entry_game_data_erase"), GetLanguageString("amiibo_entry_restore"), GetLanguageString("amiibo_entry_format"), GetLanguageString("cancel") }, true);
+        switch(option) {
+            case 0:
+                UL_RC_ASSERT(ul::menu::smi::OpenCabinet(NfpLaStartParamTypeForAmiiboSettings_NicknameAndOwnerSettings));
+                g_MenuApplication->Finalize();
+                break;
+            case 1:
+                UL_RC_ASSERT(ul::menu::smi::OpenCabinet(NfpLaStartParamTypeForAmiiboSettings_GameDataEraser));
+                g_MenuApplication->Finalize();
+                break;
+            case 2:
+                UL_RC_ASSERT(ul::menu::smi::OpenCabinet(NfpLaStartParamTypeForAmiiboSettings_Restorer));
+                g_MenuApplication->Finalize();
+                break;
+            case 3:
+                UL_RC_ASSERT(ul::menu::smi::OpenCabinet(NfpLaStartParamTypeForAmiiboSettings_Formatter));
+                g_MenuApplication->Finalize();
+                break;
+        }
     }
 
     void ShowPowerDialog() {

@@ -10,12 +10,19 @@
 
 using namespace ul::util::size;
 
-SetSysFirmwareVersion g_FwVersion;
+ul::menu::ui::GlobalSettings g_GlobalSettings;
+
+namespace {
+
+    constexpr u32 ExosphereApiVersionConfigItem = 65000;
+    constexpr u32 ExosphereEmummcType = 65007;
+
+}
 
 extern "C" {
 
     AppletType __nx_applet_type = AppletType_LibraryApplet; // Explicitly declare we're a library applet (need to do so for non-hbloader homebrew)
-    TimeServiceType __nx_time_service_type = TimeServiceType_User;
+    TimeServiceType __nx_time_service_type = TimeServiceType_Menu;
     u32 __nx_fs_num_sessions = 1;
     size_t __nx_heap_size = 296_MB;
 
@@ -31,33 +38,78 @@ extern "C" {
         UL_RC_ASSERT(fsInitialize());
         UL_RC_ASSERT(fsdevMountSdmc());
 
+        UL_RC_ASSERT(splInitialize());
+        // Since we rely on ams for uLaunch to work, it *must* be present
+        u64 raw_ams_ver;
+        UL_RC_ASSERT(splGetConfig(static_cast<SplConfigItem>(ExosphereApiVersionConfigItem), &raw_ams_ver));
+        g_GlobalSettings.ams_version = {
+            .major = static_cast<u8>((raw_ams_ver >> 56) & 0xFF),
+            .minor = static_cast<u8>((raw_ams_ver >> 48) & 0xFF),
+            .micro = static_cast<u8>((raw_ams_ver >> 40) & 0xFF)
+        };
+        u64 emummc_type;
+        UL_RC_ASSERT(splGetConfig(static_cast<SplConfigItem>(ExosphereEmummcType), &emummc_type));
+        g_GlobalSettings.ams_is_emummc = emummc_type != 0;
+        splExit();
+
         UL_RC_ASSERT(setsysInitialize());
-        UL_RC_ASSERT(setsysGetFirmwareVersion(&g_FwVersion));
-        hosversionSet(MAKEHOSVERSION(g_FwVersion.major, g_FwVersion.minor, g_FwVersion.micro) | BIT(31));
-        setsysExit();
+        UL_RC_ASSERT(setInitialize());
+
+        UL_RC_ASSERT(setsysGetFirmwareVersion(&g_GlobalSettings.fw_version));
+        hosversionSet(MAKEHOSVERSION(g_GlobalSettings.fw_version.major, g_GlobalSettings.fw_version.minor, g_GlobalSettings.fw_version.micro) | BIT(31));
+
+        UL_RC_ASSERT(setsysGetSerialNumber(&g_GlobalSettings.serial_no));
+        UL_RC_ASSERT(setsysGetSleepSettings(&g_GlobalSettings.sleep_settings));
+        UL_RC_ASSERT(setGetRegionCode(&g_GlobalSettings.region));
+        UL_RC_ASSERT(setsysGetPrimaryAlbumStorage(&g_GlobalSettings.album_storage));
+        UL_RC_ASSERT(setsysGetNfcEnableFlag(&g_GlobalSettings.nfc_enabled));
+        UL_RC_ASSERT(setsysGetUsb30EnableFlag(&g_GlobalSettings.usb30_enabled));
+        UL_RC_ASSERT(setsysGetBluetoothEnableFlag(&g_GlobalSettings.bluetooth_enabled));
+        UL_RC_ASSERT(setsysGetWirelessLanEnableFlag(&g_GlobalSettings.wireless_lan_enabled));
+        UL_RC_ASSERT(setsysGetAutoUpdateEnableFlag(&g_GlobalSettings.auto_update_enabled));
+        UL_RC_ASSERT(setsysGetAutomaticApplicationDownloadFlag(&g_GlobalSettings.auto_app_download_enabled));
+        UL_RC_ASSERT(setsysGetConsoleInformationUploadFlag(&g_GlobalSettings.console_info_upload_enabled));
+        u64 lang_code;
+        UL_RC_ASSERT(setGetSystemLanguage(&lang_code));
+        UL_RC_ASSERT(setMakeLanguage(lang_code, &g_GlobalSettings.language));
+        s32 tmp;
+        UL_RC_ASSERT(setGetAvailableLanguageCodes(&tmp, g_GlobalSettings.available_language_codes, ul::os::LanguageNameCount));
+        UL_RC_ASSERT(setsysGetDeviceNickname(&g_GlobalSettings.nickname));
+        UL_RC_ASSERT(setsysGetBatteryLot(&g_GlobalSettings.battery_lot));
 
         UL_RC_ASSERT(appletInitialize());
         UL_RC_ASSERT(hidInitialize());
+
         UL_RC_ASSERT(timeInitialize());
         __libnx_init_time();
+        UL_RC_ASSERT(timeGetDeviceLocationName(&g_GlobalSettings.timezone));
 
         UL_RC_ASSERT(accountInitialize(AccountServiceType_System));
         UL_RC_ASSERT(nsInitialize());
+        UL_RC_ASSERT(nssuInitialize());
+        UL_RC_ASSERT(avmInitialize());
         UL_RC_ASSERT(ul::net::Initialize());
         UL_RC_ASSERT(psmInitialize());
-        UL_RC_ASSERT(setsysInitialize());
-        UL_RC_ASSERT(setInitialize());
 
         __nx_win_init();
     }
 
     void __appExit() {
+        ul::menu::smi::FinalizeMenuMessageHandler();
+
+        // Exit RomFs manually, since we also initialized it manually
+        romfsExit();
+
+        UL_LOG_INFO("Goodbye!");
+
         __nx_win_exit();
 
         setExit();
         setsysExit();
         psmExit();
         ul::net::Finalize();
+        avmExit();
+        nssuExit();
         nsExit();
         accountExit();
 
@@ -77,41 +129,36 @@ extern "C" {
 
 ul::menu::ui::MenuApplication::Ref g_MenuApplication;
 
-ul::cfg::Config g_Config;
-ul::cfg::Theme g_ActiveTheme;
-
-ul::util::JSON g_DefaultLanguage;
-ul::util::JSON g_MainLanguage;
-
 namespace {
 
     ul::smi::MenuStartMode g_StartMode;
-    ul::smi::SystemStatus g_SystemStatus;
 
     void MainLoop() {
         // After initializing RomFs, start initializing the rest of stuff here
         ul::menu::InitializeEntries();
 
         // Load menu config
-        g_Config = ul::cfg::LoadConfig();
+        g_GlobalSettings.config = ul::cfg::LoadConfig();
 
         // Cache active theme if needed
-        if(g_SystemStatus.reload_theme_cache) {
-            ul::cfg::CacheActiveTheme(g_Config);
+        if(g_GlobalSettings.system_status.reload_theme_cache) {
+            ul::cfg::CacheActiveTheme(g_GlobalSettings.config);
         }
+
+        UL_ASSERT_TRUE(g_GlobalSettings.config.GetEntry(ul::cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, g_GlobalSettings.cache_hb_takeover_app_id));
 
         // Load active theme if set
         std::string active_theme_name;
-        UL_ASSERT_TRUE(g_Config.GetEntry(ul::cfg::ConfigEntryId::ActiveThemeName, active_theme_name));
+        UL_ASSERT_TRUE(g_GlobalSettings.config.GetEntry(ul::cfg::ConfigEntryId::ActiveThemeName, active_theme_name));
         if(!active_theme_name.empty()) {
-            const auto rc = ul::cfg::TryLoadTheme(active_theme_name, g_ActiveTheme);
+            const auto rc = ul::cfg::TryLoadTheme(active_theme_name, g_GlobalSettings.active_theme);
             if(R_SUCCEEDED(rc)) {
-                ul::cfg::EnsureCacheActiveTheme(g_Config);
+                ul::cfg::EnsureCacheActiveTheme(g_GlobalSettings.config);
             }
             else {
-                g_ActiveTheme = {};
+                g_GlobalSettings.active_theme = {};
                 UL_LOG_WARN("Unable to load active theme '%s': %s, resetting to default theme...", active_theme_name.c_str(), ul::util::FormatResultDisplay(rc).c_str());
-                UL_ASSERT_TRUE(g_Config.SetEntry(ul::cfg::ConfigEntryId::ActiveThemeName, g_ActiveTheme.name));
+                UL_ASSERT_TRUE(g_GlobalSettings.config.SetEntry(ul::cfg::ConfigEntryId::ActiveThemeName, g_GlobalSettings.active_theme.name));
                 ul::cfg::RemoveActiveThemeCache();
             }
         }
@@ -119,14 +166,61 @@ namespace {
             UL_LOG_INFO("No active theme set...");
         }
 
+        // List added/removed/in verify applications
+    
+        UL_LOG_INFO("Added app count: %d", g_GlobalSettings.system_status.last_added_app_count);
+        if(g_GlobalSettings.system_status.last_added_app_count > 0) {
+            auto app_buf = new u64[g_GlobalSettings.system_status.last_added_app_count]();
+            UL_RC_ASSERT(ul::menu::smi::ListAddedApplications(g_GlobalSettings.system_status.last_added_app_count, app_buf));
+            for(u32 i = 0; i < g_GlobalSettings.system_status.last_added_app_count; i++) {
+                UL_LOG_INFO("> Added app: 0x%016lX", app_buf[i]);
+                g_GlobalSettings.added_app_ids.push_back(app_buf[i]);
+            }
+            delete[] app_buf;
+        }
+
+        UL_LOG_INFO("Deleted app count: %d", g_GlobalSettings.system_status.last_deleted_app_count);
+        if(g_GlobalSettings.system_status.last_deleted_app_count > 0) {
+            auto app_buf = new u64[g_GlobalSettings.system_status.last_deleted_app_count]();
+            UL_RC_ASSERT(ul::menu::smi::ListDeletedApplications(g_GlobalSettings.system_status.last_deleted_app_count, app_buf));
+            for(u32 i = 0; i < g_GlobalSettings.system_status.last_deleted_app_count; i++) {
+                UL_LOG_INFO("> Deleted app: 0x%016lX", app_buf[i]);
+                g_GlobalSettings.deleted_app_ids.push_back(app_buf[i]);
+            }
+            delete[] app_buf;
+        }
+
+        UL_LOG_INFO("In verify app count: %d", g_GlobalSettings.system_status.in_verify_app_count);
+        if(g_GlobalSettings.system_status.in_verify_app_count > 0) {
+            auto app_buf = new u64[g_GlobalSettings.system_status.in_verify_app_count]();
+            UL_RC_ASSERT(ul::menu::smi::ListInVerifyApplications(g_GlobalSettings.system_status.in_verify_app_count, app_buf));
+            for(u32 i = 0; i < g_GlobalSettings.system_status.in_verify_app_count; i++) {
+                UL_LOG_INFO("> App being verified: 0x%016lX", app_buf[i]);
+                g_GlobalSettings.in_verify_app_ids.push_back(app_buf[i]);
+            }
+            delete[] app_buf;
+        }
+
         // Get system language and load translations (default one if not present)
-        ul::cfg::LoadLanguageJsons(ul::MenuLanguagesPath, g_MainLanguage, g_DefaultLanguage);
+        ul::cfg::LoadLanguageJsons(ul::MenuLanguagesPath, g_GlobalSettings.main_lang, g_GlobalSettings.default_lang);
 
         // Get the text sizes to initialize default fonts
         auto ui_json = ul::util::JSON::object();
         UL_RC_ASSERT(ul::util::LoadJSONFromFile(ui_json, ul::menu::ui::TryGetActiveThemeResource("ui/UI.json")));
 
         auto renderer_opts = pu::ui::render::RendererInitOptions(SDL_INIT_EVERYTHING, pu::ui::render::RendererHardwareFlags);
+
+        renderer_opts.SetInputPlayerCount(8);
+        renderer_opts.AddInputNpadStyleTag(HidNpadStyleSet_NpadStandard);
+        renderer_opts.AddInputNpadIdType(HidNpadIdType_Handheld);
+        renderer_opts.AddInputNpadIdType(HidNpadIdType_No1);
+        renderer_opts.AddInputNpadIdType(HidNpadIdType_No2);
+        renderer_opts.AddInputNpadIdType(HidNpadIdType_No3);
+        renderer_opts.AddInputNpadIdType(HidNpadIdType_No4);
+        renderer_opts.AddInputNpadIdType(HidNpadIdType_No5);
+        renderer_opts.AddInputNpadIdType(HidNpadIdType_No6);
+        renderer_opts.AddInputNpadIdType(HidNpadIdType_No7);
+        renderer_opts.AddInputNpadIdType(HidNpadIdType_No8);
 
         const auto default_font_path = ul::menu::ui::TryGetActiveThemeResource("ui/Font.ttf");
         if(!default_font_path.empty()) {
@@ -147,7 +241,7 @@ namespace {
         auto renderer = pu::ui::render::Renderer::New(renderer_opts);
         g_MenuApplication = ul::menu::ui::MenuApplication::New(renderer);
 
-        g_MenuApplication->Initialize(g_StartMode, g_SystemStatus, ui_json);
+        g_MenuApplication->Initialize(g_StartMode, ui_json);
         g_MenuApplication->Prepare();
 
         // With the handlers ready, initialize uSystem message handling
@@ -159,6 +253,8 @@ namespace {
         else {
             g_MenuApplication->ShowWithFadeIn();
         }
+
+        UL_LOG_WARN("googdggogo");
 
         g_MenuApplication = {};
     }
@@ -177,7 +273,9 @@ int main() {
     UL_LOG_INFO("Start mode: %d", (u32)g_StartMode);
 
     // Information sent as an extra storage to uMenu
-    UL_RC_ASSERT(ul::menu::am::ReadFromInputStorage(&g_SystemStatus, sizeof(g_SystemStatus)));
+    UL_RC_ASSERT(ul::menu::am::ReadFromInputStorage(&g_GlobalSettings.system_status, sizeof(g_GlobalSettings.system_status)));
+    g_GlobalSettings.initial_last_menu_index = g_GlobalSettings.system_status.last_menu_index;
+    g_GlobalSettings.initial_last_menu_fs_path = g_GlobalSettings.system_status.last_menu_fs_path;
     
     // Check if our RomFs data exists...
     if(!ul::fs::ExistsFile(ul::MenuRomfsFile)) {
@@ -194,11 +292,5 @@ int main() {
 
     MainLoop();
 
-    ul::menu::smi::FinalizeMenuMessageHandler();
-
-    // Exit RomFs manually, since we also initialized it manually
-    romfsExit();
-
-    UL_LOG_INFO("Goodbye!");
     return 0;
 }

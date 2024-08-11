@@ -5,16 +5,18 @@ namespace ul::system::la {
 
     namespace {
 
-        AppletHolder g_AppletHolder;
+        AppletHolder g_LibraryAppletHolder;
         AppletId g_MenuAppletId = AppletId_None;
         AppletId g_LastAppletId = AppletId_None;
 
-        struct AppletInfo {
+        struct LibraryAppletInfo {
             u64 program_id;
             AppletId applet_id;
         };
 
-        constexpr AppletInfo g_AppletTable[] = {
+        constexpr u32 AppletTransitionBackgroundColor = RGBA8(0, 0, 0, 0xff);
+
+        constexpr LibraryAppletInfo g_LibraryAppletTable[] = {
             { 0x0100000000001001, AppletId_LibraryAppletAuth },
             { 0x0100000000001002, AppletId_LibraryAppletCabinet },
             { 0x0100000000001003, AppletId_LibraryAppletController },
@@ -33,32 +35,36 @@ namespace ul::system::la {
             { 0x0100000000001011, AppletId_LibraryAppletWifiWebAuth },
             { 0x0100000000001013, AppletId_LibraryAppletMyPage }
         };
-        constexpr size_t AppletCount = sizeof(g_AppletTable) / sizeof(AppletInfo);
+        constexpr size_t LibraryAppletCount = sizeof(g_LibraryAppletTable) / sizeof(LibraryAppletInfo);
 
     }
 
     bool IsActive() {
-        if(g_AppletHolder.StateChangedEvent.revent == INVALID_HANDLE) {
+        if(g_LibraryAppletHolder.StateChangedEvent.revent == INVALID_HANDLE) {
             return false;
         }
-        if(!serviceIsActive(&g_AppletHolder.s)) {
+        if(!serviceIsActive(&g_LibraryAppletHolder.s)) {
             return false;
         }
-        return !appletHolderCheckFinished(&g_AppletHolder);
+        return !appletHolderCheckFinished(&g_LibraryAppletHolder);
     }
 
     Result Terminate() {
         // Give it 15 seconds
-        return appletHolderRequestExitOrTerminate(&g_AppletHolder, 15'000'000'000ul);
+        UL_RC_TRY(appletHolderRequestExitOrTerminate(&g_LibraryAppletHolder, 15'000'000'000ul));
+        appletHolderClose(&g_LibraryAppletHolder);
+
+        /* UL_RC_ASSERT(appletClearAppletTransitionBuffer(AppletTransitionBackgroundColor)); */
+
+        UL_RC_SUCCEED;
     }
 
     Result Start(const AppletId id, const s32 la_version, const void *in_data, const size_t in_size) {
         if(IsActive()) {
-            Terminate();
+            UL_RC_TRY(Terminate());
         }
-        appletHolderClose(&g_AppletHolder);
     
-        UL_RC_TRY(appletCreateLibraryApplet(&g_AppletHolder, id, LibAppletMode_AllForeground));
+        UL_RC_TRY(appletCreateLibraryApplet(&g_LibraryAppletHolder, id, LibAppletMode_AllForeground));
 
         // Treat -1/any negative pseudovalue as to not push these args
         if(la_version >= 0) {
@@ -66,37 +72,39 @@ namespace ul::system::la {
             libappletArgsCreate(&la_args, (u32)la_version);
             // TODO (low priority): does this make any difference?
             libappletArgsSetPlayStartupSound(&la_args, true);
-            UL_RC_TRY(libappletArgsPush(&la_args, &g_AppletHolder));
+            UL_RC_TRY(libappletArgsPush(&la_args, &g_LibraryAppletHolder));
         }
 
         if(in_size > 0) {
             UL_RC_TRY(Send(in_data, in_size));
         }
 
-        UL_RC_TRY(appletHolderStart(&g_AppletHolder));
+        /* UL_RC_ASSERT(appletClearCaptureBuffer(true, AppletCaptureSharedBuffer_LastForeground, AppletTransitionBackgroundColor)); */
+
+        UL_RC_TRY(appletHolderStart(&g_LibraryAppletHolder));
         g_LastAppletId = id;
         return ResultSuccess;
     }
 
     Result Send(const void *data, const size_t size) {
-        return libappletPushInData(&g_AppletHolder, data, size);
+        return libappletPushInData(&g_LibraryAppletHolder, data, size);
     }
 
     Result Read(void *data, const size_t size) {
-        return libappletPopOutData(&g_AppletHolder, data, size, nullptr);
+        return libappletPopOutData(&g_LibraryAppletHolder, data, size, nullptr);
     }
 
     Result Push(AppletStorage *st) {
-        return appletHolderPushInData(&g_AppletHolder, st);
+        return appletHolderPushInData(&g_LibraryAppletHolder, st);
     }
 
     Result Pop(AppletStorage *st) {
-        return appletHolderPopOutData(&g_AppletHolder, st);
+        return appletHolderPopOutData(&g_LibraryAppletHolder, st);
     }
 
     u64 GetProgramIdForAppletId(const AppletId id) {
-        for(u32 i = 0; i < AppletCount; i++) {
-            const auto info = g_AppletTable[i];
+        for(u32 i = 0; i < LibraryAppletCount; i++) {
+            const auto info = g_LibraryAppletTable[i];
             if(info.applet_id == id) {
                 return info.program_id;
             }
@@ -106,8 +114,8 @@ namespace ul::system::la {
     }
 
     AppletId GetAppletIdForProgramId(const u64 id) {
-        for(u32 i = 0; i < AppletCount; i++) {
-            const auto info = g_AppletTable[i];
+        for(u32 i = 0; i < LibraryAppletCount; i++) {
+            const auto info = g_LibraryAppletTable[i];
             if(info.program_id == id) {
                 return info.applet_id;
             }

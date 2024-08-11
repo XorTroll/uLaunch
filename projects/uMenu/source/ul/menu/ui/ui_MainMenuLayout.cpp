@@ -9,8 +9,8 @@
 #include <ul/os/os_System.hpp>
 #include <ul/os/os_Applications.hpp>
 
+extern ul::menu::ui::GlobalSettings g_GlobalSettings;
 extern ul::menu::ui::MenuApplication::Ref g_MenuApplication;
-extern ul::cfg::Config g_Config;
 
 namespace ul::menu::ui {
 
@@ -30,12 +30,14 @@ namespace ul::menu::ui {
         }
 
         inline bool IsEntryNonRemovable(const Entry &entry) {
+            /*
             if(strcmp(entry.hb_info.nro_target.nro_path, ul::HbmenuPath) == 0) {
                 return true;
             }
             if(strcmp(entry.hb_info.nro_target.nro_path, ul::ManagerPath) == 0) {
                 return true;
             }
+            */
 
             if(entry.IsSpecial()) {
                 return true;
@@ -44,7 +46,6 @@ namespace ul::menu::ui {
             return false;
         }
 
-        std::vector<std::string> g_WeekdayList;
         std::string g_UserName;
 
         char g_MenuFsPathBuffer[FS_MAX_PATH] = {};
@@ -74,7 +75,7 @@ namespace ul::menu::ui {
                 const auto option = g_MenuApplication->DisplayDialog(GetLanguageString("user_logoff"), GetLanguageString("user_logoff_opt"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true );
                 if(option == 0) {
                     auto log_off = false;
-                    if(g_MenuApplication->IsSuspended()) {
+                    if(g_GlobalSettings.IsSuspended()) {
                         const auto option_2 = g_MenuApplication->DisplayDialog(GetLanguageString("suspended_app"), GetLanguageString("user_logoff_app_suspended"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
                         if(option_2 == 0) {
                             log_off = true;
@@ -85,12 +86,13 @@ namespace ul::menu::ui {
                     }
 
                     if(log_off) {
-                        if(g_MenuApplication->IsSuspended()) {
+                        if(g_GlobalSettings.IsSuspended()) {
                             this->DoTerminateApplication();
                         }
 
                         pu::audio::PlaySfx(this->logoff_sfx);
 
+                        g_GlobalSettings.system_status.selected_user = {};
                         g_MenuApplication->LoadMenuByType(MenuType::Startup, true, [&]() {
                             this->MoveToRoot(false);
                         });
@@ -155,9 +157,9 @@ namespace ul::menu::ui {
                     else if(cur_entry.Is<EntryType::Application>() || cur_entry.Is<EntryType::Homebrew>()) {
                         auto do_launch_entry = true;
 
-                        if(g_MenuApplication->IsSuspended()) {
+                        if(g_GlobalSettings.IsSuspended()) {
                             // Play animations, then resume the suspended hb/app
-                            if(g_MenuApplication->IsEntrySuspended(cur_entry)) {
+                            if(g_GlobalSettings.IsEntrySuspended(cur_entry)) {
                                 if(this->mode == SuspendedImageMode::Focused) {
                                     this->StartResume();
                                 }
@@ -169,17 +171,60 @@ namespace ul::menu::ui {
                             if(do_launch_entry && cur_entry.Is<EntryType::Application>()) {
                                 do_launch_entry = false;
                                 this->HandleCloseSuspended();
-                                do_launch_entry = !g_MenuApplication->IsSuspended();
+                                do_launch_entry = !g_GlobalSettings.IsSuspended();
                             }
                         }
 
-                        if(do_launch_entry && cur_entry.Is<EntryType::Application>() && !cur_entry.app_info.IsLaunchable()) {
-                            UL_LOG_WARN("Tried to launch application with type 0x%X", cur_entry.app_info.record.type);
-                            pu::audio::PlaySfx(this->error_sfx);
-                            // TODO: gamecard detection?
-                            // TODO: support for "fixing" corrupted apps, like regular homemenu?
-                            g_MenuApplication->ShowNotification(GetLanguageString("app_not_launchable"));
-                            do_launch_entry = false;
+                        if(do_launch_entry && cur_entry.Is<EntryType::Application>()) {
+                            if(cur_entry.app_info.HasViewFlag<os::ApplicationViewFlag::NeedsVerify>()) {
+                                pu::audio::PlaySfx(this->error_sfx);
+
+                                auto is_being_verified = false;
+                                for(const auto app_id: g_GlobalSettings.in_verify_app_ids) {
+                                    if(app_id == cur_entry.app_info.app_id) {
+                                        g_MenuApplication->ShowNotification(GetLanguageString("app_verify_wait"));
+                                        is_being_verified = true;
+                                        break;
+                                    }
+                                }
+
+                                if(!is_being_verified) {
+                                    const auto opt = g_MenuApplication->DisplayDialog(GetLanguageString("app_launch"), GetLanguageString("app_corrupted"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
+                                    if(opt == 0) {
+                                        UL_RC_ASSERT(smi::StartVerifyApplication(cur_entry.app_info.app_id));
+                                        g_GlobalSettings.in_verify_app_ids.push_back(cur_entry.app_info.app_id);
+                                    }
+                                }
+
+                                do_launch_entry = false;
+                            }
+                            else if(cur_entry.app_info.HasViewFlag<os::ApplicationViewFlag::GameCardApplication>() && !cur_entry.app_info.HasViewFlag<os::ApplicationViewFlag::GameCardApplicationAccessible>()) {
+                                pu::audio::PlaySfx(this->error_sfx);
+                                g_MenuApplication->ShowNotification(GetLanguageString("app_no_gamecard"));
+                                do_launch_entry = false;
+                            }
+                            else if(!cur_entry.app_info.HasViewFlag<os::ApplicationViewFlag::Launchable>()) {
+                                UL_LOG_WARN("Tried to launch non-launchable application 0x%016lX with record type 0x%X and view flags 0x%D", cur_entry.app_info.app_id, cur_entry.app_info.record.type, cur_entry.app_info.view.flags);
+                                pu::audio::PlaySfx(this->error_sfx);
+                                g_MenuApplication->ShowNotification(GetLanguageString("app_not_launchable"));
+                                do_launch_entry = false;
+                            }
+                            else {
+                                if(cur_entry.app_info.NeedsUpdate()) {
+                                    do_launch_entry = false;
+                                    const auto opt = g_MenuApplication->DisplayDialog(GetLanguageString("app_launch"), "launch req ver " + std::to_string(cur_entry.app_info.launch_required_version) + " VS actual ver " + std::to_string(cur_entry.app_info.version) + "\n\n" + GetLanguageString("app_needs_update"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
+                                    if(opt == 0) {
+                                        const auto rc = avmPushLaunchVersion(cur_entry.app_info.app_id, cur_entry.app_info.version);
+                                        if(R_SUCCEEDED(rc)) {
+                                            cur_entry.app_info.launch_required_version = cur_entry.app_info.version;
+                                            do_launch_entry = true;
+                                        }
+                                        else {
+                                            g_MenuApplication->DisplayDialog(GetLanguageString("app_launch"), GetLanguageString("app_launch_version_reset_error") + ": " + util::FormatResultDisplay(rc), { GetLanguageString("ok") }, true);
+                                        }
+                                    }
+                                }
+                            }
                         }
 
                         if(do_launch_entry) {
@@ -189,7 +234,7 @@ namespace ul::menu::ui {
                             else {
                                 pu::audio::PlaySfx(this->launch_app_sfx);
 
-                                const auto rc = smi::LaunchApplication(cur_entry.app_info.record.application_id);
+                                const auto rc = smi::LaunchApplication(cur_entry.app_info.app_id);
                                 if(R_SUCCEEDED(rc)) {
                                     g_MenuApplication->Finalize();
                                     return;
@@ -237,6 +282,12 @@ namespace ul::menu::ui {
                                 ShowAlbum();
                                 break;
                             }
+                            case EntryType::SpecialEntryAmiibo: {
+                                // pu::audio::PlaySfx(this->open_album_sfx);
+
+                                ShowCabinet();
+                                break;
+                            }
                             default:
                                 break;
                         }
@@ -265,10 +316,15 @@ namespace ul::menu::ui {
                         SwkbdConfig cfg;
                         UL_RC_ASSERT(swkbdCreate(&cfg, 0));
                         swkbdConfigSetGuideText(&cfg, GetLanguageString("swkbd_folder_name_guide").c_str());
-                        char new_folder_name[500] = {};
-                        const auto rc = swkbdShow(&cfg, new_folder_name, sizeof(new_folder_name));
+                        char new_folder_name_buf[500] = {};
+                        const auto rc = swkbdShow(&cfg, new_folder_name_buf, sizeof(new_folder_name_buf));
                         swkbdClose(&cfg);
-                        if(R_SUCCEEDED(rc)) {
+
+                        std::string new_folder_name(new_folder_name_buf);
+                        while(!new_folder_name.empty() && new_folder_name.at(0) == ' ') {
+                            new_folder_name.erase(new_folder_name.begin());
+                        }
+                        if(R_SUCCEEDED(rc) && !new_folder_name.empty()) {
                             pu::audio::PlaySfx(this->create_folder_sfx);
 
                             const auto folder_entry = CreateFolderEntry(this->entry_menu->GetPath(), new_folder_name, this->entry_menu->GetFocusedEntryIndex());
@@ -299,7 +355,7 @@ namespace ul::menu::ui {
             else if(this->entry_menu->IsFocusedNonemptyEntry()) {
                 auto &cur_entry = this->entry_menu->GetFocusedEntry();
 
-                if(g_MenuApplication->IsSuspended() && g_MenuApplication->IsEntrySuspended(cur_entry)) {
+                if(g_GlobalSettings.IsSuspended() && g_GlobalSettings.IsEntrySuspended(cur_entry)) {
                     this->HandleCloseSuspended();
                 }
                 else {
@@ -379,7 +435,7 @@ namespace ul::menu::ui {
                         if(option == 0) {
                             const auto option_2 = g_MenuApplication->DisplayDialog(GetLanguageString("app_launch"), GetLanguageString("app_take_over_select"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
                             if(option_2 == 0) {
-                                g_MenuApplication->SetTakeoverApplicationId(cur_entry.app_info.record.application_id);
+                                g_GlobalSettings.SetHomebrewTakeoverApplicationId(cur_entry.app_info.record.application_id);
                                 g_MenuApplication->ShowNotification(GetLanguageString("app_take_over_done"));
                             }
                         }
@@ -424,7 +480,7 @@ namespace ul::menu::ui {
 
         this->entry_menu_left_icon->SetVisible(!this->entry_menu->IsMenuStart());
 
-        g_MenuApplication->UpdateMenuIndex(this->entry_menu->GetFocusedEntryIndex());
+        g_GlobalSettings.UpdateMenuIndex(this->entry_menu->GetFocusedEntryIndex());
 
         if(this->entry_menu->IsFocusedNonemptyEntry()) {
             auto &cur_entry = this->entry_menu->GetFocusedEntry();
@@ -470,6 +526,11 @@ namespace ul::menu::ui {
                 this->cur_entry_main_text->SetText(GetLanguageString("special_entry_text_album"));
                 this->cur_entry_sub_text->SetVisible(false);
             }
+            else if(cur_entry.Is<EntryType::SpecialEntryAmiibo>()) {
+                this->SetTopMenuDefault();
+                this->cur_entry_main_text->SetText(GetLanguageString("special_entry_text_amiibo"));
+                this->cur_entry_sub_text->SetVisible(false);
+            }
             else {
                 if(cur_entry.Is<EntryType::Application>()) {
                     this->SetTopMenuApplication();
@@ -477,16 +538,31 @@ namespace ul::menu::ui {
                 else {
                     this->SetTopMenuHomebrew();
                 }
-                
+
                 cur_entry.TryLoadControlData();
-                if(cur_entry.control.IsLoaded()) {
+
+                if(!cur_entry.control.name.empty()) {
                     this->cur_entry_main_text->SetText(cur_entry.control.name);
-                    this->cur_entry_sub_text->SetText(cur_entry.control.version + ", " + cur_entry.control.author);
                 }
                 else {
-                    // TODO (low priority): anything better to show when control data doesn't load? (really shouldn't happen anyway)
                     this->cur_entry_main_text->SetText("???");
-                    this->cur_entry_sub_text->SetText("???");
+                }
+
+                if(!cur_entry.control.author.empty()) {
+                    if(!cur_entry.control.version.empty()) {
+                        this->cur_entry_sub_text->SetText(cur_entry.control.version + ", " + cur_entry.control.author);
+                    }
+                    else {
+                        this->cur_entry_sub_text->SetText(cur_entry.control.author);
+                    }
+                }
+                else {
+                    if(!cur_entry.control.version.empty()) {
+                        this->cur_entry_sub_text->SetText(cur_entry.control.version);
+                    }
+                    else {
+                        this->cur_entry_sub_text->SetText("???");
+                    }
                 }
             }
         }
@@ -496,7 +572,7 @@ namespace ul::menu::ui {
             this->cur_entry_sub_text->SetVisible(false);
         }
 
-        if(g_MenuApplication->IsSuspended() && has_prev_entry) {
+        if(g_GlobalSettings.IsSuspended() && has_prev_entry) {
             if(is_prev_entry_suspended && !is_cur_entry_suspended) {
                 this->mode = SuspendedImageMode::HidingLostFocus;
             }
@@ -506,14 +582,9 @@ namespace ul::menu::ui {
         }
     }
 
-    MainMenuLayout::MainMenuLayout(const u8 *captured_screen_buf, const u8 min_alpha) : IMenuLayout(), last_has_connection(false), last_connection_strength(0), last_battery_lvl(0), last_is_charging(false), last_quick_menu_on(false), start_time_elapsed(false), min_alpha(min_alpha), mode(SuspendedImageMode::ShowingAfterStart), suspended_screen_alpha(0xFF) {
+    MainMenuLayout::MainMenuLayout(const u8 *captured_screen_buf, const u8 min_alpha) : IMenuLayout(), last_quick_menu_on(false), start_time_elapsed(false), min_alpha(min_alpha), mode(SuspendedImageMode::ShowingAfterStart), suspended_screen_alpha(0xFF) {
         // TODO (low priority): like nxlink but for sending themes and quickly being able to test them?
-        this->cur_folder_path = g_MenuApplication->GetStatus().last_menu_path;
-
-        g_WeekdayList.clear();
-        for(u32 i = 0; i < 7; i++) {
-            g_WeekdayList.push_back(GetLanguageString("week_day_short_" + std::to_string(i)));
-        }
+        this->cur_folder_path = g_GlobalSettings.system_status.last_menu_path;
 
         if(captured_screen_buf != nullptr) {
             this->suspended_screen_img = RawRgbaImage::New(0, 0, captured_screen_buf, 1280, 720, 4);
@@ -608,7 +679,7 @@ namespace ul::menu::ui {
 
         this->Add(this->cur_path_text);
 
-        this->entry_menu = EntryMenu::New(0, 0, g_MenuApplication->GetStatus().last_menu_fs_path, std::bind(&MainMenuLayout::menu_EntryInputPressed, this, std::placeholders::_1), std::bind(&MainMenuLayout::menu_FocusedEntryChanged, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), [&]() {
+        this->entry_menu = EntryMenu::New(0, 0, g_GlobalSettings.system_status.last_menu_fs_path, std::bind(&MainMenuLayout::menu_EntryInputPressed, this, std::placeholders::_1), std::bind(&MainMenuLayout::menu_FocusedEntryChanged, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), [&]() {
             pu::audio::PlaySfx(this->cursor_move_sfx);
         });
         g_MenuApplication->ApplyConfigForElement("main_menu", "entry_menu", this->entry_menu);
@@ -773,7 +844,7 @@ namespace ul::menu::ui {
             this->input_bar->AddSetInput(HidNpadButton_B, GetLanguageString("input_logoff"));
         }
 
-        if(g_MenuApplication->IsSuspended() && !this->entry_menu->IsFocusedEntrySuspended()) {
+        if(g_GlobalSettings.IsSuspended() && !this->entry_menu->IsFocusedEntrySuspended()) {
             this->input_bar->AddSetInput(InputBar::MetaHomeNpadButton, GetLanguageString("input_resume_suspended"));
         }
 
@@ -785,48 +856,10 @@ namespace ul::menu::ui {
 
         const auto now_tp = std::chrono::steady_clock::now();
 
-        u32 conn_strength;
-        const auto has_conn = net::HasConnection(conn_strength);
-        if((this->last_has_connection != has_conn) || (this->last_connection_strength != conn_strength)) {
-            this->last_has_connection = has_conn;
-            this->last_connection_strength = conn_strength;
-            if(has_conn) {
-                this->connection_top_icon->SetImage(TryFindLoadImageHandle("ui/Main/TopIcon/Connection/" + std::to_string(conn_strength)));
-            }
-            else {
-                this->connection_top_icon->SetImage(TryFindLoadImageHandle("ui/Main/TopIcon/Connection/None"));
-            }
-        }
-
-        u32 cur_h;
-        u32 cur_min;
-        u32 cur_sec;
-        os::GetCurrentTime(cur_h, cur_min, cur_sec);
-        char cur_time_str[0x10] = {};
-        sprintf(cur_time_str, "%02d:%02d", cur_h, cur_min);
-        this->time_text->SetText(cur_time_str);
-
-        // TODO (low priority): do not set the date all the time?
-        const auto cur_date = os::GetCurrentDate(g_WeekdayList);
-        this->date_text->SetText(cur_date);
-
-        const auto battery_lvl = os::GetBatteryLevel();
-        const auto is_charging = os::IsConsoleCharging();
-        if((this->last_battery_lvl != battery_lvl) || (this->last_is_charging != is_charging)) {
-            this->last_battery_lvl = battery_lvl;
-            this->last_is_charging = is_charging;
-
-            const auto battery_str = std::to_string(battery_lvl) + "%";
-            this->battery_text->SetText(battery_str);
-
-            auto battery_lvl_norm = (1 + (battery_lvl / 10)) * 10; // Converts it to 10, 20, ..., 100
-            if(battery_lvl_norm > 100) {
-                battery_lvl_norm = 100;
-            }
-            const auto battery_img = "ui/Main/TopIcon/Battery/" + std::to_string(battery_lvl_norm);
-            this->battery_top_icon->SetImage(TryFindLoadImageHandle(battery_img));
-            this->battery_charging_top_icon->SetVisible(is_charging);
-        }
+        this->UpdateConnectionTopIcon(this->connection_top_icon);
+        this->UpdateTimeText(this->time_text);
+        this->UpdateDateText(this->date_text);
+        this->UpdateBatteryTextAndTopIcons(this->battery_text, this->battery_top_icon, this->battery_charging_top_icon);
 
         if(!this->start_time_elapsed) {
             // Wait a bit before handling sent messages
@@ -835,7 +868,9 @@ namespace ul::menu::ui {
             }
         }
 
-        if(this->start_time_elapsed) {
+        const auto can_show_stuff = this->start_time_elapsed && ((this->mode == SuspendedImageMode::Focused) || (this->mode == SuspendedImageMode::NotFocused));
+
+        if(can_show_stuff) {
             if(g_MenuApplication->GetConsumeLastLaunchFailed()) {
                 pu::audio::PlaySfx(this->error_sfx);
                 g_MenuApplication->DisplayDialog(GetLanguageString("app_launch"), GetLanguageString("app_unexpected_error"), { GetLanguageString("ok") }, true);
@@ -845,7 +880,7 @@ namespace ul::menu::ui {
                 pu::audio::PlaySfx(this->create_hb_entry_sfx);
 
                 // TODO (low priority): custom argv option?
-                const auto hb_entry = CreateHomebrewEntry(this->entry_menu->GetPath(), nro_path, nro_path, this->entry_menu->GetFocusedEntryIndex());
+                const auto hb_entry = CreateHomebrewEntry(g_GlobalSettings.initial_last_menu_fs_path, nro_path, nro_path, g_GlobalSettings.initial_last_menu_index);
                 this->entry_menu->NotifyEntryAdded(hb_entry);
                 this->entry_menu->OrganizeUpdateEntries();
                 g_MenuApplication->ShowNotification(GetLanguageString("menu_chosen_hb_added"));
@@ -855,6 +890,31 @@ namespace ul::menu::ui {
                 pu::audio::PlaySfx(this->error_sfx);
 
                 g_MenuApplication->DisplayDialog(GetLanguageString("gamecard"), GetLanguageString("gamecard_mount_failed") + " " + util::FormatResultDisplay(gc_rc), { GetLanguageString("ok") }, true);
+            }
+        }
+
+        if(g_MenuApplication->GetConsumeApplicationRecordReloadNeeded()) {
+            // Reload just entry infos
+            ReloadApplicationEntryInfos(this->entry_menu->GetEntries());
+        }
+
+        if(g_MenuApplication->GetConsumeApplicationEntryReloadNeeded()) {
+            // Reload entries
+            this->MoveTo("", true);
+        }
+
+        if(g_MenuApplication->HasVerifyFinishedPending()) {
+            const auto app_id = g_MenuApplication->GetConsumeVerifyFinishedApplicationId();
+            const auto rc = g_MenuApplication->GetConsumeVerifyResult();
+            const auto detail_rc = g_MenuApplication->GetConsumeVerifyDetailResult();
+
+            if(R_SUCCEEDED(rc) && R_SUCCEEDED(detail_rc)) {
+                g_MenuApplication->DisplayDialog(GetLanguageString("app_verify"), GetLanguageString("app_verify_ok"), { GetLanguageString("ok") }, true, pu::sdl2::TextureHandle::New(pu::ui::render::LoadImage(GetApplicationCacheIconPath(app_id))));
+
+                ReloadApplicationEntryInfos(this->entry_menu->GetEntries());
+            }
+            else {
+                g_MenuApplication->DisplayDialog(GetLanguageString("app_verify"), GetLanguageString("app_verify_error") + ":\n\n" + util::FormatResultDisplay(rc) + "\n" + util::FormatResultDisplay(detail_rc), { GetLanguageString("ok") }, true);
             }
         }
 
@@ -941,7 +1001,7 @@ namespace ul::menu::ui {
     bool MainMenuLayout::OnHomeButtonPress() {
         pu::audio::PlaySfx(this->home_press_sfx);
 
-        if(g_MenuApplication->IsSuspended()) {
+        if(g_GlobalSettings.IsSuspended()) {
             this->StartResume();
         }
         else {
@@ -972,9 +1032,9 @@ namespace ul::menu::ui {
         }
     }
 
-    void MainMenuLayout::NotifyLoad(const AccountUid user) {
-        UL_RC_ASSERT(acc::GetAccountName(user, g_UserName));
-        this->entry_menu->Initialize(g_MenuApplication->GetStatus().last_menu_index);
+    void MainMenuLayout::NotifyLoad() {
+        UL_RC_ASSERT(acc::GetAccountName(g_GlobalSettings.system_status.selected_user, g_UserName));
+        this->entry_menu->Initialize(g_GlobalSettings.system_status.last_menu_index);
         this->quick_menu->UpdateItems();
     }
 
@@ -996,12 +1056,12 @@ namespace ul::menu::ui {
             g_MenuApplication->Finalize();
         }
         else if(option == 1) {
-            if(g_MenuApplication->GetTakeoverApplicationId() != 0) {
+            if(g_GlobalSettings.cache_hb_takeover_app_id != 0) {
                 auto launch = true;
-                if(g_MenuApplication->IsSuspended()) {
+                if(g_GlobalSettings.IsSuspended()) {
                     launch = false;
                     this->HandleCloseSuspended();
-                    if(!g_MenuApplication->IsSuspended()) {
+                    if(!g_GlobalSettings.IsSuspended()) {
                         launch = true;
                     }
                 }
@@ -1036,7 +1096,7 @@ namespace ul::menu::ui {
         auto &entries = this->entry_menu->GetEntries();
         u32 i = 0;
         for(const auto &entry : entries) {
-            if(g_MenuApplication->IsEntrySuspended(entry)) {
+            if(g_GlobalSettings.IsEntrySuspended(entry)) {
                 break;
             }
             i++;
@@ -1050,7 +1110,7 @@ namespace ul::menu::ui {
             entries.at(i).ReloadApplicationInfo();
         }
 
-        g_MenuApplication->ResetSuspendedApplication();
+        g_GlobalSettings.ResetSuspendedApplication();
 
         this->mode = SuspendedImageMode::NotFocused;
         if(this->suspended_screen_img) {

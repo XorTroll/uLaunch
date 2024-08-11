@@ -34,9 +34,10 @@ namespace ul::cfg {
         MenuTakeoverProgramId,
         HomebrewAppletTakeoverProgramId,
         HomebrewApplicationTakeoverApplicationId,
-        ViewerUsbEnabled,
+        UsbScreenCaptureEnabled,
         ActiveThemeName,
-        MenuEntryHeightCount
+        MenuEntryHeightCount,
+        LockscreenEnabled
     };
 
     enum class ConfigEntryType : u8 {
@@ -165,7 +166,7 @@ namespace ul::cfg {
                         return false;
                     }
                 }
-                case ConfigEntryId::ViewerUsbEnabled: {
+                case ConfigEntryId::UsbScreenCaptureEnabled: {
                     if constexpr(std::is_same_v<T, bool>) {
                         new_entry.header.type = ConfigEntryType::Bool;
                         new_entry.header.size = sizeof(t);
@@ -192,6 +193,17 @@ namespace ul::cfg {
                         new_entry.header.type = ConfigEntryType::U64;
                         new_entry.header.size = sizeof(t);
                         new_entry.u64_value = t;
+                        break;
+                    }
+                    else {
+                        return false;
+                    }
+                }
+                case ConfigEntryId::LockscreenEnabled: {
+                    if constexpr(std::is_same_v<T, bool>) {
+                        new_entry.header.type = ConfigEntryType::Bool;
+                        new_entry.header.size = sizeof(t);
+                        new_entry.bool_value = t;
                         break;
                     }
                     else {
@@ -243,7 +255,7 @@ namespace ul::cfg {
                         return false;
                     }
                 }
-                case ConfigEntryId::ViewerUsbEnabled: {
+                case ConfigEntryId::UsbScreenCaptureEnabled: {
                     if constexpr(std::is_same_v<T, bool>) {
                         // Disabled by default, it might interfer with other homebrews
                         out_t = false;
@@ -255,7 +267,7 @@ namespace ul::cfg {
                 }
                 case ConfigEntryId::ActiveThemeName: {
                     if constexpr(std::is_same_v<T, std::string>) {
-                        // Empty by default
+                        // None (empty) by default
                         out_t = "";
                         return true;
                     }
@@ -266,6 +278,15 @@ namespace ul::cfg {
                 case ConfigEntryId::MenuEntryHeightCount: {
                     if constexpr(std::is_same_v<T, u64>) {
                         out_t = 3;
+                        return true;
+                    }
+                    else {
+                        return false;
+                    }
+                }
+                case ConfigEntryId::LockscreenEnabled: {
+                    if constexpr(std::is_same_v<T, bool>) {
+                        out_t = false;
                         return true;
                     }
                     else {

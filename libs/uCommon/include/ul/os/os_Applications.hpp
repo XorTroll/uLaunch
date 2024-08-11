@@ -5,9 +5,15 @@
 
 namespace ul::os {
 
-    constexpr u32 MaxApplicationCount = 64000;
+    enum class ApplicationViewFlag : u32 {
+        Valid = BIT(0),
+        GameCardApplication = BIT(6),
+        GameCardApplicationAccessible = BIT(7),
+        Launchable = BIT(8),
+        NeedsVerify = BIT(13)
+    };
 
     std::vector<NsApplicationRecord> ListApplicationRecords();
-    Result GetApplicationContentMetaStatus(const u64 app_id, NsApplicationContentMetaStatus &out_status);
+    std::vector<NsApplicationView> ListApplicationViews(const std::vector<NsApplicationRecord> &base_records);
 
 }

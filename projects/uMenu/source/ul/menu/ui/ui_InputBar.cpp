@@ -2,7 +2,6 @@
 #include <ul/cfg/cfg_Config.hpp>
 #include <ul/menu/ui/ui_MenuApplication.hpp>
 
-extern ul::cfg::Config g_Config;
 extern ul::menu::ui::MenuApplication::Ref g_MenuApplication;
 
 namespace ul::menu::ui {

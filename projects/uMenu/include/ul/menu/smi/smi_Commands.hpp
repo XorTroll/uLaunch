@@ -223,4 +223,69 @@ namespace ul::menu::smi {
         );
     }
 
+    inline Result ListAddedApplications(const u32 count, u64 *out_app_buf) {
+        return SendCommand(SystemMessage::ListAddedApplications,
+            [&](ScopedStorageWriter &writer) {
+                writer.Push(count);
+                return ResultSuccess;
+            },
+            [&](ScopedStorageReader &reader) {
+                reader.PopData(out_app_buf, sizeof(u64) * count);
+                return ResultSuccess;
+            }
+        );
+    }
+
+    inline Result ListDeletedApplications(const u32 count, u64 *out_app_buf) {
+        return SendCommand(SystemMessage::ListDeletedApplications,
+            [&](ScopedStorageWriter &writer) {
+                writer.Push(count);
+                return ResultSuccess;
+            },
+            [&](ScopedStorageReader &reader) {
+                reader.PopData(out_app_buf, sizeof(u64) * count);
+                return ResultSuccess;
+            }
+        );
+    }
+
+    inline Result OpenCabinet(const NfpLaStartParamTypeForAmiiboSettings type) {
+        return SendCommand(SystemMessage::OpenCabinet,
+            [&](ScopedStorageWriter &writer) {
+                writer.Push((u8)type);
+                return ResultSuccess;
+            },
+            [](ScopedStorageReader &reader) {
+                // ...
+                return ResultSuccess;
+            }
+        );
+    }
+
+    inline Result StartVerifyApplication(const u64 app_id) {
+        return SendCommand(SystemMessage::StartVerifyApplication,
+            [&](ScopedStorageWriter &writer) {
+                writer.Push(app_id);
+                return ResultSuccess;
+            },
+            [](ScopedStorageReader &reader) {
+                // ...
+                return ResultSuccess;
+            }
+        );
+    }
+
+    inline Result ListInVerifyApplications(const u32 count, u64 *out_app_buf) {
+        return SendCommand(SystemMessage::ListInVerifyApplications,
+            [&](ScopedStorageWriter &writer) {
+                writer.Push(count);
+                return ResultSuccess;
+            },
+            [&](ScopedStorageReader &reader) {
+                reader.PopData(out_app_buf, sizeof(u64) * count);
+                return ResultSuccess;
+            }
+        );
+    }
+
 }

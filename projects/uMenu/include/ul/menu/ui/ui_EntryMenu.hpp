@@ -24,6 +24,10 @@ namespace ul::menu::ui {
             static constexpr u32 CursorTransitionIncrementSteps = 6;
             static constexpr u32 DefaultEntrySize = 256;
             static constexpr u32 MinScalableEntrySize = DefaultEntrySize * 1.5; // Equivalent to keeping 256x256 in 1280x720 resolution (otherwise they are be too small in 1080p)
+            static constexpr u32 DefaultOverTextSideMargin = 15;
+            static constexpr u32 DefaultProgressBarHeight = 25;
+            static constexpr pu::ui::Color ProgressBackgroundColor = { 0, 0, 0, 215 };
+            static constexpr pu::ui::Color ProgressForegroundColor = { 0, 210, 210, 215 };
             static constexpr u8 MoveOverIconAlpha = 220;
             static constexpr u32 DefaultMoveOverIconOffset = 8;
             static constexpr u32 EntryShowIncrementSteps = 4;
@@ -60,7 +64,17 @@ namespace ul::menu::ui {
             u32 selected_size;
             pu::sdl2::Texture hb_takeover_app_over_icon;
             u32 hb_takeover_app_size;
+            pu::sdl2::Texture gamecard_over_icon;
+            u32 gamecard_size;
+            pu::sdl2::Texture corrupted_over_icon;
+            u32 corrupted_size;
+            pu::sdl2::Texture not_launchable_over_icon;
+            u32 not_launchable_size;
+            pu::sdl2::Texture needs_update_over_icon;
+            u32 needs_update_size;
             std::vector<pu::sdl2::TextureHandle::Ref> entry_icons;
+            std::vector<pu::sdl2::Texture> entry_over_texts;
+            std::vector<float> entry_progresses;
             std::vector<u8> load_img_entry_alphas;
             std::vector<pu::ui::SigmoidIncrementer<u8>> load_img_entry_incrs;
             std::string cur_path;
@@ -93,6 +107,10 @@ namespace ul::menu::ui {
                 return this->swipe_mode == SwipeMode::None;
             }
 
+            inline bool IsNotInLargeSwipe() {
+                return (this->swipe_mode != SwipeMode::LeftPage) && (this->swipe_mode != SwipeMode::RightPage) && (this->swipe_mode != SwipeMode::Rewind);
+            }
+
             void SwipeSingleLeft();
             void SwipeSingleRight();
             void SwipeToPreviousPage();
@@ -100,6 +118,8 @@ namespace ul::menu::ui {
             void SwipeRewind();
 
             pu::sdl2::TextureHandle::Ref LoadEntryIconTexture(const Entry &entry);
+            void CleanOverTexts();
+            void LoadOverText(const u32 idx);
             bool LoadEntry(const u32 idx);
 
             void NotifyFocusedEntryChanged(const s32 prev_entry_idx, const s32 is_prev_entry_suspended_override = -1);
@@ -123,8 +143,8 @@ namespace ul::menu::ui {
                 this->entry_total_count = ((this->cur_entries.size() / this->entry_page_count) + 1) * this->entry_page_count;
 
                 #define _COMPUTE_OVER_SIZE(name) { \
-                    const auto over_def_size = pu::ui::render::GetTextureWidth(this->name ## _over_icon); \
-                    this->name ## _size = (u32)((double)this->entry_size * ((double)over_def_size / (double)DefaultEntrySize)); \
+                    const auto over_def_size = pu::ui::render::GetTextureWidth(this->name##_over_icon); \
+                    this->name##_size = (u32)((double)this->entry_size * ((double)over_def_size / (double)DefaultEntrySize)); \
                 }
 
                 _COMPUTE_OVER_SIZE(cursor)
@@ -132,6 +152,10 @@ namespace ul::menu::ui {
                 _COMPUTE_OVER_SIZE(suspended)
                 _COMPUTE_OVER_SIZE(selected)
                 _COMPUTE_OVER_SIZE(hb_takeover_app)
+                _COMPUTE_OVER_SIZE(gamecard)
+                _COMPUTE_OVER_SIZE(corrupted)
+                _COMPUTE_OVER_SIZE(not_launchable)
+                _COMPUTE_OVER_SIZE(needs_update)
             }
 
             void SetFocusedEntryIndex(const u32 idx);
@@ -206,6 +230,12 @@ namespace ul::menu::ui {
 
             inline Entry &GetFocusedEntry() {
                 return this->GetEntry(this->cur_entry_idx);
+            }
+
+            void UpdateEntryProgress(const u32 idx, const float progress = NAN);
+
+            inline bool IsFocusedEntryInProgress() {
+                return !std::isnan(this->entry_progresses.at(this->cur_entry_idx));
             }
 
             void IncrementEntryHeightCount();

@@ -13,7 +13,7 @@ namespace ul::menu::ui {
 
     }
 
-    void QuickMenu::OnHomeButtonDetection(const smi::MenuMessageContext _) {
+    void QuickMenu::OnHomeButtonDetection(const smi::MenuMessageContext &_) {
         g_HomePressed = true;
     }
 

@@ -38,7 +38,7 @@
   </a>
 </p>
 
-### Want to find **themes** for uLaunch? Check the [r/uLaunchThemes subreddit](https://www.reddit.com/r/uLaunchThemes/) or the [Discord server](https://discord.gg/3KpFyaH)!
+### Want to find **themes** for uLaunch? Check the `ulaunch-themes` channel on our [Discord server](https://discord.gg/3KpFyaH)!
 
 ### Want to make your own uLaunch **themes**? Check our [web theme editor](https://xortroll.github.io/uLaunch/) or the [wiki](https://github.com/XorTroll/uLaunch/wiki)!
 
@@ -56,6 +56,7 @@
   - [Installing uLaunch](#installing-ulaunch)
   - [Removing uLaunch](#removing-ulaunch)
 - [FAQ](#faq)
+- [Translating](#translating)
 - [Components](#components)
   - [uSystem](#usystem)
   - [uMenu](#umenu)
@@ -240,6 +241,18 @@ List of not implemented official HOME menu features:
 
     - Aside from the two excuses above, there is always room for further optimizations in uLaunch's code. Feel free to submit any issues of excessive lag/slowdowns, I'll do my best to improve it :)
 
+## Translating
+
+Translations for uLaunch are always welcome!
+
+The files to be translated are [uMenu translations](https://github.com/XorTroll/uLaunch/blob/unew/projects/uMenu/romfs/lang/en.json) and [uManager translations](https://github.com/XorTroll/uLaunch/blob/unew/projects/uManager/romfs/lang/en.json). They are pretty straightforward to understand, just JSON files with English sentences meant to be translated to **any language officially supported by the Nintendo Switch**.
+
+Character `\n` is a new-line escape (indicates a new line) and must remain unchanged. Punctuation marks (mainly dots at the end of sentences, questions, double dots) must be respected, with perhaphs the exception of commas in the middle of sentences.
+
+Feel free to open pull requests for translations, but it's better to keep contact with me through [Discord](https://discord.gg/3KpFyaH).
+
+As I work on new features and new strings are needed, I will manually add them as English on other language files to keep support.
+
 ## Components
 
 ### uSystem
@@ -354,6 +367,6 @@ In order to only build a certain subproject, you can run `make` plus the subproj
 
 - Several scene developers for their help with small issues or features.
 
-- uMenu/uManager translations: [DDinghoya](https://github.com/DDinghoya) for Korean, [NedcloarBR](https://github.com/NedcloarBR) for Brazilian Portuguese
+- uMenu/uManager translations: [DDinghoya](https://github.com/DDinghoya) for Korean, [NedcloarBR](https://github.com/NedcloarBR) for Brazilian Portuguese, [Gabriele73](https://github.com/Gabriele73) for Italian
 
 - Everyone from my Discord and other places whose suggestions made this project a little bit better! Specially all the testers for being essential in reporting bugs and helping a lot with the project's development <3

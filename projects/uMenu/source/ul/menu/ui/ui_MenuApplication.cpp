@@ -1,12 +1,8 @@
 #include <ul/menu/ui/ui_MenuApplication.hpp>
 #include <ul/menu/smi/smi_Commands.hpp>
 
+extern ul::menu::ui::GlobalSettings g_GlobalSettings;
 extern ul::menu::ui::MenuApplication::Ref g_MenuApplication;
-
-extern ul::cfg::Config g_Config;
-
-extern ul::util::JSON g_DefaultLanguage;
-extern ul::util::JSON g_MainLanguage;
 
 namespace ul::menu::ui {
 
@@ -17,21 +13,30 @@ namespace ul::menu::ui {
     }
 
     std::string GetLanguageString(const std::string &name) {
-        return cfg::GetLanguageString(g_MainLanguage, g_DefaultLanguage, name);
+        return cfg::GetLanguageString(g_GlobalSettings.main_lang, g_GlobalSettings.default_lang, name);
     }
 
-    void OnMessage(const smi::MenuMessageContext msg_ctx) {
+    void OnMessage(const smi::MenuMessageContext &msg_ctx) {
         g_MenuApplication->GetLayout<IMenuLayout>()->NotifyMessageContext(msg_ctx);
     }
 
     void MenuApplication::OnLoad() {
+        this->launch_failed = false;
         this->pending_gc_mount_rc = ResultSuccess;
+        this->needs_app_records_reload = false;
+        this->needs_app_entries_reload = false;
+        memset(this->chosen_hb, 0, sizeof(this->chosen_hb));
+        this->verify_finished_app_id = 0;
+        this->verify_rc = ResultSuccess;
+        this->verify_detail_rc = ResultSuccess;
+
+        // TODO: customize
+        this->SetFadeAlphaIncrementStepCount(FastFadeAlphaIncrementSteps);
+        
         LoadCommonTextures();
 
-        UL_ASSERT_TRUE(g_Config.GetEntry(cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, this->takeover_app_id));
-
         u8 *screen_capture_buf = nullptr;
-        if(this->IsSuspended()) {
+        if(g_GlobalSettings.IsSuspended()) {
             screen_capture_buf = new u8[RawScreenRgbaBufferSize]();
             bool flag;
             appletGetLastApplicationCaptureImageEx(screen_capture_buf, RawScreenRgbaBufferSize, &flag);
@@ -47,11 +52,12 @@ namespace ul::menu::ui {
         _LOAD_MENU_BGM(startup_menu, "Startup")
         _LOAD_MENU_BGM(themes_menu, "Themes")
         _LOAD_MENU_BGM(settings_menu, "Settings")
+        _LOAD_MENU_BGM(lockscreen_menu, "Lockscreen")
 
         this->bgm_json = ul::util::JSON::object();
         const auto rc = ul::util::LoadJSONFromFile(this->bgm_json, TryGetActiveThemeResource("sound/BGM.json"));
         if(R_SUCCEEDED(rc)) {
-            #define _LOAD_MENU_BGM_SETTINGS(menu, bgm_name) { \
+            #define _LOAD_MENU_BGM_SETTINGS(menu) { \
                 if(this->bgm_json.count(#menu)) { \
                     const auto menu_json = this->bgm_json[#menu]; \
                     this->menu##_bgm.bgm_loop = menu_json.value("bgm_loop", DefaultBgmLoop); \
@@ -59,10 +65,11 @@ namespace ul::menu::ui {
                     this->menu##_bgm.bgm_fade_out_ms = menu_json.value("bgm_fade_out_ms", DefaultBgmFadeOutMs); \
                 } \
             }
-            _LOAD_MENU_BGM_SETTINGS(main_menu, "Main")
-            _LOAD_MENU_BGM_SETTINGS(startup_menu, "Startup")
-            _LOAD_MENU_BGM_SETTINGS(themes_menu, "Themes")
-            _LOAD_MENU_BGM_SETTINGS(settings_menu, "Settings")
+            _LOAD_MENU_BGM_SETTINGS(main_menu)
+            _LOAD_MENU_BGM_SETTINGS(startup_menu)
+            _LOAD_MENU_BGM_SETTINGS(themes_menu)
+            _LOAD_MENU_BGM_SETTINGS(settings_menu)
+            _LOAD_MENU_BGM_SETTINGS(lockscreen_menu)
 
             if(this->bgm_json.count("bgm_loop")) {
                 const auto global_loop = this->bgm_json.value("bgm_loop", DefaultBgmLoop);
@@ -70,6 +77,7 @@ namespace ul::menu::ui {
                 this->startup_menu_bgm.bgm_loop = global_loop;
                 this->themes_menu_bgm.bgm_loop = global_loop;
                 this->settings_menu_bgm.bgm_loop = global_loop;
+                this->lockscreen_menu_bgm.bgm_loop = global_loop;
             }
             if(this->bgm_json.count("bgm_fade_in_ms")) {
                 const auto global_fade_in_ms = this->bgm_json.value("bgm_fade_in_ms", DefaultBgmFadeInMs);
@@ -77,6 +85,7 @@ namespace ul::menu::ui {
                 this->startup_menu_bgm.bgm_fade_in_ms = global_fade_in_ms;
                 this->themes_menu_bgm.bgm_fade_in_ms = global_fade_in_ms;
                 this->settings_menu_bgm.bgm_fade_in_ms = global_fade_in_ms;
+                this->lockscreen_menu_bgm.bgm_fade_in_ms = global_fade_in_ms;
             }
             if(this->bgm_json.count("bgm_fade_out_ms")) {
                 const auto global_fade_out_ms = this->bgm_json.value("bgm_fade_out_ms", DefaultBgmFadeOutMs);
@@ -84,6 +93,7 @@ namespace ul::menu::ui {
                 this->startup_menu_bgm.bgm_fade_out_ms = global_fade_out_ms;
                 this->themes_menu_bgm.bgm_fade_out_ms = global_fade_out_ms;
                 this->settings_menu_bgm.bgm_fade_out_ms = global_fade_out_ms;
+                this->lockscreen_menu_bgm.bgm_fade_out_ms = global_fade_out_ms;
             }
         }
         else {
@@ -123,14 +133,11 @@ namespace ul::menu::ui {
         _GET_UI_COLOR("dialog_color", this->dialog_clr);
         _GET_UI_COLOR("dialog_over_color", this->dialog_over_clr);
 
-        this->launch_failed = false;
-        memset(this->chosen_hb, 0, sizeof(this->chosen_hb));
-
         u32 suspended_app_final_alpha;
         _GET_UI_VALUE("suspended_app_final_alpha", u32, suspended_app_final_alpha);
 
         switch(this->start_mode) {
-            case smi::MenuStartMode::StartupMenu: {
+            case smi::MenuStartMode::Start: {
                 break;
             }
             default: {
@@ -144,10 +151,19 @@ namespace ul::menu::ui {
         this->main_menu_lyt = MainMenuLayout::New(screen_capture_buf, static_cast<u8>(suspended_app_final_alpha));
         this->themes_menu_lyt = ThemesMenuLayout::New();
         this->settings_menu_lyt = SettingsMenuLayout::New();
+        this->lockscreen_menu_lyt = LockscreenMenuLayout::New();
 
+        this->loaded_menu = MenuType::Main;
         switch(this->start_mode) {
-            case smi::MenuStartMode::StartupMenu: {
-                this->LoadMenuByType(MenuType::Startup, false);
+            case smi::MenuStartMode::Start: {
+                bool lockscreen_enabled;
+                UL_ASSERT_TRUE(g_GlobalSettings.config.GetEntry(cfg::ConfigEntryId::LockscreenEnabled, lockscreen_enabled));
+                if(lockscreen_enabled) {
+                    this->LoadMenuByType(MenuType::Lockscreen, false);
+                }
+                else {
+                    this->LoadMenuByType(MenuType::Startup, false);
+                }
                 break;
             }
             case smi::MenuStartMode::SettingsMenu: {
@@ -187,18 +203,22 @@ namespace ul::menu::ui {
                 break;
             }
             case MenuType::Main: {
-                this->main_menu_lyt->NotifyLoad(this->system_status.selected_user);
+                this->main_menu_lyt->NotifyLoad();
                 this->LoadLayout(this->main_menu_lyt);
                 break;
             }
             case MenuType::Settings: {
-                this->settings_menu_lyt->Reload(true);
+                this->settings_menu_lyt->Reload(false);
                 this->LoadLayout(this->settings_menu_lyt);
                 break;
             }
             case MenuType::Themes: {
                 this->themes_menu_lyt->Reload();
                 this->LoadLayout(this->themes_menu_lyt);
+                break;
+            }
+            case MenuType::Lockscreen: {
+                this->LoadLayout(this->lockscreen_menu_lyt);
                 break;
             }
         }
@@ -212,14 +232,6 @@ namespace ul::menu::ui {
         }
     }
 
-    void MenuApplication::SetTakeoverApplicationId(const u64 app_id) {
-        this->takeover_app_id = app_id;
-
-        // No need to save config, uSystem deals with that
-        UL_ASSERT_TRUE(g_Config.SetEntry(cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, this->takeover_app_id));
-        SaveConfig();
-    }
-
     void MenuApplication::ShowNotification(const std::string &text, const u64 timeout) {
         this->EndOverlay();
         this->notif_toast->SetText(text);
@@ -231,16 +243,10 @@ namespace ul::menu::ui {
         if(bgm.bgm != nullptr) {
             const int loops = bgm.bgm_loop ? -1 : 1;
             if(bgm.bgm_fade_in_ms > 0) {
-                auto tt = Mix_FadeInMusic(bgm.bgm, loops, bgm.bgm_fade_in_ms);
-                if(tt < 0) {
-                    UL_LOG_WARN("MP3 fadein play error: '%s'", Mix_GetError());
-                }
+                pu::audio::PlayMusicWithFadeIn(bgm.bgm, loops, bgm.bgm_fade_in_ms);
             }
             else {
-                auto tt = Mix_PlayMusic(bgm.bgm, loops);
-                if(tt < 0) {
-                    UL_LOG_WARN("MP3 play error: '%s'", Mix_GetError());
-                }
+                pu::audio::PlayMusic(bgm.bgm, loops);
             }
         }
     }
@@ -253,12 +259,6 @@ namespace ul::menu::ui {
         else {
             pu::audio::StopMusic();
         }
-    }
-    
-    void MenuApplication::SetSelectedUser(const AccountUid user_id) {
-        this->system_status.selected_user = user_id;
-        UL_RC_ASSERT(ul::menu::smi::SetSelectedUser(user_id));
-        LoadSelectedUserIconTexture();
     }
 
     int MenuApplication::DisplayDialog(const std::string &title, const std::string &content, const std::vector<std::string> &opts, const bool use_last_opt_as_cancel, pu::sdl2::TextureHandle::Ref icon) {

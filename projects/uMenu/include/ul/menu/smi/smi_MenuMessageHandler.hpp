@@ -7,7 +7,7 @@ namespace ul::menu::smi {
 
     using namespace ul::smi;
 
-    using OnMessageCallback = std::function<void(const MenuMessageContext)>;
+    using OnMessageCallback = std::function<void(const MenuMessageContext&)>;
 
     Result InitializeMenuMessageHandler();
     void FinalizeMenuMessageHandler();

@@ -10,12 +10,19 @@ namespace ul::menu {
 
     namespace {
 
+        bool g_LoadApplicationEntryVersions = true;
+
+        inline u64 GetUpdateApplicationId(const u64 app_id) {
+            return (app_id & ~0x800) | 0x800;
+        }
+
         std::vector<NsApplicationRecord> g_ApplicationRecords = {};
+        std::vector<NsApplicationView> g_ApplicationViews = {};
 
         void LoadControlDataStrings(EntryControlData &out_control, NacpStruct *nacp) {
             NacpLanguageEntry *lang_entry = nullptr;
-            nacpGetLanguageEntry(nacp, &lang_entry);
-            if(lang_entry == nullptr) {
+            const auto rc = nsGetApplicationDesiredLanguage(nacp, &lang_entry);
+            if(R_FAILED(rc) || (lang_entry == nullptr)) {
                 for(u32 i = 0; i < 16; i++) {
                     lang_entry = &nacp->lang[i];
                     if((lang_entry->name[0] > 0) && (lang_entry->author[0] > 0)) {
@@ -24,6 +31,7 @@ namespace ul::menu {
                     lang_entry = nullptr;
                 }
             }
+            UL_ASSERT_TRUE(lang_entry != nullptr);
 
             if(lang_entry != nullptr) {
                 if(!out_control.custom_name) {
@@ -54,9 +62,10 @@ namespace ul::menu {
             }
         }
 
-        inline void EnsureApplicationRecords(const bool reload = false) {
+        inline void EnsureApplicationRecordsAndViews(const bool reload = false) {
             if(reload || g_ApplicationRecords.empty()) {
                 g_ApplicationRecords = os::ListApplicationRecords();
+                g_ApplicationViews = os::ListApplicationViews(g_ApplicationRecords);
             }
         }
 
@@ -160,6 +169,7 @@ namespace ul::menu {
             _UL_MENU_ADD_SPECIAL_ENTRY(EntryType::SpecialEntryThemes);
             _UL_MENU_ADD_SPECIAL_ENTRY(EntryType::SpecialEntryControllers);
             _UL_MENU_ADD_SPECIAL_ENTRY(EntryType::SpecialEntryAlbum);
+            _UL_MENU_ADD_SPECIAL_ENTRY(EntryType::SpecialEntryAmiibo);
 
             // Add remaining app entries
             for(const auto &app_record : remaining_apps) {
@@ -183,7 +193,7 @@ namespace ul::menu {
                     fs::CreateDirectory(MenuPath);
                 }
 
-                EnsureApplicationRecords();
+                EnsureApplicationRecordsAndViews();
                 auto apps_copy = g_ApplicationRecords;
 
                 UL_FS_FOR(OldMenuPath, old_entry_name, old_entry_path, is_dir, is_file, {
@@ -231,12 +241,40 @@ namespace ul::menu {
                                 if(find_rec != apps_copy.end()) {
                                     entry.app_info.record = *find_rec;
                                     apps_copy.erase(find_rec);
-
                                     entry.Save();
                                 }
                                 else {
-                                    UL_LOG_WARN("Found old menu application entry whose application is not present...");
+                                    UL_LOG_WARN("Found old menu application that could not be matched to an existing application record...");
                                 }
+
+                                const auto find_view = std::find_if(g_ApplicationViews.begin(), g_ApplicationViews.end(), [&](const NsApplicationView &view) -> bool {
+                                    return view.application_id == application_id;
+                                });
+                                if(find_view != g_ApplicationViews.end()) {
+                                    entry.app_info.view = *find_view;
+                                    entry.Save();
+                                }
+                                else {
+                                    UL_LOG_WARN("Found old menu application that could not be matched to an existing application view...");
+                                }
+
+                                if(g_LoadApplicationEntryVersions) {
+                                    auto rc = avmGetHighestAvailableVersion(application_id, GetUpdateApplicationId(application_id), &entry.app_info.version);
+                                    if(R_FAILED(rc)) {
+                                        entry.app_info.version = 0;
+                                        UL_LOG_WARN("Found old menu application whose version could not be retrieved...");
+                                    }
+                                    rc = avmGetLaunchRequiredVersion(application_id, &entry.app_info.launch_required_version);
+                                    if(R_FAILED(rc)) {
+                                        entry.app_info.launch_required_version = 0;
+                                        UL_LOG_WARN("Found old menu application whose launch required version could not be retrieved...");
+                                    }
+                                }
+                                else {
+                                    entry.app_info.version = 0;
+                                    entry.app_info.launch_required_version = 0;
+                                }
+                                
                                 break;
                             }
                             case EntryType::Homebrew: {
@@ -273,7 +311,7 @@ namespace ul::menu {
         if(!this->control.IsLoaded()) {
             switch(this->type) {
                 case EntryType::Application: {
-                    LoadApplicationControlData(this->app_info.record.application_id, this->control);
+                    LoadApplicationControlData(this->app_info.app_id, this->control);
                     break;
                 }
                 case EntryType::Homebrew: {
@@ -287,16 +325,12 @@ namespace ul::menu {
         }
     }
 
-    void Entry::ReloadApplicationInfo() {
+    void Entry::ReloadApplicationInfo(const bool force_reload_records_views) {
         if(this->Is<EntryType::Application>()) {
-            const auto app_id = this->app_info.record.application_id;
-
-            if(R_FAILED(os::GetApplicationContentMetaStatus(app_id, this->app_info.meta_status))) {
-                UL_LOG_WARN("Unable to reload application meta status (not found...?)");
-            }
+            const auto app_id = this->app_info.app_id;
 
             // Assume we need to reload here
-            EnsureApplicationRecords(true);
+            EnsureApplicationRecordsAndViews(force_reload_records_views);
 
             const auto find_rec = std::find_if(g_ApplicationRecords.begin(), g_ApplicationRecords.end(), [&](const NsApplicationRecord &rec) -> bool {
                 return rec.application_id == app_id;
@@ -305,7 +339,17 @@ namespace ul::menu {
                 this->app_info.record = *find_rec;
             }
             else {
-                UL_LOG_WARN("Unable to reload application record (not found...?)");
+                UL_LOG_WARN("Unable to reload application record: not found?");
+            }
+
+            const auto find_view = std::find_if(g_ApplicationViews.begin(), g_ApplicationViews.end(), [&](const NsApplicationView &view) -> bool {
+                return view.application_id == app_id;
+            });
+            if(find_view != g_ApplicationViews.end()) {
+                this->app_info.view = *find_view;
+            }
+            else {
+                UL_LOG_WARN("Unable to reload application view: not found?");
             }
         }
     }
@@ -373,7 +417,7 @@ namespace ul::menu {
 
         switch(this->type) {
             case EntryType::Application: {
-                entry_json["application_id"] = this->app_info.record.application_id;
+                entry_json["application_id"] = this->app_info.app_id;
                 break;
             }
             case EntryType::Homebrew: {
@@ -413,10 +457,14 @@ namespace ul::menu {
         return {};
     }
 
+    void SetLoadApplicationEntryVersions(const bool load) {
+        g_LoadApplicationEntryVersions = load;
+    }
+
     void InitializeEntries() {
         u32 entry_idx = 0;
 
-        EnsureApplicationRecords();
+        EnsureApplicationRecordsAndViews();
 
         ConvertOldMenu(entry_idx);
 
@@ -427,22 +475,9 @@ namespace ul::menu {
         }
     }
 
-    void EnsureApplicationEntry(const NsApplicationRecord &app_record) {
-        // Just fill enough fields needed to save the path
-        const auto entry_idx = FindNextEntryIndex(MenuPath);
-        Entry app_entry = {
-            .type = EntryType::Application,
-            .entry_path = MakeEntryPath(MenuPath, entry_idx),
-
-            .app_info = {
-                .app_id = app_record.application_id,
-                .record = app_record
-            }
-        };
-        app_entry.Save();
-    }
-
     std::vector<Entry> LoadEntries(const std::string &path) {
+        EnsureApplicationRecordsAndViews();
+
         std::vector<Entry> entries;
         UL_FS_FOR(path, entry_name, entry_path, is_dir, is_file, {
             if(is_file && util::StringEndsWith(entry_name, ".m.json")) {
@@ -451,10 +486,10 @@ namespace ul::menu {
                     const auto type = static_cast<EntryType>(entry_json.value("type", static_cast<u32>(EntryType::Invalid)));
                     const auto entry_index_str = entry_name.substr(0, entry_name.length() - __builtin_strlen(".m.json"));
                     const u32 entry_index = std::strtoul(entry_index_str.c_str(), nullptr, 10);
-                    const auto custom_name = entry_json.value("custom_name", "");
-                    const auto custom_author = entry_json.value("custom_author", "");
-                    const auto custom_version = entry_json.value("custom_version", "");
-                    const auto custom_icon_path = entry_json.value("custom_icon_path", "");
+                    const auto custom_name_str = entry_json.value("custom_name", "");
+                    const auto custom_author_str = entry_json.value("custom_author", "");
+                    const auto custom_version_str = entry_json.value("custom_version", "");
+                    const auto custom_icon_path_str = entry_json.value("custom_icon_path", "");
 
                     Entry entry = {
                         .type = type,
@@ -462,14 +497,14 @@ namespace ul::menu {
                         .index = entry_index,
 
                         .control = {
-                            .name = custom_name,
-                            .custom_name = !custom_name.empty(),
-                            .author = custom_author,
-                            .custom_author = !custom_name.empty(),
-                            .version = custom_version,
-                            .custom_version = !custom_name.empty(),
-                            .icon_path = custom_icon_path,
-                            .custom_icon_path = !custom_name.empty(),
+                            .name = custom_name_str,
+                            .custom_name = !custom_name_str.empty(),
+                            .author = custom_author_str,
+                            .custom_author = !custom_author_str.empty(),
+                            .version = custom_version_str,
+                            .custom_version = !custom_version_str.empty(),
+                            .icon_path = custom_icon_path_str,
+                            .custom_icon_path = !custom_icon_path_str.empty(),
                         }
                     };
 
@@ -488,9 +523,6 @@ namespace ul::menu {
                             entry.app_info = {
                                 .app_id = application_id
                             };
-                            if(R_FAILED(os::GetApplicationContentMetaStatus(application_id, entry.app_info.meta_status))) {
-                                UL_LOG_WARN("Invalid application entry with no application meta status");
-                            }
 
                             const auto find_rec = std::find_if(g_ApplicationRecords.begin(), g_ApplicationRecords.end(), [&](const NsApplicationRecord &rec) -> bool {
                                 return rec.application_id == application_id;
@@ -499,7 +531,34 @@ namespace ul::menu {
                                 entry.app_info.record = *find_rec;
                             }
                             else {
-                                UL_LOG_WARN("Invalid application entry with no application record");
+                                UL_LOG_WARN("Potentially invalid application entry: unable to match to application record");
+                            }
+
+                            const auto find_view = std::find_if(g_ApplicationViews.begin(), g_ApplicationViews.end(), [&](const NsApplicationView &view) -> bool {
+                                return view.application_id == application_id;
+                            });
+                            if(find_view != g_ApplicationViews.end()) {
+                                entry.app_info.view = *find_view;
+                            }
+                            else {
+                                UL_LOG_WARN("Potentially invalid application entry: unable to match to application view");
+                            }
+
+                            if(g_LoadApplicationEntryVersions) {
+                                auto rc = avmGetHighestAvailableVersion(application_id, GetUpdateApplicationId(application_id), &entry.app_info.version);
+                                if(R_FAILED(rc)) {
+                                    entry.app_info.version = 0;
+                                    UL_LOG_WARN("Potentially invalid application entry: unable to retrieve version");
+                                }
+                                rc = avmGetLaunchRequiredVersion(application_id, &entry.app_info.launch_required_version);
+                                if(R_FAILED(rc)) {
+                                    entry.app_info.launch_required_version = 0;
+                                    UL_LOG_WARN("Potentially invalid application entry: unable to retrieve launch required version");
+                                }
+                            }
+                            else {
+                                entry.app_info.version = 0;
+                                entry.app_info.launch_required_version = 0;
                             }
 
                             entries.push_back(entry);
@@ -550,6 +609,7 @@ namespace ul::menu {
                         case EntryType::SpecialEntryThemes:
                         case EntryType::SpecialEntryControllers:
                         case EntryType::SpecialEntryAlbum:
+                        case EntryType::SpecialEntryAmiibo:
                             entries.push_back(entry);
                             break;
                         default:
@@ -562,14 +622,37 @@ namespace ul::menu {
         return entries;
     }
 
-    Entry CreateFolderEntry(const std::string &base_path, const std::string &folder_name, const u32 index) {
+    void EnsureApplicationEntry(const NsApplicationRecord &app_record) {
+        // Just fill enough fields needed to save the path
+        const auto entry_idx = FindNextEntryIndex(MenuPath);
+        Entry app_entry = {
+            .type = EntryType::Application,
+            .entry_path = MakeEntryPath(MenuPath, entry_idx),
+
+            .app_info = {
+                .app_id = app_record.application_id,
+                .record = app_record
+            }
+        };
+        app_entry.Save();
+    }
+
+    Entry CreateFolderEntry(const std::string &base_path, const std::string &folder_name, const s32 index) {
+        u32 actual_index;
+        if(index < 0) {
+            actual_index = FindNextEntryIndex(base_path);
+        }
+        else {
+            actual_index = (u32)index;
+        }
+
         const auto folder_path = MakeNextFolderPath(base_path, folder_name);
         fs::CreateDirectory(folder_path);
 
         Entry folder_entry = {
             .type = EntryType::Folder,
-            .entry_path = MakeEntryPath(base_path, index),
-            .index = index,
+            .entry_path = MakeEntryPath(base_path, actual_index),
+            .index = actual_index,
 
             .control = {
                 .custom_name = false,
@@ -587,11 +670,19 @@ namespace ul::menu {
         return folder_entry;
     }
 
-    Entry CreateHomebrewEntry(const std::string &base_path, const std::string &nro_path, const std::string &nro_argv, const u32 index) {
+    Entry CreateHomebrewEntry(const std::string &base_path, const std::string &nro_path, const std::string &nro_argv, const s32 index) {
+        u32 actual_index;
+        if(index < 0) {
+            actual_index = FindNextEntryIndex(base_path);
+        }
+        else {
+            actual_index = (u32)index;
+        }
+
         Entry hb_entry = {
             .type = EntryType::Homebrew,
-            .entry_path = MakeEntryPath(base_path, index),
-            .index = index,
+            .entry_path = MakeEntryPath(base_path, actual_index),
+            .index = actual_index,
 
             .control = {
                 .custom_name = false,
@@ -617,7 +708,26 @@ namespace ul::menu {
         return hb_entry;
     }
 
-    void DeleteApplicationEntry(const u64 app_id, const std::string &path) {
+    Entry CreateSpecialEntry(const std::string &base_path, const EntryType type, const s32 index) {
+        u32 actual_index;
+        if(index < 0) {
+            actual_index = FindNextEntryIndex(base_path);
+        }
+        else {
+            actual_index = (u32)index;
+        }
+
+        Entry special_entry = {
+            .type = type,
+            .entry_path = MakeEntryPath(base_path, actual_index),
+            .index = actual_index
+        };
+
+        special_entry.Save();
+        return special_entry;
+    }
+
+    void DeleteApplicationEntryRecursively(const u64 app_id, const std::string &path) {
         auto cur_entries = LoadEntries(path);
         for(auto &entry: cur_entries) {
             if(entry.Is<EntryType::Application>() && (entry.app_info.app_id == app_id)) {
@@ -625,8 +735,17 @@ namespace ul::menu {
             }
             else if(entry.Is<EntryType::Folder>()) {
                 const auto new_path = fs::JoinPath(path, entry.folder_info.fs_name);
-                DeleteApplicationEntry(app_id, new_path);
+                DeleteApplicationEntryRecursively(app_id, new_path);
             }
+        }
+    }
+
+    void ReloadApplicationEntryInfos(std::vector<Entry> &entries) {
+        // Helper to only reload records/views once
+        EnsureApplicationRecordsAndViews(true);
+
+        for(auto &entry: entries) {
+            entry.ReloadApplicationInfo(false);
         }
     }
 

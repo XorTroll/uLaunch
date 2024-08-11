@@ -1,4 +1,5 @@
 #include <ul/menu/menu_Cache.hpp>
+#include <ul/ul_Result.hpp>
 
 namespace ul::menu {
 
@@ -78,11 +79,17 @@ namespace ul::menu {
             });
         }
 
-        void CacheApplicationEntry(const u64 app_id, NsApplicationControlData *tmp_control_data) {
+        bool CacheApplicationEntry(const u64 app_id, NsApplicationControlData *tmp_control_data) {
             const auto cache_icon_path = GetApplicationCacheIconPath(app_id);
             fs::DeleteFile(cache_icon_path);
-            if(R_SUCCEEDED(nsGetApplicationControlData(NsApplicationControlSource_Storage, app_id, tmp_control_data, sizeof(NsApplicationControlData), nullptr))) {
+            const auto rc = nsGetApplicationControlData(NsApplicationControlSource_Storage, app_id, tmp_control_data, sizeof(NsApplicationControlData), nullptr);
+            if(R_SUCCEEDED(rc)) {
                 fs::WriteFile(cache_icon_path, tmp_control_data->icon, sizeof(tmp_control_data->icon), true);
+                return true;
+            }
+            else {
+                UL_LOG_WARN("Application cache failed: %s", util::FormatResultDisplay(rc).c_str());
+                return false;
             }
         }
 
@@ -107,10 +114,11 @@ namespace ul::menu {
         CacheApplicationEntries(records);
     }
 
-    void CacheSingleApplication(const u64 app_id) {
+    bool CacheSingleApplication(const u64 app_id) {
         auto tmp_control_data = new NsApplicationControlData();
-        CacheApplicationEntry(app_id, tmp_control_data);
+        const auto ok = CacheApplicationEntry(app_id, tmp_control_data);
         delete tmp_control_data;
+        return ok;
     }
 
     std::string GetHomebrewCacheIconPath(const std::string &nro_path) {

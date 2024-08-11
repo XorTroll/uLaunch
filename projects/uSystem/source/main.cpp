@@ -49,7 +49,21 @@ namespace {
         AppletId_LibraryAppletMyPage,
         AppletId_LibraryAppletMiiEdit,
         AppletId_LibraryAppletPlayerSelect,
-        AppletId_LibraryAppletNetConnect
+        AppletId_LibraryAppletNetConnect,
+        AppletId_LibraryAppletCabinet
+    };
+
+    constexpr const char ChooseHomebrewCaption[] = "Choose a homebrew for uMenu";
+
+    struct ApplicationVerifyContext {
+        static constexpr size_t ThreadStackSize = 64_KB;
+
+        u64 app_id;
+        Thread thread;
+        alignas(0x1000) u8 thread_stack[ThreadStackSize];
+        bool finished;
+
+        ApplicationVerifyContext(const u64 app_id) : app_id(app_id), thread(), thread_stack(), finished(false) {}
     };
 
     inline bool IsUsedLibraryApplet(const AppletId applet_id) {
@@ -74,6 +88,8 @@ namespace {
     bool g_MiiEditAppletLaunchFlag = false;
     bool g_AddUserAppletLaunchFlag = false;
     bool g_NetConnectAppletLaunchFlag = false;
+    bool g_CabinetAppletLaunchFlag = false;
+    NfpLaStartParamTypeForAmiiboSettings g_CabinetAppletLaunchType;
     bool g_NextMenuLaunchStartupFlag = false;
     bool g_NextMenuLaunchSettingsFlag = false;
     bool g_MenuRestartReloadThemeCacheFlag = false;
@@ -89,6 +105,8 @@ namespace {
 
     alignas(ams::os::MemoryPageSize) constinit u8 g_EventManagerThreadStack[16_KB];
     Thread g_EventManagerThread;
+
+    std::vector<ApplicationVerifyContext> *g_ApplicationVerifyContexts;
 
     enum class UsbMode : u32 {
         Invalid,
@@ -120,12 +138,18 @@ namespace {
     u8 *g_UsbViewerBufferDataOffset = nullptr;
 
     std::vector<NsApplicationRecord> g_CurrentRecords;
+    
+    std::vector<u64> g_LastDeletedApplications;
+    std::vector<u64> g_LastAddedApplications;
 
     constexpr size_t LibstratosphereHeapSize = 4_MB;
     alignas(ams::os::MemoryPageSize) constinit u8 g_LibstratosphereHeap[LibstratosphereHeapSize];
 
-    constexpr size_t LibnxHeapSize = 4_MB;
+    constexpr size_t LibnxHeapSize = 8_MB;
     alignas(ams::os::MemoryPageSize) constinit u8 g_LibnxHeap[LibnxHeapSize];
+
+    constexpr size_t VerifyWorkBufferSize = 0x100000;
+    constexpr size_t VerifyStepWaitTimeNs = 100'000;
 
 }
 
@@ -155,7 +179,10 @@ namespace {
     ul::smi::SystemStatus CreateStatus() {
         ul::smi::SystemStatus status = {
             .selected_user = g_SelectedUser,
-            .last_menu_index = g_CurrentMenuIndex
+            .last_menu_index = g_CurrentMenuIndex,
+            .last_added_app_count = (u32)g_LastAddedApplications.size(),
+            .last_deleted_app_count = (u32)g_LastDeletedApplications.size(),
+            .in_verify_app_count = (u32)g_ApplicationVerifyContexts->size()
         };
 
         if(g_MenuRestartReloadThemeCacheFlag) {
@@ -195,6 +222,80 @@ namespace {
         return ecs::RegisterLaunchAsApplet(la::GetMenuProgramId(), static_cast<u32>(st_mode), "/ulaunch/bin/uMenu", std::addressof(status), sizeof(status));
     }
 
+    void ApplicationVerifyMain(void *ctx_raw) {
+        auto ctx = reinterpret_cast<ApplicationVerifyContext*>(ctx_raw);
+
+        // Like qlaunch does, same size and align
+        auto verify_buf = new (std::align_val_t(0x1000)) u8[VerifyWorkBufferSize]();
+        NsProgressAsyncResult async_rc;
+        NsSystemUpdateProgress progress;
+        UL_RC_ASSERT(nsRequestVerifyApplication(&async_rc, ctx->app_id, 0x7, verify_buf, VerifyWorkBufferSize));
+
+        Result verify_rc;
+        Result verify_detail_rc;
+        while(true) {
+            const auto rc = nsProgressAsyncResultWait(&async_rc, VerifyStepWaitTimeNs);
+            if(rc == ul::ams::svc::ResultTimedOut) {
+                // Still not finished
+                UL_RC_ASSERT(nsProgressAsyncResultGetProgress(&async_rc, &progress, sizeof(progress)));
+
+                if(progress.total_size > 0) {
+                    const auto progress_val = (float)progress.current_size / (float)progress.total_size;
+                    UL_LOG_INFO("[Verify-0x%016lX] done: %lld, total: %lld, prog: %.2f%", ctx->app_id, progress.current_size, progress.total_size, progress_val * 100.0f);
+
+                    if(la::IsMenu()) {
+                        const ul::smi::MenuMessageContext menu_ctx = {
+                            .msg = ul::smi::MenuMessage::ApplicationVerifyProgress,
+                            .app_verify_progress = {
+                                .app_id = ctx->app_id,
+                                .done = (u64)progress.current_size,
+                                .total = (u64)progress.total_size
+                            }
+                        };
+                        PushMenuMessageContext(menu_ctx);
+                    }
+                }
+                else {
+                    UL_LOG_INFO("[Verify-0x%016lX] invalid progress...", ctx->app_id);
+                }
+            }
+            else if(R_SUCCEEDED(rc)) {
+                // Finished
+                verify_rc = nsProgressAsyncResultGet(&async_rc);
+                verify_detail_rc = nsProgressAsyncResultGetDetailResult(&async_rc);
+                break;
+            }
+            else {
+                // Unexpected
+                UL_LOG_WARN("[Verify-0x%016lX] nsProgressAsyncResultWait failed unexpectedly: %s", ctx->app_id, ul::util::FormatResultDisplay(rc).c_str());
+
+                verify_rc = rc;
+                verify_detail_rc = rc;
+                break;
+            }
+        }
+
+        ctx->finished = true;
+
+        nsProgressAsyncResultClose(&async_rc);
+        delete[] verify_buf;
+
+        if(R_SUCCEEDED(verify_rc) && R_SUCCEEDED(verify_detail_rc)) {
+            // Note: qlaunch apparently calls this command after verification succeeds, it resets the app record/view so that it can be launchable now
+            nsClearApplicationTerminateResult(ctx->app_id);
+        }
+
+        const ul::smi::MenuMessageContext menu_ctx = {
+            .msg = ul::smi::MenuMessage::ApplicationVerifyResult,
+            .app_verify_rc = {
+                .app_id = ctx->app_id,
+                .rc = verify_rc,
+                .detail_rc = verify_detail_rc
+            }
+        };
+        PushMenuMessageContext(menu_ctx);
+    }
+
     void HandleHomeButton() {
         if(la::IsActive() && !la::IsMenu()) {
             // An applet is opened (which is not our menu), thus close it and reopen the menu
@@ -212,7 +313,7 @@ namespace {
         }
     }
 
-    void HandleGeneralChannel() {
+    void HandleGeneralChannelMessage() {
         AppletStorage sams_st;
         if(R_SUCCEEDED(appletPopFromGeneralChannel(&sams_st))) {
             ul::util::OnScopeExit close_sams_st([&]() {
@@ -250,27 +351,27 @@ namespace {
                         break;
                     }
                     case GeneralChannelMessage::RequestJumpToSystemUpdate: {
-                        UL_LOG_WARN("Unimplemented: RequestJumpToSystemUpdate");
+                        UL_LOG_WARN("Got GeneralChannelMessage: RequestJumpToSystemUpdate");
                         break;
                     }
                     case GeneralChannelMessage::Unk_OverlayBrightValueChanged: {
-                        UL_LOG_WARN("Unimplemented: Unk_OverlayBrightValueChanged");
+                        UL_LOG_WARN("Got GeneralChannelMessage: Unk_OverlayBrightValueChanged");
                         break;
                     }
                     case GeneralChannelMessage::Unk_OverlayAutoBrightnessChanged: {
-                        UL_LOG_WARN("Unimplemented: Unk_OverlayAutoBrightnessChanged");
+                        UL_LOG_WARN("Got GeneralChannelMessage: Unk_OverlayAutoBrightnessChanged");
                         break;
                     }
                     case GeneralChannelMessage::Unk_OverlayAirplaneModeChanged: {
-                        UL_LOG_WARN("Unimplemented: Unk_OverlayAirplaneModeChanged");
+                        UL_LOG_WARN("Got GeneralChannelMessage: Unk_OverlayAirplaneModeChanged");
                         break;
                     }
-                    case GeneralChannelMessage::Unk_HomeButtonHold: {
-                        UL_LOG_WARN("Unimplemented: Unk_HomeButtonHold");
+                    case GeneralChannelMessage::Unk_OverlayShown: {
+                        UL_LOG_WARN("Got GeneralChannelMessage: Unk_OverlayShown");
                         break;
                     }
                     case GeneralChannelMessage::Unk_OverlayHidden: {
-                        UL_LOG_WARN("Unimplemented: Unk_OverlayHidden");
+                        UL_LOG_WARN("Got GeneralChannelMessage: Unk_OverlayHidden");
                         break;
                     }
                     case GeneralChannelMessage::RequestToLaunchApplication: {
@@ -290,7 +391,7 @@ namespace {
                         auto launch_params_buf = new u8[launch_params_buf_size];
                         UL_RC_ASSERT(sams_st_reader.ReadBuffer(launch_params_buf, launch_params_buf_size));
 
-                        UL_LOG_WARN("Unimplemented: RequestToLaunchApplication { launch_app_request_sender: %d, app_id: 0%16lX, uid: %016lX + %016lX, launch params buf size: 0x%X }", launch_app_request_sender, app_id, uid.uid[0], uid.uid[1], launch_params_buf_size);
+                        UL_LOG_WARN("Got GeneralChannelMessage: RequestToLaunchApplication { launch_app_request_sender: %d, app_id: 0%16lX, uid: %016lX + %016lX, launch params buf size: 0x%X }", launch_app_request_sender, app_id, uid.uid[0], uid.uid[1], launch_params_buf_size);
 
                         delete[] launch_params_buf;
                         break;
@@ -314,36 +415,65 @@ namespace {
         }
     }
 
-    Result UpdateOperationMode() {
+    void UpdateOperationMode() {
         // Thank you so much libnx for not exposing the actual call to get the mode via IPC :P
         // We're qlaunch, not using appletMainLoop, thus we have to take care of this manually...
-
         u8 raw_mode = 0;
-        UL_RC_TRY(serviceDispatchOut(appletGetServiceSession_CommonStateGetter(), 5, raw_mode));
-
+        UL_RC_ASSERT(serviceDispatchOut(appletGetServiceSession_CommonStateGetter(), 5, raw_mode));
         g_OperationMode = static_cast<AppletOperationMode>(raw_mode);
-        return ul::ResultSuccess;
     }
 
     void HandleAppletMessage() {
+        u32 finished_verify_count = 0;
+        for(auto &ctx: *g_ApplicationVerifyContexts) {
+            if(ctx.finished) {
+                UL_RC_ASSERT(threadWaitForExit(&ctx.thread));
+                UL_RC_ASSERT(threadClose(&ctx.thread));
+                finished_verify_count++;
+            }
+        }
+
+        if(finished_verify_count > 0) {
+            auto new_end = std::remove_if(g_ApplicationVerifyContexts->begin(), g_ApplicationVerifyContexts->end(), [](const ApplicationVerifyContext &ctx) { return ctx.finished; });
+            g_ApplicationVerifyContexts->erase(new_end, g_ApplicationVerifyContexts->end());   
+        }
+
         u32 raw_msg = 0;
         if(R_SUCCEEDED(appletGetMessage(&raw_msg))) {
-            /*
-            Applet messages known to be received by us:
-            - ChangeIntoForeground
-            - ChangeIntoBackground
-            - ApplicationExited
-            - AutoPowerDown
-            - DetectShortPressingHomeButton
-            - DetectShortPressingPowerButton
-            - FinishedSleepSequence
-            - OperationModeChanged
-            - SdCardRemoved
-            */
-
             switch(static_cast<ul::system::AppletMessage>(raw_msg)) {
+                case ul::system::AppletMessage::ChangeIntoForeground: {
+                    UL_LOG_INFO("Got AppletMessage: ChangeIntoForeground");
+                    break;
+                }
+                case ul::system::AppletMessage::ChangeIntoBackground: {
+                    UL_LOG_INFO("Got AppletMessage: ChangeIntoBackground");
+                    break;
+                }
+                case ul::system::AppletMessage::ApplicationExited: {
+                    UL_LOG_INFO("Got AppletMessage: ApplicationExited");
+                    break;
+                }
                 case ul::system::AppletMessage::DetectShortPressingHomeButton: {
                     HandleHomeButton();
+                    break;
+                }
+                case ul::system::AppletMessage::DetectShortPressingPowerButton: {
+                    HandleSleep();
+                    break;
+                }
+                case ul::system::AppletMessage::FinishedSleepSequence: {
+                    if(la::IsMenu()) {
+                        PushSimpleMenuMessage(ul::smi::MenuMessage::FinishedSleep);
+                    }
+                    break;
+                }
+                case ul::system::AppletMessage::AutoPowerDown: {
+                    // From auto-sleep functionality
+                    HandleSleep();
+                    break;
+                }
+                case ul::system::AppletMessage::OperationModeChanged: {
+                    UpdateOperationMode();
                     break;
                 }
                 case ul::system::AppletMessage::SdCardRemoved: {
@@ -357,14 +487,6 @@ namespace {
                     }
                     break;
                 }
-                case ul::system::AppletMessage::DetectShortPressingPowerButton: {
-                    HandleSleep();
-                    break;
-                }
-                case ul::system::AppletMessage::OperationModeChanged: {
-                    UL_RC_ASSERT(UpdateOperationMode());
-                    break;
-                }
                 default:
                     UL_LOG_WARN("Unimplemented applet message: %d", raw_msg);
                     break;
@@ -374,7 +496,9 @@ namespace {
 
     void HandleMenuMessage() {
         if(la::IsMenu()) {
-            // Note: ignoring result since this won't always work, and would error if no commands were received
+            u32 app_list_count;
+
+            // Note: ignoring result since this won't always succeed, and would error if no commands were received
             smi::ReceiveCommand(
                 [&](const ul::smi::SystemMessage msg, smi::ScopedStorageReader &reader) -> Result {
                     switch(msg) {
@@ -443,7 +567,7 @@ namespace {
                             break;
                         }
                         case ul::smi::SystemMessage::ChooseHomebrew: {
-                            g_LoaderLaunchFlag = ul::loader::TargetInput::Create(ul::HbmenuPath, ul::HbmenuPath, true, "Choose a homebrew for uMenu");
+                            g_LoaderLaunchFlag = ul::loader::TargetInput::Create(ul::HbmenuPath, ul::HbmenuPath, true, ChooseHomebrewCaption);
                             g_LoaderChooseFlag = true;
                             break;
                         }
@@ -500,6 +624,34 @@ namespace {
                         }
                         case ul::smi::SystemMessage::OpenNetConnect: {
                             g_NetConnectAppletLaunchFlag = true;
+                            break;
+                        }
+                        case ul::smi::SystemMessage::ListAddedApplications: {
+                            UL_RC_TRY(reader.Pop(app_list_count));
+                            break;
+                        }
+                        case ul::smi::SystemMessage::ListDeletedApplications: {
+                            UL_RC_TRY(reader.Pop(app_list_count));
+                            break;
+                        }
+                        case ul::smi::SystemMessage::OpenCabinet: {
+                            u8 type;
+                            UL_RC_TRY(reader.Pop(type));
+                            g_CabinetAppletLaunchFlag = true;
+                            g_CabinetAppletLaunchType = static_cast<NfpLaStartParamTypeForAmiiboSettings>(type);
+                            break;
+                        }
+                        case ul::smi::SystemMessage::StartVerifyApplication: {
+                            u64 app_id;
+                            UL_RC_TRY(reader.Pop(app_id));
+
+                            auto &ctx = g_ApplicationVerifyContexts->emplace_back(app_id);
+                            UL_RC_ASSERT(threadCreate(&ctx.thread, ApplicationVerifyMain, std::addressof(ctx), ctx.thread_stack, ApplicationVerifyContext::ThreadStackSize, 30, -2));
+                            UL_RC_ASSERT(threadStart(&ctx.thread));
+                            break;
+                        }
+                        case ul::smi::SystemMessage::ListInVerifyApplications: {
+                            UL_RC_TRY(reader.Pop(app_list_count));
                             break;
                         }
                         default: {
@@ -560,8 +712,50 @@ namespace {
                             // ...
                             break;
                         }
-                        case ul::smi::SystemMessage::OpenAddUser: {
+                        case ul::smi::SystemMessage::OpenNetConnect: {
                             // ...
+                            break;
+                        }
+                        case ul::smi::SystemMessage::ListAddedApplications: {
+                            if(app_list_count > g_LastAddedApplications.size()) {
+                                return ul::ResultInvalidApplicationListCount;
+                            }
+
+                            for(u32 i = 0; i < app_list_count; i++) {
+                                writer.Push(g_LastAddedApplications.at(i));
+                            }
+
+                            g_LastAddedApplications.clear();
+                            break;
+                        }
+                        case ul::smi::SystemMessage::ListDeletedApplications: {
+                            if(app_list_count > g_LastDeletedApplications.size()) {
+                                return ul::ResultInvalidApplicationListCount;
+                            }
+
+                            for(u32 i = 0; i < app_list_count; i++) {
+                                writer.Push(g_LastDeletedApplications.at(i));
+                            }
+
+                            g_LastDeletedApplications.clear();
+                            break;
+                        }
+                        case ul::smi::SystemMessage::OpenCabinet: {
+                            // ...
+                            break;
+                        }
+                        case ul::smi::SystemMessage::StartVerifyApplication: {
+                            // ...
+                            break;
+                        }
+                        case ul::smi::SystemMessage::ListInVerifyApplications: {
+                            if(app_list_count > g_ApplicationVerifyContexts->size()) {
+                                return ul::ResultInvalidApplicationListCount;
+                            }
+
+                            for(u32 i = 0; i < app_list_count; i++) {
+                                writer.Push(g_ApplicationVerifyContexts->at(i).app_id);
+                            }
                             break;
                         }
                         default: {
@@ -576,14 +770,16 @@ namespace {
     }
 
     void MainLoop() {
-        HandleGeneralChannel();
+        HandleGeneralChannelMessage();
         HandleAppletMessage();
         HandleMenuMessage();
 
         auto sth_done = false;
+
         // A valid version will always be >= 0x20000
         if(g_WebAppletLaunchFlag.version > 0) {
             if(!la::IsActive()) {
+                UL_LOG_INFO("Launching web...");
                 UL_RC_ASSERT(la::StartWeb(&g_WebAppletLaunchFlag));
 
                 sth_done = true;
@@ -592,7 +788,8 @@ namespace {
         }
         if(g_MenuRestartFlag) {
             if(!la::IsActive()) {
-                UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::StartupMenu, CreateStatus()));
+                UL_LOG_INFO("Launching menu...");
+                UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::Start, CreateStatus()));
 
                 sth_done = true;
                 g_MenuRestartFlag = false;
@@ -600,6 +797,7 @@ namespace {
         }
         if(g_AlbumAppletLaunchFlag) {
             if(!la::IsActive()) {
+                UL_LOG_INFO("Launching album...");
                 const struct {
                     u8 album_arg;
                 } album_data = { AlbumLaArg_ShowAllAlbumFilesForHomeMenu };
@@ -611,6 +809,7 @@ namespace {
         }
         if(g_UserPageAppletLaunchFlag) {
             if(!la::IsActive()) {
+                UL_LOG_INFO("Launching user page...");
                 FriendsLaArgHeader arg_hdr = {
                     .type = FriendsLaArgType_ShowMyProfile,
                     .uid = g_SelectedUser
@@ -635,6 +834,7 @@ namespace {
         }
         if(g_MiiEditAppletLaunchFlag) {
             if(!la::IsActive()) {
+                UL_LOG_INFO("Launching mii edit...");
                 const auto mii_ver = hosversionAtLeast(10,2,0) ? 0x4 : 0x3;
                 MiiLaAppletInput mii_in = {
                     .version = mii_ver,
@@ -649,6 +849,7 @@ namespace {
         }
         if(g_AddUserAppletLaunchFlag) {
             if(!la::IsActive()) {
+                UL_LOG_INFO("Launching add-user page...");
                 PselUiSettings psel_ui;
                 UL_RC_ASSERT(pselUiCreate(&psel_ui, PselUiMode_UserCreator));
 
@@ -670,6 +871,7 @@ namespace {
         }
         if(g_NetConnectAppletLaunchFlag) {
             if(!la::IsActive()) {
+                UL_LOG_INFO("Launching net connect...");
                 u8 in[28] = {};
                 // TODO (low priority): 0 = normal, 1 = qlaunch, 2 = starter...? (consider documenting this better, maybe a PR to libnx even)
                 *reinterpret_cast<u32*>(in) = 1;
@@ -685,11 +887,26 @@ namespace {
                 g_NextMenuLaunchSettingsFlag = true;
             }
         }
+        if(g_CabinetAppletLaunchFlag) {
+            if(!la::IsActive()) {
+                UL_LOG_INFO("Launching cabinet...");
+                // Not sending any initial TagInfo/RegisterInfo makes the applet take care of the wait for the user to input amiibos
+                // No neeed for us/uMenu to handle any amiibo functionality at all ;)
+                const NfpLaStartParamForAmiiboSettings settings = {
+                    .unk_x0 = 0,
+                    .type = g_CabinetAppletLaunchType,
+                    .flags = 1
+                };
+                UL_RC_ASSERT(la::Start(AppletId_LibraryAppletCabinet, 1, &settings, sizeof(settings)));
+
+                sth_done = true;
+                g_CabinetAppletLaunchFlag = false;
+            }
+        }
+
         if(g_ApplicationLaunchFlag > 0) {
             if(!la::IsActive()) {
-                // Ensure the application is launchable
-                UL_RC_ASSERT(nsTouchApplication(g_ApplicationLaunchFlag));
-
+                UL_LOG_INFO("Launching application 0x%016lX...", g_ApplicationLaunchFlag);
                 if(g_LoaderApplicationLaunchFlag.magic == ul::loader::TargetInput::Magic) {
                     UL_RC_ASSERT(ecs::RegisterLaunchAsApplication(g_ApplicationLaunchFlag, "/ulaunch/bin/uLoader/application", &g_LoaderApplicationLaunchFlag, sizeof(g_LoaderApplicationLaunchFlag), g_SelectedUser));
 
@@ -706,6 +923,7 @@ namespace {
         }
         if(g_LoaderLaunchFlag.magic == ul::loader::TargetInput::Magic) {
             if(!la::IsActive()) {
+                UL_LOG_INFO("Launching homebrew '%s' as library applet (once: %d)...", g_LoaderLaunchFlag.nro_path, g_LoaderLaunchFlag.target_once);
                 u64 hb_applet_takeover_program_id;
                 UL_ASSERT_TRUE(g_Config.GetEntry(ul::cfg::ConfigEntryId::HomebrewAppletTakeoverProgramId, hb_applet_takeover_program_id));
 
@@ -728,6 +946,8 @@ namespace {
 
                 ul::loader::TargetOutput target_opt;
                 if(g_LoaderChooseFlag) {
+                    UL_LOG_INFO("Getting loader output...");
+
                     AppletStorage target_opt_st;
                     UL_RC_ASSERT(la::Pop(&target_opt_st));
                     UL_RC_ASSERT(appletStorageRead(&target_opt_st, 0, &target_opt, sizeof(target_opt)));
@@ -735,7 +955,7 @@ namespace {
 
                 auto menu_start_mode = ul::smi::MenuStartMode::MainMenu;
                 if(g_NextMenuLaunchStartupFlag) {
-                    menu_start_mode = ul::smi::MenuStartMode::StartupMenu;
+                    menu_start_mode = ul::smi::MenuStartMode::Start;
                     g_NextMenuLaunchStartupFlag = false;
                 }
                 if(g_NextMenuLaunchSettingsFlag) {
@@ -766,7 +986,7 @@ namespace {
             if(!app::IsActive() && !la::IsActive()) {
                 auto terminate_rc = ul::ResultSuccess;
                 if(R_SUCCEEDED(nsGetApplicationTerminateResult(app::GetId(), &terminate_rc))) {
-                    UL_LOG_WARN("Application 0x%016X terminated with result %s", app::GetId(), ul::util::FormatResultDisplay(terminate_rc).c_str());
+                    UL_LOG_WARN("Application 0x%016lX terminated with result %s", app::GetId(), ul::util::FormatResultDisplay(terminate_rc).c_str());
                 }
 
                 // Reopen uMenu, notify failure
@@ -824,40 +1044,64 @@ namespace {
     }
 
     void EventManagerMain(void*) {
-        UL_LOG_INFO("EventManager: alive!");
+        UL_LOG_INFO("[EventManager] alive!");
         
         Event record_ev;
         UL_RC_ASSERT(nsGetApplicationRecordUpdateSystemEvent(&record_ev));
+        UL_LOG_INFO("[EventManager] registered ApplicationRecordUpdateSystemEvent");
 
         Event gc_mount_fail_event;
         UL_RC_ASSERT(nsGetGameCardMountFailureEvent(&gc_mount_fail_event));
+        UL_LOG_INFO("[EventManager] registered GameCardMountFailureEvent");
 
         s32 ev_idx;
         while(true) {
             if(R_SUCCEEDED(waitMulti(&ev_idx, UINT64_MAX, waiterForEvent(&record_ev), waiterForEvent(&gc_mount_fail_event)))) {
                 if(ev_idx == 0) {
-                    UL_LOG_INFO("Application records changed! diff:");
+                    g_LastAddedApplications.clear();
+                    g_LastDeletedApplications.clear();
+                    UL_LOG_INFO("[EventManager] Application records changed!");
 
                     const auto diff_records = ListChangedRecords();
                     for(const auto &record: diff_records) {
-                        if(std::find_if(g_CurrentRecords.begin(), g_CurrentRecords.end(), [&](const NsApplicationRecord &rec) -> bool {
+                        if(std::find_if(g_CurrentRecords.begin(), g_CurrentRecords.end(), [record](const NsApplicationRecord &rec) -> bool {
                             return rec.application_id == record.application_id;
                         }) != g_CurrentRecords.end()) {
-                            UL_LOG_INFO("- [new] 0x%lX", record.application_id);
-                            ul::menu::CacheSingleApplication(record.application_id);
+                            UL_LOG_INFO("[EventManager] > Added application 0x%016lX, caching...", record.application_id);
+                            g_LastAddedApplications.push_back(record.application_id);
+
+                            while(!ul::menu::CacheSingleApplication(record.application_id)) {
+                                UL_LOG_INFO("[EventManager] > Failed to cache, retrying...");
+                                svcSleepThread(100'000ul);
+                            }
+
+                            UL_LOG_INFO("[EventManager] > cached!");
+
                             ul::menu::EnsureApplicationEntry(record);
                         }
                         else {
-                            UL_LOG_INFO("- [del] 0x%lX", record.application_id);
-                            ul::menu::DeleteApplicationEntry(record.application_id, ul::MenuPath);
+                            UL_LOG_INFO("[EventManager] > Deleted application 0x%016lX", record.application_id);
+                            g_LastDeletedApplications.push_back(record.application_id);
+                            ul::menu::DeleteApplicationEntryRecursively(record.application_id, ul::MenuPath);
                         }
                     }
+
+                    if(la::IsMenu()) {
+                        // Only push this if uMenu is currently active
+                        const ul::smi::MenuMessageContext msg_ctx = {
+                            .msg = ul::smi::MenuMessage::ApplicationRecordsChanged,
+                            .app_records_changed = {
+                                .records_added_or_deleted = !diff_records.empty()
+                            }
+                        };
+                        PushMenuMessageContext(msg_ctx);
+                    }
                 }
-                if(ev_idx == 1) {
+                else if(ev_idx == 1) {
                     eventClear(&gc_mount_fail_event);
 
                     const auto fail_rc = nsGetLastGameCardMountFailureResult();
-                    UL_LOG_INFO("Gamecard mount failed with rc: 0x%X (sending it to uMenu...)", fail_rc);
+                    UL_LOG_INFO("[EventManager] Gamecard mount failed with rc: 0x%X", fail_rc);
 
                     const ul::smi::MenuMessageContext msg_ctx = {
                         .msg = ul::smi::MenuMessage::GameCardMountFailure,
@@ -913,9 +1157,87 @@ namespace {
         }
     }
 
+    void LocateApplicationAndSpecialEntries(const std::string &path, std::vector<ul::menu::Entry> &out_app_entries, u32 &rem_special_entry_mask) {
+        auto entries = ul::menu::LoadEntries(path);
+        for(const auto &entry: entries) {
+            if(entry.Is<ul::menu::EntryType::Application>()) {
+                out_app_entries.push_back(entry);
+            }
+            else if(entry.IsSpecial()) {
+                // This special entry exists, remove from remaining
+                rem_special_entry_mask &= ~BITL(static_cast<u32>(entry.type));
+            }
+            else if(entry.Is<ul::menu::EntryType::Folder>()) {
+                LocateApplicationAndSpecialEntries(ul::fs::JoinPath(path, entry.folder_info.fs_name), out_app_entries, rem_special_entry_mask);
+            }
+        }
+    }
+
+    void CheckApplicationRecordChanges() {
+        g_LastDeletedApplications.clear();
+        g_LastAddedApplications.clear();
+
+        std::vector<ul::menu::Entry> existing_app_entries;
+        u32 rem_special_entry_mask =
+            BITL(static_cast<u32>(ul::menu::EntryType::SpecialEntryMiiEdit)) |
+            BITL(static_cast<u32>(ul::menu::EntryType::SpecialEntryWebBrowser)) |
+            BITL(static_cast<u32>(ul::menu::EntryType::SpecialEntryUserPage)) |
+            BITL(static_cast<u32>(ul::menu::EntryType::SpecialEntrySettings)) |
+            BITL(static_cast<u32>(ul::menu::EntryType::SpecialEntryThemes)) |
+            BITL(static_cast<u32>(ul::menu::EntryType::SpecialEntryControllers)) |
+            BITL(static_cast<u32>(ul::menu::EntryType::SpecialEntryAlbum)) |
+            BITL(static_cast<u32>(ul::menu::EntryType::SpecialEntryAmiibo));
+
+        LocateApplicationAndSpecialEntries(ul::MenuPath, existing_app_entries, rem_special_entry_mask);
+
+        // Ensure all special entries exist
+        #define _CHECK_HAS_SPECIAL_ENTRY(type) { \
+            if((rem_special_entry_mask & BITL(static_cast<u32>(type))) != 0) { \
+                ul::menu::CreateSpecialEntry(ul::MenuPath, type); \
+            } \
+        }
+
+        _CHECK_HAS_SPECIAL_ENTRY(ul::menu::EntryType::SpecialEntryMiiEdit);
+        _CHECK_HAS_SPECIAL_ENTRY(ul::menu::EntryType::SpecialEntryWebBrowser);
+        _CHECK_HAS_SPECIAL_ENTRY(ul::menu::EntryType::SpecialEntryUserPage);
+        _CHECK_HAS_SPECIAL_ENTRY(ul::menu::EntryType::SpecialEntrySettings);
+        _CHECK_HAS_SPECIAL_ENTRY(ul::menu::EntryType::SpecialEntryThemes);
+        _CHECK_HAS_SPECIAL_ENTRY(ul::menu::EntryType::SpecialEntryControllers);
+        _CHECK_HAS_SPECIAL_ENTRY(ul::menu::EntryType::SpecialEntryAlbum);
+        _CHECK_HAS_SPECIAL_ENTRY(ul::menu::EntryType::SpecialEntryAmiibo);
+
+        // Check applications
+
+        for(auto &app_entry: existing_app_entries) {
+            if(std::find_if(g_CurrentRecords.begin(), g_CurrentRecords.end(), [app_entry](const NsApplicationRecord &rec) -> bool {
+                return rec.application_id == app_entry.app_info.app_id;
+            }) == g_CurrentRecords.end()) {
+                UL_LOG_INFO("Deleted application 0x%016lX", app_entry.app_info.app_id);
+                g_LastDeletedApplications.push_back(app_entry.app_info.app_id);
+                ul::menu::Entry rm_entry(app_entry);
+                rm_entry.Remove();
+            }
+        }
+
+        for(const auto &record: g_CurrentRecords) {
+            if(std::find_if(existing_app_entries.begin(), existing_app_entries.end(), [record](const ul::menu::Entry &entry) -> bool {
+                return entry.app_info.app_id == record.application_id;
+            }) == existing_app_entries.end()) {
+                UL_LOG_INFO("Added application 0x%016lX", record.application_id);
+                g_LastAddedApplications.push_back(record.application_id);
+                while(!ul::menu::CacheSingleApplication(record.application_id)) {
+                    UL_LOG_INFO("> Failed to cache, retrying...");
+                    svcSleepThread(100'000ul);
+                }
+                ul::menu::CacheSingleApplication(record.application_id);
+                ul::menu::EnsureApplicationEntry(record);
+            }
+        }
+    }
+
     void Initialize() {
         UL_RC_ASSERT(appletLoadAndApplyIdlePolicySettings());
-        UL_RC_ASSERT(UpdateOperationMode());
+        UpdateOperationMode();
 
         // Remove old cache
         ul::fs::DeleteDirectory(ul::OldApplicationCachePath);
@@ -928,19 +1250,21 @@ namespace {
 
         CacheAccounts();
 
+        ul::menu::SetLoadApplicationEntryVersions(false);
         g_CurrentRecords = ul::os::ListApplicationRecords();
         ul::menu::CacheApplications(g_CurrentRecords);
         ul::menu::CacheHomebrew();
+        CheckApplicationRecordChanges();
 
         LoadConfig();
 
         UL_RC_ASSERT(sf::Initialize());
 
-        UL_RC_ASSERT(threadCreate(&g_EventManagerThread, EventManagerMain, nullptr, g_EventManagerThreadStack, sizeof(g_EventManagerThreadStack), 0x2C, -2));
+        UL_RC_ASSERT(threadCreate(&g_EventManagerThread, EventManagerMain, nullptr, g_EventManagerThreadStack, sizeof(g_EventManagerThreadStack), 34, -2));
         UL_RC_ASSERT(threadStart(&g_EventManagerThread));
 
         bool viewer_usb_enabled;
-        UL_ASSERT_TRUE(g_Config.GetEntry(ul::cfg::ConfigEntryId::ViewerUsbEnabled, viewer_usb_enabled));
+        UL_ASSERT_TRUE(g_Config.GetEntry(ul::cfg::ConfigEntryId::UsbScreenCaptureEnabled, viewer_usb_enabled));
 
         if(viewer_usb_enabled) {
             UL_RC_ASSERT(usbCommsInitialize());
@@ -985,25 +1309,30 @@ namespace ams {
     namespace init {
 
         void InitializeSystemModule() {
-            ul::InitializeLogging("uSystem");
+            __nx_applet_type = AppletType_SystemApplet;
 
             UL_RC_ASSERT(sm::Initialize());
-
-            __nx_applet_type = AppletType_SystemApplet;
-            UL_RC_ASSERT(appletInitialize());
             UL_RC_ASSERT(fsInitialize());
+            
+            UL_RC_ASSERT(appletInitialize());
+            
             UL_RC_ASSERT(nsInitialize());
             UL_RC_ASSERT(ldrShellInitialize());
             UL_RC_ASSERT(pmshellInitialize());
+            UL_RC_ASSERT(setsysInitialize());
+
+            // FS and log init is intentionally done at the end, otherwise the SD doesn't seem to be always ready...?
             UL_RC_ASSERT(fsdevMountSdmc());
+            ul::InitializeLogging("uSystem");
         }
 
         void FinalizeSystemModule() {
+            setsysExit();
             capsscExit();
-            fsdevUnmountAll();
             pmshellExit();
             ldrShellExit();
             nsExit();
+            fsdevUnmountAll();
             fsExit();
             appletExit();
         }
@@ -1016,6 +1345,7 @@ namespace ams {
             fake_heap_end = fake_heap_start + LibnxHeapSize;
 
             g_MenuMessageQueue = new std::queue<ul::smi::MenuMessageContext>();
+            g_ApplicationVerifyContexts = new std::vector<ApplicationVerifyContext>();
 
             os::SetThreadNamePointer(os::GetCurrentThread(), "ul.system.Main");
         }
@@ -1024,7 +1354,8 @@ namespace ams {
 
     NORETURN void Exit(int rc) {
         AMS_UNUSED(rc);
-        AMS_ABORT("Unexpected exit called by system applet (uSystem)");
+        UL_RC_ASSERT(false && "Unexpected exit called by system applet (uSystem)");
+        AMS_ABORT();
     }
 
     // uSystem handles basic qlaunch functionality since it is the back-end of the project, communicating with uMenu when neccessary
@@ -1034,7 +1365,7 @@ namespace ams {
         Initialize();
 
         // After having initialized everything, launch our menu
-        UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::StartupMenu, CreateStatus()));
+        UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::Start, CreateStatus()));
 
         // Loop forever, since qlaunch should NEVER terminate (AM would crash in that case)
         while(true) {

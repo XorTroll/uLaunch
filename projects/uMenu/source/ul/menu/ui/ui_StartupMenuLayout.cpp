@@ -4,8 +4,8 @@
 #include <ul/acc/acc_Accounts.hpp>
 #include <ul/menu/smi/smi_Commands.hpp>
 
+extern ul::menu::ui::GlobalSettings g_GlobalSettings;
 extern ul::menu::ui::MenuApplication::Ref g_MenuApplication;
-extern ul::cfg::Config g_Config;
 
 namespace ul::menu::ui {
 
@@ -13,9 +13,8 @@ namespace ul::menu::ui {
         // Note: menu loading is invoked below instead of here so that the main menu doesn't also register the button input which caused this action...
         this->load_menu = true;
         pu::audio::PlaySfx(this->user_select_sfx);
-        g_MenuApplication->SetSelectedUser(uid);
+        g_GlobalSettings.SetSelectedUser(uid);
 
-        g_MenuApplication->StartPlayBgm();
         g_MenuApplication->LoadMenuByType(MenuType::Main);
     }
 

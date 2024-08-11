@@ -23,7 +23,7 @@ namespace ul::system::sf {
 
             this->initialized = true;
         }
-        
+
         return ResultSuccess;
     }
 

@@ -108,15 +108,51 @@
         }
     },
     "settings_menu": {
-        "info_text": {
+        "menu_text": {
             "x": 0,
-            "y": 37,
+            "y": 25,
+            "h_align": "center",
+            "font_size": "large"
+        },
+        "submenu_text": {
+            "x": 0,
+            "y": 70,
             "h_align": "center",
             "font_size": "medium"
         },
         "settings_menu": {
             "x": 75,
-            "y": 120
+            "y": 180
+        }
+    },
+    "lockscreen_menu": {
+        "info_text": {
+            "h_align": "center",
+            "v_align": "center",
+            "font_size": "large"
+        },
+        "connection_top_icon": {
+            "x": 120,
+            "y": 52
+        },
+        "time_text": {
+            "x": 262,
+            "y": 105,
+            "font_size": "medium"
+        },
+        "date_text": {
+            "x": 262,
+            "y": 68,
+            "font_size": "small"
+        },
+        "battery_text": {
+            "x": 1612,
+            "y": 60,
+            "font_size": "small"
+        },
+        "battery_top_icon": {
+            "x": 1590,
+            "y": 65
         }
     }
 }

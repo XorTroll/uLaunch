@@ -28,6 +28,7 @@ namespace ulaunch {
     R_DEFINE_ERROR_RESULT(AlreadyQueued, 403);
     R_DEFINE_ERROR_RESULT(ApplicationNotActive, 404);
     R_DEFINE_ERROR_RESULT(NoHomebrewTakeoverApplication, 405);
+    R_DEFINE_ERROR_RESULT(InvalidApplicationListCount, 406);
 
     R_DEFINE_ERROR_RANGE(Util, 501, 599);
     R_DEFINE_ERROR_RESULT(InvalidJson, 501);

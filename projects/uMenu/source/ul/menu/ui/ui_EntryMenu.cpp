@@ -5,8 +5,8 @@
 #include <ul/util/util_String.hpp>
 #include <ul/acc/acc_Accounts.hpp>
 
+extern ul::menu::ui::GlobalSettings g_GlobalSettings;
 extern ul::menu::ui::MenuApplication::Ref g_MenuApplication;
-extern ul::cfg::Config g_Config;
 
 namespace ul::menu::ui {
 
@@ -15,10 +15,34 @@ namespace ul::menu::ui {
         u32 g_EntryHeightCount = 0;
 
         void SetEntryHeightCount(const u32 count) {
-            UL_ASSERT_TRUE(g_Config.SetEntry(cfg::ConfigEntryId::MenuEntryHeightCount, static_cast<u64>(count)));
-            SaveConfig();
+            UL_ASSERT_TRUE(g_GlobalSettings.config.SetEntry(cfg::ConfigEntryId::MenuEntryHeightCount, static_cast<u64>(count)));
+            g_GlobalSettings.SaveConfig();
 
             g_EntryHeightCount = count;
+        }
+
+        inline bool IsEntryHomebrewTakeoverApplication(const Entry &entry) {
+            return entry.Is<EntryType::Application>() && (entry.app_info.record.application_id == g_GlobalSettings.cache_hb_takeover_app_id);
+        }
+
+        inline bool IsEntryGamecardInserted(const Entry &entry) {
+            return entry.Is<EntryType::Application>() && entry.app_info.HasViewFlag<os::ApplicationViewFlag::GameCardApplication>() && entry.app_info.HasViewFlag<os::ApplicationViewFlag::GameCardApplicationAccessible>();
+        }
+
+        inline bool IsEntryGamecardNotInserted(const Entry &entry) {
+            return entry.Is<EntryType::Application>() && entry.app_info.HasViewFlag<os::ApplicationViewFlag::GameCardApplication>() && !entry.app_info.HasViewFlag<os::ApplicationViewFlag::GameCardApplicationAccessible>();
+        }
+
+        inline bool IsEntryCorrupted(const Entry &entry) {
+            return entry.Is<EntryType::Application>() && entry.app_info.HasViewFlag<os::ApplicationViewFlag::NeedsVerify>();
+        }
+
+        inline bool EntryNeedsUpdate(const Entry &entry) {
+            return entry.Is<EntryType::Application>() && entry.app_info.NeedsUpdate();
+        }
+        
+        inline bool IsEntryNotLaunchable(const Entry &entry) {
+            return entry.Is<EntryType::Application>() && !entry.app_info.HasViewFlag<os::ApplicationViewFlag::Launchable>();
         }
 
     }
@@ -112,10 +136,32 @@ namespace ul::menu::ui {
             else if(entry.Is<EntryType::SpecialEntryAlbum>()) {
                 icon_path = "ui/Main/EntryIcon/Album";
             }
+            else if(entry.Is<EntryType::SpecialEntryAmiibo>()) {
+                icon_path = "ui/Main/EntryIcon/Amiibo";
+            }
             return TryFindLoadImageHandle(icon_path);
         }
         else {
             return pu::sdl2::TextureHandle::New(pu::ui::render::LoadImage(icon_path));
+        }
+    }
+
+    void EntryMenu::CleanOverTexts() {
+        for(auto &over_text_tex: this->entry_over_texts) {
+            pu::ui::render::DeleteTexture(over_text_tex);
+        }
+    }
+    
+    void EntryMenu::LoadOverText(const u32 idx) {
+        if(idx < this->cur_entries.size()) {
+            const auto &entry = this->cur_entries.at(idx);
+            if(entry.Is<EntryType::Folder>()) {
+                auto &over_text_tex = this->entry_over_texts.at(idx);
+                if(over_text_tex == nullptr) {
+                    const auto side_margin = (u32)(((double)this->entry_size / (double)DefaultEntrySize) * (double)DefaultOverTextSideMargin);
+                    this->entry_over_texts.at(idx) = pu::ui::render::RenderText(pu::ui::GetDefaultFont(pu::ui::DefaultFontSize::Medium), entry.folder_info.name, g_MenuApplication->GetTextColor(), this->entry_size - 2 * side_margin);
+                }
+            }
         }
     }
 
@@ -124,6 +170,7 @@ namespace ul::menu::ui {
             const auto &entry = this->cur_entries.at(idx);
             if(!entry.Is<EntryType::Invalid>()) {
                 this->entry_icons.at(idx) = this->LoadEntryIconTexture(entry);
+                this->LoadOverText(idx);
 
                 auto &entry_alpha = this->load_img_entry_alphas.at(idx);
                 entry_alpha = 0;
@@ -147,12 +194,12 @@ namespace ul::menu::ui {
             if(((u32)prev_entry_idx < this->cur_entries.size())) {
                 const auto &prev_entry = this->cur_entries.at(prev_entry_idx);
                 if(prev_entry.type != EntryType::Invalid) {
-                    is_prev_entry_suspended = g_MenuApplication->IsEntrySuspended(prev_entry);
+                    is_prev_entry_suspended = g_GlobalSettings.IsEntrySuspended(prev_entry);
                 }
             }
         }
 
-        const auto is_cur_entry_suspended = this->IsFocusedNonemptyEntry() && g_MenuApplication->IsEntrySuspended(this->GetFocusedEntry());
+        const auto is_cur_entry_suspended = this->IsFocusedNonemptyEntry() && g_GlobalSettings.IsEntrySuspended(this->GetFocusedEntry());
         this->cur_entry_changed_cb(has_prev_entry, is_prev_entry_suspended, is_cur_entry_suspended);
     }
 
@@ -185,6 +232,14 @@ namespace ul::menu::ui {
         this->selected_size = 0;
         this->hb_takeover_app_over_icon = TryFindLoadImage("ui/Main/OverIcon/HomebrewTakeoverApplication");
         this->hb_takeover_app_size = 0;
+        this->gamecard_over_icon = TryFindLoadImage("ui/Main/OverIcon/Gamecard");
+        this->gamecard_size = 0;
+        this->corrupted_over_icon = TryFindLoadImage("ui/Main/OverIcon/Corrupted");
+        this->corrupted_size = 0;
+        this->not_launchable_over_icon = TryFindLoadImage("ui/Main/OverIcon/NotLaunchable");
+        this->not_launchable_size = 0;
+        this->needs_update_over_icon = TryFindLoadImage("ui/Main/OverIcon/NeedsUpdate");
+        this->needs_update_size = 0;
 
         this->empty_entry_icon = TryFindLoadImageHandle("ui/Main/EntryIcon/Empty");
         this->folder_entry_icon = TryFindLoadImageHandle("ui/Main/EntryIcon/Folder");
@@ -202,7 +257,7 @@ namespace ul::menu::ui {
 
     void EntryMenu::Initialize(const u32 last_idx) {
         u64 entry_height_count;
-        UL_ASSERT_TRUE(g_Config.GetEntry(cfg::ConfigEntryId::MenuEntryHeightCount, entry_height_count));
+        UL_ASSERT_TRUE(g_GlobalSettings.config.GetEntry(cfg::ConfigEntryId::MenuEntryHeightCount, entry_height_count));
         g_EntryHeightCount = entry_height_count;
         this->ComputeSizes(g_EntryHeightCount);
 
@@ -288,33 +343,62 @@ namespace ul::menu::ui {
                 auto &entry_alpha_incr = this->load_img_entry_incrs.at(entry_i);
                 entry_alpha_incr.Increment(entry_alpha);
 
+                #define _DRAW_OVER_ICON(name) { \
+                    const auto over_icon_x = (s32)(entry_x - ((this->name##_size - this->entry_size) / 2)) - (s32)this->entries_base_swipe_neg_offset; \
+                    const auto over_icon_y = entry_y - ((this->name##_size - this->entry_size) / 2); \
+                    drawer->RenderTexture(this->name##_over_icon, over_icon_x, over_icon_y, pu::ui::render::TextureRenderOptions::WithCustomDimensions(this->name##_size, this->name##_size)); \
+                }
+
                 if(entry_icon != nullptr) {
                     drawer->RenderTexture(entry_icon->Get(), (s32)entry_x - (s32)this->entries_base_swipe_neg_offset, entry_y, pu::ui::render::TextureRenderOptions::WithCustomAlphaAndDimensions(entry_alpha, this->entry_size, this->entry_size));
-                }
 
-                if(entry.Is<EntryType::Homebrew>() || entry.Is<EntryType::Application>() || entry.IsSpecial()) {
-                    // Only for valid non-folder entries
-                    const auto border_x = entry_x - ((this->border_size - this->entry_size) / 2);
-                    const auto border_y = entry_y - ((this->border_size - this->entry_size) / 2);
-                    drawer->RenderTexture(this->border_over_icon, (s32)border_x - (s32)this->entries_base_swipe_neg_offset, border_y, pu::ui::render::TextureRenderOptions::WithCustomDimensions(this->border_size, this->border_size));
-                }
+                    const auto progress = this->entry_progresses.at(entry_i);
+                    if(!std::isnan(progress)) {
+                        const auto bar_width = this->entry_size;
+                        const auto bar_height = (u32)(((double)this->entry_size / (double)DefaultEntrySize) * (double)DefaultProgressBarHeight);
+                        drawer->RenderRectangleFill(ProgressBackgroundColor, (s32)entry_x - (s32)this->entries_base_swipe_neg_offset, entry_y + this->entry_size - bar_height, bar_width, bar_height);
 
-                if(g_MenuApplication->IsEntryHomebrewTakeoverApplication(entry)) {
-                    const auto takeover_x = (s32)(entry_x - ((this->hb_takeover_app_size - this->entry_size) / 2)) - (s32)this->entries_base_swipe_neg_offset;
-                    const auto takeover_y = entry_y - ((this->hb_takeover_app_size - this->entry_size) / 2);
-                    drawer->RenderTexture(this->hb_takeover_app_over_icon, takeover_x, takeover_y, pu::ui::render::TextureRenderOptions::WithCustomDimensions(this->hb_takeover_app_size, this->hb_takeover_app_size));
-                }
+                        const auto progress_width = (u32)((float)bar_width * progress);
+                        drawer->RenderRectangleFill(ProgressForegroundColor, (s32)entry_x - (s32)this->entries_base_swipe_neg_offset, entry_y + this->entry_size - bar_height, progress_width, bar_height);
+                    }
 
-                if(g_MenuApplication->IsEntrySuspended(entry)) {
-                    const auto suspended_x = (s32)(entry_x - ((this->suspended_size - this->entry_size) / 2)) - (s32)this->entries_base_swipe_neg_offset;
-                    const auto suspended_y = entry_y - ((this->suspended_size - this->entry_size) / 2);
-                    drawer->RenderTexture(this->suspended_over_icon, suspended_x, suspended_y, pu::ui::render::TextureRenderOptions::WithCustomDimensions(this->suspended_size, this->suspended_size));
-                }
+                    if(entry.Is<EntryType::Homebrew>() || entry.Is<EntryType::Application>() || entry.IsSpecial()) {
+                        _DRAW_OVER_ICON(border);
+                    }
 
-                if(this->IsEntrySelected(entry_i)) {
-                    const auto selected_x = (s32)(entry_x - ((this->selected_size - this->entry_size) / 2)) - (s32)this->entries_base_swipe_neg_offset;
-                    const auto selected_y = entry_y - ((this->selected_size - this->entry_size) / 2);
-                    drawer->RenderTexture(this->selected_over_icon, selected_x, selected_y, pu::ui::render::TextureRenderOptions::WithCustomDimensions(this->selected_size, this->selected_size));
+                    if(IsEntryHomebrewTakeoverApplication(entry)) {
+                        _DRAW_OVER_ICON(hb_takeover_app);
+                    }
+
+                    if(IsEntryGamecardInserted(entry)) {
+                        _DRAW_OVER_ICON(gamecard);
+                    }
+
+                    if(IsEntryCorrupted(entry)) {
+                        _DRAW_OVER_ICON(corrupted);
+                    }
+                    else if(IsEntryNotLaunchable(entry)) {
+                        _DRAW_OVER_ICON(not_launchable);
+                    }
+                    else if(EntryNeedsUpdate(entry)) {
+                        _DRAW_OVER_ICON(needs_update);
+                    }
+
+                    if(g_GlobalSettings.IsEntrySuspended(entry)) {
+                        _DRAW_OVER_ICON(suspended);
+                    }
+
+                    this->LoadOverText(entry_i);
+                    auto over_text_tex = this->entry_over_texts.at(entry_i);
+                    if(over_text_tex != nullptr) {
+                        const auto text_width = pu::ui::render::GetTextureWidth(over_text_tex);
+                        const auto text_height = pu::ui::render::GetTextureHeight(over_text_tex);
+                        drawer->RenderTexture(over_text_tex, (s32)entry_x - (s32)this->entries_base_swipe_neg_offset + (u32)((double)(this->entry_size - text_width) / 2.0f), entry_y + (u32)((double)(this->entry_size - text_height) / 2.0f));
+                    }
+
+                    if(this->IsEntrySelected(entry_i)) {
+                        _DRAW_OVER_ICON(selected);
+                    }
                 }
             }
 
@@ -331,6 +415,7 @@ namespace ul::menu::ui {
         const auto cur_actual_entry_idx_x = (cur_actual_entry_idx / g_EntryHeightCount) - this->base_entry_idx_x;
         const auto cur_actual_entry_idx_y = cur_actual_entry_idx % g_EntryHeightCount;
 
+        // Cursor is an special over icon
         const auto cursor_x = x + HorizontalSideMargin + cur_actual_entry_idx_x * (this->entry_size + this->entry_h_margin) - ((this->cursor_size - this->entry_size) / 2) + (this->IsCursorInTransition() ? this->cursor_transition_x : 0);
         const auto cursor_y = y + this->v_side_margin + cur_actual_entry_idx_y * (this->entry_size + EntryVerticalMargin) - ((this->cursor_size - this->entry_size) / 2) + (this->IsCursorInTransition() ? this->cursor_transition_y : 0);
         drawer->RenderTexture(this->cursor_over_icon, cursor_x, cursor_y, pu::ui::render::TextureRenderOptions::WithCustomDimensions(this->cursor_size, this->cursor_size));
@@ -377,28 +462,34 @@ namespace ul::menu::ui {
             const auto cur_entry_idx_y = this->cur_entry_idx % g_EntryHeightCount;
 
             if(cur_entry_idx_y > 0) {
-                this->pre_transition_entry_idx = this->cur_entry_idx;
-                this->after_transition_entry_idx = this->cur_entry_idx - 1;
-                this->cursor_transition_y_incr.Start(CursorTransitionIncrementSteps, 0, -cursor_transition_abs_incr_y);
-                this->cur_entry_change_started_cb();
+                if(this->IsNotInLargeSwipe()) {
+                    this->pre_transition_entry_idx = this->cur_entry_idx;
+                    this->after_transition_entry_idx = this->cur_entry_idx - 1;
+                    this->cursor_transition_y_incr.Start(CursorTransitionIncrementSteps, 0, -cursor_transition_abs_incr_y);
+                    this->cur_entry_change_started_cb();
+                }
             }
         }
         else if((keys_down & HidNpadButton_Down) || (keys_held & HidNpadButton_StickLDown) || (keys_held & HidNpadButton_StickRDown)) {
             const auto cur_entry_idx_y = this->cur_entry_idx % g_EntryHeightCount;
             if((cur_entry_idx_y + 1) < g_EntryHeightCount) {
-                this->pre_transition_entry_idx = this->cur_entry_idx;
-                this->after_transition_entry_idx = this->cur_entry_idx + 1;
-                this->cursor_transition_y_incr.Start(CursorTransitionIncrementSteps, 0, cursor_transition_abs_incr_y);
-                this->cur_entry_change_started_cb();
+                if(this->IsNotInLargeSwipe()) {
+                    this->pre_transition_entry_idx = this->cur_entry_idx;
+                    this->after_transition_entry_idx = this->cur_entry_idx + 1;
+                    this->cursor_transition_y_incr.Start(CursorTransitionIncrementSteps, 0, cursor_transition_abs_incr_y);
+                    this->cur_entry_change_started_cb();
+                }
             }
         }
         else if((keys_down & HidNpadButton_Left) || (keys_held & HidNpadButton_StickLLeft) || (keys_held & HidNpadButton_StickRLeft)) {
             const auto rel_entry_idx_x = (this->cur_entry_idx / g_EntryHeightCount) - this->base_entry_idx_x;
             if(rel_entry_idx_x > 0) {
-                this->pre_transition_entry_idx = this->cur_entry_idx;
-                this->after_transition_entry_idx = this->cur_entry_idx - g_EntryHeightCount;
-                this->cursor_transition_x_incr.Start(CursorTransitionIncrementSteps, 0, -cursor_transition_abs_incr_x);
-                this->cur_entry_change_started_cb();
+                if(this->IsNotInLargeSwipe()) {
+                    this->pre_transition_entry_idx = this->cur_entry_idx;
+                    this->after_transition_entry_idx = this->cur_entry_idx - g_EntryHeightCount;
+                    this->cursor_transition_x_incr.Start(CursorTransitionIncrementSteps, 0, -cursor_transition_abs_incr_x);
+                    this->cur_entry_change_started_cb();
+                }
             }
             else if((rel_entry_idx_x == 0) && (this->base_entry_idx_x > 0)) {
                 if(this->IsNotInSwipe()) {
@@ -413,10 +504,12 @@ namespace ul::menu::ui {
         else if((keys_down & HidNpadButton_Right) || (keys_held & HidNpadButton_StickLRight) || (keys_held & HidNpadButton_StickRRight)) {
             const auto rel_entry_idx_x = (this->cur_entry_idx / g_EntryHeightCount) - this->base_entry_idx_x;
             if((rel_entry_idx_x + 1) < this->entry_width_count) {
-                this->pre_transition_entry_idx = this->cur_entry_idx;
-                this->after_transition_entry_idx = this->cur_entry_idx + g_EntryHeightCount;
-                this->cursor_transition_x_incr.Start(CursorTransitionIncrementSteps, 0, cursor_transition_abs_incr_x);
-                this->cur_entry_change_started_cb();
+                if(this->IsNotInLargeSwipe()) {
+                    this->pre_transition_entry_idx = this->cur_entry_idx;
+                    this->after_transition_entry_idx = this->cur_entry_idx + g_EntryHeightCount;
+                    this->cursor_transition_x_incr.Start(CursorTransitionIncrementSteps, 0, cursor_transition_abs_incr_x);
+                    this->cur_entry_change_started_cb();
+                }
             }
             else if((rel_entry_idx_x + 1) == this->entry_width_count) {
                 if(this->IsNotInSwipe()) {
@@ -439,7 +532,7 @@ namespace ul::menu::ui {
         s32 is_prev_entry_suspended_override = -1;
         if(!reloading) {
             if(this->IsFocusedNonemptyEntry()) {
-                is_prev_entry_suspended_override = static_cast<s32>(g_MenuApplication->IsEntrySuspended(this->GetFocusedEntry()));
+                is_prev_entry_suspended_override = static_cast<s32>(g_GlobalSettings.IsEntrySuspended(this->GetFocusedEntry()));
             }
 
             this->cur_path = new_path;
@@ -463,12 +556,19 @@ namespace ul::menu::ui {
                 entry_icon = {};
             }
         }
+        for(auto &over_text : this->entry_over_texts) {
+            pu::ui::render::DeleteTexture(over_text);
+        }
 
         this->entry_icons.clear();
+        this->entry_over_texts.clear();
+        this->entry_progresses.clear();
         this->load_img_entry_alphas.clear();
         this->load_img_entry_incrs.clear();
         for(u32 i = 0; i < this->entry_total_count; i++) {
             this->entry_icons.push_back(nullptr);
+            this->entry_over_texts.push_back(nullptr);
+            this->entry_progresses.push_back(NAN);
             this->load_img_entry_alphas.push_back(0xFF);
             this->load_img_entry_incrs.push_back({});
         }
@@ -506,13 +606,13 @@ namespace ul::menu::ui {
                 tmp_entry.type = EntryType::Invalid;
             }
             this->entry_icons.at(rem_entry.index) = {};
+            pu::ui::render::DeleteTexture(this->entry_over_texts.at(rem_entry.index));
         }
 
         for(const auto &add_entry: this->entries_to_add) {
             UL_LOG_WARN("Adding entry of type %d at %d", (u32)add_entry.type, add_entry.index);
             if(add_entry.type != EntryType::Invalid) {
                 while(tmp_entries.size() < (add_entry.index + 1)) {
-                    UL_LOG_WARN("pushpush");
                     auto &tmp_entry = tmp_entries.emplace_back();
                     tmp_entry.type = EntryType::Invalid;
                 }
@@ -527,6 +627,8 @@ namespace ul::menu::ui {
         this->ComputeSizes(g_EntryHeightCount);
         while(this->entry_icons.size() < this->entry_total_count) {
             this->entry_icons.push_back(nullptr);
+            this->entry_over_texts.push_back(nullptr);
+            this->entry_progresses.push_back(NAN);
             this->load_img_entry_alphas.push_back(0xFF);
             this->load_img_entry_incrs.push_back({});
         }
@@ -558,6 +660,12 @@ namespace ul::menu::ui {
         return (this->cur_entry_idx < this->cur_entries.size()) && !this->cur_entries.at(this->cur_entry_idx).Is<EntryType::Invalid>();
     }
 
+    void EntryMenu::UpdateEntryProgress(const u32 idx, const float progress) {
+        UL_ASSERT_TRUE(idx < this->cur_entries.size());
+
+        this->entry_progresses.at(idx) = progress;
+    }
+
     void EntryMenu::IncrementEntryHeightCount() {
         auto h_count = g_EntryHeightCount;
         h_count++;
@@ -573,6 +681,7 @@ namespace ul::menu::ui {
         this->base_entry_idx_x = 0;
         this->cur_entry_idx = 0;
 
+        this->CleanOverTexts();
         this->NotifyFocusedEntryChanged(-1);
         g_MenuApplication->FadeIn();
     }
@@ -600,6 +709,7 @@ namespace ul::menu::ui {
                 this->base_entry_idx_x = 0;
                 this->cur_entry_idx = 0;
 
+                this->CleanOverTexts();
                 this->NotifyFocusedEntryChanged(-1);
             }
             g_MenuApplication->FadeIn();
@@ -667,7 +777,7 @@ namespace ul::menu::ui {
             return false;
         }
         else {
-            return g_MenuApplication->IsEntrySuspended(this->GetFocusedEntry());
+            return g_GlobalSettings.IsEntrySuspended(this->GetFocusedEntry());
         }
     }
 

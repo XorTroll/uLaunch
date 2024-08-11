@@ -5,18 +5,67 @@
 
 namespace ul::menu::ui {
 
+    enum class SettingMenu {
+        System,
+        uLaunch,
+        Bluetooth,
+        Network,
+        Screen,
+        Dev,
+
+        Count
+    };
+
+    enum class SettingSubmenu {
+        None
+    };
+
+    enum class Setting {
+        ConsoleFirmware,
+        AtmosphereFirmware,
+        AtmosphereEmummc,
+        ConsoleNickname,
+        ConsoleTimezone,
+        UsbScreenCaptureEnabled,
+        ConnectionSsid,
+        ConsoleLanguage,
+        ConsoleInformationUploadEnabled,
+        AutomaticApplicationDownloadEnabled,
+        ConsoleAutoUpdateEnabled,
+        WirelessLanEnabled,
+        BluetoothEnabled,
+        Usb30Enabled,
+        NfcEnabled,
+        ConsoleSerialNumber,
+        MacAddress,
+        IpAddress,
+
+        ConsoleRegion,
+        SystemUpdateStatus,
+        LockscreenEnabled,
+        PrimaryAlbumStorage,
+        HandheldSleepPlan,
+        ConsoleSleepPlan,
+        SleepWhilePlayingMedia,
+        SleepWakesAtPowerStateChange,
+        BatteryLot,
+    };
+
     class SettingsMenuLayout : public IMenuLayout {
         public:
             static constexpr u32 SettingsMenuWidth = 1770;
             static constexpr u32 SettingsMenuItemSize = 150;
-            static constexpr u32 SettingsMenuItemsToShow = 6;
+            static constexpr u32 SettingsMenuItemsToShow = 5;
 
         private:
-            pu::ui::elm::TextBlock::Ref info_text;
+            pu::ui::elm::TextBlock::Ref menu_text;
+            pu::ui::elm::TextBlock::Ref submenu_text;
             pu::ui::elm::Menu::Ref settings_menu;
             pu::audio::Sfx setting_edit_sfx;
             pu::audio::Sfx setting_save_sfx;
             pu::audio::Sfx back_sfx;
+            SettingMenu cur_menu;
+            SettingSubmenu cur_submenu;
 
             void PushSettingItem(const std::string &name, const std::string &value_display, const int id);
             void setting_DefaultKey(const u32 id);
@@ -29,7 +78,7 @@ namespace ul::menu::ui {
             bool OnHomeButtonPress() override;
             void DisposeAudio() override;
 
-            void Reload(const bool reset_idx);
+            void Reload(const bool soft);
     };
 
 }

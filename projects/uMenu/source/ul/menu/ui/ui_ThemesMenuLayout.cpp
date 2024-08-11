@@ -3,9 +3,8 @@
 #include <ul/fs/fs_Stdio.hpp>
 #include <ul/menu/smi/smi_Commands.hpp>
 
+extern ul::menu::ui::GlobalSettings g_GlobalSettings;
 extern ul::menu::ui::MenuApplication::Ref g_MenuApplication;
-extern ul::cfg::Config g_Config;
-extern ul::cfg::Theme g_ActiveTheme;
 
 namespace ul::menu::ui {
 
@@ -53,7 +52,7 @@ namespace ul::menu::ui {
         // Move active theme to top
         for(u32 i = 0; i < this->loaded_themes.size(); i++) {
             const auto theme = this->loaded_themes.at(i);
-            if(theme.IsSame(g_ActiveTheme)) {
+            if(theme.IsSame(g_GlobalSettings.active_theme)) {
                 this->loaded_themes.erase(this->loaded_themes.begin() + i);
                 this->loaded_themes.insert(this->loaded_themes.begin(), theme);
                 break;
@@ -94,7 +93,7 @@ namespace ul::menu::ui {
         const auto idx = this->themes_menu->GetSelectedIndex();
         const auto &selected_theme = this->loaded_themes.at(idx);
         if(selected_theme.IsValid()) {
-            if(selected_theme.IsSame(g_ActiveTheme)) {
+            if(selected_theme.IsSame(g_GlobalSettings.active_theme)) {
                 g_MenuApplication->ShowNotification(GetLanguageString("theme_active_this"));
             }
             else {
@@ -105,31 +104,27 @@ namespace ul::menu::ui {
 
                 const auto option = g_MenuApplication->DisplayDialog(selected_theme.manifest.name, theme_conf_msg, { GetLanguageString("yes"), GetLanguageString("cancel") }, true, this->loaded_theme_icons.at(idx));
                 if(option == 0) {
-                    g_ActiveTheme = selected_theme;
-                    UL_ASSERT_TRUE(g_Config.SetEntry(cfg::ConfigEntryId::ActiveThemeName, g_ActiveTheme.name));
-                    SaveConfig();
+                    g_GlobalSettings.SetActiveTheme(selected_theme);
                     g_MenuApplication->ShowNotification(GetLanguageString("theme_cache"));
 
                     pu::audio::PlaySfx(this->theme_change_sfx);
                     g_MenuApplication->ShowNotification(GetLanguageString("theme_changed"));
-                    g_MenuApplication->Finalize();
                     UL_RC_ASSERT(ul::menu::smi::RestartMenu(true));
+                    g_MenuApplication->Finalize();
                 }
             }
         }
         else {
-            if(g_ActiveTheme.IsValid()) {
+            if(g_GlobalSettings.active_theme.IsValid()) {
                 const auto option = g_MenuApplication->DisplayDialog(GetLanguageString("theme_reset"), GetLanguageString("theme_reset_conf"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
                 if(option == 0) {
-                    g_ActiveTheme = {};
-                    UL_ASSERT_TRUE(g_Config.SetEntry(cfg::ConfigEntryId::ActiveThemeName, g_ActiveTheme.name));
-                    SaveConfig();
+                    g_GlobalSettings.SetActiveTheme({});
                     g_MenuApplication->ShowNotification(GetLanguageString("theme_cache"));
 
                     pu::audio::PlaySfx(this->theme_change_sfx);
                     g_MenuApplication->ShowNotification(GetLanguageString("theme_changed"));
-                    g_MenuApplication->Finalize();
                     UL_RC_ASSERT(ul::menu::smi::RestartMenu(true));
+                    g_MenuApplication->Finalize();
                 }
             }
             else {

@@ -1,9 +1,10 @@
 
 #pragma once
-#include <ul/menu/ui/ui_StartupMenuLayout.hpp>
 #include <ul/menu/ui/ui_MainMenuLayout.hpp>
+#include <ul/menu/ui/ui_StartupMenuLayout.hpp>
 #include <ul/menu/ui/ui_ThemesMenuLayout.hpp>
 #include <ul/menu/ui/ui_SettingsMenuLayout.hpp>
+#include <ul/menu/ui/ui_LockscreenMenuLayout.hpp>
 #include <ul/menu/smi/smi_Commands.hpp>
 
 namespace ul::menu::ui {
@@ -14,7 +15,8 @@ namespace ul::menu::ui {
         Main,
         Startup,
         Themes,
-        Settings
+        Settings,
+        Lockscreen
     };
     
     struct MenuBgmEntry {
@@ -24,7 +26,7 @@ namespace ul::menu::ui {
         pu::audio::Music bgm;
     };
 
-    void OnMessage(const smi::MenuMessageContext msg_ctx);
+    void OnMessage(const smi::MenuMessageContext &msg_ctx);
 
     class MenuApplication : public pu::ui::Application {
         public:
@@ -32,6 +34,9 @@ namespace ul::menu::ui {
             static constexpr u32 DefaultBgmFadeInMs = 1500;
             static constexpr u32 DefaultBgmFadeOutMs = 500;
             using MenuFadeCallback = std::function<void()>;
+
+            static constexpr u8 DefaultFadeAlphaIncrementSteps = 20;
+            static constexpr u8 FastFadeAlphaIncrementSteps = 12;
 
         private:
             smi::MenuStartMode start_mode;
@@ -43,12 +48,17 @@ namespace ul::menu::ui {
             MenuBgmEntry themes_menu_bgm;
             SettingsMenuLayout::Ref settings_menu_lyt;
             MenuBgmEntry settings_menu_bgm;
+            LockscreenMenuLayout::Ref lockscreen_menu_lyt;
+            MenuBgmEntry lockscreen_menu_bgm;
             pu::ui::extras::Toast::Ref notif_toast;
-            smi::SystemStatus system_status;
             bool launch_failed;
             Result pending_gc_mount_rc;
+            bool needs_app_records_reload;
+            bool needs_app_entries_reload;
             char chosen_hb[FS_MAX_PATH];
-            u64 takeover_app_id;
+            u64 verify_finished_app_id;
+            Result verify_rc;
+            Result verify_detail_rc;
             MenuType loaded_menu;
             util::JSON ui_json;
             util::JSON bgm_json;
@@ -71,6 +81,8 @@ namespace ul::menu::ui {
                         return this->themes_menu_bgm;
                     case MenuType::Settings:
                         return this->settings_menu_bgm;
+                    case MenuType::Lockscreen:
+                        return this->lockscreen_menu_bgm;
                 }
 
                 UL_ASSERT_TRUE(false && "Invalid current menu?");
@@ -90,9 +102,8 @@ namespace ul::menu::ui {
 
             void OnLoad() override;
 
-            inline void Initialize(const smi::MenuStartMode start_mode, const smi::SystemStatus system_status, const util::JSON ui_json) {
+            inline void Initialize(const smi::MenuStartMode start_mode, const util::JSON ui_json) {
                 this->start_mode = start_mode;
-                this->system_status = system_status;
                 this->ui_json = ui_json;
             }
 
@@ -100,7 +111,7 @@ namespace ul::menu::ui {
                 this->StopPlayBgm();
                 this->ResetFade();
                 this->DisposeAllAudio();
-                this->CloseWithFadeOut();
+                this->CloseWithFadeOut(true);
             }
 
             void SetBackgroundFade();
@@ -111,26 +122,8 @@ namespace ul::menu::ui {
 
             void LoadMenuByType(const MenuType type, const bool fade = true, MenuFadeCallback fade_cb = nullptr);
 
-            inline bool IsTitleSuspended() {
-                return this->system_status.suspended_app_id != 0;
-            }
-
-            inline bool IsHomebrewSuspended() {
-                return strlen(this->system_status.suspended_hb_target_ipt.nro_path) > 0;
-            }
-
-            inline bool IsSuspended() {
-                return this->IsTitleSuspended() || this->IsHomebrewSuspended();
-            }
-
-            inline smi::SystemStatus &GetStatus() {
-                return this->system_status;
-            }
-
-            inline void ResetSuspendedApplication() {
-                // Blanking the whole status would also blank the selected user, thus we only blank the params
-                this->system_status.suspended_app_id = {};
-                this->system_status.suspended_hb_target_ipt = {};
+            inline void NotifyLaunchFailed() {
+                this->launch_failed = true;
             }
 
             inline bool GetConsumeLastLaunchFailed() {
@@ -139,8 +132,8 @@ namespace ul::menu::ui {
                 return res;
             }
 
-            inline void NotifyLaunchFailed() {
-                this->launch_failed = true;
+            inline void NotifyHomebrewChosen(const char (&chosen_hb_path)[FS_MAX_PATH]) {
+                util::CopyToStringBuffer(this->chosen_hb, chosen_hb_path);
             }
 
             inline bool HasChosenHomebrew() {
@@ -152,16 +145,6 @@ namespace ul::menu::ui {
                 memset(this->chosen_hb, 0, sizeof(this->chosen_hb));
                 return res;
             }
-
-            inline void NotifyHomebrewChosen(const char (&chosen_hb_path)[FS_MAX_PATH]) {
-                util::CopyToStringBuffer(this->chosen_hb, chosen_hb_path);
-            }
-
-            inline u64 GetTakeoverApplicationId() {
-                return this->takeover_app_id;
-            }
-
-            void SetTakeoverApplicationId(const u64 app_id);
 
             inline void NotifyGameCardMountFailure(const Result rc) {
                 this->pending_gc_mount_rc = rc;
@@ -177,9 +160,58 @@ namespace ul::menu::ui {
                 return gc_rc;
             }
 
-            inline void UpdateMenuIndex(const u32 idx) {
-                UL_RC_ASSERT(smi::UpdateMenuIndex(idx));
-                this->system_status.last_menu_index = idx;
+            inline void NotifyApplicationRecordReloadNeeded() {
+                this->needs_app_records_reload = true;
+            }
+
+            inline bool GetConsumeApplicationRecordReloadNeeded() {
+                const auto needs_reload = this->needs_app_records_reload;
+                this->needs_app_records_reload = false;
+                return needs_reload;
+            }
+
+            inline void NotifyApplicationEntryReloadNeeded() {
+                this->needs_app_entries_reload = true;
+            }
+
+            inline bool GetConsumeApplicationEntryReloadNeeded() {
+                const auto needs_reload = this->needs_app_entries_reload;
+                this->needs_app_entries_reload = false;
+                return needs_reload;
+            }
+
+            inline void NotifyVerifyFinished(const u64 app_id, const Result rc, const Result detail_rc) {
+                this->verify_finished_app_id = app_id;
+                this->verify_rc = rc;
+                this->verify_detail_rc = detail_rc;
+            }
+
+            inline bool HasVerifyFinishedPending() {
+                return this->verify_finished_app_id != 0;
+            }
+
+            inline u64 GetConsumeVerifyFinishedApplicationId() {
+                const auto app_id = this->verify_finished_app_id;
+                this->verify_finished_app_id = 0;
+                return app_id;
+            }
+
+            inline Result GetConsumeVerifyResult() {
+                const auto rc = this->verify_rc;
+                this->verify_rc = ResultSuccess;
+                return rc;
+            }
+
+            inline Result GetConsumeVerifyDetailResult() {
+                const auto rc = this->verify_detail_rc;
+                this->verify_detail_rc = ResultSuccess;
+                return rc;
+            }
+
+            inline void NotifyApplicationVerifyProgress(const u64 app_id, const float progress = NAN) {
+                if(this->loaded_menu == MenuType::Main) {
+                    this->GetLayout<MainMenuLayout>()->UpdateApplicationVerifyProgress(app_id, progress);
+                }
             }
 
             void ShowNotification(const std::string &text, const u64 timeout = 1500);
@@ -310,28 +342,6 @@ namespace ul::menu::ui {
                 this->startup_menu_lyt->DisposeAudio();
                 this->themes_menu_lyt->DisposeAudio();
                 this->settings_menu_lyt->DisposeAudio();
-            }
-
-            void SetSelectedUser(const AccountUid user_id);
-
-            inline bool IsEntrySuspended(const Entry &entry) {
-                if(entry.Is<EntryType::Application>()) {
-                    return entry.app_info.record.application_id == this->system_status.suspended_app_id;
-                }
-                else if(entry.Is<EntryType::Homebrew>()) {
-                    // Enough to compare the NRO path
-                    return memcmp(this->system_status.suspended_hb_target_ipt.nro_path, entry.hb_info.nro_target.nro_path, sizeof(entry.hb_info.nro_target.nro_path)) == 0;
-                }
-
-                return false;
-            }
-
-            inline bool IsEntryHomebrewTakeoverApplication(const Entry &entry) {
-                return entry.Is<EntryType::Application>() && (entry.app_info.record.application_id == this->takeover_app_id);
-            }
-            
-            inline AccountUid GetSelectedUser() {
-                return this->system_status.selected_user;
             }
 
             int DisplayDialog(const std::string &title, const std::string &content, const std::vector<std::string> &opts, const bool use_last_opt_as_cancel, pu::sdl2::TextureHandle::Ref icon = {});

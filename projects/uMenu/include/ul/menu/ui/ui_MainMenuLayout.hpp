@@ -16,7 +16,7 @@ namespace ul::menu::ui {
         public:
             // TODO (new): config in theme?
             static constexpr u8 SuspendedScreenAlphaIncrement = 10;
-            static constexpr s64 MessagesWaitTimeSeconds = 2;
+            static constexpr s64 MessagesWaitTimeSeconds = 1;
             static constexpr s64 TimeDotsDisplayChangeWaitTimeSeconds = 1;
             static constexpr u32 LogoSize = 90;
 
@@ -30,10 +30,6 @@ namespace ul::menu::ui {
                 HidingLostFocus = 5
             };
 
-            bool last_has_connection;
-            u32 last_connection_strength;
-            u32 last_battery_lvl;
-            bool last_is_charging;
             bool last_quick_menu_on;
             pu::ui::elm::Image::Ref top_menu_default_bg;
             pu::ui::elm::Image::Ref top_menu_folder_bg;
@@ -146,6 +142,7 @@ namespace ul::menu::ui {
 
             inline void MoveToRoot(const bool fade, std::function<void()> action = nullptr) {
                 this->cur_folder_path = "";
+                this->cur_path_text->SetText(this->cur_folder_path);
                 this->MoveTo(MenuPath, fade, action);
             }
 
@@ -184,7 +181,18 @@ namespace ul::menu::ui {
                 this->mode = SuspendedImageMode::HidingForResume;
             }
 
-            void NotifyLoad(const AccountUid user);
+            inline void UpdateApplicationVerifyProgress(const u64 app_id, const float progress) {
+                const auto &cur_entries = this->entry_menu->GetEntries();
+                for(u32 i = 0; i < cur_entries.size(); i++) {
+                    const auto &entry = cur_entries.at(i);
+                    if(entry.Is<EntryType::Application>() && (entry.app_info.app_id == app_id)) {
+                        this->entry_menu->UpdateEntryProgress(i, progress);
+                        break;
+                    }
+                }
+            }
+
+            void NotifyLoad();
             void HandleCloseSuspended();
             void HandleHomebrewLaunch(const Entry &entry);
             void StopSelection();

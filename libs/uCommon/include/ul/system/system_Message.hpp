@@ -48,7 +48,7 @@ namespace ul::system {
         Unk_OverlayBrightValueChanged = 13,
         Unk_OverlayAutoBrightnessChanged = 14,
         Unk_OverlayAirplaneModeChanged = 15,
-        Unk_HomeButtonHold = 16,
+        Unk_OverlayShown = 16,
         Unk_OverlayHidden = 17,
         RequestToLaunchApplication = 32,
         RequestJumpToStory = 33

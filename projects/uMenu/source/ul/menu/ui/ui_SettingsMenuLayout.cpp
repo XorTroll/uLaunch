@@ -3,80 +3,698 @@
 #include <ul/fs/fs_Stdio.hpp>
 #include <ul/net/net_Service.hpp>
 #include <ul/acc/acc_Accounts.hpp>
-#include <ul/os/os_System.hpp>
 #include <ul/util/util_Scope.hpp>
 
-extern SetSysFirmwareVersion g_FwVersion;
-
+extern ul::menu::ui::GlobalSettings g_GlobalSettings;
 extern ul::menu::ui::MenuApplication::Ref g_MenuApplication;
-extern ul::cfg::Config g_Config;
 
 namespace ul::menu::ui {
 
     namespace {
 
-        template<typename T>
-        inline std::string EncodeForSettings(const T &t) {
-            return GetLanguageString("set_unknown_value");
+        std::string GetMenuName(const SettingMenu menu) {
+            switch(menu) {
+                case SettingMenu::System: return GetLanguageString("set_menu_system");
+                case SettingMenu::uLaunch: return GetLanguageString("set_menu_ulaunch");
+                case SettingMenu::Bluetooth: return GetLanguageString("set_menu_bluetooth");
+                case SettingMenu::Network: return GetLanguageString("set_menu_network");
+                case SettingMenu::Screen: return GetLanguageString("set_menu_screen");
+                case SettingMenu::Dev: return GetLanguageString("set_menu_dev");
+
+                default: return GetLanguageString("set_unknown_value");
+            }
         }
 
-        template<>
-        inline std::string EncodeForSettings<std::string>(const std::string &t) {
-            return "\"" + t + "\"";
-        }
-        
-        template<>
-        inline std::string EncodeForSettings<u32>(const u32 &t) {
-            return "\"" + std::to_string(t) + "\"";
-        }
-
-        template<>
-        inline std::string EncodeForSettings<bool>(const bool &t) {
+        inline std::string FormatBoolean(const bool &t) {
             return t ? GetLanguageString("set_true_value") : GetLanguageString("set_false_value");
         }
 
-        constexpr u32 ExosphereApiVersionConfigItem = 65000;
-        constexpr u32 ExosphereEmummcType = 65007;
-        constexpr u32 ExosphereSupportedHosVersion = 65011;
-
-        bool g_AmsEmummcInfoLoaded = false;
-        ul::Version g_AmsVersion;
-        bool g_AmsIsEmummc;
-
-        void LoadAmsEmummcInfo() {
-            if(!g_AmsEmummcInfoLoaded) {
-                UL_RC_ASSERT(splInitialize());
-                UL_ON_SCOPE_EXIT(
-                    splExit();
-                );
-
-                // Since we rely on ams for uLaunch to work, it *must* be present
-
-                u64 raw_ams_ver;
-                UL_RC_ASSERT(splGetConfig(static_cast<SplConfigItem>(ExosphereApiVersionConfigItem), &raw_ams_ver));
-                g_AmsVersion = {
-                    .major = static_cast<u8>((raw_ams_ver >> 56) & 0xFF),
-                    .minor = static_cast<u8>((raw_ams_ver >> 48) & 0xFF),
-                    .micro = static_cast<u8>((raw_ams_ver >> 40) & 0xFF)
-                };
-
-                u64 emummc_type;
-                UL_RC_ASSERT(splGetConfig(static_cast<SplConfigItem>(ExosphereEmummcType), &emummc_type));
-                g_AmsIsEmummc = emummc_type != 0;
-                g_AmsEmummcInfoLoaded = true;
+        inline std::string FormatRegion(const SetRegion region) {
+            switch(region) {
+                case SetRegion_JPN: return GetLanguageString("set_region_jpn");
+                case SetRegion_USA: return GetLanguageString("set_region_usa");
+                case SetRegion_EUR: return GetLanguageString("set_region_eur");
+                case SetRegion_AUS: return GetLanguageString("set_region_aus");
+                case SetRegion_HTK: return GetLanguageString("set_region_htk");
+                case SetRegion_CHN: return GetLanguageString("set_region_chn");
+                default: return GetLanguageString("set_unknown_value");
             }
+        }
+
+        inline Result GetLatestSystemUpdate(u8 &out_value) {
+            NsSystemUpdateControl ctrl;
+            UL_RC_TRY(nssuOpenSystemUpdateControl(&ctrl));
+            UL_ON_SCOPE_EXIT({
+                nssuControlClose(&ctrl);
+            });
+
+            AsyncValue av;
+            UL_RC_TRY(nssuControlRequestCheckLatestUpdate(&ctrl, &av));
+            UL_ON_SCOPE_EXIT({
+                asyncValueClose(&av);
+            });
+
+            UL_RC_TRY(asyncValueWait(&av, UINT64_MAX));
+
+            u8 latest_upd_value;
+            UL_RC_TRY(asyncValueGet(&av, &latest_upd_value, sizeof(latest_upd_value)));
+
+            out_value = latest_upd_value;
+            UL_RC_SUCCEED;
+        }
+
+        inline std::string FormatLatestSystemUpdate(const u8 upd) {
+            switch(upd) {
+                case 0: return GetLanguageString("set_update_updated");
+                case 1: return GetLanguageString("set_update_ready_install");
+                case 2: return GetLanguageString("set_update_needs_download");
+                default: return GetLanguageString("set_unknown_value");
+            }
+        }
+
+        inline std::string FormatPrimaryAlbumStorage(const SetSysPrimaryAlbumStorage storage) {
+            switch(storage) {
+                case SetSysPrimaryAlbumStorage_Nand: return GetLanguageString("set_album_nand");
+                case SetSysPrimaryAlbumStorage_SdCard: return GetLanguageString("set_album_sd");
+                default: return GetLanguageString("set_unknown_value");
+            }
+        }
+
+        inline std::string FormatConsoleSleepPlan(const SetSysConsoleSleepPlan plan) {
+            switch(plan) {
+                case SetSysConsoleSleepPlan_1Hour: return GetLanguageString("set_sleep_console_1h");
+                case SetSysConsoleSleepPlan_2Hour: return GetLanguageString("set_sleep_console_2h");
+                case SetSysConsoleSleepPlan_3Hour: return GetLanguageString("set_sleep_console_3h");
+                case SetSysConsoleSleepPlan_6Hour: return GetLanguageString("set_sleep_console_6h");
+                case SetSysConsoleSleepPlan_12Hour: return GetLanguageString("set_sleep_console_12h");
+                case SetSysConsoleSleepPlan_Never: return GetLanguageString("set_sleep_console_never");
+                default: return GetLanguageString("set_unknown_value");
+            }
+        }
+
+        inline std::string FormatHandheldSleepPlan(const SetSysHandheldSleepPlan plan) {
+            switch(plan) {
+                case SetSysHandheldSleepPlan_1Min: return GetLanguageString("set_sleep_handheld_1min");
+                case SetSysHandheldSleepPlan_3Min: return GetLanguageString("set_sleep_handheld_3min");
+                case SetSysHandheldSleepPlan_5Min: return GetLanguageString("set_sleep_handheld_5min");
+                case SetSysHandheldSleepPlan_10Min: return GetLanguageString("set_sleep_handheld_10min");
+                case SetSysHandheldSleepPlan_30Min: return GetLanguageString("set_sleep_handheld_30min");
+                case SetSysHandheldSleepPlan_Never: return GetLanguageString("set_sleep_handheld_never");
+                default: return GetLanguageString("set_unknown_value");
+            }
+        }
+
+        constexpr auto SleepFlag_SleepsWhilePlayingMedia = BIT(0);
+        constexpr auto SleepFlag_WakesAtPowerStateChange = BIT(1);
+
+        struct SettingInfo {
+            SettingMenu menu;
+            SettingSubmenu submenu;
+            Setting setting;
+            bool editable;
+            pu::ui::elm::MenuItem::Ref menu_item;
+
+            std::string static_description;
+            std::function<std::string()> dyn_description_cb;
+
+            std::string static_value;
+            std::function<std::string()> dyn_value_cb;
+
+            std::function<bool()> select_cb;
+
+            inline std::string GetDescription() {
+                if(!this->static_description.empty()) {
+                    return this->static_description;
+                }
+                else if(this->dyn_description_cb != nullptr) {
+                    return this->dyn_description_cb();
+                }
+                else {
+                    return "";
+                }
+            }
+
+            inline std::string GetValue() {
+                if(!this->static_value.empty()) {
+                    return this->static_value;
+                }
+                else {
+                    return this->dyn_value_cb();
+                }
+            }
+
+            inline std::string Format() {
+                const auto &desc = this->GetDescription();
+                const auto &val = this->GetValue();
+                if(desc.empty()) {
+                    return val;
+                }
+                else {
+                    return desc + ": " + val;
+                }
+            }
+        };
+
+        std::vector<SettingInfo> g_Settings;
+
+        void LoadSettings() {
+            g_Settings.clear();
+
+            g_Settings.push_back({
+                .menu = SettingMenu::System,
+                .submenu = SettingSubmenu::None,
+                .setting = Setting::ConsoleRegion,
+                .editable = false,
+                .static_description = GetLanguageString("set_region"),
+                .static_value = FormatRegion(g_GlobalSettings.region)
+            });
+
+            g_Settings.push_back({
+                .menu = SettingMenu::System,
+                .submenu = SettingSubmenu::None,
+                .setting = Setting::SystemUpdateStatus,
+                .editable = false,
+                .static_description = GetLanguageString("set_update"),
+                .dyn_value_cb = []() {
+                    u8 latest_upd_value = 0xFF;
+                    if(R_SUCCEEDED(GetLatestSystemUpdate(latest_upd_value))) {
+                        return FormatLatestSystemUpdate(latest_upd_value);
+                    }
+                    else {
+                        return GetLanguageString("set_update_no_connection");
+                    }
+                }
+            });
+
+            g_Settings.push_back({
+                .menu = SettingMenu::Screen,
+                .submenu = SettingSubmenu::None,
+                .setting = Setting::LockscreenEnabled,
+                .editable = true,
+                .static_description = GetLanguageString("set_lockscreen"),
+                .dyn_value_cb = []() {
+                    bool lockscreen_enabled;
+                    UL_ASSERT_TRUE(g_GlobalSettings.config.GetEntry(cfg::ConfigEntryId::LockscreenEnabled, lockscreen_enabled));
+                    return FormatBoolean(lockscreen_enabled);
+                },
+                .select_cb = []() {
+                    bool lockscreen_enabled;
+                    UL_ASSERT_TRUE(g_GlobalSettings.config.GetEntry(cfg::ConfigEntryId::LockscreenEnabled, lockscreen_enabled));
+                    UL_ASSERT_TRUE(g_GlobalSettings.config.SetEntry(cfg::ConfigEntryId::LockscreenEnabled, !lockscreen_enabled));
+                    return true;
+                }
+            });
+
+            g_Settings.push_back({
+                .menu = SettingMenu::Screen,
+                .submenu = SettingSubmenu::None,
+                .setting = Setting::PrimaryAlbumStorage,
+                .editable = true,
+                .static_description = GetLanguageString("set_album"),
+                .dyn_value_cb = []() {
+                    return FormatPrimaryAlbumStorage(g_GlobalSettings.album_storage);
+                },
+                .select_cb = []() {
+                    const auto opt = g_MenuApplication->DisplayDialog(GetLanguageString("set_album"), GetLanguageString("set_enum_options"), {
+                        GetLanguageString("set_album_sd"),
+                        GetLanguageString("set_album_nand"),
+                        GetLanguageString("cancel")
+                    }, true);
+                    switch(opt) {
+                        case 0:
+                            g_GlobalSettings.album_storage = SetSysPrimaryAlbumStorage_SdCard;
+                            UL_RC_ASSERT(setsysSetPrimaryAlbumStorage(g_GlobalSettings.album_storage));
+                            return true;
+                        case 1:
+                            g_GlobalSettings.album_storage = SetSysPrimaryAlbumStorage_Nand;
+                            UL_RC_ASSERT(setsysSetPrimaryAlbumStorage(g_GlobalSettings.album_storage));
+                            return true;
+                    }
+                    return false;
+                }
+            });
+
+            g_Settings.push_back({
+                .menu = SettingMenu::Screen,
+                .submenu = SettingSubmenu::None,
+                .setting = Setting::ConsoleSleepPlan,
+                .editable = true,
+                .static_description = GetLanguageString("set_sleep_console"),
+                .dyn_value_cb = []() {
+                    return FormatConsoleSleepPlan((SetSysConsoleSleepPlan)g_GlobalSettings.sleep_settings.console_sleep_plan);
+                },
+                .select_cb = []() {
+                    const auto opt = g_MenuApplication->DisplayDialog(GetLanguageString("set_sleep_console"), GetLanguageString("set_enum_option"), {
+                        GetLanguageString("set_sleep_console_never"),
+                        GetLanguageString("set_sleep_console_1h"),
+                        GetLanguageString("set_sleep_console_2h"),
+                        GetLanguageString("set_sleep_console_3h"),
+                        GetLanguageString("set_sleep_console_6h"),
+                        GetLanguageString("set_sleep_console_12h"),
+                        GetLanguageString("cancel")
+                    }, true);
+                    switch(opt) {
+                        case 0:
+                            g_GlobalSettings.sleep_settings.console_sleep_plan = SetSysConsoleSleepPlan_Never;
+                            g_GlobalSettings.UpdateSleepSettings();
+                            return true;
+                        case 1:
+                            g_GlobalSettings.sleep_settings.console_sleep_plan = SetSysConsoleSleepPlan_1Hour;
+                            g_GlobalSettings.UpdateSleepSettings();
+                            return true;
+                        case 2:
+                            g_GlobalSettings.sleep_settings.console_sleep_plan = SetSysConsoleSleepPlan_2Hour;
+                            g_GlobalSettings.UpdateSleepSettings();
+                            return true;
+                        case 3:
+                            g_GlobalSettings.sleep_settings.console_sleep_plan = SetSysConsoleSleepPlan_3Hour;
+                            g_GlobalSettings.UpdateSleepSettings();
+                            return true;
+                        case 4:
+                            g_GlobalSettings.sleep_settings.console_sleep_plan = SetSysConsoleSleepPlan_6Hour;
+                            g_GlobalSettings.UpdateSleepSettings();
+                            return true;
+                        case 5:
+                            g_GlobalSettings.sleep_settings.console_sleep_plan = SetSysConsoleSleepPlan_12Hour;
+                            g_GlobalSettings.UpdateSleepSettings();
+                            return true;
+                    }
+                    return false;
+                }
+            });
+
+            g_Settings.push_back({
+                .menu = SettingMenu::Screen,
+                .submenu = SettingSubmenu::None,
+                .setting = Setting::HandheldSleepPlan,
+                .editable = true,
+                .static_description = GetLanguageString("set_sleep_handheld"),
+                .dyn_value_cb = []() {
+                    return FormatHandheldSleepPlan((SetSysHandheldSleepPlan)g_GlobalSettings.sleep_settings.handheld_sleep_plan);
+                },
+                .select_cb = []() {
+                    const auto opt = g_MenuApplication->DisplayDialog(GetLanguageString("set_sleep_handheld"), GetLanguageString("set_enum_options"), {
+                        GetLanguageString("set_sleep_handheld_never"),
+                        GetLanguageString("set_sleep_handheld_1min"),
+                        GetLanguageString("set_sleep_handheld_3min"),
+                        GetLanguageString("set_sleep_handheld_5min"),
+                        GetLanguageString("set_sleep_handheld_10min"),
+                        GetLanguageString("set_sleep_handheld_30min"),
+                        GetLanguageString("cancel")
+                    }, true);
+                    switch(opt) {
+                        case 0:
+                            g_GlobalSettings.sleep_settings.handheld_sleep_plan = SetSysHandheldSleepPlan_Never;
+                            g_GlobalSettings.UpdateSleepSettings();
+                            return true;
+                        case 1:
+                            g_GlobalSettings.sleep_settings.handheld_sleep_plan = SetSysHandheldSleepPlan_1Min;
+                            g_GlobalSettings.UpdateSleepSettings();
+                            return true;
+                        case 2:
+                            g_GlobalSettings.sleep_settings.handheld_sleep_plan = SetSysHandheldSleepPlan_3Min;
+                            g_GlobalSettings.UpdateSleepSettings();
+                            return true;
+                        case 3:
+                            g_GlobalSettings.sleep_settings.handheld_sleep_plan = SetSysHandheldSleepPlan_5Min;
+                            g_GlobalSettings.UpdateSleepSettings();
+                            return true;
+                        case 4:
+                            g_GlobalSettings.sleep_settings.handheld_sleep_plan = SetSysHandheldSleepPlan_10Min;
+                            g_GlobalSettings.UpdateSleepSettings();
+                            return true;
+                        case 5:
+                            g_GlobalSettings.sleep_settings.handheld_sleep_plan = SetSysHandheldSleepPlan_30Min;
+                            g_GlobalSettings.UpdateSleepSettings();
+                            return true;
+                    }
+                    return false;
+                }
+            });
+
+            g_Settings.push_back({
+                .menu = SettingMenu::Screen,
+                .submenu = SettingSubmenu::None,
+                .setting = Setting::SleepWhilePlayingMedia,
+                .editable = true,
+                .static_description = GetLanguageString("set_sleep_media_play"),
+                .dyn_value_cb = []() {
+                    return FormatBoolean(g_GlobalSettings.sleep_settings.flags & SleepFlag_SleepsWhilePlayingMedia);
+                },
+                .select_cb = []() {
+                    if(g_GlobalSettings.sleep_settings.flags & SleepFlag_SleepsWhilePlayingMedia) {
+                        g_GlobalSettings.sleep_settings.flags &= ~SleepFlag_SleepsWhilePlayingMedia;
+                    }
+                    else {
+                        g_GlobalSettings.sleep_settings.flags |= SleepFlag_SleepsWhilePlayingMedia;
+                    }
+                    g_GlobalSettings.UpdateSleepSettings();
+                    return true;
+                }
+            });
+
+            g_Settings.push_back({
+                .menu = SettingMenu::Screen,
+                .submenu = SettingSubmenu::None,
+                .setting = Setting::SleepWakesAtPowerStateChange,
+                .editable = true,
+                .static_description = GetLanguageString("set_sleep_wake_power_state"),
+                .dyn_value_cb = []() {
+                    return FormatBoolean(g_GlobalSettings.sleep_settings.flags & SleepFlag_WakesAtPowerStateChange);
+                },
+                .select_cb = []() {
+                    if(g_GlobalSettings.sleep_settings.flags & SleepFlag_WakesAtPowerStateChange) {
+                        g_GlobalSettings.sleep_settings.flags &= ~SleepFlag_WakesAtPowerStateChange;
+                    }
+                    else {
+                        g_GlobalSettings.sleep_settings.flags |= SleepFlag_WakesAtPowerStateChange;
+                    }
+                    g_GlobalSettings.UpdateSleepSettings();
+                    return true;
+                }
+            });
+
+            g_Settings.push_back({
+                .menu = SettingMenu::Dev,
+                .submenu = SettingSubmenu::None,
+                .setting = Setting::BatteryLot,
+                .editable = false,
+                .static_description = GetLanguageString("set_battery_lot"),
+                .static_value = g_GlobalSettings.battery_lot.lot
+            });
+
+            g_Settings.push_back({
+                .menu = SettingMenu::System,
+                .submenu = SettingSubmenu::None,
+                .setting = Setting::ConsoleFirmware,
+                .editable = false,
+                .static_description = GetLanguageString("set_console_fw"),
+                .static_value = std::string(g_GlobalSettings.fw_version.display_version) + " (" + g_GlobalSettings.fw_version.display_title + ")"
+            });
+
+            g_Settings.push_back({
+                .menu = SettingMenu::System,
+                .submenu = SettingSubmenu::None,
+                .setting = Setting::AtmosphereFirmware,
+                .editable = false,
+                .static_description = GetLanguageString("set_ams_fw"),
+                .static_value = g_GlobalSettings.ams_version.Format()
+            });
+
+            g_Settings.push_back({
+                .menu = SettingMenu::System,
+                .submenu = SettingSubmenu::None,
+                .setting = Setting::AtmosphereEmummc,
+                .editable = false,
+                .static_description = GetLanguageString("set_ams_emummc"),
+                .static_value = FormatBoolean(g_GlobalSettings.ams_is_emummc)
+            });
+
+            g_Settings.push_back({
+                .menu = SettingMenu::System,
+                .submenu = SettingSubmenu::None,
+                .setting = Setting::ConsoleNickname,
+                .editable = true,
+                .static_description = GetLanguageString("set_console_nickname"),
+                .dyn_value_cb = []() {
+                    return std::string(g_GlobalSettings.nickname.nickname);
+                },
+                .select_cb = []() {
+                    SwkbdConfig swkbd;
+                    if(R_SUCCEEDED(swkbdCreate(&swkbd, 0))) {
+                        swkbdConfigSetGuideText(&swkbd, GetLanguageString("swkbd_console_nick_guide").c_str());
+                        swkbdConfigSetInitialText(&swkbd, g_GlobalSettings.nickname.nickname);
+                        swkbdConfigSetStringLenMax(&swkbd, 32);
+                        SetSysDeviceNickName new_name = {};
+                        auto rc = swkbdShow(&swkbd, new_name.nickname, sizeof(new_name.nickname));
+                        swkbdClose(&swkbd);
+                        if(R_SUCCEEDED(rc)) {
+                            g_GlobalSettings.nickname = new_name;
+                            UL_RC_ASSERT(setsysSetDeviceNickname(&g_GlobalSettings.nickname));
+                            return true;
+                        }
+                    }
+
+                    return false;
+                }
+            });
+
+            g_Settings.push_back({
+                .menu = SettingMenu::System,
+                .submenu = SettingSubmenu::None,
+                .setting = Setting::ConsoleTimezone,
+                .editable = false,
+                .static_description = GetLanguageString("set_console_timezone"),
+                .static_value = std::string(g_GlobalSettings.timezone.name)
+            });
+
+            g_Settings.push_back({
+                .menu = SettingMenu::uLaunch,
+                .submenu = SettingSubmenu::None,
+                .setting = Setting::UsbScreenCaptureEnabled,
+                .editable = true,
+                .static_description = GetLanguageString("set_usb_screen_capture_enabled"),
+                .dyn_value_cb = []() {
+                    bool usb_capture_enabled;
+                    UL_ASSERT_TRUE(g_GlobalSettings.config.GetEntry(cfg::ConfigEntryId::UsbScreenCaptureEnabled, usb_capture_enabled));
+                    return FormatBoolean(usb_capture_enabled);
+                },
+                .select_cb = []() {
+                    bool usb_capture_enabled;
+                    UL_ASSERT_TRUE(g_GlobalSettings.config.GetEntry(cfg::ConfigEntryId::UsbScreenCaptureEnabled, usb_capture_enabled));
+                    const auto opt = g_MenuApplication->DisplayDialog(GetLanguageString("set_usb_screen_capture_enabled"), GetLanguageString("set_usb_screen_capture_info") + "\n" + (usb_capture_enabled ? GetLanguageString("set_usb_screen_capture_disable_conf") : GetLanguageString("set_usb_screen_capture_enable_conf")), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
+                    if(opt == 0) {
+                        UL_ASSERT_TRUE(g_GlobalSettings.config.SetEntry(cfg::ConfigEntryId::UsbScreenCaptureEnabled, !usb_capture_enabled));
+                        g_MenuApplication->ShowNotification(GetLanguageString("set_changed_reboot"));
+                        return true;
+                    }
+
+                    return false;
+                }
+            });
+
+            g_Settings.push_back({
+                .menu = SettingMenu::Network,
+                .submenu = SettingSubmenu::None,
+                .setting = Setting::ConnectionSsid,
+                .editable = true,
+                .static_description = GetLanguageString("set_wifi_name"),
+                .dyn_value_cb = []() {
+                    auto connected_wifi_name = GetLanguageString("set_wifi_none");
+                    NifmNetworkProfileData prof_data = {};
+                    if(R_SUCCEEDED(nifmGetCurrentNetworkProfile(&prof_data))) {
+                        connected_wifi_name = prof_data.wireless_setting_data.ssid;
+                    }
+                    return connected_wifi_name;
+                },
+                .select_cb = []() {
+                    // Close uMenu and launch the connections applet
+                    ShowNetConnect();
+                    return true;
+                }
+            });
+
+            g_Settings.push_back({
+                .menu = SettingMenu::System,
+                .submenu = SettingSubmenu::None,
+                .setting = Setting::ConsoleLanguage,
+                .editable = true,
+                .static_description = GetLanguageString("set_console_lang"),
+                .dyn_value_cb = []() {
+                    return os::LanguageNameList[static_cast<u32>(g_GlobalSettings.language)];
+                },
+                .select_cb = []() {
+                    std::vector<std::string> lang_opts = {};
+                    for(u32 i = 0; i < os::LanguageNameCount; i++) {
+                        lang_opts.push_back(os::LanguageNameList[i]);
+                    }
+                    lang_opts.push_back(GetLanguageString("cancel"));
+
+                    const auto opt = g_MenuApplication->DisplayDialog(GetLanguageString("set_lang_select"), GetLanguageString("set_lang_conf"), lang_opts, true);
+                    if(opt >= 0) {
+                        const auto sys_lang = os::GetSystemLanguage();
+                        if(sys_lang == opt) {
+                            g_MenuApplication->ShowNotification(GetLanguageString("set_lang_active"));
+                        }
+                        else {
+                            const auto lang_code = g_GlobalSettings.available_language_codes[opt];
+                            const auto rc = setsysSetLanguageCode(lang_code);
+                            g_MenuApplication->DisplayDialog(GetLanguageString("set_lang"), R_SUCCEEDED(rc) ? GetLanguageString("set_lang_select_ok") : GetLanguageString("set_lang_select_error") + ": " + util::FormatResultDisplay(rc), { GetLanguageString("ok") }, true);
+                            if(R_SUCCEEDED(rc)) {
+                                // No need to change our global settings
+                                RebootSystem();
+                                // Never reached anyway
+                                return true;
+                            }
+                        }
+                    }
+
+                    return false;
+                }
+            });
+
+            g_Settings.push_back({
+                .menu = SettingMenu::Network,
+                .submenu = SettingSubmenu::None,
+                .setting = Setting::ConsoleInformationUploadEnabled,
+                .editable = true,
+                .static_description = GetLanguageString("set_console_info_upload"),
+                .dyn_value_cb = []() {
+                    return FormatBoolean(g_GlobalSettings.console_info_upload_enabled);
+                },
+                .select_cb = []() {
+                    g_GlobalSettings.console_info_upload_enabled = !g_GlobalSettings.console_info_upload_enabled;
+                    UL_RC_ASSERT(setsysSetConsoleInformationUploadFlag(g_GlobalSettings.console_info_upload_enabled));
+                    return true;
+                }
+            });
+
+            g_Settings.push_back({
+                .menu = SettingMenu::Network,
+                .submenu = SettingSubmenu::None,
+                .setting = Setting::AutomaticApplicationDownloadEnabled,
+                .editable = true,
+                .static_description = GetLanguageString("set_auto_app_download"),
+                .dyn_value_cb = []() {
+                    return FormatBoolean(g_GlobalSettings.auto_app_download_enabled);
+                },
+                .select_cb = []() {
+                    g_GlobalSettings.auto_app_download_enabled = !g_GlobalSettings.auto_app_download_enabled;
+                    UL_RC_ASSERT(setsysSetAutomaticApplicationDownloadFlag(g_GlobalSettings.auto_app_download_enabled));
+                    return true;
+                }
+            });
+
+            g_Settings.push_back({
+                .menu = SettingMenu::Network,
+                .submenu = SettingSubmenu::None,
+                .setting = Setting::ConsoleAutoUpdateEnabled,
+                .editable = true,
+                .static_description = GetLanguageString("set_auto_update"),
+                .dyn_value_cb = []() {
+                    return FormatBoolean(g_GlobalSettings.auto_update_enabled);
+                },
+                .select_cb = []() {
+                    g_GlobalSettings.auto_update_enabled = !g_GlobalSettings.auto_update_enabled;
+                    UL_RC_ASSERT(setsysSetAutoUpdateEnableFlag(g_GlobalSettings.auto_update_enabled));
+                    return true;
+                }
+            });
+
+            g_Settings.push_back({
+                .menu = SettingMenu::Network,
+                .submenu = SettingSubmenu::None,
+                .setting = Setting::WirelessLanEnabled,
+                .editable = true,
+                .static_description = GetLanguageString("set_wireless_lan"),
+                .dyn_value_cb = []() {
+                    return FormatBoolean(g_GlobalSettings.wireless_lan_enabled);
+                },
+                .select_cb = []() {
+                    g_GlobalSettings.wireless_lan_enabled = !g_GlobalSettings.wireless_lan_enabled;
+                    UL_RC_ASSERT(setsysSetWirelessLanEnableFlag(g_GlobalSettings.wireless_lan_enabled));
+                    return true;
+                }
+            });
+
+            g_Settings.push_back({
+                .menu = SettingMenu::Bluetooth,
+                .submenu = SettingSubmenu::None,
+                .setting = Setting::BluetoothEnabled,
+                .editable = true,
+                .static_description = GetLanguageString("set_bluetooth"),
+                .dyn_value_cb = []() {
+                    return FormatBoolean(g_GlobalSettings.bluetooth_enabled);
+                },
+                .select_cb = []() {
+                    g_GlobalSettings.bluetooth_enabled = !g_GlobalSettings.bluetooth_enabled;
+                    UL_RC_ASSERT(setsysSetBluetoothEnableFlag(g_GlobalSettings.bluetooth_enabled));
+                    return true;
+                }
+            });
+
+            g_Settings.push_back({
+                .menu = SettingMenu::System,
+                .submenu = SettingSubmenu::None,
+                .setting = Setting::Usb30Enabled,
+                .editable = true,
+                .static_description = GetLanguageString("set_usb_30"),
+                .dyn_value_cb = []() {
+                    return FormatBoolean(g_GlobalSettings.usb30_enabled);
+                },
+                .select_cb = []() {
+                    g_GlobalSettings.usb30_enabled = !g_GlobalSettings.usb30_enabled;
+                    UL_RC_ASSERT(setsysSetUsb30EnableFlag(g_GlobalSettings.usb30_enabled));
+                    return true;
+                }
+            });
+
+            g_Settings.push_back({
+                .menu = SettingMenu::System,
+                .submenu = SettingSubmenu::None,
+                .setting = Setting::NfcEnabled,
+                .editable = true,
+                .static_description = GetLanguageString("set_nfc"),
+                .dyn_value_cb = []() {
+                    return FormatBoolean(g_GlobalSettings.nfc_enabled);
+                },
+                .select_cb = []() {
+                    g_GlobalSettings.nfc_enabled = !g_GlobalSettings.nfc_enabled;
+                    UL_RC_ASSERT(setsysSetNfcEnableFlag(g_GlobalSettings.nfc_enabled));
+                    return true;
+                }
+            });
+
+            g_Settings.push_back({
+                .menu = SettingMenu::Dev,
+                .submenu = SettingSubmenu::None,
+                .setting = Setting::ConsoleSerialNumber,
+                .editable = false,
+                .static_description = GetLanguageString("set_serial_no"),
+                .static_value = std::string(g_GlobalSettings.serial_no.number)
+            });
+
+            g_Settings.push_back({
+                .menu = SettingMenu::Network,
+                .submenu = SettingSubmenu::None,
+                .setting = Setting::MacAddress,
+                .editable = false,
+                .static_description = GetLanguageString("set_mac_addr"),
+                .dyn_value_cb = []() {
+                    net::WlanMacAddress mac_addr;
+                    UL_RC_ASSERT(net::GetMacAddress(mac_addr));
+                    return net::FormatMacAddress(mac_addr);
+                }
+            });
+
+            g_Settings.push_back({
+                .menu = SettingMenu::Network,
+                .submenu = SettingSubmenu::None,
+                .setting = Setting::IpAddress,
+                .editable = false,
+                .static_description = GetLanguageString("set_ip_addr"),
+                .dyn_value_cb = []() {
+                    return net::GetConsoleIpAddress();
+                }
+            });
         }
 
     }
 
     SettingsMenuLayout::SettingsMenuLayout() : IMenuLayout() {
-        LoadAmsEmummcInfo();
+        LoadSettings();
+        this->cur_menu = static_cast<SettingMenu>(0);
+        this->cur_submenu = SettingSubmenu::None;
 
-        this->info_text = pu::ui::elm::TextBlock::New(0, 0, GetLanguageString("set_info_text"));
+        this->menu_text = pu::ui::elm::TextBlock::New(0, 0, "...");
+        this->menu_text->SetColor(g_MenuApplication->GetTextColor());
+        g_MenuApplication->ApplyConfigForElement("settings_menu", "menu_text", this->menu_text);
+        this->Add(this->menu_text);
 
-        this->info_text->SetColor(g_MenuApplication->GetTextColor());
-        g_MenuApplication->ApplyConfigForElement("settings_menu", "info_text", this->info_text);
-        this->Add(this->info_text);
+        this->submenu_text = pu::ui::elm::TextBlock::New(0, 0, "...");
+        this->submenu_text->SetColor(g_MenuApplication->GetTextColor());
+        g_MenuApplication->ApplyConfigForElement("settings_menu", "submenu_text", this->submenu_text);
+        this->Add(this->submenu_text);
 
         this->settings_menu = pu::ui::elm::Menu::New(0, 0, SettingsMenuWidth, g_MenuApplication->GetMenuBackgroundColor(), g_MenuApplication->GetMenuFocusColor(), SettingsMenuItemSize, SettingsMenuItemsToShow);
         g_MenuApplication->ApplyConfigForElement("settings_menu", "settings_menu", this->settings_menu);
@@ -97,7 +715,40 @@ namespace ul::menu::ui {
         if(keys_down & HidNpadButton_B) {
             pu::audio::PlaySfx(this->back_sfx);
 
-            g_MenuApplication->LoadMenuByType(MenuType::Main);
+            if(this->cur_submenu != SettingSubmenu::None) {
+                g_MenuApplication->SetBackgroundFade();
+                g_MenuApplication->FadeOut();
+
+                this->cur_submenu = SettingSubmenu::None;
+                this->Reload(false);
+
+                g_MenuApplication->FadeIn();
+            }
+            else {
+                g_MenuApplication->LoadMenuByType(MenuType::Main);    
+            }
+        }
+        else if(keys_down & HidNpadButton_L) {
+            if(static_cast<u32>(this->cur_menu) > 0) {
+                g_MenuApplication->SetBackgroundFade();
+                g_MenuApplication->FadeOut();
+
+                this->cur_menu = static_cast<SettingMenu>(static_cast<u32>(this->cur_menu) - 1);
+                this->Reload(false);
+
+                g_MenuApplication->FadeIn();
+            }
+        }
+        else if(keys_down & HidNpadButton_R) {
+            if((static_cast<u32>(this->cur_menu) + 1) < static_cast<u32>(SettingMenu::Count)) {
+                g_MenuApplication->SetBackgroundFade();
+                g_MenuApplication->FadeOut();
+
+                this->cur_menu = static_cast<SettingMenu>(static_cast<u32>(this->cur_menu) + 1);
+                this->Reload(false);
+
+                g_MenuApplication->FadeIn();
+            }
         }
     }
 
@@ -108,230 +759,47 @@ namespace ul::menu::ui {
         return true;
     }
 
-    void SettingsMenuLayout::Reload(const bool reset_idx) {
-        // TODO (long term): implement more settings!
-
-        const auto prev_idx = this->settings_menu->GetSelectedIndex();
-        this->settings_menu->ClearItems();
-
-        this->PushSettingItem(GetLanguageString("set_console_fw"), EncodeForSettings<std::string>(std::string(g_FwVersion.display_version) + " (" + g_FwVersion.display_title + ")"), -1);
-
-        this->PushSettingItem(GetLanguageString("set_ams_fw"), EncodeForSettings<std::string>(g_AmsVersion.Format()), -1);
-
-        this->PushSettingItem(GetLanguageString("set_ams_emummc"), EncodeForSettings(g_AmsIsEmummc), -1);
-        
-        SetSysDeviceNickName console_name = {};
-        UL_RC_ASSERT(setsysGetDeviceNickname(&console_name));
-        this->PushSettingItem(GetLanguageString("set_console_nickname"), EncodeForSettings<std::string>(console_name.nickname), 0);
-        
-        TimeLocationName loc = {};
-        UL_RC_ASSERT(timeGetDeviceLocationName(&loc));
-        this->PushSettingItem(GetLanguageString("set_console_timezone"), EncodeForSettings<std::string>(loc.name), -1);
-
-        bool viewer_usb_enabled;
-        UL_ASSERT_TRUE(g_Config.GetEntry(cfg::ConfigEntryId::ViewerUsbEnabled, viewer_usb_enabled));
-        this->PushSettingItem(GetLanguageString("set_viewer_enabled"), EncodeForSettings(viewer_usb_enabled), 1);
-
-        auto connected_wifi_name = GetLanguageString("set_wifi_none");
-        u32 strength;
-        if(net::HasConnection(strength)) {
-            NifmNetworkProfileData prof_data = {};
-            if(R_SUCCEEDED(nifmGetCurrentNetworkProfile(&prof_data))) {
-                connected_wifi_name = prof_data.wireless_setting_data.ssid;
-            }
+    void SettingsMenuLayout::Reload(const bool soft) {
+        if(this->cur_submenu != SettingSubmenu::None) {
+            /*
+            this->submenu_text->SetVisible(true);
+            this->submenu_text->SetText("");
+            */
         }
-        this->PushSettingItem(GetLanguageString("set_wifi_name"), EncodeForSettings(connected_wifi_name), 2);
-
-        u64 lang_code = 0;
-        auto lang_val = SetLanguage_ENUS;
-        UL_RC_ASSERT(setGetSystemLanguage(&lang_code));
-        UL_RC_ASSERT(setMakeLanguage(lang_code, &lang_val));
-        const std::string lang_str = os::LanguageNameList[static_cast<u32>(lang_val)];
-        this->PushSettingItem(GetLanguageString("set_console_lang"), EncodeForSettings(lang_str), 3);
-
-        auto console_info_upload = false;
-        UL_RC_ASSERT(setsysGetConsoleInformationUploadFlag(&console_info_upload));
-        this->PushSettingItem(GetLanguageString("set_console_info_upload"), EncodeForSettings(console_info_upload), 4);
-        
-        auto auto_titles_dl = false;
-        UL_RC_ASSERT(setsysGetAutomaticApplicationDownloadFlag(&auto_titles_dl));
-        this->PushSettingItem(GetLanguageString("set_auto_titles_dl"), EncodeForSettings(auto_titles_dl), 5);
-        
-        auto auto_update = false;
-        UL_RC_ASSERT(setsysGetAutoUpdateEnableFlag(&auto_update));
-        this->PushSettingItem(GetLanguageString("set_auto_update"), EncodeForSettings(auto_update), 6);
-        
-        auto wireless_lan = false;
-        UL_RC_ASSERT(setsysGetWirelessLanEnableFlag(&wireless_lan));
-        this->PushSettingItem(GetLanguageString("set_wireless_lan"), EncodeForSettings(wireless_lan), 7);
-        
-        auto bluetooth = false;
-        UL_RC_ASSERT(setsysGetBluetoothEnableFlag(&bluetooth));
-        this->PushSettingItem(GetLanguageString("set_bluetooth"), EncodeForSettings(bluetooth), 8);
-        
-        auto usb_30 = false;
-        UL_RC_ASSERT(setsysGetUsb30EnableFlag(&usb_30));
-        this->PushSettingItem(GetLanguageString("set_usb_30"), EncodeForSettings(usb_30), 9);
-        
-        auto nfc = false;
-        UL_RC_ASSERT(setsysGetNfcEnableFlag(&nfc));
-        this->PushSettingItem(GetLanguageString("set_nfc"), EncodeForSettings(nfc), 10);
-        
-        SetSysSerialNumber serial = {};
-        UL_RC_ASSERT(setsysGetSerialNumber(&serial));
-        this->PushSettingItem(GetLanguageString("set_serial_no"), EncodeForSettings<std::string>(serial.number), -1);
-        
-        net::WlanMacAddress mac_addr = {};
-        UL_RC_ASSERT(net::GetMacAddress(mac_addr));
-        const auto mac_addr_str = net::FormatMacAddress(mac_addr);
-        this->PushSettingItem(GetLanguageString("set_mac_addr"), EncodeForSettings(mac_addr_str), -1);
-
-        const auto ip_str = net::GetConsoleIpAddress();
-        this->PushSettingItem(GetLanguageString("set_ip_addr"), EncodeForSettings(ip_str), -1);
-
-        this->settings_menu->SetSelectedIndex(reset_idx ? 0 : prev_idx);
-    }
-
-    void SettingsMenuLayout::PushSettingItem(const std::string &name, const std::string &value_display, int id) {
-        const auto is_editable = id >= 0;
-        auto setting_item = pu::ui::elm::MenuItem::New(name + ": " + value_display);
-        if(is_editable) {
-            setting_item->AddOnKey(std::bind(&SettingsMenuLayout::setting_DefaultKey, this, id));
+        else {
+            this->submenu_text->SetVisible(false);
         }
-        setting_item->SetIcon(is_editable ? GetEditableSettingIconTexture() : GetNonEditableSettingIconTexture());
-        setting_item->SetColor(g_MenuApplication->GetTextColor());
-        this->settings_menu->AddItem(setting_item);
-    }
+        this->menu_text->SetText(GetMenuName(this->cur_menu));
 
-    void SettingsMenuLayout::setting_DefaultKey(const u32 id) {
-        pu::audio::PlaySfx(this->setting_edit_sfx);
-        bool reload_need = false;
-        switch(id) {
-            case 0: {
-                SwkbdConfig swkbd;
-                if(R_SUCCEEDED(swkbdCreate(&swkbd, 0))) {
-                    swkbdConfigSetGuideText(&swkbd, GetLanguageString("swkbd_console_nick_guide").c_str());
-                    SetSysDeviceNickName console_name = {};
-                    UL_RC_ASSERT(setsysGetDeviceNickname(&console_name));
-                    swkbdConfigSetInitialText(&swkbd, console_name.nickname);
-                    swkbdConfigSetStringLenMax(&swkbd, 32);
-                    SetSysDeviceNickName new_name = {};
-                    auto rc = swkbdShow(&swkbd, new_name.nickname, sizeof(new_name.nickname));
-                    swkbdClose(&swkbd);
-                    if(R_SUCCEEDED(rc)) {
-                        setsysSetDeviceNickname(&new_name);
-                        reload_need = true;
-                    }
+        if(soft) {
+            for(auto &setting: g_Settings) {
+                if((setting.menu == this->cur_menu) && (setting.submenu == this->cur_submenu)) {
+                    setting.menu_item->SetName(setting.Format());
                 }
-                break;
             }
-            case 1: {
-                bool viewer_usb_enabled;
-                UL_ASSERT_TRUE(g_Config.GetEntry(cfg::ConfigEntryId::ViewerUsbEnabled, viewer_usb_enabled));
-                auto sopt = g_MenuApplication->DisplayDialog(GetLanguageString("set_viewer_enabled"), GetLanguageString("set_viewer_info") + "\n" + (viewer_usb_enabled ? GetLanguageString("set_viewer_disable_conf") : GetLanguageString("set_viewer_enable_conf")), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
-                if(sopt == 0) {
-                    viewer_usb_enabled = !viewer_usb_enabled;
-                    UL_ASSERT_TRUE(g_Config.SetEntry(cfg::ConfigEntryId::ViewerUsbEnabled, viewer_usb_enabled));
-                    reload_need = true;
-                    g_MenuApplication->ShowNotification(GetLanguageString("set_changed_reboot"));
-                }
-                break;
-            }
-            case 2: {
-                // Close uMenu and launch the applet
-                ShowNetConnect();
-                break;
-            }
-            case 3: {
-                std::vector<std::string> lang_opts = {};
-                for(u32 i = 0; i < os::LanguageNameCount; i++) {
-                    lang_opts.push_back(os::LanguageNameList[i]);
-                }
-                lang_opts.push_back(GetLanguageString("cancel"));
-
-                const auto opt = g_MenuApplication->DisplayDialog(GetLanguageString("set_lang_select"), GetLanguageString("set_lang_conf"), lang_opts, true);
-                if(opt >= 0) {
-                    const auto sys_lang = os::GetSystemLanguage();
-                    if(sys_lang == opt) {
-                        g_MenuApplication->ShowNotification(GetLanguageString("set_lang_active"));
-                    }
-                    else {
-                        u64 lang_codes[os::LanguageNameCount] = {};
-                        s32 tmp;
-                        setGetAvailableLanguageCodes(&tmp, lang_codes, os::LanguageNameCount);
-                        const auto lang_code = lang_codes[opt];
-
-                        const auto rc = setsysSetLanguageCode(lang_code);
-                        g_MenuApplication->DisplayDialog(GetLanguageString("set_lang"), R_SUCCEEDED(rc) ? GetLanguageString("set_lang_select_ok") : GetLanguageString("set_lang_select_error") + ": " + util::FormatResultDisplay(rc), { GetLanguageString("ok") }, true);
-                        if(R_SUCCEEDED(rc)) {
-                            RebootSystem();
-                        }
-                    }
-                }
-                break;
-            }
-            case 4: {
-                auto console_info_upload = false;
-                UL_RC_ASSERT(setsysGetConsoleInformationUploadFlag(&console_info_upload));
-                UL_RC_ASSERT(setsysSetConsoleInformationUploadFlag(!console_info_upload));
-
-                reload_need = true;
-                break;
-            }
-            case 5: {
-                auto auto_app_dl = false;
-                UL_RC_ASSERT(setsysGetAutomaticApplicationDownloadFlag(&auto_app_dl));
-                UL_RC_ASSERT(setsysSetAutomaticApplicationDownloadFlag(!auto_app_dl));
-
-                reload_need = true;
-                break;
-            }
-            case 6: {
-                auto auto_update = false;
-                UL_RC_ASSERT(setsysGetAutoUpdateEnableFlag(&auto_update));
-                UL_RC_ASSERT(setsysSetAutoUpdateEnableFlag(!auto_update));
-
-                reload_need = true;
-                break;
-            }
-            case 7: {
-                auto wireless_lan = false;
-                UL_RC_ASSERT(setsysGetWirelessLanEnableFlag(&wireless_lan));
-                UL_RC_ASSERT(setsysSetWirelessLanEnableFlag(!wireless_lan));
-
-                reload_need = true;
-                break;
-            }
-            case 8: {
-                auto bluetooth = false;
-                UL_RC_ASSERT(setsysGetBluetoothEnableFlag(&bluetooth));
-                UL_RC_ASSERT(setsysSetBluetoothEnableFlag(!bluetooth));
-
-                reload_need = true;
-                break;
-            }
-            case 9: {
-                auto usb_30 = false;
-                UL_RC_ASSERT(setsysGetUsb30EnableFlag(&usb_30));
-                UL_RC_ASSERT(setsysSetUsb30EnableFlag(!usb_30));
-
-                reload_need = true;
-                break;
-            }
-            case 10: {
-                auto nfc = false;
-                UL_RC_ASSERT(setsysGetNfcEnableFlag(&nfc));
-                UL_RC_ASSERT(setsysSetNfcEnableFlag(!nfc));
-
-                reload_need = true;
-                break;
-            }
+            this->settings_menu->ForceReloadItems();
         }
-
-        if(reload_need) {
-            pu::audio::PlaySfx(this->setting_save_sfx);
-            SaveConfig();
-            this->Reload(false);
+        else {
+            this->settings_menu->ClearItems();
+            for(auto &setting: g_Settings) {
+                if((setting.menu == this->cur_menu) && (setting.submenu == this->cur_submenu)) {
+                    setting.menu_item = pu::ui::elm::MenuItem::New(setting.Format());
+                    if(setting.editable) {
+                        setting.menu_item->AddOnKey([&]() {
+                            pu::audio::PlaySfx(this->setting_edit_sfx);
+                            const auto changed = setting.select_cb();
+                            if(changed) {
+                                pu::audio::PlaySfx(this->setting_save_sfx);
+                                g_GlobalSettings.SaveConfig();
+                                this->Reload(true);
+                            }
+                        });
+                    }
+                    setting.menu_item->SetIcon(setting.editable ? GetEditableSettingIconTexture() : GetNonEditableSettingIconTexture());
+                    setting.menu_item->SetColor(g_MenuApplication->GetTextColor());
+                    this->settings_menu->AddItem(setting.menu_item);
+                }
+            }
         }
     }
 

@@ -39,7 +39,7 @@ if (ENVIRONMENT_IS_NODE) {
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: /tmp/tmp1069syv8.js
+// include: /tmp/tmp_90qdbgt.js
 
   if (!Module.expectedDataFileDownloads) {
     Module.expectedDataFileDownloads = 0;
@@ -216,25 +216,25 @@ Module['FS_createPath']("/", "assets", true, true);
     }
 
     }
-    loadPackage({"files": [{"filename": "/assets/FontExtended.ttf", "start": 0, "end": 102428}, {"filename": "/assets/FontStandard.ttf", "start": 102428, "end": 2193280}, {"filename": "/assets/Logo.png", "start": 2193280, "end": 2210489}, {"filename": "/assets/default-theme.zip", "start": 2210489, "end": 2603524}], "remote_package_size": 2603524});
+    loadPackage({"files": [{"filename": "/assets/FontExtended.ttf", "start": 0, "end": 102428}, {"filename": "/assets/FontStandard.ttf", "start": 102428, "end": 2193280}, {"filename": "/assets/Logo.png", "start": 2193280, "end": 2210489}, {"filename": "/assets/default-theme.zip", "start": 2210489, "end": 2626318}], "remote_package_size": 2626318});
 
   })();
 
-// end include: /tmp/tmp1069syv8.js
-// include: /tmp/tmpoa2hxxve.js
+// end include: /tmp/tmp_90qdbgt.js
+// include: /tmp/tmpg0ofgdo3.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if (Module['$ww'] || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: /tmp/tmpoa2hxxve.js
-// include: /tmp/tmpx50pwn30.js
+  // end include: /tmp/tmpg0ofgdo3.js
+// include: /tmp/tmpiu8r_zac.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: /tmp/tmpx50pwn30.js
+  // end include: /tmp/tmpiu8r_zac.js
 
 
 // Sometimes an existing Module object exists with properties

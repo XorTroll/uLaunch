@@ -1,6 +1,7 @@
 
 #pragma once
 #include <ul/loader/loader_TargetTypes.hpp>
+#include <ul/os/os_Applications.hpp>
 #include <ul/fs/fs_Stdio.hpp>
 #include <ul/ul_Include.hpp>
 #include <vector>
@@ -18,35 +19,25 @@ namespace ul::menu {
         SpecialEntrySettings,
         SpecialEntryThemes,
         SpecialEntryControllers,
-        SpecialEntryAlbum
+        SpecialEntryAlbum,
+        SpecialEntryAmiibo
     };
 
     struct EntryApplicationInfo {
         u64 app_id;
         NsApplicationRecord record;
-        NsApplicationContentMetaStatus meta_status;
+        NsApplicationView view;
+        u32 version;
+        u32 launch_required_version;
 
-        inline bool IsInstalledNew() const {
-            return this->record.type == 0x03;
-        }
-
-        inline bool IsInstalled() const {
-            return this->record.type == 0x10;
-        }
-
-        inline bool IsRunning() const {
-            return this->record.type == 0x0; // Not really an ideal state, might be after a uLaunch crash, but whatever
-        }
-        
-        inline bool IsLaunchable() const {
-            return this->IsInstalled() || this->IsInstalledNew() || this->IsRunning();
+        template<os::ApplicationViewFlag Flag>
+        inline constexpr bool HasViewFlag() const {
+            return (view.flags & static_cast<u32>(Flag)) != 0;
         }
 
-        /* TODO (new)
-        inline bool IsGamecard() const {
-            return this->meta_status.storageID == NcmStorageId_GameCard;
+        inline bool NeedsUpdate() const {
+            return this->launch_required_version > this->version;
         }
-        */
     };
 
     struct EntryHomebrewInfo {
@@ -97,7 +88,8 @@ namespace ul::menu {
                 || this->Is<EntryType::SpecialEntrySettings>()
                 || this->Is<EntryType::SpecialEntryThemes>()
                 || this->Is<EntryType::SpecialEntryControllers>()
-                || this->Is<EntryType::SpecialEntryAlbum>();
+                || this->Is<EntryType::SpecialEntryAlbum>()
+                || this->Is<EntryType::SpecialEntryAmiibo>();
         }
 
         inline bool operator<(const Entry &other) const {
@@ -109,7 +101,7 @@ namespace ul::menu {
         }
 
         void TryLoadControlData();
-        void ReloadApplicationInfo();
+        void ReloadApplicationInfo(const bool force_reload_records_views = true);
 
         void MoveTo(const std::string &new_folder_path);
         bool MoveToIndex(const u32 new_index);
@@ -128,13 +120,17 @@ namespace ul::menu {
         std::vector<Entry> Remove();
     };
 
-    void InitializeEntries();
-    void EnsureApplicationEntry(const NsApplicationRecord &app_record);
+    void SetLoadApplicationEntryVersions(const bool load);
 
+    void InitializeEntries();
     std::vector<Entry> LoadEntries(const std::string &path);
     
-    Entry CreateFolderEntry(const std::string &base_path, const std::string &folder_name, const u32 index);
-    Entry CreateHomebrewEntry(const std::string &base_path, const std::string &nro_path, const std::string &nro_argv, const u32 index);
-    void DeleteApplicationEntry(const u64 app_id, const std::string &path);
+    void EnsureApplicationEntry(const NsApplicationRecord &app_record);
+    Entry CreateFolderEntry(const std::string &base_path, const std::string &folder_name, const s32 index = -1);
+    Entry CreateHomebrewEntry(const std::string &base_path, const std::string &nro_path, const std::string &nro_argv, const s32 index = -1);
+    Entry CreateSpecialEntry(const std::string &base_path, const EntryType type, const s32 index = -1);
+    void DeleteApplicationEntryRecursively(const u64 app_id, const std::string &path);
+
+    void ReloadApplicationEntryInfos(std::vector<Entry> &entries);
 
 }
