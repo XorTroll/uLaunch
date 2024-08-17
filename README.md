@@ -367,6 +367,6 @@ In order to only build a certain subproject, you can run `make` plus the subproj
 
 - Several scene developers for their help with small issues or features.
 
-- uMenu/uManager translations: [DDinghoya](https://github.com/DDinghoya) for Korean, [NedcloarBR](https://github.com/NedcloarBR) for Brazilian Portuguese, [Gabriele73](https://github.com/Gabriele73) for Italian
+- uMenu/uManager translations: [DDinghoya](https://github.com/DDinghoya) for Korean, [NedcloarBR](https://github.com/NedcloarBR) for Brazilian Portuguese, [Gabriele73](https://github.com/Gabriele73) for Italian, *mokkori* for French
 
 - Everyone from my Discord and other places whose suggestions made this project a little bit better! Specially all the testers for being essential in reporting bugs and helping a lot with the project's development <3
