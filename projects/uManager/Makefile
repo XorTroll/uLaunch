@@ -170,11 +170,13 @@ all: $(BUILD)
 
 $(BUILD):
 	@[ -d $@ ] || mkdir -p $@
+	@$(MAKE) -C $(LIBUCOMMON)
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
+	@$(MAKE) clean -C $(LIBUCOMMON)
 ifeq ($(strip $(APP_JSON)),)
 	@rm -fr $(BUILD) $(TARGET).nro $(TARGET).nacp $(TARGET).elf
 else

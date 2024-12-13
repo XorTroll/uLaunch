@@ -143,13 +143,6 @@
         {
             "type": "min_kernel_version",
             "value": "0x30"
-        },
-        {
-            "type": "debug_flags",
-            "value": {
-                "allow_debug": true,
-                "force_debug": false
-            }
         }
     ]
 }

@@ -38,7 +38,7 @@
     "app_take_over_done": "Cette application a été sélectionner pour lancer le Homebrew.",
     "app_unexpected_error": "Oups ! Quelque-chose a planté, n'a pas pu démarrer ou s'est terminé de manière inattendue...",
     "ulaunch_about": "uLaunch est un remplacement étendu, orienté vers le Homebrew et open-source du menu HOME.\nVeuillez noter que certaines fonctionalités du menu HOME doivent encore être implementé.\n\nSi vous recherchez des thèmes, consultez le subreddit r/uLaunchThemes.\nSi vous souhaitez contribuer, consultez le dépôt GitHub d'uLaunch",
-    "suspended_app": "Suspended application",
+    "suspended_app": "Application en suspens",
     "suspended_app_close": "Voulez-vous vraiment fermer l'application en suspens? Toutes les données non-sauvegardées seront perdues.",
     "hb_launch": "Lancer Homebrew",
     "hb_launch_conf": "Comment voulez-vous lancer cet Homebrew?",
@@ -185,7 +185,7 @@
     "app_verify_wait": "Cette application est actuellement en cours de vérification...",
     "amiibo_entry_info": "Que voulez-vous faire ?",
     "amiibo_entry_nickname_owner_settings": "Modifier surnom/propriétaire",
-    "amiibo_entry_game_data_erase": "Erase game data",
+    "amiibo_entry_game_data_erase": "Effacer données de jeu",
     "amiibo_entry_restore": "Restorer fichiers corrompus",
     "amiibo_entry_format": "Formatter",
     "lockscreen_info": "Appuyez sur n'importe quelle touche pour déverrouiller"
