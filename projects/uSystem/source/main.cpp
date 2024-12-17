@@ -176,6 +176,17 @@ namespace {
         g_MenuMessageQueue->push(msg_ctx);
     }
 
+    void NotifyApplicationDeleted(const u64 app_id) {
+        u64 takeover_app_id;
+        if(g_Config.GetEntry(ul::cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, takeover_app_id)) {
+            if(takeover_app_id == app_id) {
+                g_Config.SetEntry(ul::cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, 0);
+                ul::cfg::SaveConfig(g_Config);
+            }
+        }
+        g_LastDeletedApplications.push_back(app_id);
+    }
+
     ul::smi::SystemStatus CreateStatus() {
         ul::smi::SystemStatus status = {
             .selected_user = g_SelectedUser,
@@ -1081,7 +1092,7 @@ namespace {
                         }
                         else {
                             UL_LOG_INFO("[EventManager] > Deleted application 0x%016lX", record.application_id);
-                            g_LastDeletedApplications.push_back(record.application_id);
+                            NotifyApplicationDeleted(record.application_id);
                             ul::menu::DeleteApplicationEntryRecursively(record.application_id, ul::MenuPath);
                         }
                     }
@@ -1213,7 +1224,7 @@ namespace {
                 return rec.application_id == app_entry.app_info.app_id;
             }) == g_CurrentRecords.end()) {
                 UL_LOG_INFO("Deleted application 0x%016lX", app_entry.app_info.app_id);
-                g_LastDeletedApplications.push_back(app_entry.app_info.app_id);
+                NotifyApplicationDeleted(app_entry.app_info.app_id);
                 ul::menu::Entry rm_entry(app_entry);
                 rm_entry.Remove();
             }

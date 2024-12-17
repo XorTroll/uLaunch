@@ -185,6 +185,15 @@ namespace {
             UL_RC_ASSERT(ul::menu::smi::ListDeletedApplications(g_GlobalSettings.system_status.last_deleted_app_count, app_buf));
             for(u32 i = 0; i < g_GlobalSettings.system_status.last_deleted_app_count; i++) {
                 UL_LOG_INFO("> Deleted app: 0x%016lX", app_buf[i]);
+
+                UL_LOG_INFO("> !!! deleted 0x%016lX vs takeover 0x%016lX", app_buf[i], g_GlobalSettings.cache_hb_takeover_app_id);
+
+                if(g_GlobalSettings.cache_hb_takeover_app_id == app_buf[i]) {
+                    g_GlobalSettings.cache_hb_takeover_app_id = 0;
+                    g_GlobalSettings.config.SetEntry(ul::cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, g_GlobalSettings.cache_hb_takeover_app_id);
+                    g_GlobalSettings.SaveConfig();
+                }
+
                 g_GlobalSettings.deleted_app_ids.push_back(app_buf[i]);
             }
             delete[] app_buf;

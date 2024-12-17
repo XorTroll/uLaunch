@@ -35,7 +35,7 @@ if (ENVIRONMENT_IS_NODE) {
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: /tmp/tmp7icpanro.js
+// include: /tmp/tmptxk_qkta.js
 
   Module['expectedDataFileDownloads'] ??= 0;
   Module['expectedDataFileDownloads']++;
@@ -216,21 +216,21 @@ Module['FS_createPath']("/", "assets", true, true);
 
   })();
 
-// end include: /tmp/tmp7icpanro.js
-// include: /tmp/tmp436h17j8.js
+// end include: /tmp/tmptxk_qkta.js
+// include: /tmp/tmp2aqwtmbt.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if (Module['$ww'] || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: /tmp/tmp436h17j8.js
-// include: /tmp/tmp8lesez8q.js
+  // end include: /tmp/tmp2aqwtmbt.js
+// include: /tmp/tmpjrq58eh6.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: /tmp/tmp8lesez8q.js
+  // end include: /tmp/tmpjrq58eh6.js
 
 
 // Sometimes an existing Module object exists with properties
@@ -931,7 +931,6 @@ function getWasmImports() {
 // Create the wasm instance.
 // Receives the wasm imports, returns the exports.
 function createWasm() {
-  var info = getWasmImports();
   // Load the wasm module and create an instance of using native support in the JS engine.
   // handle a generated wasm instance, receiving its exports and
   // performing other necessary setup
@@ -972,6 +971,8 @@ function createWasm() {
     // When the regression is fixed, can restore the above PTHREADS-enabled path.
     receiveInstance(result['instance']);
   }
+
+  var info = getWasmImports();
 
   // User shell pages can write their own Module.instantiateWasm = function(imports, successCallback) callback
   // to manually instantiate the Wasm module themselves. This allows pages to
@@ -1115,7 +1116,7 @@ function dbg(...args) {
   console.warn(...args);
 }
 // end include: runtime_debug.js
-var compilerSettings = {"ASSERTIONS":1,"STACK_OVERFLOW_CHECK":1,"CHECK_NULL_WRITES":true,"VERBOSE":false,"INVOKE_RUN":true,"EXIT_RUNTIME":false,"STACK_SIZE":65536,"MALLOC":"dlmalloc","ABORTING_MALLOC":0,"INITIAL_HEAP":16777216,"INITIAL_MEMORY":-1,"MAXIMUM_MEMORY":2147483648,"ALLOW_MEMORY_GROWTH":1,"MEMORY_GROWTH_GEOMETRIC_STEP":0.2,"MEMORY_GROWTH_GEOMETRIC_CAP":100663296,"MEMORY_GROWTH_LINEAR_STEP":-1,"MEMORY64":0,"INITIAL_TABLE":-1,"ALLOW_TABLE_GROWTH":false,"GLOBAL_BASE":1024,"TABLE_BASE":1,"USE_CLOSURE_COMPILER":false,"CLOSURE_WARNINGS":"quiet","IGNORE_CLOSURE_COMPILER_ERRORS":false,"DECLARE_ASM_MODULE_EXPORTS":true,"INLINING_LIMIT":false,"SUPPORT_BIG_ENDIAN":false,"SAFE_HEAP":0,"SAFE_HEAP_LOG":false,"EMULATE_FUNCTION_POINTER_CASTS":false,"EXCEPTION_DEBUG":false,"DEMANGLE_SUPPORT":false,"LIBRARY_DEBUG":false,"SYSCALL_DEBUG":false,"SOCKET_DEBUG":false,"DYLINK_DEBUG":0,"FS_DEBUG":false,"SOCKET_WEBRTC":false,"WEBSOCKET_URL":"ws:#","PROXY_POSIX_SOCKETS":false,"WEBSOCKET_SUBPROTOCOL":"binary","OPENAL_DEBUG":false,"WEBSOCKET_DEBUG":false,"GL_ASSERTIONS":false,"TRACE_WEBGL_CALLS":false,"GL_DEBUG":false,"GL_TESTING":false,"GL_MAX_TEMP_BUFFER_SIZE":2097152,"GL_UNSAFE_OPTS":true,"FULL_ES2":1,"GL_EMULATE_GLES_VERSION_STRING_FORMAT":true,"GL_EXTENSIONS_IN_PREFIXED_FORMAT":true,"GL_SUPPORT_AUTOMATIC_ENABLE_EXTENSIONS":true,"GL_SUPPORT_SIMPLE_ENABLE_EXTENSIONS":true,"GL_TRACK_ERRORS":true,"GL_SUPPORT_EXPLICIT_SWAP_CONTROL":false,"GL_POOL_TEMP_BUFFERS":true,"GL_EXPLICIT_UNIFORM_LOCATION":false,"GL_EXPLICIT_UNIFORM_BINDING":false,"USE_WEBGL2":1,"MIN_WEBGL_VERSION":1,"MAX_WEBGL_VERSION":2,"WEBGL2_BACKWARDS_COMPATIBILITY_EMULATION":false,"FULL_ES3":1,"LEGACY_GL_EMULATION":false,"GL_FFP_ONLY":false,"GL_PREINITIALIZED_CONTEXT":false,"USE_WEBGPU":false,"STB_IMAGE":false,"GL_DISABLE_HALF_FLOAT_EXTENSION_IF_BROKEN":false,"GL_WORKAROUND_SAFARI_GETCONTEXT_BUG":true,"GL_ENABLE_GET_PROC_ADDRESS":true,"JS_MATH":false,"POLYFILL_OLD_MATH_FUNCTIONS":0,"LEGACY_VM_SUPPORT":false,"ENVIRONMENT":"web,webview,worker,node","LZ4":false,"DISABLE_EXCEPTION_CATCHING":0,"DISABLE_EXCEPTION_THROWING":0,"EXPORT_EXCEPTION_HANDLING_HELPERS":true,"EXCEPTION_STACK_TRACES":1,"WASM_EXNREF":false,"NODEJS_CATCH_EXIT":false,"NODEJS_CATCH_REJECTION":0,"ASYNCIFY":0,"ASYNCIFY_IGNORE_INDIRECT":false,"ASYNCIFY_STACK_SIZE":4096,"ASYNCIFY_PROPAGATE_ADD":true,"ASYNCIFY_ADVISE":false,"ASYNCIFY_LAZY_LOAD_CODE":false,"ASYNCIFY_DEBUG":0,"JSPI":0,"CASE_INSENSITIVE_FS":false,"FILESYSTEM":true,"FORCE_FILESYSTEM":1,"NODERAWFS":false,"NODE_CODE_CACHING":false,"EXPORT_ALL":false,"EXPORT_KEEPALIVE":true,"RETAIN_COMPILER_SETTINGS":1,"INCLUDE_FULL_LIBRARY":false,"RELOCATABLE":false,"MAIN_MODULE":0,"SIDE_MODULE":0,"BUILD_AS_WORKER":false,"PROXY_TO_WORKER":false,"PROXY_TO_WORKER_FILENAME":"","PROXY_TO_PTHREAD":false,"LINKABLE":false,"STRICT":false,"IGNORE_MISSING_MAIN":true,"STRICT_JS":false,"WARN_ON_UNDEFINED_SYMBOLS":true,"ERROR_ON_UNDEFINED_SYMBOLS":true,"SMALL_XHR_CHUNKS":false,"HEADLESS":false,"DETERMINISTIC":false,"MODULARIZE":false,"EXPORT_ES6":false,"USE_ES6_IMPORT_META":true,"EXPORT_NAME":"Module","DYNAMIC_EXECUTION":1,"BOOTSTRAPPING_STRUCT_INFO":false,"EMSCRIPTEN_TRACING":false,"USE_GLFW":3,"WASM":1,"STANDALONE_WASM":false,"BINARYEN_IGNORE_IMPLICIT_TRAPS":false,"BINARYEN_EXTRA_PASSES":"","WASM_ASYNC_COMPILATION":true,"DYNCALLS":false,"WASM_BIGINT":false,"EMIT_PRODUCERS_SECTION":false,"EMIT_EMSCRIPTEN_LICENSE":false,"LEGALIZE_JS_FFI":true,"USE_SDL":0,"USE_SDL_GFX":0,"USE_SDL_IMAGE":1,"USE_SDL_TTF":1,"USE_SDL_NET":1,"USE_ICU":false,"USE_ZLIB":false,"USE_BZIP2":false,"USE_GIFLIB":false,"USE_LIBJPEG":false,"USE_LIBPNG":false,"USE_REGAL":false,"USE_BOOST_HEADERS":false,"USE_BULLET":false,"USE_VORBIS":false,"USE_OGG":false,"USE_MPG123":false,"USE_FREETYPE":false,"USE_SDL_MIXER":1,"USE_HARFBUZZ":false,"USE_COCOS2D":0,"USE_MODPLUG":false,"USE_SQLITE3":false,"SHARED_MEMORY":false,"WASM_WORKERS":0,"AUDIO_WORKLET":0,"WEBAUDIO_DEBUG":0,"PTHREAD_POOL_SIZE":0,"PTHREAD_POOL_SIZE_STRICT":1,"PTHREAD_POOL_DELAY_LOAD":false,"DEFAULT_PTHREAD_STACK_SIZE":0,"PTHREADS_PROFILING":false,"ALLOW_BLOCKING_ON_MAIN_THREAD":true,"PTHREADS_DEBUG":false,"EVAL_CTORS":0,"TEXTDECODER":1,"EMBIND_STD_STRING_IS_UTF8":true,"EMBIND_AOT":false,"OFFSCREENCANVAS_SUPPORT":false,"OFFSCREENCANVASES_TO_PTHREAD":"#canvas","OFFSCREEN_FRAMEBUFFER":false,"FETCH_SUPPORT_INDEXEDDB":true,"FETCH_DEBUG":false,"FETCH":false,"WASMFS":false,"SINGLE_FILE":false,"AUTO_JS_LIBRARIES":true,"AUTO_NATIVE_LIBRARIES":true,"MIN_FIREFOX_VERSION":79,"MIN_SAFARI_VERSION":140100,"MIN_CHROME_VERSION":85,"MIN_NODE_VERSION":160000,"SUPPORT_ERRNO":true,"MINIMAL_RUNTIME":0,"MINIMAL_RUNTIME_STREAMING_WASM_COMPILATION":false,"MINIMAL_RUNTIME_STREAMING_WASM_INSTANTIATION":false,"SUPPORT_LONGJMP":"emscripten","DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR":true,"HTML5_SUPPORT_DEFERRING_USER_SENSITIVE_REQUESTS":true,"MINIFY_HTML":true,"MAYBE_WASM2JS":false,"ASAN_SHADOW_SIZE":-1,"USE_OFFSET_CONVERTER":false,"LOAD_SOURCE_MAP":false,"DEFAULT_TO_CXX":true,"PRINTF_LONG_DOUBLE":false,"SEPARATE_DWARF_URL":"","ERROR_ON_WASM_CHANGES_AFTER_LINK":false,"ABORT_ON_WASM_EXCEPTIONS":false,"PURE_WASI":false,"IMPORTED_MEMORY":false,"SPLIT_MODULE":false,"AUTOLOAD_DYLIBS":true,"ALLOW_UNIMPLEMENTED_SYSCALLS":true,"TRUSTED_TYPES":false,"POLYFILL":true,"RUNTIME_DEBUG":false,"LEGACY_RUNTIME":false,"OFFSCREEN_FRAMEBUFFER_FORBID_VAO_PATH":false,"TARGET_BASENAME":"udesigner","TARGET_JS_NAME":"udesigner.js","SYSCALLS_REQUIRE_FILESYSTEM":true,"AUTODEBUG":false,"WASM2JS":false,"UBSAN_RUNTIME":0,"USE_LSAN":false,"USE_ASAN":false,"EMBIND":false,"EMIT_TSD":false,"MAIN_READS_PARAMS":true,"WASI_MODULE_NAME":"wasi_snapshot_preview1","EMSCRIPTEN_VERSION":"3.1.71-git","USE_RTTI":true,"OPT_LEVEL":1,"DEBUG_LEVEL":0,"SHRINK_LEVEL":0,"EMIT_NAME_SECTION":false,"EMIT_SYMBOL_MAP":false,"WASM_BINARY_FILE":"udesigner.wasm","WASM_WORKER_FILE":"","AUDIO_WORKLET_FILE":"","SOURCE_MAP_BASE":"","SUPPORT_BASE64_EMBEDDING":false,"ENVIRONMENT_MAY_BE_WEB":true,"ENVIRONMENT_MAY_BE_WORKER":true,"ENVIRONMENT_MAY_BE_NODE":true,"ENVIRONMENT_MAY_BE_SHELL":false,"ENVIRONMENT_MAY_BE_WEBVIEW":true,"MINIFY_WASM_IMPORTS_AND_EXPORTS":false,"MINIFY_WASM_IMPORTED_MODULES":false,"MINIFY_WASM_EXPORT_NAMES":true,"SUPPORTS_GLOBALTHIS":true,"SUPPORTS_PROMISE_ANY":true,"LTO":0,"CAN_ADDRESS_2GB":false,"SEPARATE_DWARF":false,"WASM_EXCEPTIONS":false,"EXPECT_MAIN":true,"USE_READY_PROMISE":true,"MEMORYPROFILER":false,"GENERATE_SOURCE_MAP":false,"GENERATE_DWARF":false,"STACK_HIGH":0,"STACK_LOW":0,"HEAP_BASE":0,"HAS_MAIN":true,"LINK_AS_CXX":true,"MAYBE_CLOSURE_COMPILER":1,"TRANSPILE":false,"STACK_FIRST":false,"HAVE_EM_ASM":false,"PTHREADS":false,"BULK_MEMORY":false,"MINIFY_WHITESPACE":false,"WARN_DEPRECATED":true,"WEBGL_USE_GARBAGE_FREE_APIS":1,"INCLUDE_WEBGL1_FALLBACK":true,"MINIFICATION_MAP":"","AGGRESSIVE_VARIABLE_ELIMINATION":0,"ALIASING_FUNCTION_POINTERS":0,"ASM_JS":1,"AUTO_ARCHIVE_INDEXES":0,"BINARYEN":1,"BINARYEN_ASYNC_COMPILATION":true,"BINARYEN_MEM_MAX":2147483648,"BINARYEN_METHOD":"native-wasm","BINARYEN_PASSES":"","BINARYEN_SCRIPTS":"","BINARYEN_TRAP_MODE":-1,"BUILD_AS_SHARED_LIB":0,"DOUBLE_MODE":0,"ELIMINATE_DUPLICATE_FUNCTIONS":0,"ELIMINATE_DUPLICATE_FUNCTIONS_DUMP_EQUIVALENT_FUNCTIONS":0,"ELIMINATE_DUPLICATE_FUNCTIONS_PASSES":5,"EMITTING_JS":1,"EMIT_EMSCRIPTEN_METADATA":0,"ERROR_ON_MISSING_LIBRARIES":1,"EXPORT_BINDINGS":0,"EXPORT_FUNCTION_TABLES":0,"FAST_UNROLLED_MEMCPY_AND_MEMSET":0,"FINALIZE_ASM_JS":0,"FORCE_ALIGNED_MEMORY":0,"FUNCTION_POINTER_ALIGNMENT":2,"LLD_REPORT_UNDEFINED":1,"MEMFS_APPEND_TO_TYPED_ARRAYS":1,"MEMORY_GROWTH_STEP":-1,"MEM_INIT_METHOD":0,"MIN_EDGE_VERSION":2147483647,"MIN_IE_VERSION":2147483647,"PGO":0,"PRECISE_F32":0,"PRECISE_I64_MATH":1,"QUANTUM_SIZE":4,"RESERVED_FUNCTION_POINTERS":false,"REVERSE_DEPS":"auto","RUNNING_JS_OPTS":0,"RUNTIME_LOGGING":false,"SAFE_SPLIT_MEMORY":0,"SAFE_STACK":0,"SEPARATE_ASM":0,"SEPARATE_ASM_MODULE_NAME":"","SHELL_FILE":"","SIMPLIFY_IFS":1,"SKIP_STACK_IN_SMALL":0,"SPLIT_MEMORY":0,"SWAPPABLE_ASM_MODULE":0,"TOTAL_MEMORY":-1,"TOTAL_STACK":65536,"UNALIGNED_MEMORY":0,"USES_DYNAMIC_ALLOC":1,"USE_PTHREADS":0,"WARN_UNALIGNED":0,"WASM_BACKEND":-1,"WASM_MEM_MAX":2147483648,"WASM_OBJECT_FILES":0,"WORKAROUND_IOS_9_RIGHT_SHIFT_BUG":0,"WORKAROUND_OLD_WEBGL_UNIFORM_UPLOAD_IGNORED_OFFSET_BUG":0} ;
+var compilerSettings = {"ASSERTIONS":1,"STACK_OVERFLOW_CHECK":1,"CHECK_NULL_WRITES":true,"VERBOSE":false,"INVOKE_RUN":true,"EXIT_RUNTIME":false,"STACK_SIZE":65536,"MALLOC":"dlmalloc","ABORTING_MALLOC":0,"INITIAL_HEAP":16777216,"INITIAL_MEMORY":-1,"MAXIMUM_MEMORY":2147483648,"ALLOW_MEMORY_GROWTH":1,"MEMORY_GROWTH_GEOMETRIC_STEP":0.2,"MEMORY_GROWTH_GEOMETRIC_CAP":100663296,"MEMORY_GROWTH_LINEAR_STEP":-1,"MEMORY64":0,"INITIAL_TABLE":-1,"ALLOW_TABLE_GROWTH":false,"GLOBAL_BASE":1024,"TABLE_BASE":1,"USE_CLOSURE_COMPILER":false,"CLOSURE_WARNINGS":"quiet","IGNORE_CLOSURE_COMPILER_ERRORS":false,"DECLARE_ASM_MODULE_EXPORTS":true,"INLINING_LIMIT":false,"SUPPORT_BIG_ENDIAN":false,"SAFE_HEAP":0,"SAFE_HEAP_LOG":false,"EMULATE_FUNCTION_POINTER_CASTS":false,"EXCEPTION_DEBUG":false,"DEMANGLE_SUPPORT":false,"LIBRARY_DEBUG":false,"SYSCALL_DEBUG":false,"SOCKET_DEBUG":false,"DYLINK_DEBUG":0,"FS_DEBUG":false,"SOCKET_WEBRTC":false,"WEBSOCKET_URL":"ws:#","PROXY_POSIX_SOCKETS":false,"WEBSOCKET_SUBPROTOCOL":"binary","OPENAL_DEBUG":false,"WEBSOCKET_DEBUG":false,"GL_ASSERTIONS":false,"TRACE_WEBGL_CALLS":false,"GL_DEBUG":false,"GL_TESTING":false,"GL_MAX_TEMP_BUFFER_SIZE":2097152,"GL_UNSAFE_OPTS":true,"FULL_ES2":1,"GL_EMULATE_GLES_VERSION_STRING_FORMAT":true,"GL_EXTENSIONS_IN_PREFIXED_FORMAT":true,"GL_SUPPORT_AUTOMATIC_ENABLE_EXTENSIONS":true,"GL_SUPPORT_SIMPLE_ENABLE_EXTENSIONS":true,"GL_TRACK_ERRORS":true,"GL_SUPPORT_EXPLICIT_SWAP_CONTROL":false,"GL_POOL_TEMP_BUFFERS":true,"GL_EXPLICIT_UNIFORM_LOCATION":false,"GL_EXPLICIT_UNIFORM_BINDING":false,"USE_WEBGL2":1,"MIN_WEBGL_VERSION":1,"MAX_WEBGL_VERSION":2,"WEBGL2_BACKWARDS_COMPATIBILITY_EMULATION":false,"FULL_ES3":1,"LEGACY_GL_EMULATION":false,"GL_FFP_ONLY":false,"GL_PREINITIALIZED_CONTEXT":false,"USE_WEBGPU":false,"STB_IMAGE":false,"GL_DISABLE_HALF_FLOAT_EXTENSION_IF_BROKEN":false,"GL_WORKAROUND_SAFARI_GETCONTEXT_BUG":true,"GL_ENABLE_GET_PROC_ADDRESS":true,"JS_MATH":false,"POLYFILL_OLD_MATH_FUNCTIONS":0,"LEGACY_VM_SUPPORT":false,"ENVIRONMENT":"web,webview,worker,node","LZ4":false,"DISABLE_EXCEPTION_CATCHING":0,"DISABLE_EXCEPTION_THROWING":0,"EXPORT_EXCEPTION_HANDLING_HELPERS":true,"EXCEPTION_STACK_TRACES":1,"WASM_EXNREF":false,"NODEJS_CATCH_EXIT":false,"NODEJS_CATCH_REJECTION":0,"ASYNCIFY":0,"ASYNCIFY_IGNORE_INDIRECT":false,"ASYNCIFY_STACK_SIZE":4096,"ASYNCIFY_PROPAGATE_ADD":true,"ASYNCIFY_ADVISE":false,"ASYNCIFY_LAZY_LOAD_CODE":false,"ASYNCIFY_DEBUG":0,"JSPI":0,"CASE_INSENSITIVE_FS":false,"FILESYSTEM":true,"FORCE_FILESYSTEM":1,"NODERAWFS":false,"NODE_CODE_CACHING":false,"EXPORT_ALL":false,"EXPORT_KEEPALIVE":true,"RETAIN_COMPILER_SETTINGS":1,"INCLUDE_FULL_LIBRARY":false,"RELOCATABLE":false,"MAIN_MODULE":0,"SIDE_MODULE":0,"BUILD_AS_WORKER":false,"PROXY_TO_WORKER":false,"PROXY_TO_WORKER_FILENAME":"","PROXY_TO_PTHREAD":false,"LINKABLE":false,"STRICT":false,"IGNORE_MISSING_MAIN":true,"STRICT_JS":false,"WARN_ON_UNDEFINED_SYMBOLS":true,"ERROR_ON_UNDEFINED_SYMBOLS":true,"SMALL_XHR_CHUNKS":false,"HEADLESS":false,"DETERMINISTIC":false,"MODULARIZE":false,"EXPORT_ES6":false,"USE_ES6_IMPORT_META":true,"EXPORT_NAME":"Module","DYNAMIC_EXECUTION":1,"BOOTSTRAPPING_STRUCT_INFO":false,"EMSCRIPTEN_TRACING":false,"USE_GLFW":3,"WASM":1,"STANDALONE_WASM":false,"BINARYEN_IGNORE_IMPLICIT_TRAPS":false,"BINARYEN_EXTRA_PASSES":"","WASM_ASYNC_COMPILATION":true,"DYNCALLS":false,"WASM_BIGINT":false,"EMIT_PRODUCERS_SECTION":false,"EMIT_EMSCRIPTEN_LICENSE":false,"LEGALIZE_JS_FFI":true,"USE_SDL":0,"USE_SDL_GFX":0,"USE_SDL_IMAGE":1,"USE_SDL_TTF":1,"USE_SDL_NET":1,"USE_ICU":false,"USE_ZLIB":false,"USE_BZIP2":false,"USE_GIFLIB":false,"USE_LIBJPEG":false,"USE_LIBPNG":false,"USE_REGAL":false,"USE_BOOST_HEADERS":false,"USE_BULLET":false,"USE_VORBIS":false,"USE_OGG":false,"USE_MPG123":false,"USE_FREETYPE":false,"USE_SDL_MIXER":1,"USE_HARFBUZZ":false,"USE_COCOS2D":0,"USE_MODPLUG":false,"USE_SQLITE3":false,"SHARED_MEMORY":false,"WASM_WORKERS":0,"AUDIO_WORKLET":0,"WEBAUDIO_DEBUG":0,"PTHREAD_POOL_SIZE":0,"PTHREAD_POOL_SIZE_STRICT":1,"PTHREAD_POOL_DELAY_LOAD":false,"DEFAULT_PTHREAD_STACK_SIZE":0,"PTHREADS_PROFILING":false,"ALLOW_BLOCKING_ON_MAIN_THREAD":true,"PTHREADS_DEBUG":false,"EVAL_CTORS":0,"TEXTDECODER":1,"EMBIND_STD_STRING_IS_UTF8":true,"EMBIND_AOT":false,"OFFSCREENCANVAS_SUPPORT":false,"OFFSCREENCANVASES_TO_PTHREAD":"#canvas","OFFSCREEN_FRAMEBUFFER":false,"FETCH_SUPPORT_INDEXEDDB":true,"FETCH_DEBUG":false,"FETCH":false,"WASMFS":false,"SINGLE_FILE":false,"AUTO_JS_LIBRARIES":true,"AUTO_NATIVE_LIBRARIES":true,"MIN_FIREFOX_VERSION":79,"MIN_SAFARI_VERSION":140100,"MIN_CHROME_VERSION":85,"MIN_NODE_VERSION":160000,"SUPPORT_ERRNO":true,"MINIMAL_RUNTIME":0,"MINIMAL_RUNTIME_STREAMING_WASM_COMPILATION":false,"MINIMAL_RUNTIME_STREAMING_WASM_INSTANTIATION":false,"SUPPORT_LONGJMP":"emscripten","DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR":true,"HTML5_SUPPORT_DEFERRING_USER_SENSITIVE_REQUESTS":true,"MINIFY_HTML":true,"MAYBE_WASM2JS":false,"ASAN_SHADOW_SIZE":-1,"USE_OFFSET_CONVERTER":false,"LOAD_SOURCE_MAP":false,"DEFAULT_TO_CXX":true,"PRINTF_LONG_DOUBLE":false,"SEPARATE_DWARF_URL":"","ERROR_ON_WASM_CHANGES_AFTER_LINK":false,"ABORT_ON_WASM_EXCEPTIONS":false,"PURE_WASI":false,"IMPORTED_MEMORY":false,"SPLIT_MODULE":false,"AUTOLOAD_DYLIBS":true,"ALLOW_UNIMPLEMENTED_SYSCALLS":true,"TRUSTED_TYPES":false,"POLYFILL":true,"RUNTIME_DEBUG":0,"LEGACY_RUNTIME":false,"OFFSCREEN_FRAMEBUFFER_FORBID_VAO_PATH":false,"TARGET_BASENAME":"udesigner","TARGET_JS_NAME":"udesigner.js","SYSCALLS_REQUIRE_FILESYSTEM":true,"AUTODEBUG":false,"WASM2JS":false,"UBSAN_RUNTIME":0,"USE_LSAN":false,"USE_ASAN":false,"EMBIND":false,"EMIT_TSD":false,"MAIN_READS_PARAMS":true,"WASI_MODULE_NAME":"wasi_snapshot_preview1","EMSCRIPTEN_VERSION":"3.1.72-git","USE_RTTI":true,"OPT_LEVEL":1,"DEBUG_LEVEL":0,"SHRINK_LEVEL":0,"EMIT_NAME_SECTION":false,"EMIT_SYMBOL_MAP":false,"WASM_BINARY_FILE":"udesigner.wasm","WASM_WORKER_FILE":"","AUDIO_WORKLET_FILE":"","SOURCE_MAP_BASE":"","SUPPORT_BASE64_EMBEDDING":false,"ENVIRONMENT_MAY_BE_WEB":true,"ENVIRONMENT_MAY_BE_WORKER":true,"ENVIRONMENT_MAY_BE_NODE":true,"ENVIRONMENT_MAY_BE_SHELL":false,"ENVIRONMENT_MAY_BE_WEBVIEW":true,"MINIFY_WASM_IMPORTS_AND_EXPORTS":false,"MINIFY_WASM_IMPORTED_MODULES":false,"MINIFY_WASM_EXPORT_NAMES":true,"SUPPORTS_GLOBALTHIS":true,"SUPPORTS_PROMISE_ANY":true,"LTO":0,"CAN_ADDRESS_2GB":false,"SEPARATE_DWARF":false,"WASM_EXCEPTIONS":false,"EXPECT_MAIN":true,"USE_READY_PROMISE":true,"MEMORYPROFILER":false,"GENERATE_SOURCE_MAP":false,"GENERATE_DWARF":false,"STACK_HIGH":0,"STACK_LOW":0,"HEAP_BASE":0,"HAS_MAIN":true,"LINK_AS_CXX":true,"MAYBE_CLOSURE_COMPILER":1,"TRANSPILE":false,"STACK_FIRST":false,"HAVE_EM_ASM":false,"PTHREADS":false,"BULK_MEMORY":false,"MINIFY_WHITESPACE":false,"WARN_DEPRECATED":true,"WEBGL_USE_GARBAGE_FREE_APIS":1,"INCLUDE_WEBGL1_FALLBACK":true,"MINIFICATION_MAP":"","AGGRESSIVE_VARIABLE_ELIMINATION":0,"ALIASING_FUNCTION_POINTERS":0,"ASM_JS":1,"AUTO_ARCHIVE_INDEXES":0,"BINARYEN":1,"BINARYEN_ASYNC_COMPILATION":true,"BINARYEN_MEM_MAX":2147483648,"BINARYEN_METHOD":"native-wasm","BINARYEN_PASSES":"","BINARYEN_SCRIPTS":"","BINARYEN_TRAP_MODE":-1,"BUILD_AS_SHARED_LIB":0,"DOUBLE_MODE":0,"ELIMINATE_DUPLICATE_FUNCTIONS":0,"ELIMINATE_DUPLICATE_FUNCTIONS_DUMP_EQUIVALENT_FUNCTIONS":0,"ELIMINATE_DUPLICATE_FUNCTIONS_PASSES":5,"EMITTING_JS":1,"EMIT_EMSCRIPTEN_METADATA":0,"ERROR_ON_MISSING_LIBRARIES":1,"EXPORT_BINDINGS":0,"EXPORT_FUNCTION_TABLES":0,"FAST_UNROLLED_MEMCPY_AND_MEMSET":0,"FINALIZE_ASM_JS":0,"FORCE_ALIGNED_MEMORY":0,"FUNCTION_POINTER_ALIGNMENT":2,"LLD_REPORT_UNDEFINED":1,"MEMFS_APPEND_TO_TYPED_ARRAYS":1,"MEMORY_GROWTH_STEP":-1,"MEM_INIT_METHOD":0,"MIN_EDGE_VERSION":2147483647,"MIN_IE_VERSION":2147483647,"PGO":0,"PRECISE_F32":0,"PRECISE_I64_MATH":1,"QUANTUM_SIZE":4,"RESERVED_FUNCTION_POINTERS":false,"REVERSE_DEPS":"auto","RUNNING_JS_OPTS":0,"RUNTIME_LOGGING":0,"SAFE_SPLIT_MEMORY":0,"SAFE_STACK":0,"SEPARATE_ASM":0,"SEPARATE_ASM_MODULE_NAME":"","SHELL_FILE":"","SIMPLIFY_IFS":1,"SKIP_STACK_IN_SMALL":0,"SPLIT_MEMORY":0,"SWAPPABLE_ASM_MODULE":0,"TOTAL_MEMORY":-1,"TOTAL_STACK":65536,"UNALIGNED_MEMORY":0,"USES_DYNAMIC_ALLOC":1,"USE_PTHREADS":0,"WARN_UNALIGNED":0,"WASM_BACKEND":-1,"WASM_MEM_MAX":2147483648,"WASM_OBJECT_FILES":0,"WORKAROUND_IOS_9_RIGHT_SHIFT_BUG":0,"WORKAROUND_OLD_WEBGL_UNIFORM_UPLOAD_IGNORED_OFFSET_BUG":0} ;
 
 function getCompilerSetting(name) {
   if (!(name in compilerSettings)) return 'invalid compiler setting: ' + name;
@@ -2075,7 +2076,7 @@ function ImGui_ImplGlfw_EmscriptenOpenURL(url) { url = url ? UTF8ToString(url) :
           }
         },
   lookup(parent, name) {
-          throw FS.genericErrors[44];
+          throw new FS.ErrnoError(44);
         },
   mknod(parent, name, mode, dev) {
           return MEMFS.createNode(parent, name, mode, dev);
@@ -2503,8 +2504,6 @@ function ImGui_ImplGlfw_EmscriptenOpenURL(url) { url = url ? UTF8ToString(url) :
           }
         }
       },
-  genericErrors:{
-  },
   filesystems:null,
   syncFSRequests:0,
   readFiles:{
@@ -3616,6 +3615,7 @@ function ImGui_ImplGlfw_EmscriptenOpenURL(url) { url = url ? UTF8ToString(url) :
         FS.registerDevice(FS.makedev(1, 3), {
           read: () => 0,
           write: (stream, buffer, offset, length, pos) => length,
+          llseek: () => 0,
         });
         FS.mkdev('/dev/null', FS.makedev(1, 3));
         // setup /dev/tty and /dev/tty1
@@ -3701,12 +3701,6 @@ function ImGui_ImplGlfw_EmscriptenOpenURL(url) { url = url ? UTF8ToString(url) :
         assert(stderr.fd === 2, `invalid handle for stderr (${stderr.fd})`);
       },
   staticInit() {
-        // Some errors may happen quite a bit, to avoid overhead we reuse them (and suffer a lack of stack info)
-        [44].forEach((code) => {
-          FS.genericErrors[code] = new FS.ErrnoError(code);
-          FS.genericErrors[code].stack = '<generic error, no stack>';
-        });
-  
         FS.nameTable = new Array(4096);
   
         FS.mount(MEMFS, {}, '/');
@@ -5480,8 +5474,10 @@ function ImGui_ImplGlfw_EmscriptenOpenURL(url) { url = url ? UTF8ToString(url) :
       var func = wasmTableMirror[funcPtr];
       if (!func) {
         if (funcPtr >= wasmTableMirror.length) wasmTableMirror.length = funcPtr + 1;
+        /** @suppress {checkTypes} */
         wasmTableMirror[funcPtr] = func = wasmTable.get(funcPtr);
       }
+      /** @suppress {checkTypes} */
       assert(wasmTable.get(funcPtr) == func, 'JavaScript-side Wasm function table mirror is out of date!');
       return func;
     };
@@ -5491,6 +5487,9 @@ function ImGui_ImplGlfw_EmscriptenOpenURL(url) { url = url ? UTF8ToString(url) :
     };
 
   var JSEvents = {
+  memcpy(target, src, size) {
+        HEAP8.set(HEAP8.subarray(src, src + size), target);
+      },
   removeAllEventListeners() {
         while (JSEvents.eventHandlers.length) {
           JSEvents._removeHandler(JSEvents.eventHandlers.length - 1);
@@ -7184,6 +7183,10 @@ function ImGui_ImplGlfw_EmscriptenOpenURL(url) { url = url ? UTF8ToString(url) :
   pointerLock:false,
   moduleContextCreatedCallbacks:[],
   workers:[],
+  preloadedImages:{
+  },
+  preloadedAudios:{
+  },
   init() {
         if (Browser.initted) return;
         Browser.initted = true;
@@ -7216,7 +7219,7 @@ function ImGui_ImplGlfw_EmscriptenOpenURL(url) { url = url ? UTF8ToString(url) :
             canvas.height = img.height;
             var ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0);
-            preloadedImages[name] = canvas;
+            Browser.preloadedImages[name] = canvas;
             URL.revokeObjectURL(url);
             onload?.(byteArray);
           };
@@ -7237,13 +7240,13 @@ function ImGui_ImplGlfw_EmscriptenOpenURL(url) { url = url ? UTF8ToString(url) :
           function finish(audio) {
             if (done) return;
             done = true;
-            preloadedAudios[name] = audio;
+            Browser.preloadedAudios[name] = audio;
             onload?.(byteArray);
           }
           function fail() {
             if (done) return;
             done = true;
-            preloadedAudios[name] = new Audio(); // empty shim
+            Browser.preloadedAudios[name] = new Audio(); // empty shim
             onerror?.();
           }
           var b = new Blob([byteArray], { type: Browser.getMimetype(name) });
@@ -7330,7 +7333,7 @@ function ImGui_ImplGlfw_EmscriptenOpenURL(url) { url = url ? UTF8ToString(url) :
         }
       },
   createContext(/** @type {HTMLCanvasElement} */ canvas, useWebGL, setInModule, webGLContextAttributes) {
-        if (useWebGL && Module.ctx && canvas == Module.canvas) return Module.ctx; // no need to recreate GL context if it's already been created for this canvas.
+        if (useWebGL && Module.ctx && canvas == Module['canvas']) return Module.ctx; // no need to recreate GL context if it's already been created for this canvas.
   
         var ctx;
         var contextHandle;
@@ -7971,7 +7974,7 @@ function ImGui_ImplGlfw_EmscriptenOpenURL(url) { url = url ? UTF8ToString(url) :
         // This logic comes directly from the sdl implementation. We cannot
         // call preventDefault on all keydown events otherwise onKeyPress will
         // not get called
-        if (event.keyCode === 8 /* backspace */ || event.keyCode === 9 /* tab */) {
+        if (event.key == 'Backspace' || event.key == 'Tab') {
           event.preventDefault();
         }
       },
@@ -8563,7 +8566,7 @@ function ImGui_ImplGlfw_EmscriptenOpenURL(url) { url = url ? UTF8ToString(url) :
               stencil: (GLFW.hints[0x00021006] > 0),   // GLFW_STENCIL_BITS
               alpha: (GLFW.hints[0x00021004] > 0)      // GLFW_ALPHA_BITS
             }
-            Module.ctx = Browser.createContext(Module['canvas'], true, true, contextAttributes);
+            Browser.createContext(Module['canvas'], /*useWebGL=*/true, /*setInModule=*/true, contextAttributes);
           } else {
             Browser.init();
           }
@@ -8572,9 +8575,9 @@ function ImGui_ImplGlfw_EmscriptenOpenURL(url) { url = url ? UTF8ToString(url) :
         // If context creation failed, do not return a valid window
         if (!Module.ctx && useWebGL) return 0;
   
-        // Get non alive id
+        // Initializes the framebuffer size from the canvas
         const canvas = Module['canvas'];
-        var win = new GLFW_Window(id, canvas.clientWidth, canvas.clientHeight, canvas.width, canvas.height, title, monitor, share);
+        var win = new GLFW_Window(id, width, height, canvas.width, canvas.height, title, monitor, share);
   
         // Set window to array
         if (id - 1 == GLFW.windows.length) {
@@ -8702,7 +8705,7 @@ function ImGui_ImplGlfw_EmscriptenOpenURL(url) { url = url ? UTF8ToString(url) :
         if (canvas.width  != wNativeScaled) canvas.width  = wNativeScaled;
         if (canvas.height != hNativeScaled) canvas.height = hNativeScaled;
         if (typeof canvas.style != 'undefined') {
-          if (wNativeScaled != wNative || hNativeScaled != hNative) {
+          if (!GLFW.isCSSScalingEnabled()) {
             canvas.style.setProperty( "width", wNative + "px", "important");
             canvas.style.setProperty("height", hNative + "px", "important");
           } else {
@@ -8714,9 +8717,7 @@ function ImGui_ImplGlfw_EmscriptenOpenURL(url) { url = url ? UTF8ToString(url) :
   calculateMouseCoords(pageX, pageY) {
         // Calculate the movement based on the changes
         // in the coordinates.
-        var rect = Module["canvas"].getBoundingClientRect();
-        var cw = Module["canvas"].clientWidth;
-        var ch = Module["canvas"].clientHeight;
+        const rect = Module["canvas"].getBoundingClientRect();
   
         // Neither .scrollX or .pageXOffset are defined in a spec, but
         // we prefer .scrollX because it is currently in a spec draft.
@@ -8729,11 +8730,14 @@ function ImGui_ImplGlfw_EmscriptenOpenURL(url) { url = url ? UTF8ToString(url) :
         var adjustedX = pageX - (scrollX + rect.left);
         var adjustedY = pageY - (scrollY + rect.top);
   
-        // the canvas might be CSS-scaled compared to its backbuffer;
-        // SDL-using content will want mouse coordinates in terms
-        // of backbuffer units.
-        adjustedX = adjustedX * (cw / rect.width);
-        adjustedY = adjustedY * (ch / rect.height);
+        // getBoundingClientRect() returns dimension affected by CSS, so as a result:
+        // - when CSS scaling is enabled, this will fix the mouse coordinates to match the width/height of the window
+        // - otherwise the CSS width/height are forced to the width/height of the GLFW window (see updateCanvasDimensions),
+        //   so there is no need to adjust the position
+        if (GLFW.isCSSScalingEnabled() && GLFW.active) {
+          adjustedX = adjustedX * (GLFW.active.width / rect.width);
+          adjustedY = adjustedY * (GLFW.active.height / rect.height);
+        }
   
         return { x: adjustedX, y: adjustedY };
       },
@@ -8754,10 +8758,14 @@ function ImGui_ImplGlfw_EmscriptenOpenURL(url) { url = url ? UTF8ToString(url) :
         else
           return false;
       },
+  isCSSScalingEnabled() {
+        return !GLFW.isHiDPIAware();
+      },
   adjustCanvasDimensions() {
-        const canvas = Module['canvas'];
-        Browser.updateCanvasDimensions(canvas, canvas.clientWidth, canvas.clientHeight);
-        Browser.updateResizeListeners();
+        if (GLFW.active) {
+          Browser.updateCanvasDimensions(Module['canvas'], GLFW.active.width, GLFW.active.height);
+          Browser.updateResizeListeners();
+        }
       },
   getHiDPIScale() {
         return GLFW.isHiDPIAware() ? GLFW.scale : 1.0;
@@ -9177,8 +9185,7 @@ var miniTempWebGLFloatBuffersStorage = new Float32Array(288);
       Module["setCanvasSize"] = Browser.setCanvasSize;
       Module["getUserMedia"] = Browser.getUserMedia;
       Module["createContext"] = Browser.createContext;
-      var preloadedImages = {};
-      var preloadedAudios = {};;
+    ;
 function checkIncomingModuleAPI() {
   ignoredModuleProp('fetchSettings');
 }
@@ -9984,8 +9991,8 @@ var missingLibrarySymbols = [
   'checkWasiClock',
   'wasiRightsToMuslOFlags',
   'wasiOFlagsToMuslOFlags',
-  'createDyncallWrapper',
   'setImmediateWrapped',
+  'safeRequestAnimationFrame',
   'clearImmediateWrapped',
   'polyfillSetImmediate',
   'registerPostMainLoop',
@@ -9994,7 +10001,6 @@ var missingLibrarySymbols = [
   'idsToPromises',
   'makePromiseCallback',
   'Browser_asyncPrepareDataCounter',
-  'safeRequestAnimationFrame',
   'arraySum',
   'addDays',
   'getSocketFromFD',
