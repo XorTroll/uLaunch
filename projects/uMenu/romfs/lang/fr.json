@@ -188,5 +188,9 @@
     "amiibo_entry_game_data_erase": "Effacer données de jeu",
     "amiibo_entry_restore": "Restorer fichiers corrompus",
     "amiibo_entry_format": "Formatter",
-    "lockscreen_info": "Appuyez sur n'importe quelle touche pour déverrouiller"
+    "lockscreen_info": "Appuyez sur n'importe quelle touche pour déverrouiller",
+    "input_settings_back": "Go back",
+    "input_settings_select": "Select option",
+    "input_settings_left": "Previous menu",
+    "input_settings_right": "Next menu"
 }

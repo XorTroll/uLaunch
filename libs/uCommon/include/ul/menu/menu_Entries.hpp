@@ -32,7 +32,7 @@ namespace ul::menu {
 
         template<os::ApplicationViewFlag Flag>
         inline constexpr bool HasViewFlag() const {
-            return (view.flags & static_cast<u32>(Flag)) != 0;
+            return (this->view.flags & static_cast<u32>(Flag)) != 0;
         }
 
         inline bool NeedsUpdate() const {

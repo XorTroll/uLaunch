@@ -6,8 +6,8 @@ extern ul::menu::ui::MenuApplication::Ref g_MenuApplication;
 
 namespace ul::menu::ui {
 
-    InputBar::InputBar(const s32 x, const s32 y) : x(x), y(y) {
-        this->bar_bg = TryFindLoadImage("ui/Main/InputBarBackground");
+    InputBar::InputBar(const s32 x, const s32 y, const std::string &bg_path) : x(x), y(y) {
+        this->bar_bg = TryFindLoadImage(bg_path);
     }
 
     void InputBar::ClearInputs() {

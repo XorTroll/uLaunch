@@ -188,5 +188,9 @@
     "amiibo_entry_game_data_erase": "Erase game data",
     "amiibo_entry_restore": "Restore corrupted",
     "amiibo_entry_format": "Format",
-    "lockscreen_info": "Press any key to unlock"
+    "lockscreen_info": "Press any key to unlock",
+    "input_settings_back": "Go back",
+    "input_settings_select": "Select option",
+    "input_settings_left": "Previous menu",
+    "input_settings_right": "Next menu"
 }

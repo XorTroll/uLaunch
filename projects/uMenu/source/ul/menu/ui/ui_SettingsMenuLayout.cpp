@@ -54,7 +54,8 @@ namespace ul::menu::ui {
                 asyncValueClose(&av);
             });
 
-            UL_RC_TRY(asyncValueWait(&av, UINT64_MAX));
+            // Just try waiting half a second
+            UL_RC_TRY(asyncValueWait(&av, 500'000'000));
 
             u8 latest_upd_value;
             UL_RC_TRY(asyncValueGet(&av, &latest_upd_value, sizeof(latest_upd_value)));
@@ -703,6 +704,11 @@ namespace ul::menu::ui {
         this->setting_edit_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Settings/SettingEdit.wav"));
         this->setting_save_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Settings/SettingSave.wav"));
         this->back_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Settings/Back.wav"));
+
+        this->input_bar = InputBar::New(0, 0, "ui/Settings/InputBarBackground");
+        g_MenuApplication->ApplyConfigForElement("settings_menu", "input_bar", this->input_bar);
+        this->Add(this->input_bar);
+        this->inputs_changed = true;
     }
 
     void SettingsMenuLayout::DisposeAudio() {
@@ -712,43 +718,66 @@ namespace ul::menu::ui {
     }
 
     void SettingsMenuLayout::OnMenuInput(const u64 keys_down, const u64 keys_up, const u64 keys_held, const pu::ui::TouchPoint touch_pos) {
+        const auto can_move_left = static_cast<u32>(this->cur_menu) > 0;
+        const auto can_move_right = (static_cast<u32>(this->cur_menu) + 1) < static_cast<u32>(SettingMenu::Count);
+        const auto is_in_submenu = this->cur_submenu != SettingSubmenu::None;
+
         if(keys_down & HidNpadButton_B) {
             pu::audio::PlaySfx(this->back_sfx);
 
-            if(this->cur_submenu != SettingSubmenu::None) {
+            if(is_in_submenu) {
                 g_MenuApplication->SetBackgroundFade();
                 g_MenuApplication->FadeOut();
 
                 this->cur_submenu = SettingSubmenu::None;
+                this->inputs_changed = true;
                 this->Reload(false);
 
                 g_MenuApplication->FadeIn();
             }
             else {
-                g_MenuApplication->LoadMenuByType(MenuType::Main);    
+                g_MenuApplication->LoadMenuByType(MenuType::Main);
             }
         }
         else if(keys_down & HidNpadButton_L) {
-            if(static_cast<u32>(this->cur_menu) > 0) {
+            if(can_move_left) {
                 g_MenuApplication->SetBackgroundFade();
                 g_MenuApplication->FadeOut();
 
                 this->cur_menu = static_cast<SettingMenu>(static_cast<u32>(this->cur_menu) - 1);
+                this->inputs_changed = true;
                 this->Reload(false);
 
                 g_MenuApplication->FadeIn();
             }
         }
         else if(keys_down & HidNpadButton_R) {
-            if((static_cast<u32>(this->cur_menu) + 1) < static_cast<u32>(SettingMenu::Count)) {
+            if(can_move_right) {
                 g_MenuApplication->SetBackgroundFade();
                 g_MenuApplication->FadeOut();
 
                 this->cur_menu = static_cast<SettingMenu>(static_cast<u32>(this->cur_menu) + 1);
+                this->inputs_changed = true;
                 this->Reload(false);
 
                 g_MenuApplication->FadeIn();
             }
+        }
+
+        //////////////////////////////
+
+        if(this->inputs_changed) {
+            this->inputs_changed = false;
+
+            this->input_bar->ClearInputs();
+            this->input_bar->AddSetInput(HidNpadButton_A, GetLanguageString("input_settings_select"));
+            if(can_move_left) {
+                this->input_bar->AddSetInput(HidNpadButton_L, GetLanguageString("input_settings_left"));
+            }
+            if(can_move_right) {
+                this->input_bar->AddSetInput(HidNpadButton_R, GetLanguageString("input_settings_right"));
+            }
+            this->input_bar->AddSetInput(HidNpadButton_B, GetLanguageString("input_settings_back"));
         }
     }
 

@@ -30,14 +30,12 @@ namespace ul::menu::ui {
         }
 
         inline bool IsEntryNonRemovable(const Entry &entry) {
-            /*
             if(strcmp(entry.hb_info.nro_target.nro_path, ul::HbmenuPath) == 0) {
                 return true;
             }
             if(strcmp(entry.hb_info.nro_target.nro_path, ul::ManagerPath) == 0) {
                 return true;
             }
-            */
 
             if(entry.IsSpecial()) {
                 return true;
@@ -176,6 +174,52 @@ namespace ul::menu::ui {
                         }
 
                         if(do_launch_entry && cur_entry.Is<EntryType::Application>()) {
+
+                            /* TEST!
+                            uintptr_t a1 = (uintptr_t)&cur_entry.app_info.view;
+                            u8 flags1[12] = {};
+                            flags1[0] = *(u32*)(a1 + 12) & 1;
+                            flags1[1] = (*(u8 *)(a1 + 12) >> 1) & 1;
+                            flags1[2] = (*(u8 *)(a1 + 12) >> 4) & 1;
+                            flags1[3] = (*(u8 *)(a1 + 12) >> 5) & 1;
+                            flags1[4] = (*(u8 *)(a1 + 12) >> 6) & 1;
+                            flags1[5] = *(u8 *)(a1 + 12) >> 7;
+                            flags1[6] = *(u8 *)(a1 + 13) & 1;
+                            flags1[7] = (*(u8 *)(a1 + 13) >> 1) & 1;
+                            flags1[8] = (*(u8 *)(a1 + 13) >> 2) & 1;
+                            flags1[9] = (*(u8 *)(a1 + 13) >> 5) & 1;
+                            flags1[10] = (*(u32 *)(a1 + 12) & 0x4C000) != 0;
+                            flags1[11] = *(u8 *)(a1 + 13) >> 7;
+                            u8 flags2[6] = {};
+                            flags2[0] = *(u8 *)(a1 + 14) >> 7;
+                            flags2[1] = *(u8 *)(a1 + 14) & 1;
+                            flags2[2] = (*(u8 *)(a1 + 14) >> 1) & 1;
+                            flags2[3] = ((*(u32 *)(a1 + 12) & 0x4C000) != 0) && (*(u8 *)(a1 + 36) == 5);
+                            flags2[4] = (*(u8 *)(a1 + 14) >> 5) & 1;
+                            flags2[5] = (*(u8 *)(a1 + 14) >> 6) & 1;
+                            std::string flagbits;
+                            for(u32 i = 0; i < 12; i++) {
+                                if(flags1[i] != 0) {
+                                    flagbits += "1";
+                                }
+                                else {
+                                    flagbits += "0";
+                                }
+                            }
+                            flagbits += "-";
+                            for(u32 i = 0; i < 6; i++) {
+                                if(flags2[i] != 0) {
+                                    flagbits += "1";
+                                }
+                                else {
+                                    flagbits += "0";
+                                }
+                            }
+
+                            g_MenuApplication->DisplayDialog("DEMO", "app flags " + flagbits, { "ok" }, true);
+                            do_launch_entry = false;
+                            */
+
                             if(cur_entry.app_info.HasViewFlag<os::ApplicationViewFlag::NeedsVerify>()) {
                                 pu::audio::PlaySfx(this->error_sfx);
 
@@ -210,6 +254,7 @@ namespace ul::menu::ui {
                                 do_launch_entry = false;
                             }
                             else {
+                                /* TODO: fix!!!!
                                 if(cur_entry.app_info.NeedsUpdate()) {
                                     do_launch_entry = false;
                                     const auto opt = g_MenuApplication->DisplayDialog(GetLanguageString("app_launch"), "launch req ver " + std::to_string(cur_entry.app_info.launch_required_version) + " VS actual ver " + std::to_string(cur_entry.app_info.version) + "\n\n" + GetLanguageString("app_needs_update"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
@@ -224,6 +269,7 @@ namespace ul::menu::ui {
                                         }
                                     }
                                 }
+                                */
                             }
                         }
 
@@ -477,6 +523,7 @@ namespace ul::menu::ui {
     void MainMenuLayout::menu_FocusedEntryChanged(const bool has_prev_entry, const bool is_prev_entry_suspended, const bool is_cur_entry_suspended) {
         this->cur_entry_main_text->SetVisible(true);
         this->cur_entry_sub_text->SetVisible(true);
+        this->input_bar_changed = true;
 
         this->entry_menu_left_icon->SetVisible(!this->entry_menu->IsMenuStart());
 
@@ -646,9 +693,10 @@ namespace ul::menu::ui {
         this->Add(this->battery_top_icon);
         this->Add(this->battery_charging_top_icon);
 
-        this->input_bar = InputBar::New(0, 0);
+        this->input_bar = InputBar::New(0, 0, "ui/Main/InputBarBackground");
         g_MenuApplication->ApplyConfigForElement("main_menu", "input_bar", this->input_bar);
         this->Add(this->input_bar);
+        this->input_bar_changed = true;
 
         this->cur_path_text = pu::ui::elm::TextBlock::New(0, 0, this->cur_folder_path);
         this->cur_path_text->SetColor(g_MenuApplication->GetTextColor());
@@ -780,77 +828,81 @@ namespace ul::menu::ui {
 
         ////////////////////////////////////////////////////////
 
-        this->input_bar->ClearInputs();
-        if(this->entry_menu->IsFocusedNonemptyEntry()) {
-            if(this->entry_menu->IsAnySelected()) {
-                this->input_bar->AddSetInput(HidNpadButton_A, GetLanguageString("input_move_selected"));
-            }
-            else if(this->entry_menu->IsFocusedEntrySuspended()) {
-                this->input_bar->AddSetInput(HidNpadButton_A | InputBar::MetaHomeNpadButton, GetLanguageString("input_resume_suspended"));
-            }
-            else {
-                const auto &cur_entry = this->entry_menu->GetFocusedEntry();
-                if(cur_entry.Is<EntryType::Folder>()) {
-                    this->input_bar->AddSetInput(HidNpadButton_A, GetLanguageString("input_open_folder"));
+        if(this->input_bar_changed) {
+            this->input_bar_changed = false;
+            this->input_bar->ClearInputs();
+
+            if(this->entry_menu->IsFocusedNonemptyEntry()) {
+                if(this->entry_menu->IsAnySelected()) {
+                    this->input_bar->AddSetInput(HidNpadButton_A, GetLanguageString("input_move_selected"));
+                }
+                else if(this->entry_menu->IsFocusedEntrySuspended()) {
+                    this->input_bar->AddSetInput(HidNpadButton_A | InputBar::MetaHomeNpadButton, GetLanguageString("input_resume_suspended"));
                 }
                 else {
-                    this->input_bar->AddSetInput(HidNpadButton_A, GetLanguageString("input_launch_entry"));
+                    const auto &cur_entry = this->entry_menu->GetFocusedEntry();
+                    if(cur_entry.Is<EntryType::Folder>()) {
+                        this->input_bar->AddSetInput(HidNpadButton_A, GetLanguageString("input_open_folder"));
+                    }
+                    else {
+                        this->input_bar->AddSetInput(HidNpadButton_A, GetLanguageString("input_launch_entry"));
+                    }
                 }
-            }
 
-            if(this->entry_menu->IsAnySelected()) {
-                this->input_bar->AddSetInput(HidNpadButton_X, GetLanguageString("input_cancel_selection"));
-            }
-            else if(this->entry_menu->IsFocusedEntrySuspended()) {
-                this->input_bar->AddSetInput(HidNpadButton_X, GetLanguageString("input_close_suspended"));
-            }
-            else if(this->entry_menu->IsFocusedNonemptyEntry()) {
-                const auto &cur_entry = this->entry_menu->GetFocusedEntry();
-                if(!cur_entry.IsSpecial()) {
-                    this->input_bar->AddSetInput(HidNpadButton_X, GetLanguageString("input_entry_options"));
+                if(this->entry_menu->IsAnySelected()) {
+                    this->input_bar->AddSetInput(HidNpadButton_X, GetLanguageString("input_cancel_selection"));
                 }
-            }
+                else if(this->entry_menu->IsFocusedEntrySuspended()) {
+                    this->input_bar->AddSetInput(HidNpadButton_X, GetLanguageString("input_close_suspended"));
+                }
+                else if(this->entry_menu->IsFocusedNonemptyEntry()) {
+                    const auto &cur_entry = this->entry_menu->GetFocusedEntry();
+                    if(!cur_entry.IsSpecial()) {
+                        this->input_bar->AddSetInput(HidNpadButton_X, GetLanguageString("input_entry_options"));
+                    }
+                }
 
-            if(!this->entry_menu->IsAnySelected()) {
-                this->input_bar->AddSetInput(HidNpadButton_Y, GetLanguageString("input_select_entry"));
-            }
+                if(!this->entry_menu->IsAnySelected()) {
+                    this->input_bar->AddSetInput(HidNpadButton_Y, GetLanguageString("input_select_entry"));
+                }
 
-            if(this->entry_menu->IsAnySelected()) {
-                this->input_bar->AddSetInput(HidNpadButton_B, GetLanguageString("input_cancel_selection"));
-            }
-            else if(!this->entry_menu->IsInRoot()) {
-                this->input_bar->AddSetInput(HidNpadButton_B, GetLanguageString("input_folder_back"));
-            }
-        }
-        else {
-            if(this->entry_menu->IsAnySelected()) {
-                this->input_bar->AddSetInput(HidNpadButton_A, GetLanguageString("input_move_selected"));
-                this->input_bar->AddSetInput(HidNpadButton_B, GetLanguageString("input_cancel_selection"));
-                this->input_bar->AddSetInput(HidNpadButton_X, GetLanguageString("input_cancel_selection"));
+                if(this->entry_menu->IsAnySelected()) {
+                    this->input_bar->AddSetInput(HidNpadButton_B, GetLanguageString("input_cancel_selection"));
+                }
+                else if(!this->entry_menu->IsInRoot()) {
+                    this->input_bar->AddSetInput(HidNpadButton_B, GetLanguageString("input_folder_back"));
+                }
             }
             else {
-                this->input_bar->AddSetInput(HidNpadButton_A, GetLanguageString("input_new_entry"));
+                if(this->entry_menu->IsAnySelected()) {
+                    this->input_bar->AddSetInput(HidNpadButton_A, GetLanguageString("input_move_selected"));
+                    this->input_bar->AddSetInput(HidNpadButton_B, GetLanguageString("input_cancel_selection"));
+                    this->input_bar->AddSetInput(HidNpadButton_X, GetLanguageString("input_cancel_selection"));
+                }
+                else {
+                    this->input_bar->AddSetInput(HidNpadButton_A, GetLanguageString("input_new_entry"));
+                }
             }
-        }
 
-        if(this->entry_menu->IsMenuStart()) {
-            this->input_bar->AddSetInput(InputBar::MetaDpadNpadButton | InputBar::MetaAnyStickNpadButton | HidNpadButton_R, GetLanguageString("input_navigate"));
-        }
-        else {
-            this->input_bar->AddSetInput(InputBar::MetaDpadNpadButton | InputBar::MetaAnyStickNpadButton | HidNpadButton_L | HidNpadButton_R, GetLanguageString("input_navigate"));
-        }
+            if(this->entry_menu->IsMenuStart()) {
+                this->input_bar->AddSetInput(InputBar::MetaDpadNpadButton | InputBar::MetaAnyStickNpadButton | HidNpadButton_R, GetLanguageString("input_navigate"));
+            }
+            else {
+                this->input_bar->AddSetInput(InputBar::MetaDpadNpadButton | InputBar::MetaAnyStickNpadButton | HidNpadButton_L | HidNpadButton_R, GetLanguageString("input_navigate"));
+            }
 
-        if(this->entry_menu->IsInRoot() && !this->entry_menu->IsAnySelected()) {
-            this->input_bar->AddSetInput(HidNpadButton_B, GetLanguageString("input_logoff"));
+            if(this->entry_menu->IsInRoot() && !this->entry_menu->IsAnySelected()) {
+                this->input_bar->AddSetInput(HidNpadButton_B, GetLanguageString("input_logoff"));
+            }
+
+            if(g_GlobalSettings.IsSuspended() && !this->entry_menu->IsFocusedEntrySuspended()) {
+                this->input_bar->AddSetInput(InputBar::MetaHomeNpadButton, GetLanguageString("input_resume_suspended"));
+            }
+
+            this->input_bar->AddSetInput(HidNpadButton_Plus | HidNpadButton_Minus, GetLanguageString("input_resize_menu"));
+
+            this->input_bar->AddSetInput(HidNpadButton_ZL | HidNpadButton_ZR, GetLanguageString("input_quick_menu"));
         }
-
-        if(g_GlobalSettings.IsSuspended() && !this->entry_menu->IsFocusedEntrySuspended()) {
-            this->input_bar->AddSetInput(InputBar::MetaHomeNpadButton, GetLanguageString("input_resume_suspended"));
-        }
-
-        this->input_bar->AddSetInput(HidNpadButton_Plus | HidNpadButton_Minus, GetLanguageString("input_resize_menu"));
-
-        this->input_bar->AddSetInput(HidNpadButton_ZL | HidNpadButton_ZR, GetLanguageString("input_quick_menu"));
 
         ///////////////////////////////
 
@@ -868,7 +920,7 @@ namespace ul::menu::ui {
             }
         }
 
-        const auto can_show_stuff = this->start_time_elapsed && ((this->mode == SuspendedImageMode::Focused) || (this->mode == SuspendedImageMode::NotFocused));
+        const auto can_show_stuff = this->start_time_elapsed && ((this->suspended_screen_img == nullptr) || ((this->mode == SuspendedImageMode::Focused) || (this->mode == SuspendedImageMode::NotFocused)));
 
         if(can_show_stuff) {
             if(g_MenuApplication->GetConsumeLastLaunchFailed()) {
@@ -910,12 +962,16 @@ namespace ul::menu::ui {
 
             if(R_SUCCEEDED(rc) && R_SUCCEEDED(detail_rc)) {
                 g_MenuApplication->DisplayDialog(GetLanguageString("app_verify"), GetLanguageString("app_verify_ok"), { GetLanguageString("ok") }, true, pu::sdl2::TextureHandle::New(pu::ui::render::LoadImage(GetApplicationCacheIconPath(app_id))));
-
-                ReloadApplicationEntryInfos(this->entry_menu->GetEntries());
             }
             else {
                 g_MenuApplication->DisplayDialog(GetLanguageString("app_verify"), GetLanguageString("app_verify_error") + ":\n\n" + util::FormatResultDisplay(rc) + "\n" + util::FormatResultDisplay(detail_rc), { GetLanguageString("ok") }, true);
             }
+
+            auto it = std::find(g_GlobalSettings.in_verify_app_ids.begin(), g_GlobalSettings.in_verify_app_ids.end(), app_id);
+            if(it != g_GlobalSettings.in_verify_app_ids.end()) {
+                g_GlobalSettings.in_verify_app_ids.erase(it);
+            }
+            ReloadApplicationEntryInfos(this->entry_menu->GetEntries());
         }
 
         if(this->suspended_screen_img) {
@@ -1042,6 +1098,7 @@ namespace ul::menu::ui {
         const auto option = g_MenuApplication->DisplayDialog(GetLanguageString("suspended_app"), GetLanguageString("suspended_app_close"), { GetLanguageString("yes"), GetLanguageString("no") }, true);
         if(option == 0) {
             this->DoTerminateApplication();
+            this->input_bar_changed = true;
         }
     }
 

@@ -71,7 +71,7 @@ namespace ul::menu::ui {
             }
 
         public:
-            InputBar(const s32 x, const s32 y);
+            InputBar(const s32 x, const s32 y, const std::string &bg_path);
             PU_SMART_CTOR(InputBar)
 
             inline s32 GetX() override {
@@ -91,7 +91,7 @@ namespace ul::menu::ui {
             }
 
             inline s32 GetWidth() override {
-                return pu::ui::render::ScreenWidth;
+                return pu::ui::render::GetTextureWidth(this->bar_bg);
             }
 
             inline s32 GetHeight() override {

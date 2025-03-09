@@ -283,6 +283,8 @@ Only those tasks which cannot be performed outside uLaunch are controlled (like 
 
 uScreen is a PC tool that communicates via USB with uSystem in order to capture the screen. Requires Java 8 or higher, but versions above that are recommended.
 
+> **IMPORTANT**! This should not be used for real-time recording due to the notorious lag! For those purposes use other tools like [SysDVR](https://github.com/exelix11/SysDVR). This feature is meant for capturing where other screen-recording tools do not work (HOME menu, system settings and other similar places)
+
 Note that USB screen capture is disabled by default, and has to be enabled in settings.
 
 You also need to install libusbK drivers for USB to work fine:
@@ -367,6 +369,6 @@ In order to only build a certain subproject, you can run `make` plus the subproj
 
 - Several scene developers for their help with small issues or features.
 
-- uMenu/uManager translations: [DDinghoya](https://github.com/DDinghoya) for Korean, [NedcloarBR](https://github.com/NedcloarBR) for Brazilian Portuguese, [Gabriele73](https://github.com/Gabriele73) for Italian, *mokkori* for French
+- uMenu/uManager translations: [DDinghoya](https://github.com/DDinghoya) for Korean, [NedcloarBR](https://github.com/NedcloarBR) for Brazilian Portuguese, [Gabriele73](https://github.com/Gabriele73) for Italian, *mokkori* for French, **KineticPie** for German
 
 - Everyone from my Discord and other places whose suggestions made this project a little bit better! Specially all the testers for being essential in reporting bugs and helping a lot with the project's development <3

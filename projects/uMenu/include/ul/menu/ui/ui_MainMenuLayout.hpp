@@ -53,6 +53,7 @@ namespace ul::menu::ui {
             pu::ui::elm::TextBlock::Ref cur_entry_sub_text;
             QuickMenu::Ref quick_menu;
             InputBar::Ref input_bar;
+            bool input_bar_changed;
             std::chrono::steady_clock::time_point startup_tp;
             bool start_time_elapsed;
             u8 min_alpha;

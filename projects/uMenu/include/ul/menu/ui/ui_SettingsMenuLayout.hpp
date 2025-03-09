@@ -1,6 +1,7 @@
 
 #pragma once
 #include <ul/menu/ui/ui_IMenuLayout.hpp>
+#include <ul/menu/ui/ui_InputBar.hpp>
 #include <ul/cfg/cfg_Config.hpp>
 
 namespace ul::menu::ui {
@@ -61,6 +62,8 @@ namespace ul::menu::ui {
             pu::ui::elm::TextBlock::Ref menu_text;
             pu::ui::elm::TextBlock::Ref submenu_text;
             pu::ui::elm::Menu::Ref settings_menu;
+            InputBar::Ref input_bar;
+            bool inputs_changed;
             pu::audio::Sfx setting_edit_sfx;
             pu::audio::Sfx setting_save_sfx;
             pu::audio::Sfx back_sfx;

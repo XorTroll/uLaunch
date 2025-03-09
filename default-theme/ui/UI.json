@@ -43,23 +43,20 @@
             "y": 65
         },
         "input_bar": {
-            "x": 61,
-            "y": 166
+            "y": 166,
+            "h_align": "center"
         },
         "cur_path_text": {
-            "x": 0,
             "y": 40,
             "h_align": "center",
             "font_size": "small"
         },
         "cur_entry_main_text": {
-            "x": 0,
             "y": 69,
             "h_align": "center",
             "font_size": "large"
         },
         "cur_entry_sub_text": {
-            "x": 0,
             "y": 122,
             "h_align": "center",
             "font_size": "medium"
@@ -83,42 +80,40 @@
     },
     "startup_menu": {
         "info_text": {
-            "x": 0,
             "y": 75,
             "h_align": "center",
             "font_size": "medium"
         },
         "users_menu": {
-            "x": 0,
             "y": 180,
             "h_align": "center"
         }
     },
     "themes_menu": {
         "info_text": {
-            "x": 0,
             "y": 37,
             "h_align": "center",
             "font_size": "large"
         },
         "themes_menu": {
-            "x": 0,
             "y": 135,
             "h_align": "center"
         }
     },
     "settings_menu": {
         "menu_text": {
-            "x": 0,
-            "y": 25,
+            "y": 37,
             "h_align": "center",
             "font_size": "large"
         },
         "submenu_text": {
-            "x": 0,
             "y": 70,
             "h_align": "center",
             "font_size": "medium"
+        },
+        "input_bar": {
+            "h_align": "center",
+            "v_align": "down"
         },
         "settings_menu": {
             "x": 75,
