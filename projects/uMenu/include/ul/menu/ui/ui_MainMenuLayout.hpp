@@ -81,6 +81,7 @@ namespace ul::menu::ui {
             pu::audio::Sfx open_themes_sfx;
             pu::audio::Sfx open_controllers_sfx;
             pu::audio::Sfx open_album_sfx;
+            pu::audio::Sfx open_amiibo_sfx;
             pu::audio::Sfx open_quick_menu_sfx;
             pu::audio::Sfx close_quick_menu_sfx;
             pu::audio::Sfx resume_app_sfx;

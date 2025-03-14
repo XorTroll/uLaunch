@@ -30,6 +30,8 @@ namespace ul::menu::ui {
         this->verify_rc = ResultSuccess;
         this->verify_detail_rc = ResultSuccess;
 
+        UL_RC_ASSERT(ul::util::LoadJSONFromFile(this->ui_json, ul::menu::ui::TryGetActiveThemeResource("ui/UI.json")));
+
         // TODO: customize
         this->SetFadeAlphaIncrementStepCount(FastFadeAlphaIncrementSteps);
         

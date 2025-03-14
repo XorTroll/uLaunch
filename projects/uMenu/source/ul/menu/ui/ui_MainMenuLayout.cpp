@@ -329,7 +329,7 @@ namespace ul::menu::ui {
                                 break;
                             }
                             case EntryType::SpecialEntryAmiibo: {
-                                // pu::audio::PlaySfx(this->open_album_sfx);
+                                pu::audio::PlaySfx(this->open_amiibo_sfx);
 
                                 ShowCabinet();
                                 break;
@@ -764,6 +764,7 @@ namespace ul::menu::ui {
         this->open_themes_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Main/OpenThemes.wav"));
         this->open_controllers_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Main/OpenControllers.wav"));
         this->open_album_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Main/OpenAlbum.wav"));
+        this->open_amiibo_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Main/OpenAmiibo.wav"));
         this->open_quick_menu_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Main/OpenQuickMenu.wav"));
         this->close_quick_menu_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Main/CloseQuickMenu.wav"));
         this->resume_app_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Main/ResumeApplication.wav"));

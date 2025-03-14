@@ -102,9 +102,8 @@ namespace ul::menu::ui {
 
             void OnLoad() override;
 
-            inline void Initialize(const smi::MenuStartMode start_mode, const util::JSON ui_json) {
+            inline void Initialize(const smi::MenuStartMode start_mode) {
                 this->start_mode = start_mode;
-                this->ui_json = ui_json;
             }
 
             inline void Finalize() {

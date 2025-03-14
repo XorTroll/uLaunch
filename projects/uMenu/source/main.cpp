@@ -211,12 +211,7 @@ namespace {
         // Get system language and load translations (default one if not present)
         ul::cfg::LoadLanguageJsons(ul::MenuLanguagesPath, g_GlobalSettings.main_lang, g_GlobalSettings.default_lang);
 
-        // Get the text sizes to initialize default fonts
-        auto ui_json = ul::util::JSON::object();
-        UL_RC_ASSERT(ul::util::LoadJSONFromFile(ui_json, ul::menu::ui::TryGetActiveThemeResource("ui/UI.json")));
-
         auto renderer_opts = pu::ui::render::RendererInitOptions(SDL_INIT_EVERYTHING, pu::ui::render::RendererHardwareFlags);
-
         renderer_opts.SetInputPlayerCount(8);
         renderer_opts.AddInputNpadStyleTag(HidNpadStyleSet_NpadStandard);
         renderer_opts.AddInputNpadIdType(HidNpadIdType_Handheld);
@@ -248,7 +243,7 @@ namespace {
         auto renderer = pu::ui::render::Renderer::New(renderer_opts);
         g_MenuApplication = ul::menu::ui::MenuApplication::New(renderer);
 
-        g_MenuApplication->Initialize(g_StartMode, ui_json);
+        g_MenuApplication->Initialize(g_StartMode);
         g_MenuApplication->Prepare();
 
         // With the handlers ready, initialize uSystem message handling
