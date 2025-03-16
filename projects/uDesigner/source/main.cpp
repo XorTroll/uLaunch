@@ -126,9 +126,13 @@ namespace {
     std::optional<bool> g_settings_bgm_loop;
     std::optional<int> g_settings_bgm_fade_in_ms;
     std::optional<int> g_settings_bgm_fade_out_ms;
+    std::optional<bool> g_lockscreen_bgm_loop;
+    std::optional<int> g_lockscreen_bgm_fade_in_ms;
+    std::optional<int> g_lockscreen_bgm_fade_out_ms;
 
     constexpr u32 WindowTitleBarExtraHeight = 20;
     float g_Scale = 0.6f;
+    float g_MenuEntryScale = 0.7f;
 
     ImFont *g_FontStandard_Small;
     ImFont *g_FontStandard_Medium;
@@ -267,7 +271,7 @@ void DrawTextAt(const std::string &text, const ul::design::FontSize font_size, c
             break;
     }
 
-    const auto pos = ImVec2(canvas_pos.x + x * g_Scale, canvas_pos.y + y * g_Scale);
+    const auto pos = ImVec2(canvas_pos.x + x * g_Scale, canvas_pos.y + (y - 4.8) * g_Scale); // Hardcoded shift to properly align text vertically
     draw_list->AddText(draw_font, draw_font_size * g_Scale, pos, IMGUI_COLOR_TO_U32(g_text_color), text.c_str());
 }
 
@@ -409,6 +413,7 @@ struct Element {
             _MENU_OPTION(Startup)
             _MENU_OPTION(Themes)
             _MENU_OPTION(Settings)
+            _MENU_OPTION(Lockscreen)
         }
 
         return el_json;
@@ -440,13 +445,13 @@ struct Element {
         if(el_json.count("v_align")) {
             const auto raw_v_align = el_json["v_align"].get<std::string>();
 
-            if(raw_v_align == "top") {
+            if((raw_v_align == "up") || raw_v_align == "top") {
                 this->v_align = static_cast<int>(ul::design::VerticalAlign::Top);
             }
             else if(raw_v_align == "center") {
                 this->v_align = static_cast<int>(ul::design::VerticalAlign::Center);
             }
-            else if(raw_v_align == "bottom") {
+            else if((raw_v_align == "down") || (raw_v_align == "bottom")) {
                 this->v_align = static_cast<int>(ul::design::VerticalAlign::Bottom);
             }
             else {
@@ -616,7 +621,7 @@ struct Element {
             draw_x = (ul::design::ScreenWidth - width) / 2;
         }
         else if(static_cast<ul::design::HorizontalAlign>(this->h_align) == ul::design::HorizontalAlign::Right) {
-            draw_x = ul::design::ScreenWidth - width - x;
+            draw_x = ul::design::ScreenWidth - width;
         }
         return draw_x;
     }
@@ -627,7 +632,7 @@ struct Element {
             draw_y = (ul::design::ScreenHeight - height) / 2;
         }
         else if(static_cast<ul::design::VerticalAlign>(this->v_align) == ul::design::VerticalAlign::Bottom) {
-            draw_y = ul::design::ScreenHeight - height - y;
+            draw_y = ul::design::ScreenHeight - height;
         }
         return draw_y;
     }
@@ -655,7 +660,7 @@ struct Element {
                 u32 text_width;
                 u32 text_height;
                 ProcessText(this->el_text.text, static_cast<ul::design::FontSize>(this->el_text.font_size), text_width, text_height, draw_font, draw_font_size);
-                
+
                 const auto draw_x = this->GetDrawX(text_width);
                 const auto draw_y = this->GetDrawY(text_height);
 
@@ -820,6 +825,7 @@ Element elem_main_mii_edit_entry_icon(ul::design::MenuType::Main, ul::design::El
 Element elem_main_settings_entry_icon(ul::design::MenuType::Main, ul::design::ElementType::Image, "", ElementLoadContext::ForAssetImage("ui/Main/EntryIcon/Settings"));
 Element elem_main_themes_entry_icon(ul::design::MenuType::Main, ul::design::ElementType::Image, "", ElementLoadContext::ForAssetImage("ui/Main/EntryIcon/Themes"));
 Element elem_main_web_browser_entry_icon(ul::design::MenuType::Main, ul::design::ElementType::Image, "", ElementLoadContext::ForAssetImage("ui/Main/EntryIcon/WebBrowser"));
+Element elem_main_amiibo_entry_icon(ul::design::MenuType::Main, ul::design::ElementType::Image, "", ElementLoadContext::ForAssetImage("ui/Main/EntryIcon/Amiibo"));
 
 Element elem_main_album_quick_icon(ul::design::MenuType::Main, ul::design::ElementType::Image, "", ElementLoadContext::ForAssetImage("ui/Main/QuickIcon/Album"));
 Element elem_main_controllers_quick_icon(ul::design::MenuType::Main, ul::design::ElementType::Image, "", ElementLoadContext::ForAssetImage("ui/Main/QuickIcon/Controllers"));
@@ -828,10 +834,15 @@ Element elem_main_power_quick_icon(ul::design::MenuType::Main, ul::design::Eleme
 Element elem_main_settings_quick_icon(ul::design::MenuType::Main, ul::design::ElementType::Image, "", ElementLoadContext::ForAssetImage("ui/Main/QuickIcon/Settings"));
 Element elem_main_themes_quick_icon(ul::design::MenuType::Main, ul::design::ElementType::Image, "", ElementLoadContext::ForAssetImage("ui/Main/QuickIcon/Themes"));
 Element elem_main_web_browser_quick_icon(ul::design::MenuType::Main, ul::design::ElementType::Image, "", ElementLoadContext::ForAssetImage("ui/Main/QuickIcon/WebBrowser"));
+Element elem_main_amiibo_quick_icon(ul::design::MenuType::Main, ul::design::ElementType::Image, "", ElementLoadContext::ForAssetImage("ui/Main/QuickIcon/Amiibo"));
 
 Element elem_main_border_over_icon(ul::design::MenuType::Main, ul::design::ElementType::Image, "", ElementLoadContext::ForAssetImage("ui/Main/OverIcon/Border"));
+Element elem_main_corrupted_over_icon(ul::design::MenuType::Main, ul::design::ElementType::Image, "", ElementLoadContext::ForAssetImage("ui/Main/OverIcon/Corrupted"));
 Element elem_main_cursor_over_icon(ul::design::MenuType::Main, ul::design::ElementType::Image, "", ElementLoadContext::ForAssetImage("ui/Main/OverIcon/Cursor"));
+Element elem_main_gamecard_over_icon(ul::design::MenuType::Main, ul::design::ElementType::Image, "", ElementLoadContext::ForAssetImage("ui/Main/OverIcon/Gamecard"));
 Element elem_main_hb_takeover_app_over_icon(ul::design::MenuType::Main, ul::design::ElementType::Image, "", ElementLoadContext::ForAssetImage("ui/Main/OverIcon/HomebrewTakeoverApplication"));
+Element elem_main_needs_update_over_icon(ul::design::MenuType::Main, ul::design::ElementType::Image, "", ElementLoadContext::ForAssetImage("ui/Main/OverIcon/NeedsUpdate"));
+Element elem_main_not_launchable_over_icon(ul::design::MenuType::Main, ul::design::ElementType::Image, "", ElementLoadContext::ForAssetImage("ui/Main/OverIcon/NotLaunchable"));
 Element elem_main_selected_over_icon(ul::design::MenuType::Main, ul::design::ElementType::Image, "", ElementLoadContext::ForAssetImage("ui/Main/OverIcon/Selected"));
 Element elem_main_suspended_over_icon(ul::design::MenuType::Main, ul::design::ElementType::Image, "", ElementLoadContext::ForAssetImage("ui/Main/OverIcon/Suspended"));
 
@@ -841,10 +852,37 @@ Element elem_startup_users_menu(ul::design::MenuType::Startup, ul::design::Eleme
 Element elem_themes_info_text(ul::design::MenuType::Themes, ul::design::ElementType::Text, "info_text", ElementLoadContext::ForText("Available themes"));
 Element elem_themes_themes_menu(ul::design::MenuType::Themes, ul::design::ElementType::None, "themes_menu", {});
 
-Element elem_settings_info_text(ul::design::MenuType::Settings, ul::design::ElementType::Text, "info_text", ElementLoadContext::ForText("Console & uLaunch settings"));
+Element elem_settings_menu_text(ul::design::MenuType::Settings, ul::design::ElementType::Text, "menu_text", ElementLoadContext::ForText("Menu"));
+Element elem_settings_submenu_text(ul::design::MenuType::Settings, ul::design::ElementType::Text, "submenu_text", ElementLoadContext::ForText("Sub-menu"));
 Element elem_settings_settings_menu(ul::design::MenuType::Settings, ul::design::ElementType::None, "settings_menu", {});
+Element elem_settings_input_bar_bg(ul::design::MenuType::Settings, ul::design::ElementType::Image, "input_bar", ElementLoadContext::ForAssetImage("ui/Settings/InputBarBackground"));
 Element elem_settings_setting_editable_icon(ul::design::MenuType::Settings, ul::design::ElementType::Image, "", ElementLoadContext::ForAssetImage("ui/Settings/SettingEditableIcon"));
 Element elem_settings_setting_non_editable_icon(ul::design::MenuType::Settings, ul::design::ElementType::Image, "", ElementLoadContext::ForAssetImage("ui/Settings/SettingNonEditableIcon"));
+
+Element elem_lockscreen_info_text(ul::design::MenuType::Lockscreen, ul::design::ElementType::Text, "info_text", ElementLoadContext::ForText("Press any key to unlock"));
+
+Element elem_lockscreen_connection_none_top_icon(ul::design::MenuType::Lockscreen, ul::design::ElementType::Image, "connection_top_icon", ElementLoadContext::ForAssetImage("ui/Main/TopIcon/Connection/None"));
+Element elem_lockscreen_connection_0_top_icon(ul::design::MenuType::Lockscreen, ul::design::ElementType::Image, "connection_top_icon", ElementLoadContext::ForAssetImage("ui/Main/TopIcon/Connection/0"));
+Element elem_lockscreen_connection_1_top_icon(ul::design::MenuType::Lockscreen, ul::design::ElementType::Image, "connection_top_icon", ElementLoadContext::ForAssetImage("ui/Main/TopIcon/Connection/1"));
+Element elem_lockscreen_connection_2_top_icon(ul::design::MenuType::Lockscreen, ul::design::ElementType::Image, "connection_top_icon", ElementLoadContext::ForAssetImage("ui/Main/TopIcon/Connection/2"));
+Element elem_lockscreen_connection_3_top_icon(ul::design::MenuType::Lockscreen, ul::design::ElementType::Image, "connection_top_icon", ElementLoadContext::ForAssetImage("ui/Main/TopIcon/Connection/3"));
+
+Element elem_lockscreen_time_text(ul::design::MenuType::Lockscreen, ul::design::ElementType::Text, "time_text", ElementLoadContext::ForText("04:20"));
+Element elem_lockscreen_date_text(ul::design::MenuType::Lockscreen, ul::design::ElementType::Text, "date_text", ElementLoadContext::ForText("15/06 (Sat)"));
+Element elem_lockscreen_battery_text(ul::design::MenuType::Lockscreen, ul::design::ElementType::Text, "battery_text", ElementLoadContext::ForText("69%"));
+
+Element elem_lockscreen_battery_10_top_icon(ul::design::MenuType::Lockscreen, ul::design::ElementType::Image, "battery_top_icon", ElementLoadContext::ForAssetImage("ui/Main/TopIcon/Battery/10"));
+Element elem_lockscreen_battery_20_top_icon(ul::design::MenuType::Lockscreen, ul::design::ElementType::Image, "battery_top_icon", ElementLoadContext::ForAssetImage("ui/Main/TopIcon/Battery/20"));
+Element elem_lockscreen_battery_30_top_icon(ul::design::MenuType::Lockscreen, ul::design::ElementType::Image, "battery_top_icon", ElementLoadContext::ForAssetImage("ui/Main/TopIcon/Battery/30"));
+Element elem_lockscreen_battery_40_top_icon(ul::design::MenuType::Lockscreen, ul::design::ElementType::Image, "battery_top_icon", ElementLoadContext::ForAssetImage("ui/Main/TopIcon/Battery/40"));
+Element elem_lockscreen_battery_50_top_icon(ul::design::MenuType::Lockscreen, ul::design::ElementType::Image, "battery_top_icon", ElementLoadContext::ForAssetImage("ui/Main/TopIcon/Battery/50"));
+Element elem_lockscreen_battery_60_top_icon(ul::design::MenuType::Lockscreen, ul::design::ElementType::Image, "battery_top_icon", ElementLoadContext::ForAssetImage("ui/Main/TopIcon/Battery/60"));
+Element elem_lockscreen_battery_70_top_icon(ul::design::MenuType::Lockscreen, ul::design::ElementType::Image, "battery_top_icon", ElementLoadContext::ForAssetImage("ui/Main/TopIcon/Battery/70"));
+Element elem_lockscreen_battery_80_top_icon(ul::design::MenuType::Lockscreen, ul::design::ElementType::Image, "battery_top_icon", ElementLoadContext::ForAssetImage("ui/Main/TopIcon/Battery/80"));
+Element elem_lockscreen_battery_90_top_icon(ul::design::MenuType::Lockscreen, ul::design::ElementType::Image, "battery_top_icon", ElementLoadContext::ForAssetImage("ui/Main/TopIcon/Battery/90"));
+Element elem_lockscreen_battery_100_top_icon(ul::design::MenuType::Lockscreen, ul::design::ElementType::Image, "battery_top_icon", ElementLoadContext::ForAssetImage("ui/Main/TopIcon/Battery/100"));
+
+Element elem_lockscreen_battery_top_icon_charging(ul::design::MenuType::Lockscreen, ul::design::ElementType::Image, "battery_top_icon", ElementLoadContext::ForAssetImage("ui/Main/TopIcon/Battery/Charging"));
 
 Element *g_AllElements[] = {
     &elem_theme_icon,
@@ -911,6 +949,12 @@ Element *g_AllElements[] = {
     &elem_main_themes_quick_icon,
     &elem_main_web_browser_entry_icon,
     &elem_main_web_browser_quick_icon,
+    &elem_main_amiibo_entry_icon,
+    &elem_main_amiibo_quick_icon,
+    &elem_main_corrupted_over_icon,
+    &elem_main_gamecard_over_icon,
+    &elem_main_needs_update_over_icon,
+    &elem_main_not_launchable_over_icon,
 
     &elem_startup_info_text,
     &elem_startup_users_menu,
@@ -918,10 +962,37 @@ Element *g_AllElements[] = {
     &elem_themes_info_text,
     &elem_themes_themes_menu,
 
-    &elem_settings_info_text,
+    &elem_settings_menu_text,
+    &elem_settings_submenu_text,
     &elem_settings_settings_menu,
+    &elem_settings_input_bar_bg,
     &elem_settings_setting_editable_icon,
-    &elem_settings_setting_non_editable_icon
+    &elem_settings_setting_non_editable_icon,
+
+    &elem_lockscreen_info_text,
+
+    &elem_lockscreen_connection_none_top_icon,
+    &elem_lockscreen_connection_0_top_icon,
+    &elem_lockscreen_connection_1_top_icon,
+    &elem_lockscreen_connection_2_top_icon,
+    &elem_lockscreen_connection_3_top_icon,
+
+    &elem_lockscreen_time_text,
+    &elem_lockscreen_date_text,
+    &elem_lockscreen_battery_text,
+
+    &elem_lockscreen_battery_10_top_icon,
+    &elem_lockscreen_battery_20_top_icon,
+    &elem_lockscreen_battery_30_top_icon,
+    &elem_lockscreen_battery_40_top_icon,
+    &elem_lockscreen_battery_50_top_icon,
+    &elem_lockscreen_battery_60_top_icon,
+    &elem_lockscreen_battery_70_top_icon,
+    &elem_lockscreen_battery_80_top_icon,
+    &elem_lockscreen_battery_90_top_icon,
+    &elem_lockscreen_battery_100_top_icon,
+
+    &elem_lockscreen_battery_top_icon_charging,
 };
 
 struct SoundFile {
@@ -976,6 +1047,8 @@ SoundFile sfx_settings_setting_edit("sound/Settings/SettingEdit.wav");
 SoundFile sfx_settings_setting_save("sound/Settings/SettingSave.wav");
 SoundFile sfx_settings_back("sound/Settings/Back.wav");
 
+SoundFile bgm_lockscreen("sound/Lockscreen/Bgm.mp3");
+
 SoundFile *g_AllSoundFiles[] = {
     &bgm_main,
     &sfx_main_post_suspend,
@@ -1019,7 +1092,9 @@ SoundFile *g_AllSoundFiles[] = {
     &bgm_settings,
     &sfx_settings_setting_edit,
     &sfx_settings_setting_save,
-    &sfx_settings_back
+    &sfx_settings_back,
+
+    &bgm_lockscreen,
 };
 
 extern "C" EMSCRIPTEN_KEEPALIVE void cpp_LoadElementImage(Element *elem, void *img_data, const size_t img_data_size) {
@@ -1229,6 +1304,7 @@ bool ReloadFromTheme() {
         _LOAD_MENU_BGM_FIELDS("startup_menu", g_startup_bgm_loop, g_startup_bgm_fade_in_ms, g_startup_bgm_fade_out_ms);
         _LOAD_MENU_BGM_FIELDS("themes_menu", g_themes_bgm_loop, g_themes_bgm_fade_in_ms, g_themes_bgm_fade_out_ms);
         _LOAD_MENU_BGM_FIELDS("settings_menu", g_settings_bgm_loop, g_settings_bgm_fade_in_ms, g_settings_bgm_fade_out_ms);
+        _LOAD_MENU_BGM_FIELDS("lockscreen_menu", g_lockscreen_bgm_loop, g_lockscreen_bgm_fade_in_ms, g_lockscreen_bgm_fade_out_ms);
     }
 
     for(u32 i = 0; i < std::size(g_AllSoundFiles); i++) {
@@ -1403,6 +1479,7 @@ void SaveThemeZip() {
         _SAVE_BGM_FIELDS(g_SoundSettings["startup_menu"]);
         _SAVE_BGM_FIELDS(g_SoundSettings["themes_menu"]);
         _SAVE_BGM_FIELDS(g_SoundSettings["settings_menu"]);
+        _SAVE_BGM_FIELDS(g_SoundSettings["lockscreen_menu"]);
 
         if(!SaveThemeJsonAsset(theme_zip, ul::design::SoundSettingsPath, g_SoundSettings)) {
             emscripten_log(EM_LOG_CONSOLE, "Unable to save sound settings JSON...");
@@ -1474,6 +1551,17 @@ void DrawItemMenuElement(Element &elem, const std::vector<Element*> &icons, cons
     const auto x = elem.GetDrawX(width);
     const auto y = elem.GetDrawY(item_height * icons.size());
     DrawItemMenu(icons, texts, focus_idx, x, y, width, item_height, 0);
+}
+
+void DrawInputBar(Element &input_bar_bg) {
+    input_bar_bg.DrawOnWindow();
+    const auto input_text = "\uE0E0 Demo input   \uE0E1 Demo input   \uE0E2 \uE0E3 Demo input   \uE0E4 \uE0E5 Demo input";
+    u32 text_width;
+    u32 text_height;
+    ImFont *dummy_font;
+    float dummy_size;
+    ProcessText(input_text, ul::design::FontSize::Small, text_width, text_height, dummy_font, dummy_size);
+    DrawTextAt(input_text, ul::design::FontSize::Small, input_bar_bg.GetDrawX(input_bar_bg.el_img.width) + 30, input_bar_bg.GetDrawY(input_bar_bg.el_img.height) + (u32)((double)(input_bar_bg.el_img.height - text_height) / 2.0f));
 }
 
 constexpr const char *HorizontalAlignNames[] = {
@@ -1657,45 +1745,38 @@ namespace {
                 }
             }
 
-            elem_main_input_bar_bg.DrawOnWindow();
-            const auto input_text = "\uE0E0 Demo input   \uE0E1 Demo input   \uE0E2 \uE0E3 Demo input   \uE0E4 \uE0E5 Demo input";
-            u32 text_width;
-            u32 text_height;
-            ImFont *dummy_font;
-            float dummy_size;
-            ProcessText(input_text, ul::design::FontSize::Small, text_width, text_height, dummy_font, dummy_size);
-            DrawTextAt(input_text, ul::design::FontSize::Small, elem_main_input_bar_bg.GetDrawX(ul::design::ScreenWidth) + 37, elem_main_input_bar_bg.GetDrawY(ul::design::ScreenHeight) + (u32)((double)(elem_main_input_bar_bg.el_img.height - text_height) / 2.0f));
+            DrawInputBar(elem_main_input_bar_bg);
 
             ////// Entry menu
 
-            auto entry_menu_base_x = elem_main_entry_menu.GetDrawX(ul::design::ScreenWidth) + ul::design::EntryMenuHorizontalSideMargin;
-            auto entry_menu_base_y = elem_main_entry_menu.GetDrawY(ul::design::ScreenHeight) + ul::design::EntryMenuVerticalSideMargin;
+            auto entry_menu_base_x = (elem_main_entry_menu.GetDrawX(ul::design::ScreenWidth) + ul::design::EntryMenuHorizontalSideMargin) / g_MenuEntryScale;
+            auto entry_menu_base_y = (elem_main_entry_menu.GetDrawY(ul::design::ScreenHeight) + ul::design::EntryMenuVerticalSideMargin) / g_MenuEntryScale;
 
             #define _DRAW_EMPTY_ICON() { \
-                elem_main_empty_entry_icon.DrawOnWindowAt(entry_menu_base_x, entry_menu_base_y, ul::design::EntryMenuEntryIconSize, ul::design::EntryMenuEntryIconSize); \
-                entry_menu_base_x += ul::design::EntryMenuEntryIconSize + ul::design::EntryMenuEntryMargin; \
+                elem_main_empty_entry_icon.DrawOnWindowAt(entry_menu_base_x * g_MenuEntryScale, entry_menu_base_y * g_MenuEntryScale, ul::design::EntryMenuEntryIconSize * g_MenuEntryScale, ul::design::EntryMenuEntryIconSize * g_MenuEntryScale); \
+                entry_menu_base_x += ul::design::EntryMenuEntryIconSize + (ul::design::EntryMenuEntryMargin / g_MenuEntryScale); \
             }
             
             #define _DRAW_ICON(elem) { \
                 const auto elem##_x = entry_menu_base_x; \
                 const auto elem##_y = entry_menu_base_y; \
-                elem.DrawOnWindowAt(elem##_x, elem##_y, ul::design::EntryMenuEntryIconSize, ul::design::EntryMenuEntryIconSize); \
-                elem_main_border_over_icon.DrawOnWindowAt(elem##_x - (elem_main_border_over_icon.el_img.width - ul::design::EntryMenuEntryIconSize) / 2, elem##_y - (elem_main_border_over_icon.el_img.height - ul::design::EntryMenuEntryIconSize) / 2); \
-                entry_menu_base_x += elem.el_img.width + ul::design::EntryMenuEntryMargin; \
+                elem.DrawOnWindowAt(elem##_x * g_MenuEntryScale, elem##_y * g_MenuEntryScale, ul::design::EntryMenuEntryIconSize * g_MenuEntryScale, ul::design::EntryMenuEntryIconSize * g_MenuEntryScale); \
+                elem_main_border_over_icon.DrawOnWindowAt((elem##_x - (elem_main_border_over_icon.el_img.width - ul::design::EntryMenuEntryIconSize) / 2) * g_MenuEntryScale, (elem##_y - (elem_main_border_over_icon.el_img.height - ul::design::EntryMenuEntryIconSize) / 2) * g_MenuEntryScale, elem_main_border_over_icon.el_img.width * g_MenuEntryScale, elem_main_border_over_icon.el_img.height * g_MenuEntryScale); \
+                entry_menu_base_x += elem.el_img.width + (ul::design::EntryMenuEntryMargin / g_MenuEntryScale); \
             }
 
             #define _DRAW_ICON_WITH_OVER(elem, over) { \
                 const auto elem##_x = entry_menu_base_x; \
                 const auto elem##_y = entry_menu_base_y; \
-                elem.DrawOnWindowAt(elem##_x, elem##_y, ul::design::EntryMenuEntryIconSize, ul::design::EntryMenuEntryIconSize); \
-                elem_main_border_over_icon.DrawOnWindowAt(elem##_x - (elem_main_border_over_icon.el_img.width - elem.el_img.width) / 2, elem##_y - (elem_main_border_over_icon.el_img.height - elem.el_img.height) / 2); \
-                entry_menu_base_x += elem.el_img.width + ul::design::EntryMenuEntryMargin; \
-                over.DrawOnWindowAt(elem##_x - (over.el_img.width - elem.el_img.width) / 2, elem##_y - (over.el_img.height - elem.el_img.height) / 2); \
+                elem.DrawOnWindowAt(elem##_x * g_MenuEntryScale, elem##_y * g_MenuEntryScale, ul::design::EntryMenuEntryIconSize * g_MenuEntryScale, ul::design::EntryMenuEntryIconSize * g_MenuEntryScale); \
+                elem_main_border_over_icon.DrawOnWindowAt((elem##_x - (elem_main_border_over_icon.el_img.width - elem.el_img.width) / 2) * g_MenuEntryScale, (elem##_y - (elem_main_border_over_icon.el_img.height - elem.el_img.height) / 2) * g_MenuEntryScale, elem_main_border_over_icon.el_img.width * g_MenuEntryScale, elem_main_border_over_icon.el_img.height * g_MenuEntryScale); \
+                entry_menu_base_x += elem.el_img.width + (ul::design::EntryMenuEntryMargin / g_MenuEntryScale); \
+                over.DrawOnWindowAt((elem##_x - (over.el_img.width - elem.el_img.width) / 2) * g_MenuEntryScale, (elem##_y - (over.el_img.height - elem.el_img.height) / 2) * g_MenuEntryScale, over.el_img.width * g_MenuEntryScale, over.el_img.height * g_MenuEntryScale); \
             }
 
             #define _NEXT_ROW() { \
-                entry_menu_base_x = elem_main_entry_menu.GetDrawX(ul::design::ScreenWidth) + ul::design::EntryMenuHorizontalSideMargin; \
-                entry_menu_base_y += ul::design::EntryMenuEntryIconSize + ul::design::EntryMenuEntryMargin; \
+                entry_menu_base_x = (elem_main_entry_menu.GetDrawX(ul::design::ScreenWidth) + ul::design::EntryMenuHorizontalSideMargin) / g_MenuEntryScale; \
+                entry_menu_base_y += ul::design::EntryMenuEntryIconSize + (ul::design::EntryMenuEntryMargin / g_MenuEntryScale); \
             }
 
             _DRAW_ICON(elem_main_themes_entry_icon);
@@ -1703,6 +1784,8 @@ namespace {
             _DRAW_ICON_WITH_OVER(elem_main_settings_entry_icon, elem_main_cursor_over_icon);
             _DRAW_ICON(elem_main_web_browser_entry_icon);
             _DRAW_ICON_WITH_OVER(elem_main_mii_edit_entry_icon, elem_main_selected_over_icon);
+            _DRAW_ICON_WITH_OVER(elem_main_amiibo_entry_icon, elem_main_gamecard_over_icon);
+            _DRAW_ICON_WITH_OVER(elem_main_default_app_entry_icon, elem_main_needs_update_over_icon);
 
             _NEXT_ROW();
 
@@ -1711,6 +1794,8 @@ namespace {
             _DRAW_ICON_WITH_OVER(elem_main_default_app_entry_icon, elem_main_hb_takeover_app_over_icon);
             _DRAW_EMPTY_ICON();
             _DRAW_ICON(elem_main_default_hb_entry_icon);
+            _DRAW_ICON_WITH_OVER(elem_main_controllers_entry_icon, elem_main_corrupted_over_icon);
+            _DRAW_ICON_WITH_OVER(elem_main_default_hb_entry_icon, elem_main_not_launchable_over_icon);
 
             /////////////////
 
@@ -1803,7 +1888,8 @@ namespace {
                     nullptr,
                     &elem_main_themes_quick_icon,
                     &elem_main_settings_quick_icon,
-                    &elem_main_mii_edit_quick_icon
+                    &elem_main_mii_edit_quick_icon,
+                    &elem_main_amiibo_quick_icon
                 };
                 const std::vector<std::string> quick_menu_names = {
                     "Power options",
@@ -1813,7 +1899,8 @@ namespace {
                     "Open user page",
                     "Open themes menu",
                     "Open settings menu",
-                    "Open mii editor"
+                    "Open mii editor",
+                    "Open amiibo options"
                 };
                 DrawItemMenu(quick_menu_icons, quick_menu_names, 1, 300, 172, 1320, 90, IM_COL32(0, 0, 0, 220));
             }
@@ -1852,7 +1939,8 @@ namespace {
         });
 
         _DRAW_FOR_MENU("Settings menu", ul::design::MenuType::Settings, {
-            elem_settings_info_text.DrawOnWindow();
+            elem_settings_menu_text.DrawOnWindow();
+            elem_settings_submenu_text.DrawOnWindow();
 
             const std::vector<Element*> settings_menu_icons = {
                 &elem_settings_setting_non_editable_icon,
@@ -1865,6 +1953,86 @@ namespace {
                 "Editable setting 2"
             };
             DrawItemMenuElement(elem_settings_settings_menu, settings_menu_icons, settings_menu_texts, 1, 1770, 150);
+
+            DrawInputBar(elem_settings_input_bar_bg);
+        });
+
+        _DRAW_FOR_MENU("Lockscreen menu", ul::design::MenuType::Lockscreen, {
+            elem_lockscreen_info_text.DrawOnWindow();
+
+            switch(g_VisibleConnectionTopIcon) {
+                case 0: {
+                    elem_lockscreen_connection_none_top_icon.DrawOnWindow();
+                    break;
+                }
+                case 1: {
+                    elem_lockscreen_connection_0_top_icon.DrawOnWindow();
+                    break;
+                }
+                case 2: {
+                    elem_lockscreen_connection_1_top_icon.DrawOnWindow();
+                    break;
+                }
+                case 3: {
+                    elem_lockscreen_connection_2_top_icon.DrawOnWindow();
+                    break;
+                }
+                case 4: {
+                    elem_lockscreen_connection_3_top_icon.DrawOnWindow();
+                    break;
+                }
+            }
+
+            elem_lockscreen_time_text.DrawOnWindow();
+            elem_lockscreen_date_text.DrawOnWindow();
+            elem_lockscreen_battery_text.DrawOnWindow();
+            
+            switch(g_VisibleBatteryTopIcon) {
+                case 0: {
+                    elem_lockscreen_battery_10_top_icon.DrawOnWindow();
+                    break;
+                }
+                case 1: {
+                    elem_lockscreen_battery_20_top_icon.DrawOnWindow();
+                    break;
+                }
+                case 2: {
+                    elem_lockscreen_battery_30_top_icon.DrawOnWindow();
+                    break;
+                }
+                case 3: {
+                    elem_lockscreen_battery_40_top_icon.DrawOnWindow();
+                    break;
+                }
+                case 4: {
+                    elem_lockscreen_battery_50_top_icon.DrawOnWindow();
+                    break;
+                }
+                case 5: {
+                    elem_lockscreen_battery_60_top_icon.DrawOnWindow();
+                    break;
+                }
+                case 6: {
+                    elem_lockscreen_battery_70_top_icon.DrawOnWindow();
+                    break;
+                }
+                case 7: {
+                    elem_lockscreen_battery_80_top_icon.DrawOnWindow();
+                    break;
+                }
+                case 8: {
+                    elem_lockscreen_battery_90_top_icon.DrawOnWindow();
+                    break;
+                }
+                case 9: {
+                    elem_lockscreen_battery_100_top_icon.DrawOnWindow();
+                    break;
+                }
+            }
+
+            if(g_DrawBatteryCharging) {
+                elem_lockscreen_battery_top_icon_charging.DrawOnWindow();
+            }
         });
 
         ImGui::SetNextWindowPos(ImVec2((g_Width - width) / 2, (g_Height - height) / 2), ImGuiCond_Once);
@@ -1950,6 +2118,8 @@ namespace {
                     ImGui::Combo("Previewed top menu", &g_VisibleTopMenuBackground, TopMenuBackgroundNames, std::size(TopMenuBackgroundNames));
                     ImGui::Combo("Previewed connection top icon", &g_VisibleConnectionTopIcon, ConnectionTopIconNames, std::size(ConnectionTopIconNames));
                     ImGui::Combo("Previewed battery top icon", &g_VisibleBatteryTopIcon, BatteryTopIconNames, std::size(BatteryTopIconNames));
+
+                    ImGui::SliderFloat("Menu entry size preview scale", &g_MenuEntryScale, 0.1f, 1.0f);
 
                     ImGui::Checkbox("Preview battery charging", &g_DrawBatteryCharging);
                     ImGui::Checkbox("Preview quick menu", &g_DrawQuickMenu);
@@ -2258,10 +2428,230 @@ namespace {
                 if(ImGui::CollapsingHeader("Settings menu")) {
                     ImGui::Indent();
 
-                    LoadEditableElement(&elem_settings_info_text);
+                    LoadEditableElement(&elem_settings_menu_text);
+                    LoadEditableElement(&elem_settings_submenu_text);
                     LoadEditableElement(&elem_settings_settings_menu);
+                    LoadEditableElement(&elem_settings_input_bar_bg);
                     LoadEditableElement(&elem_settings_setting_editable_icon);
                     LoadEditableElement(&elem_settings_setting_non_editable_icon);
+                    
+                    ImGui::Unindent();
+                }
+
+                if(ImGui::CollapsingHeader("Lockscreen menu")) {
+                    ImGui::Indent();
+
+                    ImGui::Combo("Previewed connection top icon", &g_VisibleConnectionTopIcon, ConnectionTopIconNames, std::size(ConnectionTopIconNames));
+                    ImGui::Combo("Previewed battery top icon", &g_VisibleBatteryTopIcon, BatteryTopIconNames, std::size(BatteryTopIconNames));
+
+                    ImGui::Checkbox("Preview battery charging", &g_DrawBatteryCharging);
+
+                    ImGui::Separator();
+
+                    switch(g_VisibleConnectionTopIcon) {
+                        case 0: {
+                            LoadEditableElement(&elem_lockscreen_connection_none_top_icon, {
+                                &elem_lockscreen_connection_0_top_icon,
+                                &elem_lockscreen_connection_1_top_icon, 
+                                &elem_lockscreen_connection_2_top_icon, 
+                                &elem_lockscreen_connection_3_top_icon
+                            });
+                            break;
+                        }
+                        case 1: {
+                            LoadEditableElement(&elem_lockscreen_connection_0_top_icon, {
+                                &elem_lockscreen_connection_1_top_icon, 
+                                &elem_lockscreen_connection_2_top_icon, 
+                                &elem_lockscreen_connection_3_top_icon,
+                                &elem_lockscreen_connection_none_top_icon
+                            });
+                            break;
+                        }
+                        case 2: {
+                            LoadEditableElement(&elem_lockscreen_connection_1_top_icon, {
+                                &elem_lockscreen_connection_2_top_icon, 
+                                &elem_lockscreen_connection_3_top_icon,
+                                &elem_lockscreen_connection_none_top_icon,
+                                &elem_lockscreen_connection_0_top_icon
+                            });
+                            break;
+                        }
+                        case 3: {
+                            LoadEditableElement(&elem_lockscreen_connection_2_top_icon, {
+                                &elem_lockscreen_connection_3_top_icon,
+                                &elem_lockscreen_connection_none_top_icon,
+                                &elem_lockscreen_connection_0_top_icon, 
+                                &elem_lockscreen_connection_1_top_icon
+                            });
+                            break;
+                        }
+                        case 4: {
+                            LoadEditableElement(&elem_lockscreen_connection_3_top_icon, {
+                                &elem_lockscreen_connection_none_top_icon,
+                                &elem_lockscreen_connection_0_top_icon, 
+                                &elem_lockscreen_connection_1_top_icon, 
+                                &elem_lockscreen_connection_2_top_icon
+                            });
+                            break;
+                        }
+                    }
+
+                    LoadEditableElement(&elem_lockscreen_time_text);
+                    LoadEditableElement(&elem_lockscreen_date_text);
+                    LoadEditableElement(&elem_lockscreen_battery_text);
+
+                    switch(g_VisibleBatteryTopIcon) {
+                        case 0: {
+                            LoadEditableElement(&elem_lockscreen_battery_10_top_icon, {
+                                &elem_lockscreen_battery_20_top_icon,
+                                &elem_lockscreen_battery_30_top_icon,
+                                &elem_lockscreen_battery_40_top_icon,
+                                &elem_lockscreen_battery_50_top_icon,
+                                &elem_lockscreen_battery_60_top_icon,
+                                &elem_lockscreen_battery_70_top_icon,
+                                &elem_lockscreen_battery_80_top_icon,
+                                &elem_lockscreen_battery_90_top_icon,
+                                &elem_lockscreen_battery_100_top_icon,
+                                &elem_lockscreen_battery_top_icon_charging
+                            });
+                            break;
+                        }
+                        case 1: {
+                            LoadEditableElement(&elem_lockscreen_battery_20_top_icon, {
+                                &elem_lockscreen_battery_30_top_icon,
+                                &elem_lockscreen_battery_40_top_icon,
+                                &elem_lockscreen_battery_50_top_icon,
+                                &elem_lockscreen_battery_60_top_icon,
+                                &elem_lockscreen_battery_70_top_icon,
+                                &elem_lockscreen_battery_80_top_icon,
+                                &elem_lockscreen_battery_90_top_icon,
+                                &elem_lockscreen_battery_100_top_icon,
+                                &elem_lockscreen_battery_top_icon_charging,
+                                &elem_lockscreen_battery_10_top_icon
+                            });
+                            break;
+                        }
+                        case 2: {
+                            LoadEditableElement(&elem_lockscreen_battery_30_top_icon, {
+                                &elem_lockscreen_battery_40_top_icon,
+                                &elem_lockscreen_battery_50_top_icon,
+                                &elem_lockscreen_battery_60_top_icon,
+                                &elem_lockscreen_battery_70_top_icon,
+                                &elem_lockscreen_battery_80_top_icon,
+                                &elem_lockscreen_battery_90_top_icon,
+                                &elem_lockscreen_battery_100_top_icon,
+                                &elem_lockscreen_battery_top_icon_charging,
+                                &elem_lockscreen_battery_10_top_icon,
+                                &elem_lockscreen_battery_20_top_icon
+                            });
+                            break;
+                        }
+                        case 3: {
+                            LoadEditableElement(&elem_lockscreen_battery_40_top_icon, {
+                                &elem_lockscreen_battery_50_top_icon,
+                                &elem_lockscreen_battery_60_top_icon,
+                                &elem_lockscreen_battery_70_top_icon,
+                                &elem_lockscreen_battery_80_top_icon,
+                                &elem_lockscreen_battery_90_top_icon,
+                                &elem_lockscreen_battery_100_top_icon,
+                                &elem_lockscreen_battery_top_icon_charging,
+                                &elem_lockscreen_battery_10_top_icon,
+                                &elem_lockscreen_battery_20_top_icon,
+                                &elem_lockscreen_battery_30_top_icon
+                            });
+                            break;
+                        }
+                        case 4: {
+                            LoadEditableElement(&elem_lockscreen_battery_50_top_icon, {
+                                &elem_lockscreen_battery_60_top_icon,
+                                &elem_lockscreen_battery_70_top_icon,
+                                &elem_lockscreen_battery_80_top_icon,
+                                &elem_lockscreen_battery_90_top_icon,
+                                &elem_lockscreen_battery_100_top_icon,
+                                &elem_lockscreen_battery_top_icon_charging,
+                                &elem_lockscreen_battery_10_top_icon,
+                                &elem_lockscreen_battery_20_top_icon,
+                                &elem_lockscreen_battery_30_top_icon,
+                                &elem_lockscreen_battery_40_top_icon
+                            });
+                            break;
+                        }
+                        case 5: {
+                            LoadEditableElement(&elem_lockscreen_battery_60_top_icon, {
+                                &elem_lockscreen_battery_70_top_icon,
+                                &elem_lockscreen_battery_80_top_icon,
+                                &elem_lockscreen_battery_90_top_icon,
+                                &elem_lockscreen_battery_100_top_icon,
+                                &elem_lockscreen_battery_top_icon_charging,
+                                &elem_lockscreen_battery_10_top_icon,
+                                &elem_lockscreen_battery_20_top_icon,
+                                &elem_lockscreen_battery_30_top_icon,
+                                &elem_lockscreen_battery_40_top_icon,
+                                &elem_lockscreen_battery_50_top_icon
+                            });
+                            break;
+                        }
+                        case 6: {
+                            LoadEditableElement(&elem_lockscreen_battery_70_top_icon, {
+                                &elem_lockscreen_battery_80_top_icon,
+                                &elem_lockscreen_battery_90_top_icon,
+                                &elem_lockscreen_battery_100_top_icon,
+                                &elem_lockscreen_battery_top_icon_charging,
+                                &elem_lockscreen_battery_10_top_icon,
+                                &elem_lockscreen_battery_20_top_icon,
+                                &elem_lockscreen_battery_30_top_icon,
+                                &elem_lockscreen_battery_40_top_icon,
+                                &elem_lockscreen_battery_50_top_icon,
+                                &elem_lockscreen_battery_60_top_icon
+                            });
+                            break;
+                        }
+                        case 7: {
+                            LoadEditableElement(&elem_lockscreen_battery_80_top_icon, {
+                                &elem_lockscreen_battery_90_top_icon,
+                                &elem_lockscreen_battery_100_top_icon,
+                                &elem_lockscreen_battery_top_icon_charging,
+                                &elem_lockscreen_battery_10_top_icon,
+                                &elem_lockscreen_battery_20_top_icon,
+                                &elem_lockscreen_battery_30_top_icon,
+                                &elem_lockscreen_battery_40_top_icon,
+                                &elem_lockscreen_battery_50_top_icon,
+                                &elem_lockscreen_battery_60_top_icon,
+                                &elem_lockscreen_battery_70_top_icon
+                            });
+                            break;
+                        }
+                        case 8: {
+                            LoadEditableElement(&elem_lockscreen_battery_90_top_icon, {
+                                &elem_lockscreen_battery_100_top_icon,
+                                &elem_lockscreen_battery_top_icon_charging,
+                                &elem_lockscreen_battery_10_top_icon,
+                                &elem_lockscreen_battery_20_top_icon,
+                                &elem_lockscreen_battery_30_top_icon,
+                                &elem_lockscreen_battery_40_top_icon,
+                                &elem_lockscreen_battery_50_top_icon,
+                                &elem_lockscreen_battery_60_top_icon,
+                                &elem_lockscreen_battery_70_top_icon,
+                                &elem_lockscreen_battery_80_top_icon
+                            });
+                            break;
+                        }
+                        case 9: {
+                            LoadEditableElement(&elem_lockscreen_battery_100_top_icon, {
+                                &elem_lockscreen_battery_top_icon_charging,
+                                &elem_lockscreen_battery_10_top_icon,
+                                &elem_lockscreen_battery_20_top_icon,
+                                &elem_lockscreen_battery_30_top_icon,
+                                &elem_lockscreen_battery_40_top_icon,
+                                &elem_lockscreen_battery_50_top_icon,
+                                &elem_lockscreen_battery_60_top_icon,
+                                &elem_lockscreen_battery_70_top_icon,
+                                &elem_lockscreen_battery_80_top_icon,
+                                &elem_lockscreen_battery_90_top_icon
+                            });
+                            break;
+                        }
+                    }
                     
                     ImGui::Unindent();
                 }

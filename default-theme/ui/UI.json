@@ -107,7 +107,7 @@
             "font_size": "large"
         },
         "submenu_text": {
-            "y": 70,
+            "y": 80,
             "h_align": "center",
             "font_size": "medium"
         },

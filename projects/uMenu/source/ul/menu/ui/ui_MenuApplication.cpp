@@ -20,6 +20,23 @@ namespace ul::menu::ui {
         g_MenuApplication->GetLayout<IMenuLayout>()->NotifyMessageContext(msg_ctx);
     }
 
+    MenuBgmEntry &MenuApplication::GetCurrentMenuBgm() {
+        switch(this->loaded_menu) {
+            case MenuType::Main:
+                return g_GlobalSettings.main_menu_bgm;
+            case MenuType::Startup:
+                return g_GlobalSettings.startup_menu_bgm;
+            case MenuType::Themes:
+                return g_GlobalSettings.themes_menu_bgm;
+            case MenuType::Settings:
+                return g_GlobalSettings.settings_menu_bgm;
+            case MenuType::Lockscreen:
+                return g_GlobalSettings.lockscreen_menu_bgm;
+        }
+
+        UL_ASSERT_FAIL("Invalid current menu?");
+    }
+
     void MenuApplication::OnLoad() {
         this->launch_failed = false;
         this->pending_gc_mount_rc = ResultSuccess;
@@ -30,12 +47,8 @@ namespace ul::menu::ui {
         this->verify_rc = ResultSuccess;
         this->verify_detail_rc = ResultSuccess;
 
-        UL_RC_ASSERT(ul::util::LoadJSONFromFile(this->ui_json, ul::menu::ui::TryGetActiveThemeResource("ui/UI.json")));
-
         // TODO: customize
         this->SetFadeAlphaIncrementStepCount(FastFadeAlphaIncrementSteps);
-        
-        LoadCommonTextures();
 
         u8 *screen_capture_buf = nullptr;
         if(g_GlobalSettings.IsSuspended()) {
@@ -44,99 +57,65 @@ namespace ul::menu::ui {
             appletGetLastApplicationCaptureImageEx(screen_capture_buf, RawScreenRgbaBufferSize, &flag);
         }
 
-        #define _LOAD_MENU_BGM(menu, bgm_name) { \
-            this->menu##_bgm.bgm_loop = DefaultBgmLoop; \
-            this->menu##_bgm.bgm_fade_in_ms = DefaultBgmFadeInMs; \
-            this->menu##_bgm.bgm_fade_out_ms = DefaultBgmFadeOutMs; \
-            this->menu##_bgm.bgm = pu::audio::OpenMusic(TryGetActiveThemeResource("sound/" bgm_name "/Bgm.mp3")); \
-        }
-        _LOAD_MENU_BGM(main_menu, "Main")
-        _LOAD_MENU_BGM(startup_menu, "Startup")
-        _LOAD_MENU_BGM(themes_menu, "Themes")
-        _LOAD_MENU_BGM(settings_menu, "Settings")
-        _LOAD_MENU_BGM(lockscreen_menu, "Lockscreen")
+        InitializeResources();
 
-        this->bgm_json = ul::util::JSON::object();
-        const auto rc = ul::util::LoadJSONFromFile(this->bgm_json, TryGetActiveThemeResource("sound/BGM.json"));
-        if(R_SUCCEEDED(rc)) {
-            #define _LOAD_MENU_BGM_SETTINGS(menu) { \
-                if(this->bgm_json.count(#menu)) { \
-                    const auto menu_json = this->bgm_json[#menu]; \
-                    this->menu##_bgm.bgm_loop = menu_json.value("bgm_loop", DefaultBgmLoop); \
-                    this->menu##_bgm.bgm_fade_in_ms = menu_json.value("bgm_fade_in_ms", DefaultBgmFadeInMs); \
-                    this->menu##_bgm.bgm_fade_out_ms = menu_json.value("bgm_fade_out_ms", DefaultBgmFadeOutMs); \
-                } \
-            }
-            _LOAD_MENU_BGM_SETTINGS(main_menu)
-            _LOAD_MENU_BGM_SETTINGS(startup_menu)
-            _LOAD_MENU_BGM_SETTINGS(themes_menu)
-            _LOAD_MENU_BGM_SETTINGS(settings_menu)
-            _LOAD_MENU_BGM_SETTINGS(lockscreen_menu)
+        // BGM
 
-            if(this->bgm_json.count("bgm_loop")) {
-                const auto global_loop = this->bgm_json.value("bgm_loop", DefaultBgmLoop);
-                this->main_menu_bgm.bgm_loop = global_loop;
-                this->startup_menu_bgm.bgm_loop = global_loop;
-                this->themes_menu_bgm.bgm_loop = global_loop;
-                this->settings_menu_bgm.bgm_loop = global_loop;
-                this->lockscreen_menu_bgm.bgm_loop = global_loop;
-            }
-            if(this->bgm_json.count("bgm_fade_in_ms")) {
-                const auto global_fade_in_ms = this->bgm_json.value("bgm_fade_in_ms", DefaultBgmFadeInMs);
-                this->main_menu_bgm.bgm_fade_in_ms = global_fade_in_ms;
-                this->startup_menu_bgm.bgm_fade_in_ms = global_fade_in_ms;
-                this->themes_menu_bgm.bgm_fade_in_ms = global_fade_in_ms;
-                this->settings_menu_bgm.bgm_fade_in_ms = global_fade_in_ms;
-                this->lockscreen_menu_bgm.bgm_fade_in_ms = global_fade_in_ms;
-            }
-            if(this->bgm_json.count("bgm_fade_out_ms")) {
-                const auto global_fade_out_ms = this->bgm_json.value("bgm_fade_out_ms", DefaultBgmFadeOutMs);
-                this->main_menu_bgm.bgm_fade_out_ms = global_fade_out_ms;
-                this->startup_menu_bgm.bgm_fade_out_ms = global_fade_out_ms;
-                this->themes_menu_bgm.bgm_fade_out_ms = global_fade_out_ms;
-                this->settings_menu_bgm.bgm_fade_out_ms = global_fade_out_ms;
-                this->lockscreen_menu_bgm.bgm_fade_out_ms = global_fade_out_ms;
-            }
-        }
-        else {
-            UL_LOG_WARN("Unable to load active theme sound settings (%s)", util::FormatResultDisplay(rc).c_str());
+        bool global_bgm_loop;
+        if(TryGetBgmValue("bgm_loop", global_bgm_loop)) {
+            g_GlobalSettings.main_menu_bgm.bgm_loop = global_bgm_loop;
+            g_GlobalSettings.startup_menu_bgm.bgm_loop = global_bgm_loop;
+            g_GlobalSettings.themes_menu_bgm.bgm_loop = global_bgm_loop;
+            g_GlobalSettings.settings_menu_bgm.bgm_loop = global_bgm_loop;
+            g_GlobalSettings.lockscreen_menu_bgm.bgm_loop = global_bgm_loop;
         }
 
-        // These UI values are required, we will assert otherwise (thus the error will be visible on our logs)
-
-        #define _GET_UI_VALUE(name, type, val) { \
-            UL_ASSERT_TRUE(this->ui_json.count(name)); \
-            val = this->ui_json[name].get<type>(); \
-        }
-        #define _GET_UI_COLOR(name, val) { \
-            std::string tmp_clr; \
-            _GET_UI_VALUE(name, std::string, tmp_clr); \
-            val = pu::ui::Color::FromHex(tmp_clr); \
+        u32 global_bgm_fade_in_ms;
+        if(TryGetBgmValue("bgm_fade_in_ms", global_bgm_fade_in_ms)) {
+            g_GlobalSettings.main_menu_bgm.bgm_fade_in_ms = global_bgm_fade_in_ms;
+            g_GlobalSettings.startup_menu_bgm.bgm_fade_in_ms = global_bgm_fade_in_ms;
+            g_GlobalSettings.themes_menu_bgm.bgm_fade_in_ms = global_bgm_fade_in_ms;
+            g_GlobalSettings.settings_menu_bgm.bgm_fade_in_ms = global_bgm_fade_in_ms;
+            g_GlobalSettings.lockscreen_menu_bgm.bgm_fade_in_ms = global_bgm_fade_in_ms;
         }
 
-        pu::ui::Color toast_text_clr;
-        _GET_UI_COLOR("toast_text_color", toast_text_clr);
-        pu::ui::Color toast_base_clr;
-        _GET_UI_COLOR("toast_base_color", toast_base_clr);
+        u32 global_bgm_fade_out_ms;
+        if(TryGetBgmValue("bgm_fade_out_ms", global_bgm_fade_out_ms)) {
+            g_GlobalSettings.main_menu_bgm.bgm_fade_out_ms = global_bgm_fade_out_ms;
+            g_GlobalSettings.startup_menu_bgm.bgm_fade_out_ms = global_bgm_fade_out_ms;
+            g_GlobalSettings.themes_menu_bgm.bgm_fade_out_ms = global_bgm_fade_out_ms;
+            g_GlobalSettings.settings_menu_bgm.bgm_fade_out_ms = global_bgm_fade_out_ms;
+            g_GlobalSettings.lockscreen_menu_bgm.bgm_fade_out_ms = global_bgm_fade_out_ms;
+        }
+        
+        TryParseBgmEntry("main_menu", "Main", g_GlobalSettings.main_menu_bgm);
+        TryParseBgmEntry("startup_menu", "Startup", g_GlobalSettings.startup_menu_bgm);
+        TryParseBgmEntry("themes_menu", "Themes", g_GlobalSettings.themes_menu_bgm);
+        TryParseBgmEntry("settings_menu", "Settings", g_GlobalSettings.settings_menu_bgm);
+        TryParseBgmEntry("lockscreen_menu", "Lockscreen", g_GlobalSettings.lockscreen_menu_bgm);
+
+        // UI
+
+        const auto toast_text_clr = GetRequiredUiValue<pu::ui::Color>("toast_text_color");
+        const auto toast_base_clr = GetRequiredUiValue<pu::ui::Color>("toast_base_color");
 
         auto notif_toast_text = pu::ui::elm::TextBlock::New(0, 0, "...");
         notif_toast_text->SetFont(pu::ui::GetDefaultFont(pu::ui::DefaultFontSize::Medium));
         notif_toast_text->SetColor(toast_text_clr);
         this->notif_toast = pu::ui::extras::Toast::New(notif_toast_text, toast_base_clr);
 
-        _GET_UI_COLOR("text_color", this->text_clr);
+        this->text_clr = GetRequiredUiValue<pu::ui::Color>("text_color");
 
-        _GET_UI_COLOR("menu_focus_color", this->menu_focus_clr);
-        _GET_UI_COLOR("menu_bg_color", this->menu_bg_clr);
+        this->menu_focus_clr = GetRequiredUiValue<pu::ui::Color>("menu_focus_color");
+        this->menu_bg_clr = GetRequiredUiValue<pu::ui::Color>("menu_bg_color");
 
-        _GET_UI_COLOR("dialog_title_color", this->dialog_title_clr);
-        _GET_UI_COLOR("dialog_cnt_color", this->dialog_cnt_clr);
-        _GET_UI_COLOR("dialog_opt_color", this->dialog_opt_clr);
-        _GET_UI_COLOR("dialog_color", this->dialog_clr);
-        _GET_UI_COLOR("dialog_over_color", this->dialog_over_clr);
+        this->dialog_title_clr = GetRequiredUiValue<pu::ui::Color>("dialog_title_color");
+        this->dialog_cnt_clr = GetRequiredUiValue<pu::ui::Color>("dialog_cnt_color");
+        this->dialog_opt_clr = GetRequiredUiValue<pu::ui::Color>("dialog_opt_color");
+        this->dialog_clr = GetRequiredUiValue<pu::ui::Color>("dialog_color");
+        this->dialog_over_clr = GetRequiredUiValue<pu::ui::Color>("dialog_over_color");
 
-        u32 suspended_app_final_alpha;
-        _GET_UI_VALUE("suspended_app_final_alpha", u32, suspended_app_final_alpha);
+        const auto suspended_app_final_alpha = GetRequiredUiValue<u32>("suspended_app_final_alpha");
 
         switch(this->start_mode) {
             case smi::MenuStartMode::Start: {

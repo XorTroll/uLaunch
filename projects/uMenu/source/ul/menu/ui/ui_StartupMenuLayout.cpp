@@ -30,11 +30,11 @@ namespace ul::menu::ui {
 
         this->info_text = pu::ui::elm::TextBlock::New(0, 0, GetLanguageString("startup_welcome_info"));
         this->info_text->SetColor(g_MenuApplication->GetTextColor());
-        g_MenuApplication->ApplyConfigForElement("startup_menu", "info_text", this->info_text);
+        g_GlobalSettings.ApplyConfigForElement("startup_menu", "info_text", this->info_text);
         this->Add(this->info_text);
 
         this->users_menu = pu::ui::elm::Menu::New(0, 0, UsersMenuWidth, g_MenuApplication->GetMenuBackgroundColor(), g_MenuApplication->GetMenuFocusColor(), UsersMenuItemSize, UsersMenuItemsToShow);
-        g_MenuApplication->ApplyConfigForElement("startup_menu", "users_menu", this->users_menu);
+        g_GlobalSettings.ApplyConfigForElement("startup_menu", "users_menu", this->users_menu);
         this->Add(this->users_menu);
 
         this->user_create_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Startup/UserCreate.wav"));

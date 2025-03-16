@@ -11,11 +11,11 @@ namespace ul::menu::ui {
     ThemesMenuLayout::ThemesMenuLayout() : IMenuLayout() {
         this->info_text = pu::ui::elm::TextBlock::New(0, 0, GetLanguageString("theme_info_text"));
         this->info_text->SetColor(g_MenuApplication->GetTextColor());
-        g_MenuApplication->ApplyConfigForElement("themes_menu", "info_text", this->info_text);
+        g_GlobalSettings.ApplyConfigForElement("themes_menu", "info_text", this->info_text);
         this->Add(this->info_text);
 
         this->themes_menu = pu::ui::elm::Menu::New(0, 0, ThemesMenuWidth, g_MenuApplication->GetMenuBackgroundColor(), g_MenuApplication->GetMenuFocusColor(), ThemesMenuItemSize, ThemesMenuItemsToShow);
-        g_MenuApplication->ApplyConfigForElement("themes_menu", "themes_menu", this->themes_menu);
+        g_GlobalSettings.ApplyConfigForElement("themes_menu", "themes_menu", this->themes_menu);
         this->Add(this->themes_menu);
 
         this->theme_change_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Themes/ThemeChange.wav"));

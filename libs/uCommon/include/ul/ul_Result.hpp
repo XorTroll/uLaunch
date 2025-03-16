@@ -81,4 +81,8 @@ namespace ul {
         } \
     })
 
+    #define UL_ASSERT_FAIL(log_fmt, ...) ({ \
+        ::ul::OnAssertionFailed(::rc::ulaunch::ResultAssertionFailed, log_fmt, ##__VA_ARGS__); \
+    })
+
 }

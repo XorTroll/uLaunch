@@ -238,7 +238,7 @@ namespace {
         renderer_opts.AddDefaultSharedFont(PlSharedFontType_NintendoExt);
 
         renderer_opts.UseImage(pu::ui::render::IMGAllFlags);
-        renderer_opts.UseAudio(pu::ui::render::MixerAllFlags);
+        renderer_opts.UseAudio(MIX_INIT_MP3);
 
         auto renderer = pu::ui::render::Renderer::New(renderer_opts);
         g_MenuApplication = ul::menu::ui::MenuApplication::New(renderer);
@@ -256,8 +256,8 @@ namespace {
             g_MenuApplication->ShowWithFadeIn();
         }
 
-        UL_LOG_WARN("googdggogo");
-
+        UL_LOG_WARN("Exiting main loop...");
+        ul::menu::ui::FinalizeResources();
         g_MenuApplication = {};
     }
 

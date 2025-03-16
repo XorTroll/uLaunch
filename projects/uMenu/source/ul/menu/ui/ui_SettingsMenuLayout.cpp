@@ -689,16 +689,16 @@ namespace ul::menu::ui {
 
         this->menu_text = pu::ui::elm::TextBlock::New(0, 0, "...");
         this->menu_text->SetColor(g_MenuApplication->GetTextColor());
-        g_MenuApplication->ApplyConfigForElement("settings_menu", "menu_text", this->menu_text);
+        g_GlobalSettings.ApplyConfigForElement("settings_menu", "menu_text", this->menu_text);
         this->Add(this->menu_text);
 
         this->submenu_text = pu::ui::elm::TextBlock::New(0, 0, "...");
         this->submenu_text->SetColor(g_MenuApplication->GetTextColor());
-        g_MenuApplication->ApplyConfigForElement("settings_menu", "submenu_text", this->submenu_text);
+        g_GlobalSettings.ApplyConfigForElement("settings_menu", "submenu_text", this->submenu_text);
         this->Add(this->submenu_text);
 
         this->settings_menu = pu::ui::elm::Menu::New(0, 0, SettingsMenuWidth, g_MenuApplication->GetMenuBackgroundColor(), g_MenuApplication->GetMenuFocusColor(), SettingsMenuItemSize, SettingsMenuItemsToShow);
-        g_MenuApplication->ApplyConfigForElement("settings_menu", "settings_menu", this->settings_menu);
+        g_GlobalSettings.ApplyConfigForElement("settings_menu", "settings_menu", this->settings_menu);
         this->Add(this->settings_menu);
 
         this->setting_edit_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Settings/SettingEdit.wav"));
@@ -706,7 +706,7 @@ namespace ul::menu::ui {
         this->back_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Settings/Back.wav"));
 
         this->input_bar = InputBar::New(0, 0, "ui/Settings/InputBarBackground");
-        g_MenuApplication->ApplyConfigForElement("settings_menu", "input_bar", this->input_bar);
+        g_GlobalSettings.ApplyConfigForElement("settings_menu", "input_bar", this->input_bar);
         this->Add(this->input_bar);
         this->inputs_changed = true;
     }

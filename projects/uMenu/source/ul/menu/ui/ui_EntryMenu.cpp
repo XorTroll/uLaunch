@@ -38,6 +38,7 @@ namespace ul::menu::ui {
         }
 
         inline bool EntryNeedsUpdate(const Entry &entry) {
+            // TODO: this will spit some false positives :P
             return entry.Is<EntryType::Application>() && entry.app_info.NeedsUpdate();
         }
         

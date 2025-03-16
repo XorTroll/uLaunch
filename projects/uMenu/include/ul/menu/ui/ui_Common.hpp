@@ -17,7 +17,9 @@ namespace ul::menu::ui {
         return pu::sdl2::TextureHandle::New(TryFindLoadImage(path_no_ext));
     }
 
-    void LoadCommonTextures();
+    void InitializeResources();
+    void FinalizeResources();
+
     pu::sdl2::TextureHandle::Ref GetBackgroundTexture();
     pu::sdl2::TextureHandle::Ref GetLogoTexture();
 
@@ -26,6 +28,104 @@ namespace ul::menu::ui {
 
     void LoadSelectedUserIconTexture();
     pu::sdl2::TextureHandle::Ref GetSelectedUserIconTexture();
+
+    bool TryGetUiElement(const std::string &menu, const std::string &elem, util::JSON &out_json);
+
+    inline bool ParseHorizontalAlign(const std::string &align, pu::ui::elm::HorizontalAlign &out_align) {
+        if(align == "left") {
+            out_align = pu::ui::elm::HorizontalAlign::Left;
+            return true;
+        }
+        if(align == "center") {
+            out_align = pu::ui::elm::HorizontalAlign::Center;
+            return true;
+        }
+        if(align == "right") {
+            out_align = pu::ui::elm::HorizontalAlign::Right;
+            return true;
+        }
+
+        return false;
+    }
+
+    inline bool ParseVerticalAlign(const std::string &align, pu::ui::elm::VerticalAlign &out_align) {
+        if((align == "up") || (align == "top")) {
+            out_align = pu::ui::elm::VerticalAlign::Up;
+            return true;
+        }
+        if(align == "center") {
+            out_align = pu::ui::elm::VerticalAlign::Center;
+            return true;
+        }
+        if((align == "down") || (align == "bottom")) {
+            out_align = pu::ui::elm::VerticalAlign::Down;
+            return true;
+        }
+
+        return false;
+    }
+
+    inline bool ParseDefaultFontSize(const std::string &size, pu::ui::DefaultFontSize &out_size) {
+        if(size == "small") {
+            out_size = pu::ui::DefaultFontSize::Small;
+            return true;
+        }
+        if(size == "medium") {
+            out_size = pu::ui::DefaultFontSize::Medium;
+            return true;
+        }
+        if(size == "medium-large") {
+            out_size = pu::ui::DefaultFontSize::MediumLarge;
+            return true;
+        }
+        if(size == "large") {
+            out_size = pu::ui::DefaultFontSize::Large;
+            return true;
+        }
+
+        return false;
+    }
+    
+    // These UI values are required, we will assert otherwise (thus the error will be visible on our logs)
+
+    util::JSON GetRequiredUiJsonValue(const std::string &name);
+
+    template<typename T>
+    inline T GetRequiredUiValue(const std::string &name) {
+        return GetRequiredUiJsonValue(name).get<T>();
+    }
+
+    template<>
+    inline pu::ui::Color GetRequiredUiValue(const std::string &name) {
+        const auto clr_str = GetRequiredUiValue<std::string>(name);
+        return pu::ui::Color::FromHex(clr_str);
+    }
+
+    struct MenuBgmEntry {
+        static constexpr bool DefaultBgmLoop = true;
+        static constexpr u32 DefaultBgmFadeInMs = 1500;
+        static constexpr u32 DefaultBgmFadeOutMs = 500;
+
+        bool bgm_loop;
+        u32 bgm_fade_in_ms;
+        u32 bgm_fade_out_ms;
+        pu::audio::Music bgm;
+    };
+
+    bool TryGetBgmJsonValue(const std::string &name, util::JSON &out_json);
+
+    void TryParseBgmEntry(const std::string &menu, const std::string &menu_bgm, MenuBgmEntry &out_entry);
+
+    template<typename T>
+    inline bool TryGetBgmValue(const std::string &name, T &out_value) {
+        util::JSON json;
+        if(TryGetBgmJsonValue(name, json)) {
+            out_value = json.get<T>();
+            return true;
+        }
+
+        return false;
+    }
 
     struct GlobalSettings {
         SetSysFirmwareVersion fw_version;
@@ -45,6 +145,12 @@ namespace ul::menu::ui {
         SetSysDeviceNickName nickname;
         TimeLocationName timezone;
         SetBatteryLot battery_lot;
+
+        MenuBgmEntry main_menu_bgm;
+        MenuBgmEntry startup_menu_bgm;
+        MenuBgmEntry themes_menu_bgm;
+        MenuBgmEntry settings_menu_bgm;
+        MenuBgmEntry lockscreen_menu_bgm;
 
         ul::Version ams_version;
         bool ams_is_emummc;
@@ -122,6 +228,53 @@ namespace ul::menu::ui {
 
         inline void UpdateSleepSettings() {
             UL_RC_ASSERT(setsysSetSleepSettings(&this->sleep_settings));
+        }
+
+        template<typename Elem>
+        inline void ApplyConfigForElement(const std::string &menu, const std::string &name, std::shared_ptr<Elem> &elem, const bool apply_visible = true) {
+            util::JSON elem_json;
+            if(TryGetUiElement(menu, name, elem_json)) {
+                auto set_coords = false;
+                if(apply_visible) {
+                    const auto visible = elem_json.value("visible", true);
+                    elem->SetVisible(visible);
+                    set_coords = visible;
+                }
+                else {
+                    set_coords = true;
+                }
+
+                const auto h_align_str = elem_json.value("h_align", "");
+                pu::ui::elm::HorizontalAlign h_align;
+                if(ParseHorizontalAlign(h_align_str, h_align)) {
+                    elem->SetHorizontalAlign(h_align);
+                }
+
+                const auto v_align_str = elem_json.value("v_align", "");
+                pu::ui::elm::VerticalAlign v_align;
+                if(ParseVerticalAlign(v_align_str, v_align)) {
+                    elem->SetVerticalAlign(v_align);
+                }
+
+                if constexpr(std::is_same_v<Elem, pu::ui::elm::TextBlock>) {
+                    const auto size_str = elem_json.value("font_size", "");
+                    pu::ui::DefaultFontSize def_size;
+                    if(ParseDefaultFontSize(size_str, def_size)) {
+                        elem->SetFont(pu::ui::GetDefaultFont(def_size));
+                    }
+                }
+
+                if(set_coords) {
+                    if(elem_json.count("x")) {
+                        const s32 x = elem_json["x"];
+                        elem->SetX(x);
+                    }
+                    if(elem_json.count("y")) {
+                        const s32 y = elem_json["y"];
+                        elem->SetY(y);
+                    }
+                }
+            }
         }
     };
 

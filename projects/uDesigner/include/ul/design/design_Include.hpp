@@ -36,7 +36,8 @@ namespace ul::design {
         Main,
         Startup,
         Themes,
-        Settings
+        Settings,
+        Lockscreen
     };
 
     constexpr const char *MenuSettingsNames[] = {
@@ -44,7 +45,8 @@ namespace ul::design {
         "main_menu",
         "startup_menu",
         "themes_menu",
-        "settings_menu"
+        "settings_menu",
+        "lockscreen_menu"
     };
 
     enum class ElementType {

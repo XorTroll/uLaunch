@@ -27,7 +27,15 @@ namespace ul::menu::ui {
             g_MenuApplication->FadeIn();
         }
 
-        bool g_CommonTexturesLoaded = false;
+        std::string GetDefaultThemeResource(const std::string &resource_base) {
+            std::string path = fs::JoinPath(DefaultThemePath, resource_base);
+            if(!fs::ExistsFile(path)) {
+                path = "";
+            }
+            return path;
+        }
+
+        bool g_CommonResourcesLoaded = false;
         pu::sdl2::TextureHandle::Ref g_BackgroundTexture;
         pu::sdl2::TextureHandle::Ref g_LogoTexture;
 
@@ -35,6 +43,12 @@ namespace ul::menu::ui {
         pu::sdl2::TextureHandle::Ref g_EditableSettingIconTexture;
 
         pu::sdl2::TextureHandle::Ref g_UserIconTexture;
+
+        util::JSON g_ActiveThemeUiJson;
+        util::JSON g_DefaultThemeUiJson;
+
+        util::JSON g_ActiveThemeBgmJson;
+        util::JSON g_DefaultThemeBgmJson;
 
     }
 
@@ -75,16 +89,30 @@ namespace ul::menu::ui {
         return nullptr;
     }
 
-    void LoadCommonTextures() {
-        if(!g_CommonTexturesLoaded) {
+    void InitializeResources() {
+        if(!g_CommonResourcesLoaded) {
             g_BackgroundTexture = TryFindLoadImageHandle("ui/Background");
             g_LogoTexture = pu::sdl2::TextureHandle::New(pu::ui::render::LoadImage("romfs:/Logo.png"));
 
             g_NonEditableSettingIconTexture = TryFindLoadImageHandle("ui/Settings/SettingNonEditableIcon");
             g_EditableSettingIconTexture = TryFindLoadImageHandle("ui/Settings/SettingEditableIcon");
 
-            g_CommonTexturesLoaded = true;
+            ul::util::LoadJSONFromFile(g_DefaultThemeUiJson, GetDefaultThemeResource("ui/UI.json"));
+            ul::util::LoadJSONFromFile(g_ActiveThemeUiJson, TryGetActiveThemeResource("ui/UI.json"));
+
+            ul::util::LoadJSONFromFile(g_DefaultThemeBgmJson, GetDefaultThemeResource("sound/BGM.json"));
+            ul::util::LoadJSONFromFile(g_ActiveThemeBgmJson, TryGetActiveThemeResource("sound/BGM.json"));
+
+            g_CommonResourcesLoaded = true;
         }
+    }
+
+    void FinalizeResources() {
+        pu::audio::DestroyMusic(g_GlobalSettings.main_menu_bgm.bgm);
+        pu::audio::DestroyMusic(g_GlobalSettings.startup_menu_bgm.bgm);
+        pu::audio::DestroyMusic(g_GlobalSettings.themes_menu_bgm.bgm);
+        pu::audio::DestroyMusic(g_GlobalSettings.settings_menu_bgm.bgm);
+        pu::audio::DestroyMusic(g_GlobalSettings.lockscreen_menu_bgm.bgm);
     }
 
     pu::sdl2::TextureHandle::Ref GetBackgroundTexture() {
@@ -110,6 +138,72 @@ namespace ul::menu::ui {
 
     pu::sdl2::TextureHandle::Ref GetSelectedUserIconTexture() {
         return g_UserIconTexture;
+    }
+
+    bool TryGetUiElement(const std::string &menu, const std::string &elem, util::JSON &out_json) {
+        if(g_ActiveThemeUiJson.count(menu)) {
+            const auto menu_json = g_ActiveThemeUiJson[menu];
+            if(menu_json.count(elem)) {
+                out_json = menu_json[elem];
+                return true;
+            }
+        }
+
+        if(g_DefaultThemeUiJson.count(menu)) {
+            const auto menu_json = g_DefaultThemeUiJson[menu];
+            if(menu_json.count(elem)) {
+                out_json = menu_json[elem];
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    util::JSON GetRequiredUiJsonValue(const std::string &name) {
+        if(g_ActiveThemeUiJson.count(name)) {
+            return g_ActiveThemeUiJson[name];
+        }
+
+        if(g_DefaultThemeUiJson.count(name)) {
+            return g_DefaultThemeUiJson[name];
+        }
+
+        UL_ASSERT_FAIL("Required value not found in active theme nor default theme: '%s'", name.c_str());
+    }
+
+    bool TryGetBgmJsonValue(const std::string &name, util::JSON &out_json) {
+        if(g_ActiveThemeBgmJson.count(name)) {
+            out_json = g_ActiveThemeBgmJson[name];
+            return true;
+        }
+
+        if(g_DefaultThemeBgmJson.count(name)) {
+            out_json = g_DefaultThemeBgmJson[name];
+            return true;
+        }
+
+        return false;
+    }
+
+    void TryParseBgmEntry(const std::string &menu, const std::string &menu_bgm, MenuBgmEntry &out_entry) {
+        out_entry.bgm_loop = MenuBgmEntry::DefaultBgmLoop;
+        out_entry.bgm_fade_in_ms = MenuBgmEntry::DefaultBgmFadeInMs;
+        out_entry.bgm_fade_out_ms = MenuBgmEntry::DefaultBgmFadeOutMs;
+        out_entry.bgm = nullptr;
+
+        util::JSON bgm_json;
+        if(TryGetBgmJsonValue(menu, bgm_json)) {
+            out_entry.bgm_loop = bgm_json.value("bgm_loop", MenuBgmEntry::DefaultBgmLoop);
+            out_entry.bgm_fade_in_ms = bgm_json.value("bgm_fade_in_ms", MenuBgmEntry::DefaultBgmFadeInMs);
+            out_entry.bgm_fade_out_ms = bgm_json.value("bgm_fade_out_ms", MenuBgmEntry::DefaultBgmFadeOutMs);
+        }
+
+        const auto bgm_rel_path = "sound/" + menu_bgm + "/Bgm.mp3";
+        out_entry.bgm = pu::audio::OpenMusic(TryGetActiveThemeResource(bgm_rel_path));
+        if(out_entry.bgm == nullptr) {
+            out_entry.bgm = pu::audio::OpenMusic(GetDefaultThemeResource(bgm_rel_path));
+        }
     }
 
     void RebootSystem() {

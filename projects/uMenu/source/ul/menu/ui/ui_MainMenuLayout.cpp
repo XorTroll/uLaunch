@@ -174,8 +174,7 @@ namespace ul::menu::ui {
                         }
 
                         if(do_launch_entry && cur_entry.Is<EntryType::Application>()) {
-
-                            /* TEST!
+                            // Test: qlaunch checks these flags on apps
                             uintptr_t a1 = (uintptr_t)&cur_entry.app_info.view;
                             u8 flags1[12] = {};
                             flags1[0] = *(u32*)(a1 + 12) & 1;
@@ -215,10 +214,7 @@ namespace ul::menu::ui {
                                     flagbits += "0";
                                 }
                             }
-
-                            g_MenuApplication->DisplayDialog("DEMO", "app flags " + flagbits, { "ok" }, true);
-                            do_launch_entry = false;
-                            */
+                            UL_LOG_INFO("[DEV-APP-Q-FLAGS] %s --> %s", cur_entry.control.name.c_str(), flagbits.c_str());
 
                             if(cur_entry.app_info.HasViewFlag<os::ApplicationViewFlag::NeedsVerify>()) {
                                 pu::audio::PlaySfx(this->error_sfx);
@@ -254,7 +250,7 @@ namespace ul::menu::ui {
                                 do_launch_entry = false;
                             }
                             else {
-                                /* TODO: fix!!!!
+                                /* TODO: fix ASAP!
                                 if(cur_entry.app_info.NeedsUpdate()) {
                                     do_launch_entry = false;
                                     const auto opt = g_MenuApplication->DisplayDialog(GetLanguageString("app_launch"), "launch req ver " + std::to_string(cur_entry.app_info.launch_required_version) + " VS actual ver " + std::to_string(cur_entry.app_info.version) + "\n\n" + GetLanguageString("app_needs_update"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
@@ -649,10 +645,10 @@ namespace ul::menu::ui {
         this->top_menu_folder_bg = pu::ui::elm::Image::New(0, 0, TryFindLoadImageHandle("ui/Main/TopMenuBackground/Folder"));
         this->top_menu_app_bg = pu::ui::elm::Image::New(0, 0, TryFindLoadImageHandle("ui/Main/TopMenuBackground/Application"));
         this->top_menu_hb_bg = pu::ui::elm::Image::New(0, 0, TryFindLoadImageHandle("ui/Main/TopMenuBackground/Homebrew"));
-        g_MenuApplication->ApplyConfigForElement("main_menu", "top_menu_bg", this->top_menu_default_bg);
-        g_MenuApplication->ApplyConfigForElement("main_menu", "top_menu_bg", this->top_menu_folder_bg);
-        g_MenuApplication->ApplyConfigForElement("main_menu", "top_menu_bg", this->top_menu_app_bg);
-        g_MenuApplication->ApplyConfigForElement("main_menu", "top_menu_bg", this->top_menu_hb_bg);
+        g_GlobalSettings.ApplyConfigForElement("main_menu", "top_menu_bg", this->top_menu_default_bg);
+        g_GlobalSettings.ApplyConfigForElement("main_menu", "top_menu_bg", this->top_menu_folder_bg);
+        g_GlobalSettings.ApplyConfigForElement("main_menu", "top_menu_bg", this->top_menu_app_bg);
+        g_GlobalSettings.ApplyConfigForElement("main_menu", "top_menu_bg", this->top_menu_hb_bg);
         this->Add(this->top_menu_default_bg);
         this->Add(this->top_menu_folder_bg);
         this->Add(this->top_menu_app_bg);
@@ -663,63 +659,63 @@ namespace ul::menu::ui {
         this->logo_top_icon->SetWidth(LogoSize);
         this->logo_top_icon->SetHeight(LogoSize);
         this->logo_top_icon->SetOnClick(&ShowAboutDialog);
-        g_MenuApplication->ApplyConfigForElement("main_menu", "logo_top_icon", this->logo_top_icon, false); // Sorry theme makers... uLaunch's logo must be visible, but can be moved
+        g_GlobalSettings.ApplyConfigForElement("main_menu", "logo_top_icon", this->logo_top_icon, false); // Sorry theme makers... uLaunch's logo must be visible, but can be moved
         this->Add(this->logo_top_icon);
 
         this->connection_top_icon = pu::ui::elm::Image::New(0, 0, TryFindLoadImageHandle("ui/Main/TopIcon/Connection/None"));
-        g_MenuApplication->ApplyConfigForElement("main_menu", "connection_top_icon", this->connection_top_icon);
+        g_GlobalSettings.ApplyConfigForElement("main_menu", "connection_top_icon", this->connection_top_icon);
         this->Add(this->connection_top_icon);
 
         this->time_text = pu::ui::elm::TextBlock::New(0, 0, "...");
         this->time_text->SetColor(g_MenuApplication->GetTextColor());
-        g_MenuApplication->ApplyConfigForElement("main_menu", "time_text", this->time_text);
+        g_GlobalSettings.ApplyConfigForElement("main_menu", "time_text", this->time_text);
         this->Add(this->time_text);
 
         this->date_text = pu::ui::elm::TextBlock::New(0, 0, "...");
         this->date_text->SetColor(g_MenuApplication->GetTextColor());
-        g_MenuApplication->ApplyConfigForElement("main_menu", "date_text", this->date_text);
+        g_GlobalSettings.ApplyConfigForElement("main_menu", "date_text", this->date_text);
         this->Add(this->date_text);
 
         this->battery_text = pu::ui::elm::TextBlock::New(0, 0, "...");
         this->battery_text->SetColor(g_MenuApplication->GetTextColor());
-        g_MenuApplication->ApplyConfigForElement("main_menu", "battery_text", this->battery_text);
+        g_GlobalSettings.ApplyConfigForElement("main_menu", "battery_text", this->battery_text);
         this->Add(this->battery_text);
 
         this->battery_top_icon = pu::ui::elm::Image::New(0, 0, TryFindLoadImageHandle("ui/Main/TopIcon/Battery/100"));
         this->battery_charging_top_icon = pu::ui::elm::Image::New(0, 0, TryFindLoadImageHandle("ui/Main/TopIcon/Battery/Charging"));
         this->battery_charging_top_icon->SetVisible(false);
-        g_MenuApplication->ApplyConfigForElement("main_menu", "battery_top_icon", this->battery_top_icon);
-        g_MenuApplication->ApplyConfigForElement("main_menu", "battery_top_icon", this->battery_charging_top_icon);
+        g_GlobalSettings.ApplyConfigForElement("main_menu", "battery_top_icon", this->battery_top_icon);
+        g_GlobalSettings.ApplyConfigForElement("main_menu", "battery_top_icon", this->battery_charging_top_icon);
         this->Add(this->battery_top_icon);
         this->Add(this->battery_charging_top_icon);
 
         this->input_bar = InputBar::New(0, 0, "ui/Main/InputBarBackground");
-        g_MenuApplication->ApplyConfigForElement("main_menu", "input_bar", this->input_bar);
+        g_GlobalSettings.ApplyConfigForElement("main_menu", "input_bar", this->input_bar);
         this->Add(this->input_bar);
         this->input_bar_changed = true;
 
         this->cur_path_text = pu::ui::elm::TextBlock::New(0, 0, this->cur_folder_path);
         this->cur_path_text->SetColor(g_MenuApplication->GetTextColor());
-        g_MenuApplication->ApplyConfigForElement("main_menu", "cur_path_text", this->cur_path_text);
+        g_GlobalSettings.ApplyConfigForElement("main_menu", "cur_path_text", this->cur_path_text);
 
         this->cur_entry_main_text = pu::ui::elm::TextBlock::New(0, 0, "...");
         this->cur_entry_main_text->SetColor(g_MenuApplication->GetTextColor());
-        g_MenuApplication->ApplyConfigForElement("main_menu", "cur_entry_main_text", this->cur_entry_main_text);
+        g_GlobalSettings.ApplyConfigForElement("main_menu", "cur_entry_main_text", this->cur_entry_main_text);
 
         this->cur_entry_sub_text = pu::ui::elm::TextBlock::New(0, 0, "...");
         this->cur_entry_sub_text->SetColor(g_MenuApplication->GetTextColor());
-        g_MenuApplication->ApplyConfigForElement("main_menu", "cur_entry_sub_text", this->cur_entry_sub_text);
+        g_GlobalSettings.ApplyConfigForElement("main_menu", "cur_entry_sub_text", this->cur_entry_sub_text);
 
         this->entry_menu_bg = pu::ui::elm::Image::New(0, 0, TryFindLoadImageHandle("ui/Main/EntryMenuBackground"));
-        g_MenuApplication->ApplyConfigForElement("main_menu", "entry_menu_bg", this->entry_menu_bg);
+        g_GlobalSettings.ApplyConfigForElement("main_menu", "entry_menu_bg", this->entry_menu_bg);
         this->Add(this->entry_menu_bg);
 
         this->entry_menu_left_icon = pu::ui::elm::Image::New(0, 0, TryFindLoadImageHandle("ui/Main/EntryMenuLeftIcon"));
-        g_MenuApplication->ApplyConfigForElement("main_menu", "entry_menu_left_icon", this->entry_menu_left_icon);
+        g_GlobalSettings.ApplyConfigForElement("main_menu", "entry_menu_left_icon", this->entry_menu_left_icon);
         this->Add(this->entry_menu_left_icon);
 
         this->entry_menu_right_icon = pu::ui::elm::Image::New(0, 0, TryFindLoadImageHandle("ui/Main/EntryMenuRightIcon"));
-        g_MenuApplication->ApplyConfigForElement("main_menu", "entry_menu_right_icon", this->entry_menu_right_icon);
+        g_GlobalSettings.ApplyConfigForElement("main_menu", "entry_menu_right_icon", this->entry_menu_right_icon);
         this->Add(this->entry_menu_right_icon);
 
         this->Add(this->cur_entry_main_text);
@@ -730,7 +726,7 @@ namespace ul::menu::ui {
         this->entry_menu = EntryMenu::New(0, 0, g_GlobalSettings.system_status.last_menu_fs_path, std::bind(&MainMenuLayout::menu_EntryInputPressed, this, std::placeholders::_1), std::bind(&MainMenuLayout::menu_FocusedEntryChanged, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), [&]() {
             pu::audio::PlaySfx(this->cursor_move_sfx);
         });
-        g_MenuApplication->ApplyConfigForElement("main_menu", "entry_menu", this->entry_menu);
+        g_GlobalSettings.ApplyConfigForElement("main_menu", "entry_menu", this->entry_menu);
         this->Add(this->entry_menu);
 
         if(captured_screen_buf != nullptr) {

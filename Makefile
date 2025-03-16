@@ -1,5 +1,5 @@
 VERSION_MAJOR	:=	1
-VERSION_MINOR	:=	0
+VERSION_MINOR	:=	1
 VERSION_MICRO	:=	0
 export VERSION	:=	$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_MICRO)
 
@@ -54,7 +54,6 @@ umenu: arc pu
 	@cp assets/Logo.png projects/uMenu/romfs/Logo.png
 	@rm -rf projects/uMenu/romfs/default
 	@cp -r default-theme/ projects/uMenu/romfs/default/
-	@cp projects/uMenu/romfs/Logo.png projects/uDesigner/assets/Logo.png
 	@build_romfs projects/uMenu/romfs SdOut/ulaunch/bin/uMenu/romfs.bin
 
 umanager: arc pu
@@ -66,7 +65,7 @@ umanager: arc pu
 uscreen:
 	@cd projects/uScreen && mvn package
 
-udesigner: umenu
+udesigner:
 	@cd default-theme && zip -r default-theme.zip theme ui sound
 	@mv default-theme/default-theme.zip projects/uDesigner/assets/default-theme.zip
 	@cp projects/uMenu/romfs/Logo.png projects/uDesigner/assets/Logo.png

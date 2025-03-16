@@ -192,5 +192,6 @@
     "input_settings_back": "Go back",
     "input_settings_select": "Select option",
     "input_settings_left": "Previous menu",
-    "input_settings_right": "Next menu"
+    "input_settings_right": "Next menu",
+    "quick_amiibo": "Open amiibo options"
 }

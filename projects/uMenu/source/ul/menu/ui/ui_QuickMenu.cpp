@@ -3,6 +3,7 @@
 #include <ul/cfg/cfg_Config.hpp>
 #include <ul/acc/acc_Accounts.hpp>
 
+extern ul::menu::ui::GlobalSettings g_GlobalSettings;
 extern ul::menu::ui::MenuApplication::Ref g_MenuApplication;
 
 namespace ul::menu::ui {
@@ -22,7 +23,7 @@ namespace ul::menu::ui {
         this->bg_alpha = 0;
 
         this->options_menu = pu::ui::elm::Menu::New(MenuX, MenuY, MenuWidth, g_MenuApplication->GetMenuBackgroundColor(), g_MenuApplication->GetMenuFocusColor(), MenuItemHeight, MenuItemsToShow);
-        g_MenuApplication->ApplyConfigForElement("quick_menu", "quick_menu", this->options_menu);
+        g_GlobalSettings.ApplyConfigForElement("quick_menu", "quick_menu", this->options_menu);
 
         this->power_menu_item = pu::ui::elm::MenuItem::New(GetLanguageString("quick_power_options"));
         this->power_menu_item->SetIcon(TryFindLoadImageHandle("ui/Main/QuickIcon/Power"));
@@ -71,6 +72,12 @@ namespace ul::menu::ui {
         this->mii_menu_item->AddOnKey(&ShowMiiEdit);
         this->mii_menu_item->SetColor(g_MenuApplication->GetTextColor());
         this->options_menu->AddItem(this->mii_menu_item);
+
+        this->amiibo_menu_item = pu::ui::elm::MenuItem::New(GetLanguageString("quick_amiibo"));
+        this->amiibo_menu_item->SetIcon(TryFindLoadImageHandle("ui/Main/QuickIcon/Amiibo"));
+        this->amiibo_menu_item->AddOnKey(&ShowCabinet);
+        this->amiibo_menu_item->SetColor(g_MenuApplication->GetTextColor());
+        this->options_menu->AddItem(this->amiibo_menu_item);
     }
 
     void QuickMenu::UpdateItems() {

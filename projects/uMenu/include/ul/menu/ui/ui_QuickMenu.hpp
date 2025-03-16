@@ -15,7 +15,7 @@ namespace ul::menu::ui {
             static constexpr u32 MenuY = 172;
             static constexpr u32 MenuWidth = pu::ui::render::ScreenWidth - 2 * MenuMargin;
             static constexpr u32 MenuItemHeight = 90;
-            static constexpr u32 MenuItemsToShow = 8;
+            static constexpr u32 MenuItemsToShow = 9;
 
             static inline constexpr pu::ui::Color MakeBackgroundColor(const u8 alpha) {
                 return { 50, 50, 50, alpha };
@@ -33,6 +33,7 @@ namespace ul::menu::ui {
             pu::ui::elm::MenuItem::Ref themes_menu_item;
             pu::ui::elm::MenuItem::Ref settings_menu_item;
             pu::ui::elm::MenuItem::Ref mii_menu_item;
+            pu::ui::elm::MenuItem::Ref amiibo_menu_item;
 
             static void OnHomeButtonDetection(const smi::MenuMessageContext &_);
 
