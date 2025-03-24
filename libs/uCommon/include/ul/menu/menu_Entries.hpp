@@ -26,17 +26,33 @@ namespace ul::menu {
     struct EntryApplicationInfo {
         u64 app_id;
         NsApplicationRecord record;
-        NsApplicationView view;
+        os::ApplicationView view;
         u32 version;
         u32 launch_required_version;
 
-        template<os::ApplicationViewFlag Flag>
-        inline constexpr bool HasViewFlag() const {
-            return (this->view.flags & static_cast<u32>(Flag)) != 0;
+        inline bool IsNotUpdated() const {
+            // Just checks whether the required launch version is greater
+            return this->launch_required_version > this->version;
         }
 
-        inline bool NeedsUpdate() const {
-            return this->launch_required_version > this->version;
+        inline bool HasContents() const {
+            return this->view.HasFlag<os::ApplicationViewFlag::HasMainContents>();
+        }
+
+        inline bool IsGameCardInserted() const {
+            return this->view.HasFlag<os::ApplicationViewFlag::IsGameCard>() && this->view.HasFlag<os::ApplicationViewFlag::IsGameCardInserted>();
+        }
+
+        inline bool IsGameCardNotInserted() const {
+            return this->view.HasFlag<os::ApplicationViewFlag::IsGameCard>() && !this->view.HasFlag<os::ApplicationViewFlag::IsGameCardInserted>();
+        }
+
+        inline bool NeedsVerify() const {
+            return this->view.HasFlag<os::ApplicationViewFlag::NeedsVerify>();
+        }
+
+        inline bool CanBeLaunched() const {
+            return this->view.HasFlag<os::ApplicationViewFlag::CanLaunch>();
         }
     };
 

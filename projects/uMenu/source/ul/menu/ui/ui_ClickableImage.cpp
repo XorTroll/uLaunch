@@ -18,7 +18,7 @@ namespace ul::menu::ui {
     }
 
     void ClickableImage::OnRender(pu::ui::render::Renderer::Ref &drawer, const s32 x, const s32 y) {
-        drawer->RenderTexture(this->img_tex->Get(), x, y, pu::ui::render::TextureRenderOptions::WithCustomDimensions(this->w, this->h));
+        drawer->RenderTexture(this->img_tex->Get(), x, y, pu::ui::render::TextureRenderOptions({}, this->w, this->h, {}, {}, {}));
     }
 
     void ClickableImage::OnInput(const u64 keys_down, const u64 keys_up, const u64 keys_held, const pu::ui::TouchPoint touch_pos) {

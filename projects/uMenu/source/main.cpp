@@ -212,6 +212,7 @@ namespace {
         ul::cfg::LoadLanguageJsons(ul::MenuLanguagesPath, g_GlobalSettings.main_lang, g_GlobalSettings.default_lang);
 
         auto renderer_opts = pu::ui::render::RendererInitOptions(SDL_INIT_EVERYTHING, pu::ui::render::RendererHardwareFlags);
+        renderer_opts.SetPlServiceType(PlServiceType_User);
         renderer_opts.SetInputPlayerCount(8);
         renderer_opts.AddInputNpadStyleTag(HidNpadStyleSet_NpadStandard);
         renderer_opts.AddInputNpadIdType(HidNpadIdType_Handheld);
@@ -236,15 +237,15 @@ namespace {
             renderer_opts.AddDefaultSharedFont(PlSharedFontType_KO);
         }
         renderer_opts.AddDefaultSharedFont(PlSharedFontType_NintendoExt);
-
-        renderer_opts.UseImage(pu::ui::render::IMGAllFlags);
-        renderer_opts.UseAudio(MIX_INIT_MP3);
+        renderer_opts.UseImage(pu::ui::render::ImgAllFlags);
 
         auto renderer = pu::ui::render::Renderer::New(renderer_opts);
         g_MenuApplication = ul::menu::ui::MenuApplication::New(renderer);
 
+        UL_ASSERT_TRUE(pu::audio::Initialize(MIX_INIT_MP3));
+
         g_MenuApplication->Initialize(g_StartMode);
-        g_MenuApplication->Prepare();
+        UL_RC_ASSERT(g_MenuApplication->Load());
 
         // With the handlers ready, initialize uSystem message handling
         UL_RC_ASSERT(ul::menu::smi::InitializeMenuMessageHandler());
@@ -255,10 +256,6 @@ namespace {
         else {
             g_MenuApplication->ShowWithFadeIn();
         }
-
-        UL_LOG_WARN("Exiting main loop...");
-        ul::menu::ui::FinalizeResources();
-        g_MenuApplication = {};
     }
 
 }
@@ -278,7 +275,7 @@ int main() {
     UL_RC_ASSERT(ul::menu::am::ReadFromInputStorage(&g_GlobalSettings.system_status, sizeof(g_GlobalSettings.system_status)));
     g_GlobalSettings.initial_last_menu_index = g_GlobalSettings.system_status.last_menu_index;
     g_GlobalSettings.initial_last_menu_fs_path = g_GlobalSettings.system_status.last_menu_fs_path;
-    
+
     // Check if our RomFs data exists...
     if(!ul::fs::ExistsFile(ul::MenuRomfsFile)) {
         UL_RC_ASSERT(ul::ResultRomfsNotFound);

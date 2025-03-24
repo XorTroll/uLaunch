@@ -91,7 +91,7 @@ namespace ul::menu::ui {
                         pu::audio::PlaySfx(this->logoff_sfx);
 
                         g_GlobalSettings.system_status.selected_user = {};
-                        g_MenuApplication->LoadMenuByType(MenuType::Startup, true, [&]() {
+                        g_MenuApplication->LoadMenu(MenuType::Startup, true, [&]() {
                             this->MoveToRoot(false);
                         });
                     }
@@ -103,6 +103,116 @@ namespace ul::menu::ui {
                 this->cur_path_text->SetText(this->cur_folder_path);
                 this->MoveTo(parent_path, true);
             }
+
+            ////////////////////////////////////////////////////
+
+            /*
+            for(auto &cur_entry: this->entry_menu->GetEntries()) {
+                if(cur_entry.Is<EntryType::Application>()) {
+                    // Test: qlaunch checks these flags on apps
+                    uintptr_t a1 = (uintptr_t)&cur_entry.app_info.view;
+                    u8 flags1[12] = {};
+                    flags1[0] = *(u32*)(a1 + 12) & 1;
+                    flags1[1] = (*(u8 *)(a1 + 12) >> 1) & 1;
+                    flags1[2] = (*(u8 *)(a1 + 12) >> 4) & 1;
+                    flags1[3] = (*(u8 *)(a1 + 12) >> 5) & 1;
+                    flags1[4] = (*(u8 *)(a1 + 12) >> 6) & 1;
+                    flags1[5] = *(u8 *)(a1 + 12) >> 7;
+                    flags1[6] = *(u8 *)(a1 + 13) & 1;
+                    flags1[7] = (*(u8 *)(a1 + 13) >> 1) & 1;
+                    flags1[8] = (*(u8 *)(a1 + 13) >> 2) & 1;
+                    flags1[9] = (*(u8 *)(a1 + 13) >> 5) & 1;
+                    flags1[10] = (*(u32 *)(a1 + 12) & 0x4C000) != 0;
+                    flags1[11] = *(u8 *)(a1 + 13) >> 7;
+                    u8 flags2[6] = {};
+                    flags2[0] = *(u8 *)(a1 + 14) >> 7;
+                    flags2[1] = *(u8 *)(a1 + 14) & 1;
+                    flags2[2] = (*(u8 *)(a1 + 14) >> 1) & 1;
+                    flags2[3] = ((*(u32 *)(a1 + 12) & 0x4C000) != 0) && (*(u8 *)(a1 + 36) == 5); // is waiting commit + other fn
+                    flags2[4] = (*(u8 *)(a1 + 14) >> 5) & 1;
+                    flags2[5] = (*(u8 *)(a1 + 14) >> 6) & 1;
+                    u8 flags3[5] = {};
+                    flags3[0] = (u8)cur_entry.app_info.view.unk_x24;
+                    flags3[1] = (u8)(cur_entry.app_info.view.unk_x24 >> 8);
+                    flags3[2] = cur_entry.app_info.view.unk_x26[0];
+                    flags3[3] = cur_entry.app_info.view.unk_x45[0];
+                    flags3[4] = cur_entry.app_info.view.unk_x44;
+
+                    std::string flagbits;
+                    for(u32 i = 0; i < 12; i++) {
+                        if(flags1[i] != 0) {
+                            flagbits += "1";
+                        }
+                        else {
+                            flagbits += "0";
+                        }
+                    }
+
+                    flagbits += "-";
+                    for(u32 i = 0; i < 6; i++) {
+                        if(flags2[i] != 0) {
+                            flagbits += "1";
+                        }
+                        else {
+                            flagbits += "0";
+                        }
+                    }
+
+                    flagbits += "-";
+                    for(u32 i = 0; i < 5; i++) {
+                        flagbits += std::to_string((int)flags3[i]);
+                        flagbits += ":";
+                    }
+
+                    cur_entry.TryLoadControlData();
+
+                    bool is_update_requested = false;
+                    u32 tmp = 0;
+                    auto rc = nsIsApplicationUpdateRequested(cur_entry.app_info.app_id, &is_update_requested, &tmp);
+                    if(R_FAILED(rc)) {
+                        flagbits += "-E";
+                    }
+                    else {
+                        flagbits += "-";
+                        flagbits += is_update_requested ? "1" : "0";
+                    }
+
+                    AsyncValue asval;
+                    rc = nsRequestApplicationUpdateInfo(&asval, cur_entry.app_info.app_id);
+                    if(R_FAILED(rc)) {
+                        flagbits += "-E1";
+                    }
+                    else {
+                        flagbits += "-";
+
+                        rc = asyncValueWait(&asval, UINT64_MAX);
+                        if(R_FAILED(rc)) {
+                            flagbits += "E2";
+                        }
+                        else {
+                            u8 upd;
+                            rc = asyncValueGet(&asval, &upd, 1);
+                            if(R_FAILED(rc)) {
+                                flagbits += "E3";
+                            }
+                            else {
+                                flagbits += upd ? "1" : "0";
+                            }
+                        }
+                    }
+
+                    rc = nsCheckApplicationLaunchVersion(cur_entry.app_info.app_id);
+                    if(R_FAILED(rc)) {
+                        flagbits += "-E";
+                    }
+                    else {
+                        flagbits += "-K";
+                    }
+
+                    UL_LOG_INFO("[DEV-APP-Q-FLAGS] %s --> %s", cur_entry.control.name.c_str(), flagbits.c_str());
+                }
+            }
+            */
         }
         else if(keys_down & HidNpadButton_A) {
             if(this->entry_menu->IsFocusedNonemptyEntry()) {
@@ -174,49 +284,7 @@ namespace ul::menu::ui {
                         }
 
                         if(do_launch_entry && cur_entry.Is<EntryType::Application>()) {
-                            // Test: qlaunch checks these flags on apps
-                            uintptr_t a1 = (uintptr_t)&cur_entry.app_info.view;
-                            u8 flags1[12] = {};
-                            flags1[0] = *(u32*)(a1 + 12) & 1;
-                            flags1[1] = (*(u8 *)(a1 + 12) >> 1) & 1;
-                            flags1[2] = (*(u8 *)(a1 + 12) >> 4) & 1;
-                            flags1[3] = (*(u8 *)(a1 + 12) >> 5) & 1;
-                            flags1[4] = (*(u8 *)(a1 + 12) >> 6) & 1;
-                            flags1[5] = *(u8 *)(a1 + 12) >> 7;
-                            flags1[6] = *(u8 *)(a1 + 13) & 1;
-                            flags1[7] = (*(u8 *)(a1 + 13) >> 1) & 1;
-                            flags1[8] = (*(u8 *)(a1 + 13) >> 2) & 1;
-                            flags1[9] = (*(u8 *)(a1 + 13) >> 5) & 1;
-                            flags1[10] = (*(u32 *)(a1 + 12) & 0x4C000) != 0;
-                            flags1[11] = *(u8 *)(a1 + 13) >> 7;
-                            u8 flags2[6] = {};
-                            flags2[0] = *(u8 *)(a1 + 14) >> 7;
-                            flags2[1] = *(u8 *)(a1 + 14) & 1;
-                            flags2[2] = (*(u8 *)(a1 + 14) >> 1) & 1;
-                            flags2[3] = ((*(u32 *)(a1 + 12) & 0x4C000) != 0) && (*(u8 *)(a1 + 36) == 5);
-                            flags2[4] = (*(u8 *)(a1 + 14) >> 5) & 1;
-                            flags2[5] = (*(u8 *)(a1 + 14) >> 6) & 1;
-                            std::string flagbits;
-                            for(u32 i = 0; i < 12; i++) {
-                                if(flags1[i] != 0) {
-                                    flagbits += "1";
-                                }
-                                else {
-                                    flagbits += "0";
-                                }
-                            }
-                            flagbits += "-";
-                            for(u32 i = 0; i < 6; i++) {
-                                if(flags2[i] != 0) {
-                                    flagbits += "1";
-                                }
-                                else {
-                                    flagbits += "0";
-                                }
-                            }
-                            UL_LOG_INFO("[DEV-APP-Q-FLAGS] %s --> %s", cur_entry.control.name.c_str(), flagbits.c_str());
-
-                            if(cur_entry.app_info.HasViewFlag<os::ApplicationViewFlag::NeedsVerify>()) {
+                            if(cur_entry.app_info.NeedsVerify()) {
                                 pu::audio::PlaySfx(this->error_sfx);
 
                                 auto is_being_verified = false;
@@ -238,20 +306,37 @@ namespace ul::menu::ui {
 
                                 do_launch_entry = false;
                             }
-                            else if(cur_entry.app_info.HasViewFlag<os::ApplicationViewFlag::GameCardApplication>() && !cur_entry.app_info.HasViewFlag<os::ApplicationViewFlag::GameCardApplicationAccessible>()) {
+                            else if(cur_entry.app_info.IsGameCardNotInserted()) {
                                 pu::audio::PlaySfx(this->error_sfx);
                                 g_MenuApplication->ShowNotification(GetLanguageString("app_no_gamecard"));
                                 do_launch_entry = false;
                             }
-                            else if(!cur_entry.app_info.HasViewFlag<os::ApplicationViewFlag::Launchable>()) {
+                            else if(!cur_entry.app_info.HasContents()) {
+                                pu::audio::PlaySfx(this->error_sfx);
+                                g_MenuApplication->ShowNotification("App has no contents, cannot be launched...");
+                                do_launch_entry = false;
+                            }
+                            else if(!cur_entry.app_info.CanBeLaunched()) {
                                 UL_LOG_WARN("Tried to launch non-launchable application 0x%016lX with record type 0x%X and view flags 0x%D", cur_entry.app_info.app_id, cur_entry.app_info.record.type, cur_entry.app_info.view.flags);
                                 pu::audio::PlaySfx(this->error_sfx);
                                 g_MenuApplication->ShowNotification(GetLanguageString("app_not_launchable"));
                                 do_launch_entry = false;
                             }
                             else {
-                                /* TODO: fix ASAP!
-                                if(cur_entry.app_info.NeedsUpdate()) {
+                                if(cur_entry.app_info.IsNotUpdated()) {
+                                    // Despite not updated, check if it can be launched
+                                    const auto rc = nsCheckApplicationLaunchVersion(cur_entry.app_info.app_id);
+                                    if(R_FAILED(rc)) {
+                                        pu::audio::PlaySfx(this->error_sfx);
+                                        g_MenuApplication->ShowNotification("Game is not updated and cannot be launched: " + util::FormatResultDisplay(rc));
+                                        do_launch_entry = false;
+                                    }
+                                    else {
+                                        const auto option = g_MenuApplication->DisplayDialog(GetLanguageString("app_launch"), "Game is not updated but can be launched, be careful!", { GetLanguageString("ok"), GetLanguageString("cancel") }, true);
+                                        do_launch_entry = option == 0;
+                                    }
+
+                                    /*
                                     do_launch_entry = false;
                                     const auto opt = g_MenuApplication->DisplayDialog(GetLanguageString("app_launch"), "launch req ver " + std::to_string(cur_entry.app_info.launch_required_version) + " VS actual ver " + std::to_string(cur_entry.app_info.version) + "\n\n" + GetLanguageString("app_needs_update"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
                                     if(opt == 0) {
@@ -264,8 +349,8 @@ namespace ul::menu::ui {
                                             g_MenuApplication->DisplayDialog(GetLanguageString("app_launch"), GetLanguageString("app_launch_version_reset_error") + ": " + util::FormatResultDisplay(rc), { GetLanguageString("ok") }, true);
                                         }
                                     }
+                                    */
                                 }
-                                */
                             }
                         }
 
@@ -640,6 +725,37 @@ namespace ul::menu::ui {
 
         this->quick_menu = nullptr;
 
+        this->post_suspend_sfx = nullptr;
+        this->cursor_move_sfx = nullptr;
+        this->page_move_sfx = nullptr;
+        this->entry_select_sfx = nullptr;
+        this->entry_move_sfx = nullptr;
+        this->entry_swap_sfx = nullptr;
+        this->entry_cancel_select_sfx = nullptr;
+        this->entry_move_into_sfx = nullptr;
+        this->home_press_sfx = nullptr;
+        this->logoff_sfx = nullptr;
+        this->launch_app_sfx = nullptr;
+        this->launch_hb_sfx = nullptr;
+        this->close_suspended_sfx = nullptr;
+        this->open_folder_sfx = nullptr;
+        this->close_folder_sfx = nullptr;
+        this->open_mii_edit_sfx = nullptr;
+        this->open_web_browser_sfx = nullptr;
+        this->open_user_page_sfx = nullptr;
+        this->open_settings_sfx = nullptr;
+        this->open_themes_sfx = nullptr;
+        this->open_controllers_sfx = nullptr;
+        this->open_album_sfx = nullptr;
+        this->open_amiibo_sfx = nullptr;
+        this->open_quick_menu_sfx = nullptr;
+        this->close_quick_menu_sfx = nullptr;
+        this->resume_app_sfx = nullptr;
+        this->create_folder_sfx = nullptr;
+        this->create_hb_entry_sfx = nullptr;
+        this->entry_remove_sfx = nullptr;
+        this->error_sfx = nullptr;
+
         // Load banners first
         this->top_menu_default_bg = pu::ui::elm::Image::New(0, 0, TryFindLoadImageHandle("ui/Main/TopMenuBackground/Default"));
         this->top_menu_folder_bg = pu::ui::elm::Image::New(0, 0, TryFindLoadImageHandle("ui/Main/TopMenuBackground/Folder"));
@@ -666,10 +782,7 @@ namespace ul::menu::ui {
         g_GlobalSettings.ApplyConfigForElement("main_menu", "connection_top_icon", this->connection_top_icon);
         this->Add(this->connection_top_icon);
 
-        this->time_text = pu::ui::elm::TextBlock::New(0, 0, "...");
-        this->time_text->SetColor(g_MenuApplication->GetTextColor());
-        g_GlobalSettings.ApplyConfigForElement("main_menu", "time_text", this->time_text);
-        this->Add(this->time_text);
+        this->InitializeTimeText(this->time_mtext, "main_menu", "time_text");
 
         this->date_text = pu::ui::elm::TextBlock::New(0, 0, "...");
         this->date_text->SetColor(g_MenuApplication->GetTextColor());
@@ -737,7 +850,9 @@ namespace ul::menu::ui {
         this->Add(this->quick_menu);
 
         this->startup_tp = std::chrono::steady_clock::now();
+    }
 
+    void MainMenuLayout::LoadSfx() {
         this->post_suspend_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Main/PostSuspend.wav"));
         this->cursor_move_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Main/CursorMove.wav"));
         this->page_move_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Main/PageMove.wav"));
@@ -768,13 +883,9 @@ namespace ul::menu::ui {
         this->create_hb_entry_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Main/CreateHomebrewEntry.wav"));
         this->entry_remove_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Main/EntryRemove.wav"));
         this->error_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Main/Error.wav"));
-
-        if(captured_screen_buf != nullptr) {
-            pu::audio::PlaySfx(this->post_suspend_sfx);
-        }
     }
-
-    void MainMenuLayout::DisposeAudio() {
+    
+    void MainMenuLayout::DisposeSfx() {
         pu::audio::DestroySfx(this->post_suspend_sfx);
         pu::audio::DestroySfx(this->cursor_move_sfx);
         pu::audio::DestroySfx(this->page_move_sfx);
@@ -906,7 +1017,7 @@ namespace ul::menu::ui {
         const auto now_tp = std::chrono::steady_clock::now();
 
         this->UpdateConnectionTopIcon(this->connection_top_icon);
-        this->UpdateTimeText(this->time_text);
+        this->UpdateTimeText(this->time_mtext);
         this->UpdateDateText(this->date_text);
         this->UpdateBatteryTextAndTopIcons(this->battery_text, this->battery_top_icon, this->battery_charging_top_icon);
 
@@ -1083,6 +1194,12 @@ namespace ul::menu::ui {
         else {
             this->DoMoveTo(new_path);
         }
+    }
+
+    void MainMenuLayout::Initialize() {
+        if(this->suspended_screen_img != nullptr) {
+            pu::audio::PlaySfx(this->post_suspend_sfx);
+        }   
     }
 
     void MainMenuLayout::NotifyLoad() {

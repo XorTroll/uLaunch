@@ -193,5 +193,7 @@
     "input_settings_select": "Seleziona opzione",
     "input_settings_left": "Menu precedente",
     "input_settings_right": "Menu successivo",
-    "quick_amiibo": "Apri opzioni Amiibo"
+    "quick_amiibo": "Apri opzioni Amiibo",
+    "set_ul_version": "uLaunch version",
+    "set_audio_service": "Audio service"
 }

@@ -151,6 +151,15 @@ namespace ul::fs {
         return a + "/" + b;
     }
 
+    template<typename S>
+    inline void EnsureCreateDirectory(const S &path) {
+        const auto parent_path = GetBaseDirectory(path);
+        if(parent_path.back() != ':') {
+            EnsureCreateDirectory(parent_path);
+        }
+        mkdir(util::GetCString(path), 777);
+    }
+
     void RenameDirectory(const std::string &old_path, const std::string &new_path);
 
     #define UL_FS_FOR(dir, name_var, path_var, is_dir_var, is_file_var, ...) ({ \

@@ -37,6 +37,48 @@ namespace ul::menu::ui {
         UL_ASSERT_FAIL("Invalid current menu?");
     }
 
+    void MenuApplication::EnsureLayoutCreated(const MenuType type) {
+        switch(type) {
+            case MenuType::Startup:
+                if(this->startup_menu_lyt == nullptr) {
+                    this->startup_menu_lyt = StartupMenuLayout::New();
+                    this->startup_menu_lyt->LoadSfx();
+                    TryParseBgmEntry("startup_menu", "Startup", g_GlobalSettings.startup_menu_bgm);
+                }
+                break;
+            case MenuType::Main:
+                if(this->main_menu_lyt == nullptr) {
+                    const auto suspended_app_final_alpha = GetRequiredUiValue<u32>("suspended_app_final_alpha");
+                    this->main_menu_lyt = MainMenuLayout::New(this->screen_capture_buf, static_cast<u8>(suspended_app_final_alpha));
+                    this->main_menu_lyt->LoadSfx();
+                    TryParseBgmEntry("main_menu", "Main", g_GlobalSettings.main_menu_bgm);
+                    this->main_menu_lyt->Initialize();
+                }
+                break;
+            case MenuType::Themes:
+                if(this->themes_menu_lyt == nullptr) {
+                    this->themes_menu_lyt = ThemesMenuLayout::New();
+                    this->themes_menu_lyt->LoadSfx();
+                    TryParseBgmEntry("themes_menu", "Themes", g_GlobalSettings.themes_menu_bgm);
+                }
+                break;
+            case MenuType::Settings:
+                if(this->settings_menu_lyt == nullptr) {
+                    this->settings_menu_lyt = SettingsMenuLayout::New();
+                    this->settings_menu_lyt->LoadSfx();
+                    TryParseBgmEntry("settings_menu", "Settings", g_GlobalSettings.settings_menu_bgm);
+                }
+                break;
+            case MenuType::Lockscreen:
+                if(this->lockscreen_menu_lyt == nullptr) {
+                    this->lockscreen_menu_lyt = LockscreenMenuLayout::New();
+                    this->lockscreen_menu_lyt->LoadSfx();
+                    TryParseBgmEntry("lockscreen_menu", "Lockscreen", g_GlobalSettings.lockscreen_menu_bgm);
+                }
+                break;
+        }
+    }
+
     void MenuApplication::OnLoad() {
         this->launch_failed = false;
         this->pending_gc_mount_rc = ResultSuccess;
@@ -46,15 +88,21 @@ namespace ul::menu::ui {
         this->verify_finished_app_id = 0;
         this->verify_rc = ResultSuccess;
         this->verify_detail_rc = ResultSuccess;
+        this->screen_capture_buf = nullptr;
+
+        this->startup_menu_lyt = nullptr;
+        this->main_menu_lyt = nullptr;
+        this->themes_menu_lyt = nullptr;
+        this->settings_menu_lyt = nullptr;
+        this->lockscreen_menu_lyt = nullptr;
 
         // TODO: customize
         this->SetFadeAlphaIncrementStepCount(FastFadeAlphaIncrementSteps);
 
-        u8 *screen_capture_buf = nullptr;
         if(g_GlobalSettings.IsSuspended()) {
-            screen_capture_buf = new u8[RawScreenRgbaBufferSize]();
+            this->screen_capture_buf = new u8[RawScreenRgbaBufferSize]();
             bool flag;
-            appletGetLastApplicationCaptureImageEx(screen_capture_buf, RawScreenRgbaBufferSize, &flag);
+            appletGetLastApplicationCaptureImageEx(this->screen_capture_buf, RawScreenRgbaBufferSize, &flag);
         }
 
         InitializeResources();
@@ -87,12 +135,6 @@ namespace ul::menu::ui {
             g_GlobalSettings.settings_menu_bgm.bgm_fade_out_ms = global_bgm_fade_out_ms;
             g_GlobalSettings.lockscreen_menu_bgm.bgm_fade_out_ms = global_bgm_fade_out_ms;
         }
-        
-        TryParseBgmEntry("main_menu", "Main", g_GlobalSettings.main_menu_bgm);
-        TryParseBgmEntry("startup_menu", "Startup", g_GlobalSettings.startup_menu_bgm);
-        TryParseBgmEntry("themes_menu", "Themes", g_GlobalSettings.themes_menu_bgm);
-        TryParseBgmEntry("settings_menu", "Settings", g_GlobalSettings.settings_menu_bgm);
-        TryParseBgmEntry("lockscreen_menu", "Lockscreen", g_GlobalSettings.lockscreen_menu_bgm);
 
         // UI
 
@@ -115,8 +157,6 @@ namespace ul::menu::ui {
         this->dialog_clr = GetRequiredUiValue<pu::ui::Color>("dialog_color");
         this->dialog_over_clr = GetRequiredUiValue<pu::ui::Color>("dialog_over_color");
 
-        const auto suspended_app_final_alpha = GetRequiredUiValue<u32>("suspended_app_final_alpha");
-
         switch(this->start_mode) {
             case smi::MenuStartMode::Start: {
                 break;
@@ -127,36 +167,36 @@ namespace ul::menu::ui {
             }
         }
 
-        // TODO (low priority): do not create all layouts, only the loaded one?
-        this->startup_menu_lyt = StartupMenuLayout::New();
-        this->main_menu_lyt = MainMenuLayout::New(screen_capture_buf, static_cast<u8>(suspended_app_final_alpha));
-        this->themes_menu_lyt = ThemesMenuLayout::New();
-        this->settings_menu_lyt = SettingsMenuLayout::New();
-        this->lockscreen_menu_lyt = LockscreenMenuLayout::New();
-
         this->loaded_menu = MenuType::Main;
         switch(this->start_mode) {
             case smi::MenuStartMode::Start: {
-                bool lockscreen_enabled;
-                UL_ASSERT_TRUE(g_GlobalSettings.config.GetEntry(cfg::ConfigEntryId::LockscreenEnabled, lockscreen_enabled));
-                if(lockscreen_enabled) {
-                    this->LoadMenuByType(MenuType::Lockscreen, false);
-                }
-                else {
-                    this->LoadMenuByType(MenuType::Startup, false);
-                }
+                this->LoadMenu(MenuType::Startup, false);
                 break;
             }
             case smi::MenuStartMode::SettingsMenu: {
-                this->LoadMenuByType(MenuType::Settings, false);
+                this->LoadMenu(MenuType::Settings, false);
                 break;
             }
             default: {
-                this->LoadMenuByType(MenuType::Main, false);
+                this->LoadMenu(MenuType::Main, false);
                 break;
             }
         }
         this->StartPlayBgm();
+    }
+
+    void MenuApplication::Finalize() {
+        UL_LOG_INFO("Finalizing...");
+        this->ResetFade();
+        this->FadeOut();
+
+        this->StopPlayBgm();
+
+        this->DisposeAllSfx();
+        ul::menu::ui::DisposeAllBgm();
+        pu::audio::Finalize();
+
+        this->Close(true);
     }
 
     void MenuApplication::SetBackgroundFade() {
@@ -165,7 +205,7 @@ namespace ul::menu::ui {
         }
     }
 
-    void MenuApplication::LoadMenuByType(const MenuType type, const bool fade, MenuFadeCallback fade_cb) {
+    void MenuApplication::LoadMenu(const MenuType type, const bool fade, MenuFadeCallback fade_cb) {
         this->StopPlayBgm();
 
         if(fade) {
@@ -176,6 +216,8 @@ namespace ul::menu::ui {
                 fade_cb();
             }
         }
+
+        this->EnsureLayoutCreated(type);
         
         switch(type) {
             case MenuType::Startup: {
@@ -239,6 +281,47 @@ namespace ul::menu::ui {
         }
         else {
             pu::audio::StopMusic();
+        }
+    }
+
+    void MenuApplication::LoadBgmSfxForCreatedMenus() {
+        if(this->main_menu_lyt != nullptr) {
+            this->main_menu_lyt->LoadSfx();
+            TryParseBgmEntry("main_menu", "Main", g_GlobalSettings.main_menu_bgm);
+        }
+        if(this->startup_menu_lyt != nullptr) {
+            this->startup_menu_lyt->LoadSfx();
+            TryParseBgmEntry("startup_menu", "Startup", g_GlobalSettings.startup_menu_bgm);
+        }
+        if(this->themes_menu_lyt != nullptr) {
+            this->themes_menu_lyt->LoadSfx();
+            TryParseBgmEntry("themes_menu", "Themes", g_GlobalSettings.themes_menu_bgm);
+        }
+        if(this->settings_menu_lyt != nullptr) {
+            this->settings_menu_lyt->LoadSfx();
+            TryParseBgmEntry("settings_menu", "Settings", g_GlobalSettings.settings_menu_bgm);
+        }
+        if(this->lockscreen_menu_lyt != nullptr) {
+            this->lockscreen_menu_lyt->LoadSfx();
+            TryParseBgmEntry("lockscreen_menu", "Lockscreen", g_GlobalSettings.lockscreen_menu_bgm);
+        }
+    }
+
+    void MenuApplication::DisposeAllSfx() {
+        if(this->main_menu_lyt != nullptr) {
+            this->main_menu_lyt->DisposeSfx();
+        }
+        if(this->startup_menu_lyt != nullptr) {
+            this->startup_menu_lyt->DisposeSfx();
+        }
+        if(this->themes_menu_lyt != nullptr) {
+            this->themes_menu_lyt->DisposeSfx();
+        }
+        if(this->settings_menu_lyt != nullptr) {
+            this->settings_menu_lyt->DisposeSfx();
+        }
+        if(this->lockscreen_menu_lyt != nullptr) {
+            this->lockscreen_menu_lyt->DisposeSfx();
         }
     }
 

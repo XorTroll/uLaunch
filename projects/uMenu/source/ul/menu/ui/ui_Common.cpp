@@ -107,7 +107,7 @@ namespace ul::menu::ui {
         }
     }
 
-    void FinalizeResources() {
+    void DisposeAllBgm() {
         pu::audio::DestroyMusic(g_GlobalSettings.main_menu_bgm.bgm);
         pu::audio::DestroyMusic(g_GlobalSettings.startup_menu_bgm.bgm);
         pu::audio::DestroyMusic(g_GlobalSettings.themes_menu_bgm.bgm);
@@ -223,11 +223,11 @@ namespace ul::menu::ui {
     }
 
     void ShowSettingsMenu() {
-        g_MenuApplication->LoadMenuByType(MenuType::Settings);
+        g_MenuApplication->LoadMenu(MenuType::Settings);
     }
 
     void ShowThemesMenu() {
-        g_MenuApplication->LoadMenuByType(MenuType::Themes);
+        g_MenuApplication->LoadMenu(MenuType::Themes);
     }
 
     void ShowUserPage() {

@@ -8,12 +8,12 @@ namespace ul::menu::ui {
 
     namespace {
 
-        inline void Unlock() {
+        inline void UnlockScreen() {
             if(accountUidIsValid(&g_GlobalSettings.system_status.selected_user)) {
-                g_MenuApplication->LoadMenuByType(MenuType::Main);
+                g_MenuApplication->LoadMenu(MenuType::Main);
             }
             else {
-                g_MenuApplication->LoadMenuByType(MenuType::Startup);
+                g_MenuApplication->LoadMenu(MenuType::Startup);
             }
         }
 
@@ -29,10 +29,7 @@ namespace ul::menu::ui {
         g_GlobalSettings.ApplyConfigForElement("lockscreen_menu", "connection_top_icon", this->connection_top_icon);
         this->Add(this->connection_top_icon);
 
-        this->time_text = pu::ui::elm::TextBlock::New(0, 0, "...");
-        this->time_text->SetColor(g_MenuApplication->GetTextColor());
-        g_GlobalSettings.ApplyConfigForElement("lockscreen_menu", "time_text", this->time_text);
-        this->Add(this->time_text);
+        this->InitializeTimeText(this->time_mtext, "lockscreen_menu", "time_text");
 
         this->date_text = pu::ui::elm::TextBlock::New(0, 0, "...");
         this->date_text->SetColor(g_MenuApplication->GetTextColor());
@@ -55,22 +52,24 @@ namespace ul::menu::ui {
 
     void LockscreenMenuLayout::OnMenuInput(const u64 keys_down, const u64 keys_up, const u64 keys_held, const pu::ui::TouchPoint touch_pos) {
         if(keys_down != 0) {
-            Unlock();
+            UnlockScreen();
         }
 
         this->UpdateConnectionTopIcon(this->connection_top_icon);
-        this->UpdateTimeText(this->time_text);
+        this->UpdateTimeText(this->time_mtext);
         this->UpdateDateText(this->date_text);
         this->UpdateBatteryTextAndTopIcons(this->battery_text, this->battery_top_icon, this->battery_charging_top_icon);
     }
 
     bool LockscreenMenuLayout::OnHomeButtonPress() {
-        Unlock();
+        UnlockScreen();
         return true;
     }
 
-    void LockscreenMenuLayout::DisposeAudio() {
-        
+    void LockscreenMenuLayout::LoadSfx() {
+    }
+
+    void LockscreenMenuLayout::DisposeSfx() {
     }
 
 }

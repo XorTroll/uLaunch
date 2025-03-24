@@ -22,6 +22,25 @@ namespace ul::menu::ui {
             }
         }
 
+        void OnFinishedSleep() {
+            // Reset and reinitialize audio (force-avoid post-sleep audio stutter in audout)
+            g_MenuApplication->DisposeAllSfx();
+            ul::menu::ui::DisposeAllBgm();
+            pu::audio::Finalize();
+    
+            UL_ASSERT_TRUE(pu::audio::Initialize(MIX_INIT_MP3));
+            g_MenuApplication->LoadBgmSfxForCreatedMenus();
+    
+            // Load lockscreen, if enabled
+            bool lockscreen_enabled;
+            UL_ASSERT_TRUE(g_GlobalSettings.config.GetEntry(cfg::ConfigEntryId::LockscreenEnabled, lockscreen_enabled));
+            if(lockscreen_enabled) {
+                g_MenuApplication->LoadMenu(MenuType::Lockscreen, true);
+            }
+    
+            g_MenuApplication->StartPlayBgm();
+        }
+
     }
 
     void IMenuLayout::UpdateConnectionTopIcon(pu::ui::elm::Image::Ref &icon) {
@@ -39,20 +58,61 @@ namespace ul::menu::ui {
         }
     }
 
-    void IMenuLayout::UpdateDateText(pu::ui::elm::TextBlock::Ref &text) {
-        // TODO (low priority): do not set the date all the time?
-        const auto cur_date = os::GetCurrentDate(g_WeekdayList);
-        text->SetText(cur_date);
+    void IMenuLayout::UpdateDateText(pu::ui::elm::TextBlock::Ref &date_text) {
+        const auto cur_date = os::GetCurrentDate();
+        if(this->last_date != cur_date) {
+            this->last_date = cur_date;
+
+            char cur_date_str[0x40] = {};
+            sprintf(cur_date_str, "%02d/%02d (%s)", cur_date.day, cur_date.month, g_WeekdayList.at(cur_date.weekday_idx).c_str());
+            date_text->SetText(cur_date_str);
+        }
     }
-    
-    void IMenuLayout::UpdateTimeText(pu::ui::elm::TextBlock::Ref &text) {
-        u32 cur_h;
-        u32 cur_min;
-        u32 cur_sec;
-        os::GetCurrentTime(cur_h, cur_min, cur_sec);
-        char cur_time_str[0x10] = {};
-        sprintf(cur_time_str, "%02d:%02d", cur_h, cur_min);
-        text->SetText(cur_time_str);
+
+    void IMenuLayout::InitializeTimeText(MultiTextBlock::Ref &time_mtext, const std::string &ui_menu, const std::string &ui_name) {
+        time_mtext = MultiTextBlock::New(0, 0);
+        time_mtext->Add(pu::ui::elm::TextBlock::New(0, 0, "99"));
+        time_mtext->Add(pu::ui::elm::TextBlock::New(0, 0, ":"));
+        time_mtext->Add(pu::ui::elm::TextBlock::New(0, 0, "99"));
+        g_GlobalSettings.ApplyConfigForElement(ui_menu, ui_name, time_mtext);
+        for(auto &text: time_mtext->GetAll()) {
+            text->SetColor(g_MenuApplication->GetTextColor());
+        }
+        time_mtext->UpdatePositionsSizes();
+        this->Add(time_mtext);
+        this->Add(time_mtext->Get(0));
+        this->Add(time_mtext->Get(1));
+        this->Add(time_mtext->Get(2));
+    }
+
+    void IMenuLayout::UpdateTimeText(MultiTextBlock::Ref &time_mtext) {
+        const auto cur_time = os::GetCurrentTime();
+        auto time_changed = false;
+
+        if(this->last_time.h != cur_time.h) {
+            time_changed = true;
+            char cur_h_str[0x40] = {};
+            sprintf(cur_h_str, "%02d", cur_time.h);
+            time_mtext->Get(0)->SetText(cur_h_str);
+        }
+
+        if(this->last_time.min != cur_time.min) {
+            time_changed = true;
+            char cur_min_str[0x40] = {};
+            sprintf(cur_min_str, "%02d", cur_time.min);
+            time_mtext->Get(2)->SetText(cur_min_str);
+        }
+
+        this->time_anim_frame++;
+        if(this->time_anim_frame > TimeDotsAnimStepCount) {
+            this->time_anim_frame = 0;
+            this->time_anim_dots = !this->time_anim_dots;
+            time_mtext->Get(1)->SetVisible(this->time_anim_dots);
+        }
+
+        if(time_changed) {
+            this->last_time = cur_time;
+        }
     }
 
     void IMenuLayout::UpdateBatteryTextAndTopIcons(pu::ui::elm::TextBlock::Ref &text, pu::ui::elm::Image::Ref &base_top_icon, pu::ui::elm::Image::Ref &charging_top_icon) {
@@ -75,7 +135,7 @@ namespace ul::menu::ui {
         }
     }
 
-    IMenuLayout::IMenuLayout() : Layout(), msg_queue_lock(), msg_queue(), last_has_connection(false), last_connection_strength(0), last_battery_level(0), last_battery_is_charging(false) {
+    IMenuLayout::IMenuLayout() : Layout(), msg_queue_lock(), msg_queue(), last_has_connection(false), last_connection_strength(0), last_battery_level(0), last_battery_is_charging(false), last_time(), last_date(), time_anim_frame(0), time_anim_dots(true) {
         this->SetBackgroundImage(GetBackgroundTexture());
         this->SetOnInput(std::bind(&IMenuLayout::OnInput, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
 
@@ -130,11 +190,7 @@ namespace ul::menu::ui {
                     }
                     case smi::MenuMessage::FinishedSleep: {
                         this->msg_queue.pop();
-                        bool lockscreen_enabled;
-                        UL_ASSERT_TRUE(g_GlobalSettings.config.GetEntry(cfg::ConfigEntryId::LockscreenEnabled, lockscreen_enabled));
-                        if(lockscreen_enabled) {
-                            g_MenuApplication->LoadMenuByType(MenuType::Lockscreen, false);
-                        }
+                        OnFinishedSleep();
                         break;
                     }
                     case smi::MenuMessage::ApplicationRecordsChanged: {

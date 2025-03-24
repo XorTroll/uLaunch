@@ -4,6 +4,7 @@
 #include <ul/net/net_Service.hpp>
 #include <ul/acc/acc_Accounts.hpp>
 #include <ul/util/util_Scope.hpp>
+#include <malloc.h>
 
 extern ul::menu::ui::GlobalSettings g_GlobalSettings;
 extern ul::menu::ui::MenuApplication::Ref g_MenuApplication;
@@ -102,6 +103,19 @@ namespace ul::menu::ui {
                 case SetSysHandheldSleepPlan_30Min: return GetLanguageString("set_sleep_handheld_30min");
                 case SetSysHandheldSleepPlan_Never: return GetLanguageString("set_sleep_handheld_never");
                 default: return GetLanguageString("set_unknown_value");
+            }
+        }
+
+        inline std::string GetAudioService() {
+            // No need to translate these
+            if(serviceIsActive(audrenGetServiceSession_AudioRenderer())) {
+                return "audren";
+            }
+            else if(serviceIsActive(audoutGetServiceSession_AudioOut())) {
+                return "audout";
+            }
+            else {
+                return GetLanguageString("set_unknown_value");
             }
         }
 
@@ -678,6 +692,26 @@ namespace ul::menu::ui {
                     return net::GetConsoleIpAddress();
                 }
             });
+
+            g_Settings.push_back({
+                .menu = SettingMenu::uLaunch,
+                .submenu = SettingSubmenu::None,
+                .setting = Setting::uLaunchVersion,
+                .editable = false,
+                .static_description = GetLanguageString("set_ul_version"),
+                .dyn_value_cb = []() {
+                    return UL_VERSION;
+                }
+            });
+
+            g_Settings.push_back({
+                .menu = SettingMenu::uLaunch,
+                .submenu = SettingSubmenu::None,
+                .setting = Setting::AudioService,
+                .editable = false,
+                .static_description = GetLanguageString("set_audio_service"),
+                .static_value = GetAudioService()
+            });
         }
 
     }
@@ -686,6 +720,10 @@ namespace ul::menu::ui {
         LoadSettings();
         this->cur_menu = static_cast<SettingMenu>(0);
         this->cur_submenu = SettingSubmenu::None;
+
+        this->setting_edit_sfx = nullptr;
+        this->setting_save_sfx = nullptr;
+        this->back_sfx = nullptr;
 
         this->menu_text = pu::ui::elm::TextBlock::New(0, 0, "...");
         this->menu_text->SetColor(g_MenuApplication->GetTextColor());
@@ -701,20 +739,24 @@ namespace ul::menu::ui {
         g_GlobalSettings.ApplyConfigForElement("settings_menu", "settings_menu", this->settings_menu);
         this->Add(this->settings_menu);
 
-        this->setting_edit_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Settings/SettingEdit.wav"));
-        this->setting_save_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Settings/SettingSave.wav"));
-        this->back_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Settings/Back.wav"));
-
         this->input_bar = InputBar::New(0, 0, "ui/Settings/InputBarBackground");
         g_GlobalSettings.ApplyConfigForElement("settings_menu", "input_bar", this->input_bar);
         this->Add(this->input_bar);
         this->inputs_changed = true;
     }
 
-    void SettingsMenuLayout::DisposeAudio() {
+    void SettingsMenuLayout::LoadSfx() {
+        this->setting_edit_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Settings/SettingEdit.wav"));
+        this->setting_save_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Settings/SettingSave.wav"));
+        this->back_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Settings/Back.wav"));
+        this->setting_menu_move_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Settings/SettingMenuMove.wav"));
+    }
+
+    void SettingsMenuLayout::DisposeSfx() {
         pu::audio::DestroySfx(this->setting_edit_sfx);
         pu::audio::DestroySfx(this->setting_save_sfx);
         pu::audio::DestroySfx(this->back_sfx);
+        pu::audio::DestroySfx(this->setting_menu_move_sfx);
     }
 
     void SettingsMenuLayout::OnMenuInput(const u64 keys_down, const u64 keys_up, const u64 keys_held, const pu::ui::TouchPoint touch_pos) {
@@ -736,11 +778,12 @@ namespace ul::menu::ui {
                 g_MenuApplication->FadeIn();
             }
             else {
-                g_MenuApplication->LoadMenuByType(MenuType::Main);
+                g_MenuApplication->LoadMenu(MenuType::Main);
             }
         }
         else if(keys_down & HidNpadButton_L) {
             if(can_move_left) {
+                pu::audio::PlaySfx(this->setting_menu_move_sfx);
                 g_MenuApplication->SetBackgroundFade();
                 g_MenuApplication->FadeOut();
 
@@ -753,6 +796,7 @@ namespace ul::menu::ui {
         }
         else if(keys_down & HidNpadButton_R) {
             if(can_move_right) {
+                pu::audio::PlaySfx(this->setting_menu_move_sfx);
                 g_MenuApplication->SetBackgroundFade();
                 g_MenuApplication->FadeOut();
 
@@ -784,7 +828,7 @@ namespace ul::menu::ui {
     bool SettingsMenuLayout::OnHomeButtonPress() {
         pu::audio::PlaySfx(this->back_sfx);
 
-        g_MenuApplication->LoadMenuByType(MenuType::Main);
+        g_MenuApplication->LoadMenu(MenuType::Main);
         return true;
     }
 

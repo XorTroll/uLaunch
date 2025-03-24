@@ -35,17 +35,17 @@ namespace ul::os {
         return records;
     }
 
-    std::vector<NsApplicationView> ListApplicationViews(const std::vector<NsApplicationRecord> &base_records) {
+    std::vector<os::ApplicationView> ListApplicationViews(const std::vector<NsApplicationRecord> &base_records) {
         const auto count = base_records.size();
         auto app_id_buf = new u64[count]();
         for(u32 i = 0; i < count; i++) {
             app_id_buf[i] = base_records.at(i).application_id;
         }
 
-        auto app_view_buf = new NsApplicationView[count]();
-        UL_RC_ASSERT(nsGetApplicationView(app_view_buf, app_id_buf, count));
+        auto app_view_buf = new os::ApplicationView[count]();
+        UL_RC_ASSERT(nsGetApplicationView(reinterpret_cast<NsApplicationView*>(app_view_buf), app_id_buf, count));
 
-        std::vector<NsApplicationView> views(app_view_buf, app_view_buf + count);
+        std::vector<os::ApplicationView> views(app_view_buf, app_view_buf + count);
 
         delete[] app_view_buf;
         delete[] app_id_buf;

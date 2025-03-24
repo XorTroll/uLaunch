@@ -53,8 +53,11 @@ namespace ul::menu::ui {
             pu::ui::Color dialog_opt_clr;
             pu::ui::Color dialog_clr;
             pu::ui::Color dialog_over_clr;
+            u8 *screen_capture_buf;
 
             MenuBgmEntry &GetCurrentMenuBgm();
+
+            void EnsureLayoutCreated(const MenuType type);
 
         public:
             using Application::Application;
@@ -66,12 +69,7 @@ namespace ul::menu::ui {
                 this->start_mode = start_mode;
             }
 
-            inline void Finalize() {
-                this->StopPlayBgm();
-                this->ResetFade();
-                this->DisposeAllAudio();
-                this->CloseWithFadeOut(true);
-            }
+            void Finalize();
 
             void SetBackgroundFade();
 
@@ -79,7 +77,7 @@ namespace ul::menu::ui {
                 this->ResetFadeBackgroundImage();
             }
 
-            void LoadMenuByType(const MenuType type, const bool fade = true, MenuFadeCallback fade_cb = nullptr);
+            void LoadMenu(const MenuType type, const bool fade = true, MenuFadeCallback fade_cb = nullptr);
 
             inline void NotifyLaunchFailed() {
                 this->launch_failed = true;
@@ -190,12 +188,8 @@ namespace ul::menu::ui {
             void StartPlayBgm();
             void StopPlayBgm();
 
-            inline void DisposeAllAudio() {
-                this->main_menu_lyt->DisposeAudio();
-                this->startup_menu_lyt->DisposeAudio();
-                this->themes_menu_lyt->DisposeAudio();
-                this->settings_menu_lyt->DisposeAudio();
-            }
+            void LoadBgmSfxForCreatedMenus();
+            void DisposeAllSfx();
 
             int DisplayDialog(const std::string &title, const std::string &content, const std::vector<std::string> &opts, const bool use_last_opt_as_cancel, pu::sdl2::TextureHandle::Ref icon = {});
     };

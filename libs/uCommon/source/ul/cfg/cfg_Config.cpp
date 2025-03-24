@@ -149,8 +149,11 @@ namespace ul::cfg {
                 }
 
                 const auto entry_path = fs::JoinPath(ActiveThemeCachePath, zip_entry_name(zip_file));
+
                 const auto is_dir = zip_entry_isdir(zip_file);
                 if(!is_dir) {
+                    const auto entry_dir_path = fs::GetBaseDirectory(entry_path);
+                    fs::EnsureCreateDirectory(entry_dir_path);
                     void *read_buf;
                     size_t read_buf_size;
                     const auto read_size = zip_entry_read(zip_file, &read_buf, &read_buf_size);
@@ -179,9 +182,6 @@ namespace ul::cfg {
 
     void RemoveActiveThemeCache() {
         fs::CleanDirectory(ActiveThemeCachePath);
-        for(u32 i = 0; i < std::size(ActiveThemeCacheSubfolderPaths); i++) {
-            fs::CreateDirectory(ActiveThemeCacheSubfolderPaths[i]);
-        }
     }
 
     void LoadLanguageJsons(const std::string &lang_base, util::JSON &lang, util::JSON &def) {

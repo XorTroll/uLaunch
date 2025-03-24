@@ -31,9 +31,12 @@ int main() {
 
     auto renderer_opts = pu::ui::render::RendererInitOptions(SDL_INIT_EVERYTHING, pu::ui::render::RendererHardwareFlags);
 
-    renderer_opts.UseImage(pu::ui::render::IMGAllFlags);
+    renderer_opts.UseImage(pu::ui::render::ImgAllFlags);
+
+    renderer_opts.SetPlServiceType(PlServiceType_User);
     renderer_opts.AddDefaultAllSharedFonts();
     renderer_opts.AddExtraDefaultFontSize(35);
+
     renderer_opts.UseRomfs();
 
     renderer_opts.SetInputPlayerCount(1);
@@ -45,7 +48,7 @@ int main() {
 
     g_MainApplication = ul::man::ui::MainApplication::New(renderer);
     g_MainApplication->Set(g_IsAvailable, g_GotVersion.Equals(ul::CurrentVersion), g_GotVersion);
-    g_MainApplication->Prepare();
+    UL_RC_ASSERT(g_MainApplication->Load());
     g_MainApplication->ShowWithFadeIn();
 
     Finalize();

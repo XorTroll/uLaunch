@@ -15,7 +15,7 @@ namespace ul::menu::ui {
         pu::audio::PlaySfx(this->user_select_sfx);
         g_GlobalSettings.SetSelectedUser(uid);
 
-        g_MenuApplication->LoadMenuByType(MenuType::Main);
+        g_MenuApplication->LoadMenu(MenuType::Main);
     }
 
     void StartupMenuLayout::create_DefaultKey() {
@@ -28,6 +28,9 @@ namespace ul::menu::ui {
     StartupMenuLayout::StartupMenuLayout() : IMenuLayout() {
         this->load_menu = false;
 
+        this->user_create_sfx = nullptr;
+        this->user_select_sfx = nullptr;
+
         this->info_text = pu::ui::elm::TextBlock::New(0, 0, GetLanguageString("startup_welcome_info"));
         this->info_text->SetColor(g_MenuApplication->GetTextColor());
         g_GlobalSettings.ApplyConfigForElement("startup_menu", "info_text", this->info_text);
@@ -36,12 +39,14 @@ namespace ul::menu::ui {
         this->users_menu = pu::ui::elm::Menu::New(0, 0, UsersMenuWidth, g_MenuApplication->GetMenuBackgroundColor(), g_MenuApplication->GetMenuFocusColor(), UsersMenuItemSize, UsersMenuItemsToShow);
         g_GlobalSettings.ApplyConfigForElement("startup_menu", "users_menu", this->users_menu);
         this->Add(this->users_menu);
+    }
 
+    void StartupMenuLayout::LoadSfx() {
         this->user_create_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Startup/UserCreate.wav"));
         this->user_select_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Startup/UserSelect.wav"));
     }
-
-    void StartupMenuLayout::DisposeAudio() {
+    
+    void StartupMenuLayout::DisposeSfx() {
         pu::audio::DestroySfx(this->user_create_sfx);
         pu::audio::DestroySfx(this->user_select_sfx);
     }

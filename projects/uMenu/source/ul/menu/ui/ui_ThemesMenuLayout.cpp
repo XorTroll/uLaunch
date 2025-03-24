@@ -17,12 +17,14 @@ namespace ul::menu::ui {
         this->themes_menu = pu::ui::elm::Menu::New(0, 0, ThemesMenuWidth, g_MenuApplication->GetMenuBackgroundColor(), g_MenuApplication->GetMenuFocusColor(), ThemesMenuItemSize, ThemesMenuItemsToShow);
         g_GlobalSettings.ApplyConfigForElement("themes_menu", "themes_menu", this->themes_menu);
         this->Add(this->themes_menu);
+    }
 
+    void ThemesMenuLayout::LoadSfx() {
         this->theme_change_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Themes/ThemeChange.wav"));
         this->back_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Themes/Back.wav"));
     }
 
-    void ThemesMenuLayout::DisposeAudio() {
+    void ThemesMenuLayout::DisposeSfx() {
         pu::audio::DestroySfx(this->theme_change_sfx);
         pu::audio::DestroySfx(this->back_sfx);
     }
@@ -31,14 +33,14 @@ namespace ul::menu::ui {
         if(keys_down & HidNpadButton_B) {
             pu::audio::PlaySfx(this->back_sfx);
 
-            g_MenuApplication->LoadMenuByType(MenuType::Main);
+            g_MenuApplication->LoadMenu(MenuType::Main);
         }
     }
 
     bool ThemesMenuLayout::OnHomeButtonPress() {
         pu::audio::PlaySfx(this->back_sfx);
 
-        g_MenuApplication->LoadMenuByType(MenuType::Main);
+        g_MenuApplication->LoadMenu(MenuType::Main);
         return true;
     }
 

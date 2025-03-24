@@ -5,6 +5,7 @@
 #include <ul/os/os_System.hpp>
 #include <pu/Plutonium>
 #include <ul/menu/smi/smi_Commands.hpp>
+#include <ul/menu/ui/ui_MultiTextBlock.hpp>
 
 namespace ul::menu::ui {
 
@@ -18,7 +19,7 @@ namespace ul::menu::ui {
     }
 
     void InitializeResources();
-    void FinalizeResources();
+    void DisposeAllBgm();
 
     pu::sdl2::TextureHandle::Ref GetBackgroundTexture();
     pu::sdl2::TextureHandle::Ref GetLogoTexture();
@@ -261,6 +262,49 @@ namespace ul::menu::ui {
                     pu::ui::DefaultFontSize def_size;
                     if(ParseDefaultFontSize(size_str, def_size)) {
                         elem->SetFont(pu::ui::GetDefaultFont(def_size));
+                    }
+
+                    if(elem_json.count("clamp_width")) {
+                        const s32 clamp_width = elem_json["clamp_width"];
+                        elem->SetClampWidth(clamp_width);
+                    }
+                    if(elem_json.count("clamp_speed")) {
+                        const s32 clamp_speed = elem_json["clamp_speed"];
+                        elem->SetClampSpeed(clamp_speed);
+                    }
+                    if(elem_json.count("clamp_delay")) {
+                        const s32 clamp_delay = elem_json["clamp_delay"];
+                        elem->SetClampDelay(clamp_delay);
+                    }
+                }
+
+                if constexpr(std::is_same_v<Elem, MultiTextBlock>) {
+                    auto &texts = elem->GetAll();
+                    const auto size_str = elem_json.value("font_size", "");
+                    pu::ui::DefaultFontSize def_size;
+                    if(ParseDefaultFontSize(size_str, def_size)) {
+                        for(auto &tb: texts) {
+                            tb->SetFont(pu::ui::GetDefaultFont(def_size));
+                        }
+                    }
+
+                    if(elem_json.count("clamp_width")) {
+                        const s32 clamp_width = elem_json["clamp_width"];
+                        for(auto &tb: texts) {
+                            tb->SetClampWidth(clamp_width);
+                        }
+                    }
+                    if(elem_json.count("clamp_speed")) {
+                        const s32 clamp_speed = elem_json["clamp_speed"];
+                        for(auto &tb: texts) {
+                            tb->SetClampSpeed(clamp_speed);
+                        }
+                    }
+                    if(elem_json.count("clamp_delay")) {
+                        const s32 clamp_delay = elem_json["clamp_delay"];
+                        for(auto &tb: texts) {
+                            tb->SetClampDelay(clamp_delay);
+                        }
                     }
                 }
 

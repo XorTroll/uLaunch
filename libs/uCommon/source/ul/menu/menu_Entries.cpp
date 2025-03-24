@@ -17,7 +17,7 @@ namespace ul::menu {
         }
 
         std::vector<NsApplicationRecord> g_ApplicationRecords = {};
-        std::vector<NsApplicationView> g_ApplicationViews = {};
+        std::vector<os::ApplicationView> g_ApplicationViews = {};
 
         void LoadControlDataStrings(EntryControlData &out_control, NacpStruct *nacp) {
             NacpLanguageEntry *lang_entry = nullptr;
@@ -247,8 +247,8 @@ namespace ul::menu {
                                     UL_LOG_WARN("Found old menu application that could not be matched to an existing application record...");
                                 }
 
-                                const auto find_view = std::find_if(g_ApplicationViews.begin(), g_ApplicationViews.end(), [&](const NsApplicationView &view) -> bool {
-                                    return view.application_id == application_id;
+                                const auto find_view = std::find_if(g_ApplicationViews.begin(), g_ApplicationViews.end(), [&](const os::ApplicationView &view) -> bool {
+                                    return view.app_id == application_id;
                                 });
                                 if(find_view != g_ApplicationViews.end()) {
                                     entry.app_info.view = *find_view;
@@ -342,8 +342,8 @@ namespace ul::menu {
                 UL_LOG_WARN("Unable to reload application record: not found?");
             }
 
-            const auto find_view = std::find_if(g_ApplicationViews.begin(), g_ApplicationViews.end(), [&](const NsApplicationView &view) -> bool {
-                return view.application_id == app_id;
+            const auto find_view = std::find_if(g_ApplicationViews.begin(), g_ApplicationViews.end(), [&](const os::ApplicationView &view) -> bool {
+                return view.app_id == app_id;
             });
             if(find_view != g_ApplicationViews.end()) {
                 this->app_info.view = *find_view;
@@ -534,8 +534,8 @@ namespace ul::menu {
                                 UL_LOG_WARN("Potentially invalid application entry: unable to match to application record");
                             }
 
-                            const auto find_view = std::find_if(g_ApplicationViews.begin(), g_ApplicationViews.end(), [&](const NsApplicationView &view) -> bool {
-                                return view.application_id == application_id;
+                            const auto find_view = std::find_if(g_ApplicationViews.begin(), g_ApplicationViews.end(), [&](const os::ApplicationView &view) -> bool {
+                                return view.app_id == application_id;
                             });
                             if(find_view != g_ApplicationViews.end()) {
                                 entry.app_info.view = *find_view;

@@ -37,7 +37,41 @@ namespace ul::os {
     u32 GetBatteryLevel();
     bool IsConsoleCharging();
 
-    void GetCurrentTime(u32 &out_h, u32 &out_min, u32 &out_sec);
-    std::string GetCurrentDate(const std::vector<std::string> &weekday_list);
+    struct Time {
+        u32 h;
+        u32 min;
+
+        constexpr Time() : h(UINT32_MAX), min(UINT32_MAX) {}
+        constexpr Time(const u32 h, const u32 min) : h(h), min(min) {}
+
+        inline bool operator==(const Time &other) const {
+            return (this->h == other.h) && (this->min == other.min);
+        }
+
+        inline bool operator!=(const Time &other) const {
+            return !(*this == other);
+        }
+    };
+
+    Time GetCurrentTime();
+
+    struct Date {
+        u32 day;
+        u32 weekday_idx;
+        u32 month;
+
+        constexpr Date() : day(UINT32_MAX), weekday_idx(UINT32_MAX), month(UINT32_MAX) {}
+        constexpr Date(const u32 day, const u32 weekday_idx, const u32 month) : day(day), weekday_idx(weekday_idx), month(month) {}
+
+        inline bool operator==(const Date &other) const {
+            return (this->day == other.day) && (this->weekday_idx == other.weekday_idx) && (this->month == other.month);
+        }
+
+        inline bool operator!=(const Date &other) const {
+            return !(*this == other);
+        }
+    };
+
+    Date GetCurrentDate();
 
 }

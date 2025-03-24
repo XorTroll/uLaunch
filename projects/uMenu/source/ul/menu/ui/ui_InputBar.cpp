@@ -31,12 +31,12 @@ namespace ul::menu::ui {
     }
 
     void InputBar::OnRender(pu::ui::render::Renderer::Ref &drawer, const s32 x, const s32 y) {
-        drawer->RenderTexture(this->bar_bg, x, y, pu::ui::render::TextureRenderOptions::WithCustomAlpha(Alpha));
+        drawer->RenderTexture(this->bar_bg, x, y, pu::ui::render::TextureRenderOptions(Alpha, {}, {}, {}, {}, {}));
 
         auto cur_x = x + SideMargin;
         for(const auto &[_, text] : this->inputs) {
             const auto text_y = y + (this->GetHeight() - pu::ui::render::GetTextureHeight(text)) / 2;
-            drawer->RenderTexture(text, cur_x, text_y, pu::ui::render::TextureRenderOptions::WithCustomAlpha(Alpha));
+            drawer->RenderTexture(text, cur_x, text_y, pu::ui::render::TextureRenderOptions(Alpha, {}, {}, {}, {}, {}));
             cur_x += pu::ui::render::GetTextureWidth(text) + InputMargin;
         }
     }

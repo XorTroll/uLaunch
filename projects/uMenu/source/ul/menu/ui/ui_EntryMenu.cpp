@@ -25,25 +25,25 @@ namespace ul::menu::ui {
             return entry.Is<EntryType::Application>() && (entry.app_info.record.application_id == g_GlobalSettings.cache_hb_takeover_app_id);
         }
 
-        inline bool IsEntryGamecardInserted(const Entry &entry) {
-            return entry.Is<EntryType::Application>() && entry.app_info.HasViewFlag<os::ApplicationViewFlag::GameCardApplication>() && entry.app_info.HasViewFlag<os::ApplicationViewFlag::GameCardApplicationAccessible>();
+        inline bool IsEntryGameCardApplicationInserted(const Entry &entry) {
+            return entry.Is<EntryType::Application>() && entry.app_info.IsGameCardInserted();
         }
 
-        inline bool IsEntryGamecardNotInserted(const Entry &entry) {
-            return entry.Is<EntryType::Application>() && entry.app_info.HasViewFlag<os::ApplicationViewFlag::GameCardApplication>() && !entry.app_info.HasViewFlag<os::ApplicationViewFlag::GameCardApplicationAccessible>();
+        inline bool IsEntryGameCardApplicationNotInserted(const Entry &entry) {
+            return entry.Is<EntryType::Application>() && entry.app_info.IsGameCardNotInserted();
         }
 
-        inline bool IsEntryCorrupted(const Entry &entry) {
-            return entry.Is<EntryType::Application>() && entry.app_info.HasViewFlag<os::ApplicationViewFlag::NeedsVerify>();
+        inline bool EntryIsApplicationNeedsVerify(const Entry &entry) {
+            return entry.Is<EntryType::Application>() && entry.app_info.NeedsVerify();
         }
 
-        inline bool EntryNeedsUpdate(const Entry &entry) {
+        inline bool IsEntryApplicationNotUpdated(const Entry &entry) {
             // TODO: this will spit some false positives :P
-            return entry.Is<EntryType::Application>() && entry.app_info.NeedsUpdate();
+            return entry.Is<EntryType::Application>() && entry.app_info.IsNotUpdated();
         }
         
-        inline bool IsEntryNotLaunchable(const Entry &entry) {
-            return entry.Is<EntryType::Application>() && !entry.app_info.HasViewFlag<os::ApplicationViewFlag::Launchable>();
+        inline bool IsEntryApplicationNotLaunchable(const Entry &entry) {
+            return entry.Is<EntryType::Application>() && !entry.app_info.CanBeLaunched();
         }
 
     }
@@ -336,7 +336,7 @@ namespace ul::menu::ui {
             const auto entry_x = x + HorizontalSideMargin + idx_x * (this->entry_size + this->entry_h_margin);
             const auto entry_y = y + this->v_side_margin + idx_y * (this->entry_size + EntryVerticalMargin);
 
-            drawer->RenderTexture(this->empty_entry_icon->Get(), (s32)entry_x - (s32)this->entries_base_swipe_neg_offset, entry_y, pu::ui::render::TextureRenderOptions::WithCustomDimensions(this->entry_size, this->entry_size));
+            drawer->RenderTexture(this->empty_entry_icon->Get(), (s32)entry_x - (s32)this->entries_base_swipe_neg_offset, entry_y, pu::ui::render::TextureRenderOptions({}, this->entry_size, this->entry_size, {}, {}, {}));
 
             if(!is_empty) {
                 const auto &entry = this->cur_entries.at(entry_i);
@@ -347,11 +347,11 @@ namespace ul::menu::ui {
                 #define _DRAW_OVER_ICON(name) { \
                     const auto over_icon_x = (s32)(entry_x - ((this->name##_size - this->entry_size) / 2)) - (s32)this->entries_base_swipe_neg_offset; \
                     const auto over_icon_y = entry_y - ((this->name##_size - this->entry_size) / 2); \
-                    drawer->RenderTexture(this->name##_over_icon, over_icon_x, over_icon_y, pu::ui::render::TextureRenderOptions::WithCustomDimensions(this->name##_size, this->name##_size)); \
+                    drawer->RenderTexture(this->name##_over_icon, over_icon_x, over_icon_y, pu::ui::render::TextureRenderOptions({}, this->name##_size, this->name##_size, {}, {}, {})); \
                 }
 
                 if(entry_icon != nullptr) {
-                    drawer->RenderTexture(entry_icon->Get(), (s32)entry_x - (s32)this->entries_base_swipe_neg_offset, entry_y, pu::ui::render::TextureRenderOptions::WithCustomAlphaAndDimensions(entry_alpha, this->entry_size, this->entry_size));
+                    drawer->RenderTexture(entry_icon->Get(), (s32)entry_x - (s32)this->entries_base_swipe_neg_offset, entry_y, pu::ui::render::TextureRenderOptions(entry_alpha, this->entry_size, this->entry_size, {}, {}, {}));
 
                     const auto progress = this->entry_progresses.at(entry_i);
                     if(!std::isnan(progress)) {
@@ -371,17 +371,17 @@ namespace ul::menu::ui {
                         _DRAW_OVER_ICON(hb_takeover_app);
                     }
 
-                    if(IsEntryGamecardInserted(entry)) {
+                    if(IsEntryGameCardApplicationInserted(entry)) {
                         _DRAW_OVER_ICON(gamecard);
                     }
 
-                    if(IsEntryCorrupted(entry)) {
+                    if(EntryIsApplicationNeedsVerify(entry)) {
                         _DRAW_OVER_ICON(corrupted);
                     }
-                    else if(IsEntryNotLaunchable(entry)) {
+                    else if(IsEntryApplicationNotLaunchable(entry)) {
                         _DRAW_OVER_ICON(not_launchable);
                     }
-                    else if(EntryNeedsUpdate(entry)) {
+                    else if(IsEntryApplicationNotUpdated(entry)) {
                         _DRAW_OVER_ICON(needs_update);
                     }
 
@@ -419,12 +419,12 @@ namespace ul::menu::ui {
         // Cursor is an special over icon
         const auto cursor_x = x + HorizontalSideMargin + cur_actual_entry_idx_x * (this->entry_size + this->entry_h_margin) - ((this->cursor_size - this->entry_size) / 2) + (this->IsCursorInTransition() ? this->cursor_transition_x : 0);
         const auto cursor_y = y + this->v_side_margin + cur_actual_entry_idx_y * (this->entry_size + EntryVerticalMargin) - ((this->cursor_size - this->entry_size) / 2) + (this->IsCursorInTransition() ? this->cursor_transition_y : 0);
-        drawer->RenderTexture(this->cursor_over_icon, cursor_x, cursor_y, pu::ui::render::TextureRenderOptions::WithCustomDimensions(this->cursor_size, this->cursor_size));
+        drawer->RenderTexture(this->cursor_over_icon, cursor_x, cursor_y, pu::ui::render::TextureRenderOptions({}, this->cursor_size, this->cursor_size, {}, {}, {}));
 
         if((this->selected_entry_idx >= 0) && (this->selected_entry_icon != nullptr)) {
             const auto entry_size_factor = (double)this->entry_size / (double)DefaultEntrySize;
             const auto over_icon_offset = (u32)(entry_size_factor * (double)DefaultMoveOverIconOffset);
-            drawer->RenderTexture(this->selected_entry_icon->Get(), cursor_x - over_icon_offset, cursor_y - over_icon_offset, pu::ui::render::TextureRenderOptions::WithCustomAlphaAndDimensions(MoveOverIconAlpha, this->entry_size, this->entry_size));
+            drawer->RenderTexture(this->selected_entry_icon->Get(), cursor_x - over_icon_offset, cursor_y - over_icon_offset, pu::ui::render::TextureRenderOptions(MoveOverIconAlpha, this->entry_size, this->entry_size, {}, {}, {}));
         }
 
         if(this->IsCursorInTransition()) {

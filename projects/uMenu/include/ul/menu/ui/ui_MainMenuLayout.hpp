@@ -37,7 +37,7 @@ namespace ul::menu::ui {
             pu::ui::elm::Image::Ref top_menu_hb_bg;
             pu::ui::elm::Image::Ref connection_top_icon;
             ClickableImage::Ref logo_top_icon;
-            pu::ui::elm::TextBlock::Ref time_text;
+            MultiTextBlock::Ref time_mtext;
             pu::ui::elm::TextBlock::Ref date_text;
             pu::ui::elm::TextBlock::Ref battery_text;
             pu::ui::elm::Image::Ref battery_top_icon;
@@ -138,7 +138,8 @@ namespace ul::menu::ui {
 
             void OnMenuInput(const u64 keys_down, const u64 keys_up, const u64 keys_held, const pu::ui::TouchPoint touch_pos) override;
             bool OnHomeButtonPress() override;
-            void DisposeAudio() override;
+            void LoadSfx() override;
+            void DisposeSfx() override;
 
             void MoveTo(const std::string &new_path, const bool fade, std::function<void()> action = nullptr);
 
@@ -193,6 +194,8 @@ namespace ul::menu::ui {
                     }
                 }
             }
+
+            void Initialize();
 
             void NotifyLoad();
             void HandleCloseSuspended();

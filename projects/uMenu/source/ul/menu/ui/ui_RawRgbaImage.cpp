@@ -17,7 +17,7 @@ namespace ul::menu::ui {
 
     void RawRgbaImage::OnRender(pu::ui::render::Renderer::Ref &drawer, const s32 x, const s32 y) {
         if(this->img_tex != nullptr) {
-            drawer->RenderTexture(this->img_tex, x, y, pu::ui::render::TextureRenderOptions::WithCustomAlphaAndDimensions(this->alpha, this->w, this->h));
+            drawer->RenderTexture(this->img_tex, x, y, pu::ui::render::TextureRenderOptions(this->alpha, this->w, this->h, {}, {}, {}));
         }
     }
 

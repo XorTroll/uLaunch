@@ -229,7 +229,7 @@ List of not implemented official HOME menu features:
 
 - Will using uLaunch get me banned online?
 
-  - There have been some cases where using uLaunch may have caused bans. Keep in mind that replacing the official HOME menu's functionality is never a completely safe idea, so always use it at your own risk. Since uLaunch doesn't perform any telemetry or communications with Nintendo servers, they might be able to notice you are running something different from the original HOME menu.
+  - There have been some cases where using uLaunch has caused bans. Keep in mind that replacing the official HOME menu's functionality is never a completely safe idea, so always use it at your own risk. Since uLaunch doesn't perform any telemetry or communications with Nintendo servers, they might be able to notice you are running something different from the original HOME menu.
 
 - Why does uLaunch (sometimes) feel slower than the official HOME menu?
 
@@ -353,6 +353,8 @@ This project is, like [Goldleaf](https://github.com/XorTroll/Goldleaf), based on
 
 You will need *devkitPro*, *devkitA64*, *libnx* and all SDL2 libraries for Switch development (make sure their packages are installed): `switch-sdl2 switch-freetype switch-glad switch-libdrm_nouveau switch-sdl2_gfx switch-sdl2_image switch-sdl2_ttf switch-sdl2_mixer`
 
+> IMPORTANT: depending on the SDL2 package version (revision) used, audio issues will cause crashes when suspending certain games. The version (revision) [`2.28.5-3`](https://github.com/devkitPro/pacman-packages/tree/0ae8790f6e092cf8df937d143e70a785f7e27997/switch/SDL2) is an old version which internally uses `audout` services instead of `audren` (used by more recent SDL2 cersions), and it should be used to build uLaunch. Using modern versions with `audren` will [make the audio sysmodule crash](https://github.com/HookedBehemoth/sys-tune/issues/10) due to an issue with the service, when suspending specific games.
+
 Clone **recursively** this repository and just enter `make` in the command line. It should build everything and generate a `SdOut` folder whose contents sould directly be copied to the root of a console SD card.
 
 In order to only build a certain subproject, you can run `make` plus the subproject's name: `make usystem`, `make uloader`, `make umenu`, `make umanager`, `make uscreen`, `make udesigner`
@@ -369,6 +371,6 @@ In order to only build a certain subproject, you can run `make` plus the subproj
 
 - Several scene developers for their help with small issues or features.
 
-- uMenu/uManager translations: [DDinghoya](https://github.com/DDinghoya) for Korean, [NedcloarBR](https://github.com/NedcloarBR) for Brazilian Portuguese, [Gabriele73](https://github.com/Gabriele73) for Italian, *mokkori* for French, **KineticPie** for German
+- uMenu/uManager translations: [DDinghoya](https://github.com/DDinghoya) for Korean, [NedcloarBR](https://github.com/NedcloarBR) for Brazilian Portuguese, [Gabriele73](https://github.com/Gabriele73) for Italian, **mokkori** for French, **KineticPie** for German
 
 - Everyone from my Discord and other places whose suggestions made this project a little bit better! Specially all the testers for being essential in reporting bugs and helping a lot with the project's development <3

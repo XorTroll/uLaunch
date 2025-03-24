@@ -42,11 +42,13 @@ namespace ul {
         "sdmc:/ulaunch/cache/active/ui/Startup"
         "sdmc:/ulaunch/cache/active/ui/Themes",
         "sdmc:/ulaunch/cache/active/ui/Settings",
+        "sdmc:/ulaunch/cache/active/ui/Lockscreen",
         "sdmc:/ulaunch/cache/active/sound",
         "sdmc:/ulaunch/cache/active/sound/Main",
         "sdmc:/ulaunch/cache/active/sound/Startup"
         "sdmc:/ulaunch/cache/active/sound/Themes",
         "sdmc:/ulaunch/cache/active/sound/Settings",
+        "sdmc:/ulaunch/cache/active/sound/Lockscreen",
     };
 
     constexpr const char ManagerLanguagesPath[] = "sdmc:/ulaunch/lang/uManager";

@@ -16,50 +16,59 @@
             "y": 31
         },
         "logo_top_icon": {
-            "x": 1717,
-            "y": 55
+            "x": 1752,
+            "y": 54
         },
         "connection_top_icon": {
-            "x": 120,
-            "y": 52
+            "x": 1643,
+            "y": 48
         },
         "time_text": {
-            "x": 262,
-            "y": 105,
+            "x": 1333,
+            "y": 62,
             "font_size": "medium"
         },
         "date_text": {
-            "x": 262,
-            "y": 68,
-            "font_size": "small"
+            "x": 1443,
+            "y": 62,
+            "font_size": "medium"
         },
         "battery_text": {
-            "x": 1612,
-            "y": 60,
-            "font_size": "small"
+            "x": 1533,
+            "y": 106,
+            "font_size": "medium"
         },
         "battery_top_icon": {
-            "x": 1590,
-            "y": 65
+            "x": 1412,
+            "y": 70
         },
         "input_bar": {
             "y": 166,
             "h_align": "center"
         },
         "cur_path_text": {
-            "y": 40,
+            "y": 36,
             "h_align": "center",
-            "font_size": "small"
+            "font_size": "small",
+            "clamp_width": 700,
+            "clamp_speed": 3,
+            "clamp_delay": 50
         },
         "cur_entry_main_text": {
-            "y": 69,
-            "h_align": "center",
-            "font_size": "large"
+            "x": 110,
+            "y": 68,
+            "font_size": "large",
+            "clamp_width": 1150,
+            "clamp_speed": 4,
+            "clamp_delay": 50
         },
         "cur_entry_sub_text": {
-            "y": 122,
-            "h_align": "center",
-            "font_size": "medium"
+            "x": 110,
+            "y": 120,
+            "font_size": "medium",
+            "clamp_width": 1150,
+            "clamp_speed": 4,
+            "clamp_delay": 50
         },
         "entry_menu_bg": {
             "x": 0,
