@@ -82,7 +82,7 @@ namespace ul::design {
     constexpr u32 EntryMenuHorizontalSideMargin = 60;
     constexpr u32 EntryMenuVerticalSideMargin = 35;
     constexpr u32 EntryMenuEntryMargin = 35;
-    constexpr u32 EntryMenuEntryIconSize = 256;
+    constexpr u32 EntryMenuEntryIconSize = 384;
 
     constexpr auto ManifestPath = "theme/Manifest.json";
     constexpr auto UiSettingsPath = "ui/UI.json";

@@ -44,6 +44,8 @@ namespace ul::menu::ui {
             u64 verify_finished_app_id;
             Result verify_rc;
             Result verify_detail_rc;
+            Result active_theme_load_rc;
+            bool active_theme_outdated;
             MenuType loaded_menu;
             pu::ui::Color text_clr;
             pu::ui::Color menu_focus_clr;
@@ -171,6 +173,32 @@ namespace ul::menu::ui {
                 }
             }
 
+            inline void NotifyActiveThemeLoadFailure(const Result rc) {
+                this->active_theme_load_rc = rc;
+            }
+
+            inline bool HasActiveThemeLoadFailure() {
+                return R_FAILED(this->active_theme_load_rc);
+            }
+
+            inline Result GetConsumeActiveThemeLoadFailure() {
+                const auto rc = this->active_theme_load_rc;
+                this->active_theme_load_rc = ResultSuccess;
+                return rc;
+            }
+
+            inline void NotifyActiveThemeOutdated() {
+                this->active_theme_outdated = true;
+            }
+
+            inline bool HasActiveThemeOutdated() {
+                return this->active_theme_outdated;
+            }
+
+            inline void ConsumeActiveThemeOutdated() {
+                this->active_theme_outdated = false;
+            }
+
             void ShowNotification(const std::string &text, const u64 timeout = 1500);
 
             inline pu::ui::Color GetTextColor() {
@@ -190,6 +218,10 @@ namespace ul::menu::ui {
 
             void LoadBgmSfxForCreatedMenus();
             void DisposeAllSfx();
+
+            inline MainMenuLayout::Ref &GetMainMenuLayout() {
+                return this->main_menu_lyt;
+            }
 
             int DisplayDialog(const std::string &title, const std::string &content, const std::vector<std::string> &opts, const bool use_last_opt_as_cancel, pu::sdl2::TextureHandle::Ref icon = {});
     };

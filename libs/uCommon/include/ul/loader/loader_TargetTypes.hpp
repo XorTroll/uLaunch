@@ -28,7 +28,6 @@ namespace ul::loader {
                 .target_once = target_once
             };
 
-
             util::CopyToStringBuffer(target_ipt.nro_path, nro_path);
             util::CopyToStringBuffer(target_ipt.nro_argv, nro_argv);
 

@@ -16,7 +16,6 @@ namespace ul {
     constexpr const char ThemesPath[] = "sdmc:/ulaunch/themes";
     constexpr const char DefaultThemePath[] = "romfs:/default";
 
-    constexpr const char MenuPath[] = "sdmc:/ulaunch/menu";
     constexpr const char MenuLanguagesPath[] = "sdmc:/ulaunch/lang/uMenu";
     constexpr const char MenuRomfsFile[] = "sdmc:/ulaunch/bin/uMenu/romfs.bin";
 
@@ -28,35 +27,8 @@ namespace ul {
     constexpr const char AccountCachePath[] = "sdmc:/ulaunch/cache/acc";
     constexpr const char ThemePreviewCachePath[] = "sdmc:/ulaunch/cache/preview";
     constexpr const char ActiveThemeCachePath[] = "sdmc:/ulaunch/cache/active";
-    constexpr const char *ActiveThemeCacheSubfolderPaths[] = {
-        "sdmc:/ulaunch/cache/active/theme",
-        "sdmc:/ulaunch/cache/active/ui",
-        "sdmc:/ulaunch/cache/active/ui/Main",
-        "sdmc:/ulaunch/cache/active/ui/Main/EntryIcon",
-        "sdmc:/ulaunch/cache/active/ui/Main/OverIcon",
-        "sdmc:/ulaunch/cache/active/ui/Main/QuickIcon",
-        "sdmc:/ulaunch/cache/active/ui/Main/TopIcon",
-        "sdmc:/ulaunch/cache/active/ui/Main/TopIcon/Battery",
-        "sdmc:/ulaunch/cache/active/ui/Main/TopIcon/Connection",
-        "sdmc:/ulaunch/cache/active/ui/Main/TopMenuBackground",
-        "sdmc:/ulaunch/cache/active/ui/Startup"
-        "sdmc:/ulaunch/cache/active/ui/Themes",
-        "sdmc:/ulaunch/cache/active/ui/Settings",
-        "sdmc:/ulaunch/cache/active/ui/Lockscreen",
-        "sdmc:/ulaunch/cache/active/sound",
-        "sdmc:/ulaunch/cache/active/sound/Main",
-        "sdmc:/ulaunch/cache/active/sound/Startup"
-        "sdmc:/ulaunch/cache/active/sound/Themes",
-        "sdmc:/ulaunch/cache/active/sound/Settings",
-        "sdmc:/ulaunch/cache/active/sound/Lockscreen",
-    };
 
     constexpr const char ManagerLanguagesPath[] = "sdmc:/ulaunch/lang/uManager";
-
-    constexpr const char OldMenuPath[] = "sdmc:/ulaunch/entries";
-    constexpr const char OldApplicationCachePath[] = "sdmc:/ulaunch/titles";
-    constexpr const char OldHomebrewCachePath[] = "sdmc:/ulaunch/nro";
-    constexpr const char OldAccountCachePath[] = "sdmc:/ulaunch/user";
 
     constexpr const char HbmenuPath[] = "sdmc:/hbmenu.nro";
     constexpr const char ManagerPath[] = "sdmc:/switch/uManager.nro";
@@ -68,6 +40,17 @@ namespace ul {
         "jpeg",
         "webp"
     };
+
+    //////////////////////
+
+    constexpr const char PreV100MenuPath[] = "sdmc:/ulaunch/entries";
+    constexpr const char PreV100ApplicationCachePath[] = "sdmc:/ulaunch/titles";
+    constexpr const char PreV100HomebrewCachePath[] = "sdmc:/ulaunch/nro";
+    constexpr const char PreV100AccountCachePath[] = "sdmc:/ulaunch/user";
+
+    constexpr const char V100_V110MenuPath[] = "sdmc:/ulaunch/menu";
+
+    //////////////////////
 
     class Mutex {
         private:

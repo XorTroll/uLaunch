@@ -3,14 +3,18 @@
 #include <ul/util/util_String.hpp>
 #include <ul/util/util_Json.hpp>
 #include <ul/os/os_Applications.hpp>
+#include <ul/os/os_System.hpp>
 #include <ul/ul_Result.hpp>
 #include <ul/menu/menu_Cache.hpp>
+#include <ul/acc/acc_Accounts.hpp>
 
 namespace ul::menu {
 
     namespace {
 
         bool g_LoadApplicationEntryVersions = true;
+
+        std::string g_ActiveMenuPath;
 
         inline u64 GetUpdateApplicationId(const u64 app_id) {
             return (app_id & ~0x800) | 0x800;
@@ -114,7 +118,7 @@ namespace ul::menu {
         }
 
         std::string FindRootFolderPath(const std::string &folder_name) {
-            UL_FS_FOR(MenuPath, entry_name, entry_path, is_dir, is_file, {
+            UL_FS_FOR(V100_V110MenuPath, entry_name, entry_path, is_dir, is_file, {
                 if(is_file && util::StringEndsWith(entry_name, ".m.json")) {
                     util::JSON folder_json;
                     if(R_SUCCEEDED(util::LoadJSONFromFile(folder_json, entry_path))) {
@@ -123,7 +127,7 @@ namespace ul::menu {
                             const auto name = folder_json.value("name", "");
                             const auto fs_name = folder_json.value("fs_name", "");
                             if(folder_name == name) {
-                                return fs::JoinPath(MenuPath, fs_name);
+                                return fs::JoinPath(V100_V110MenuPath, fs_name);
                             }
                         }
                     }
@@ -131,9 +135,9 @@ namespace ul::menu {
             });
 
             // Not existing, create it
-            const auto new_folder_idx = FindNextEntryIndex(MenuPath);
-            const auto new_folder_entry = CreateFolderEntry(MenuPath, folder_name, new_folder_idx);
-            return fs::JoinPath(MenuPath, new_folder_entry.folder_info.fs_name);
+            const auto new_folder_idx = FindNextEntryIndex(V100_V110MenuPath);
+            const auto new_folder_entry = CreateFolderEntry(V100_V110MenuPath, folder_name, new_folder_idx);
+            return fs::JoinPath(V100_V110MenuPath, new_folder_entry.folder_info.fs_name);
         }
 
         void InitializeRemainingEntries(const std::vector<NsApplicationRecord> &remaining_apps, u32 &entry_idx) {
@@ -143,7 +147,7 @@ namespace ul::menu {
             for(const auto &nro_path : DefaultHomebrewRecordPaths) {
                 const Entry hb_entry = {
                     .type = EntryType::Homebrew,
-                    .entry_path = MakeEntryPath(MenuPath, entry_idx),
+                    .entry_path = MakeEntryPath(g_ActiveMenuPath, entry_idx),
 
                     .hb_info = {
                         .nro_target = loader::TargetInput::Create(nro_path, nro_path, true, "")
@@ -157,7 +161,7 @@ namespace ul::menu {
             #define _UL_MENU_ADD_SPECIAL_ENTRY(kind) { \
                 const Entry special_entry = { \
                     .type = kind, \
-                    .entry_path = MakeEntryPath(MenuPath, entry_idx) \
+                    .entry_path = MakeEntryPath(g_ActiveMenuPath, entry_idx) \
                 }; \
                 special_entry.Save(); \
                 entry_idx++; \
@@ -175,7 +179,7 @@ namespace ul::menu {
             for(const auto &app_record : remaining_apps) {
                 Entry app_entry = {
                     .type = EntryType::Application,
-                    .entry_path = MakeEntryPath(MenuPath, entry_idx),
+                    .entry_path = MakeEntryPath(g_ActiveMenuPath, entry_idx),
 
                     .app_info = {
                         .app_id = app_record.application_id,
@@ -187,16 +191,16 @@ namespace ul::menu {
             }
         }
 
-        void ConvertOldMenu(u32 &entry_idx) {
-            if(fs::ExistsDirectory(OldMenuPath)) {
-                if(!fs::ExistsDirectory(MenuPath)) {
-                    fs::CreateDirectory(MenuPath);
+        void ConvertPreV100Menu(u32 &entry_idx) {
+            if(fs::ExistsDirectory(PreV100MenuPath)) {
+                if(!fs::ExistsDirectory(V100_V110MenuPath)) {
+                    fs::CreateDirectory(V100_V110MenuPath);
                 }
 
                 EnsureApplicationRecordsAndViews();
                 auto apps_copy = g_ApplicationRecords;
 
-                UL_FS_FOR(OldMenuPath, old_entry_name, old_entry_path, is_dir, is_file, {
+                UL_FS_FOR(PreV100MenuPath, old_entry_name, old_entry_path, is_dir, is_file, {
                     util::JSON old_entry_json;
                     if(R_SUCCEEDED(util::LoadJSONFromFile(old_entry_json, old_entry_path))) {
                         const auto type = static_cast<EntryType>(old_entry_json.value("type", static_cast<u32>(EntryType::Invalid)));
@@ -206,7 +210,7 @@ namespace ul::menu {
                         const auto custom_version = old_entry_json.value("version", "");
                         const auto custom_icon_path = old_entry_json.value("icon_path", "");
 
-                        std::string base_path = MenuPath;
+                        std::string base_path = V100_V110MenuPath;
                         if(!folder_name.empty()) {
                             base_path = FindRootFolderPath(folder_name);
                         }
@@ -244,7 +248,7 @@ namespace ul::menu {
                                     entry.Save();
                                 }
                                 else {
-                                    UL_LOG_WARN("Found old menu application that could not be matched to an existing application record...");
+                                    UL_LOG_WARN("Found old pre-v1.0.0 menu application that could not be matched to an existing application record...");
                                 }
 
                                 const auto find_view = std::find_if(g_ApplicationViews.begin(), g_ApplicationViews.end(), [&](const os::ApplicationView &view) -> bool {
@@ -255,19 +259,19 @@ namespace ul::menu {
                                     entry.Save();
                                 }
                                 else {
-                                    UL_LOG_WARN("Found old menu application that could not be matched to an existing application view...");
+                                    UL_LOG_WARN("Found old pre-v1.0.0 menu application that could not be matched to an existing application view...");
                                 }
 
                                 if(g_LoadApplicationEntryVersions) {
                                     auto rc = avmGetHighestAvailableVersion(application_id, GetUpdateApplicationId(application_id), &entry.app_info.version);
                                     if(R_FAILED(rc)) {
                                         entry.app_info.version = 0;
-                                        UL_LOG_WARN("Found old menu application whose version could not be retrieved...");
+                                        UL_LOG_WARN("Found old pre-v1.0.0 menu application whose version could not be retrieved...");
                                     }
                                     rc = avmGetLaunchRequiredVersion(application_id, &entry.app_info.launch_required_version);
                                     if(R_FAILED(rc)) {
                                         entry.app_info.launch_required_version = 0;
-                                        UL_LOG_WARN("Found old menu application whose launch required version could not be retrieved...");
+                                        UL_LOG_WARN("Found old pre-v1.0.0 menu application whose launch required version could not be retrieved...");
                                     }
                                 }
                                 else {
@@ -289,7 +293,7 @@ namespace ul::menu {
                                     entry.Save();
                                 }
                                 else {
-                                    UL_LOG_WARN("Found old menu homebrew entry whose NRO is not present...");
+                                    UL_LOG_WARN("Found old pre-v1.0.0 menu homebrew entry whose NRO is not present...");
                                 }
                                 break;
                             }
@@ -301,8 +305,27 @@ namespace ul::menu {
 
                 InitializeRemainingEntries(apps_copy, entry_idx);
 
-                fs::DeleteDirectory(OldMenuPath);
+                fs::DeleteDirectory(PreV100MenuPath);
             }
+        }
+
+        void ConvertV100_V110Menu(const bool is_emummc) {
+            if(!fs::ExistsDirectory(V100_V110MenuPath)) {
+                return;
+            }
+
+            std::vector<AccountUid> uids;
+            UL_RC_ASSERT(acc::ListAccounts(uids));
+
+            for(const auto &uid : uids) {
+                const auto menu_path = MakeMenuPath(is_emummc, uid);
+                fs::DeleteDirectory(menu_path);
+
+                UL_LOG_INFO("Copying old v1.0.0-v1.1.0 menu from '%s' to '%s'", V100_V110MenuPath, menu_path.c_str());
+                fs::CopyDirectory(V100_V110MenuPath, menu_path);
+            }
+
+            fs::DeleteDirectory(V100_V110MenuPath);
         }
 
     }
@@ -461,15 +484,17 @@ namespace ul::menu {
         g_LoadApplicationEntryVersions = load;
     }
 
-    void InitializeEntries() {
+    void InitializeEntries(const bool is_emummc, const AccountUid &uid) {
         u32 entry_idx = 0;
+        g_ActiveMenuPath = MakeMenuPath(is_emummc, uid);
 
         EnsureApplicationRecordsAndViews();
 
-        ConvertOldMenu(entry_idx);
+        ConvertPreV100Menu(entry_idx);
+        ConvertV100_V110Menu(is_emummc);
 
-        if(!fs::ExistsDirectory(MenuPath)) {
-            fs::CreateDirectory(MenuPath);
+        if(!fs::ExistsDirectory(g_ActiveMenuPath)) {
+            fs::CreateDirectory(g_ActiveMenuPath);
 
             InitializeRemainingEntries(g_ApplicationRecords, entry_idx);
         }
@@ -622,12 +647,16 @@ namespace ul::menu {
         return entries;
     }
 
+    const std::string &GetActiveMenuPath() {
+        return g_ActiveMenuPath;
+    }
+
     void EnsureApplicationEntry(const NsApplicationRecord &app_record) {
         // Just fill enough fields needed to save the path
-        const auto entry_idx = FindNextEntryIndex(MenuPath);
+        const auto entry_idx = FindNextEntryIndex(g_ActiveMenuPath);
         Entry app_entry = {
             .type = EntryType::Application,
-            .entry_path = MakeEntryPath(MenuPath, entry_idx),
+            .entry_path = MakeEntryPath(g_ActiveMenuPath, entry_idx),
 
             .app_info = {
                 .app_id = app_record.application_id,

@@ -1,9 +1,11 @@
 
 #pragma once
 #include <vector>
-#include <ul/cfg/cfg_Config.hpp>
+#include <ul/ul_Include.hpp>
 
 namespace ul::os {
+
+    constexpr u64 InvalidApplicationId = 0;
 
     // All view flags I found to be used by qlaunch (names are pure guesses)
 

@@ -1,6 +1,8 @@
 #include <ul/cfg/cfg_Config.hpp>
 #include <ul/util/util_String.hpp>
 #include <ul/os/os_Applications.hpp>
+#include <ul/os/os_System.hpp>
+#include <ul/acc/acc_Accounts.hpp>
 #include <ul/ul_Result.hpp>
 #include <ul/util/util_Scope.hpp>
 #include <ul/util/util_Zip.hpp>
@@ -105,18 +107,35 @@ namespace ul::cfg {
             if(is_file) {
                 const auto rc = TryLoadTheme(name, cur_theme);
                 if(R_SUCCEEDED(rc)) {
-                    if(!IsThemeOutdated(cur_theme)) {
-                        themes.push_back(cur_theme);
-                    }
-                    else {
+                    if(cur_theme.IsOutdated()) {
                         UL_LOG_WARN("Outdated theme file '%s': theme version %d != current version %d", name.c_str(), cur_theme.manifest.format_version, CurrentThemeFormatVersion);
                     }
+
+                    themes.push_back(cur_theme);
                 }
                 else {
                     UL_LOG_WARN("Invalid theme file '%s': %s", name.c_str(), util::FormatResultDisplay(rc).c_str());
                 }
             }
         });
+
+        for(auto &theme : themes) {
+            // Rename .zip to .ultheme for old themes
+            const auto theme_ext = fs::GetExtension(theme.name);
+            if(theme_ext == "zip") {
+                const auto old_theme_path = fs::JoinPath(ThemesPath, theme.name);
+                const auto new_theme_name = fs::GetFileName(theme.name) + "." + ThemeFileExtension;
+                const auto new_theme_path = fs::JoinPath(ThemesPath, new_theme_name);
+                if(!fs::RenameFile(old_theme_path, new_theme_path)) {
+                    UL_LOG_WARN("Unable to rename old theme file '%s' to '%s'...", theme.name.c_str(), new_theme_name.c_str());
+                }
+                else {
+                    UL_LOG_INFO("Renamed old theme file '%s' to '%s'...", theme.name.c_str(), new_theme_name.c_str());
+                    theme.name = new_theme_name;
+                }
+            }
+        }
+
         return themes;
     }
 
@@ -128,7 +147,7 @@ namespace ul::cfg {
             UL_LOG_WARN("Unable to get active theme name from config...");
         }
         if(active_theme_name.empty()) {
-            // Assume there is no custom theme
+            // Nothing we can do here
             return;
         }
 
@@ -287,28 +306,34 @@ namespace ul::cfg {
     }
 
     void SaveConfig(const Config &cfg) {
+        auto f = fopen(ConfigPath, "wb");
+        UL_ASSERT_TRUE(f != nullptr);
+
         const ConfigHeader cfg_header = {
             .magic = ConfigHeader::Magic,
             .entry_count = static_cast<u32>(cfg.entries.size())
         };
-        fs::WriteFile(ConfigPath, &cfg_header, sizeof(cfg_header), true);
+        UL_ASSERT_TRUE(fwrite(&cfg_header, sizeof(cfg_header), 1, f) == 1);
+
         for(const auto &entry : cfg.entries) {
-            fs::WriteFile(ConfigPath, &entry.header, sizeof(entry.header), false);
+            UL_ASSERT_TRUE(fwrite(&entry.header, sizeof(entry.header), 1, f) == 1);
             switch(entry.header.type) {
                 case ConfigEntryType::Bool: {
-                    fs::WriteFile(ConfigPath, &entry.bool_value, sizeof(entry.bool_value), false);
+                    UL_ASSERT_TRUE(fwrite(&entry.bool_value, sizeof(entry.bool_value), 1, f) == 1);
                     break;
                 }
                 case ConfigEntryType::U64: {
-                    fs::WriteFile(ConfigPath, &entry.u64_value, sizeof(entry.u64_value), false);
+                    UL_ASSERT_TRUE(fwrite(&entry.u64_value, sizeof(entry.u64_value), 1, f) == 1);
                     break;
                 }
                 case ConfigEntryType::String: {
-                    fs::WriteFile(ConfigPath, entry.str_value.c_str(), entry.str_value.length(), false);
+                    UL_ASSERT_TRUE(fwrite(entry.str_value.c_str(), entry.str_value.length(), 1, f) == 1);
                     break;
                 }
             }
         }
+
+        fclose(f);
     }
 
 }

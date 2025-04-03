@@ -6,6 +6,7 @@
 #include <pu/Plutonium>
 #include <ul/menu/smi/smi_Commands.hpp>
 #include <ul/menu/ui/ui_MultiTextBlock.hpp>
+#include <ul/menu/bt/bt_Manager.hpp>
 
 namespace ul::menu::ui {
 
@@ -215,11 +216,11 @@ namespace ul::menu::ui {
             this->SaveConfig();
         }
 
-        inline void SetSelectedUser(const AccountUid user_id) {
-            this->system_status.selected_user = user_id;
-            UL_RC_ASSERT(ul::menu::smi::SetSelectedUser(user_id));
-            LoadSelectedUserIconTexture();
+        inline void ResetHomebrewTakeoverApplicationId() {
+            this->SetHomebrewTakeoverApplicationId(os::InvalidApplicationId);
         }
+
+        void SetSelectedUser(const AccountUid user_id);
 
         inline void SetActiveTheme(const ul::cfg::Theme &theme) {
             this->active_theme = theme;
@@ -339,5 +340,7 @@ namespace ul::menu::ui {
     void ShowCabinet();
 
     void ShowPowerDialog();
+
+    size_t GetUsedHeapSize();
 
 }

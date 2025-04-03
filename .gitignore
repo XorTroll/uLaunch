@@ -19,4 +19,6 @@ target/
 projects/uMenu/romfs/default
 projects/uMenu/romfs/Logo.png
 projects/uDesigner/assets/Logo.png
-projects/uDesigner/assets/default-theme.zip
+projects/uDesigner/assets/default-theme.ultheme
+*.ultheme
+*.zip

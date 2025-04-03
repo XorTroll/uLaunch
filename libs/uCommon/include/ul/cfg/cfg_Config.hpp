@@ -5,8 +5,12 @@
 #include <ul/loader/loader_TargetTypes.hpp>
 #include <ul/util/util_String.hpp>
 #include <ul/util/util_Json.hpp>
+#include <ul/os/os_Applications.hpp>
 
 namespace ul::cfg {
+
+    constexpr u32 CurrentThemeFormatVersion = 3;
+    constexpr const char ThemeFileExtension[] = "ultheme";
 
     struct ThemeManifest {
         std::string name;
@@ -28,6 +32,10 @@ namespace ul::cfg {
             // Compare filenames, those must be unique
             return other.name == this->name;
         }
+
+        inline bool IsOutdated() const {
+            return this->manifest.format_version != CurrentThemeFormatVersion;
+        }
     };
 
     enum class ConfigEntryId : u8 {
@@ -37,7 +45,8 @@ namespace ul::cfg {
         UsbScreenCaptureEnabled,
         ActiveThemeName,
         MenuEntryHeightCount,
-        LockscreenEnabled
+        LockscreenEnabled,
+        LaunchHomebrewApplicationByDefault,
     };
 
     enum class ConfigEntryType : u8 {
@@ -55,6 +64,7 @@ namespace ul::cfg {
 
     struct ConfigEntry {
         ConfigEntryHeader header;
+
         bool bool_value;
         u64 u64_value;
         std::string str_value;
@@ -210,6 +220,17 @@ namespace ul::cfg {
                         return false;
                     }
                 }
+                case ConfigEntryId::LaunchHomebrewApplicationByDefault: {
+                    if constexpr(std::is_same_v<T, bool>) {
+                        new_entry.header.type = ConfigEntryType::Bool;
+                        new_entry.header.size = sizeof(t);
+                        new_entry.bool_value = t;
+                        break;
+                    }
+                    else {
+                        return false;
+                    }
+                }
             }
             this->entries.push_back(std::move(new_entry));
             return true;
@@ -248,7 +269,7 @@ namespace ul::cfg {
                 case ConfigEntryId::HomebrewApplicationTakeoverApplicationId: {
                     if constexpr(std::is_same_v<T, u64>) {
                         // No donor title by default
-                        out_t = 0;
+                        out_t = os::InvalidApplicationId;
                         return true;
                     }
                     else {
@@ -277,6 +298,7 @@ namespace ul::cfg {
                 }
                 case ConfigEntryId::MenuEntryHeightCount: {
                     if constexpr(std::is_same_v<T, u64>) {
+                        // Default height count
                         out_t = 3;
                         return true;
                     }
@@ -286,6 +308,17 @@ namespace ul::cfg {
                 }
                 case ConfigEntryId::LockscreenEnabled: {
                     if constexpr(std::is_same_v<T, bool>) {
+                        // Disabled by default
+                        out_t = false;
+                        return true;
+                    }
+                    else {
+                        return false;
+                    }
+                }
+                case ConfigEntryId::LaunchHomebrewApplicationByDefault: {
+                    if constexpr(std::is_same_v<T, bool>) {
+                        // Disabled by default
                         out_t = false;
                         return true;
                     }
@@ -297,12 +330,6 @@ namespace ul::cfg {
             return false;
         }
     };
-
-    constexpr u32 CurrentThemeFormatVersion = 2;
-
-    inline bool IsThemeOutdated(const Theme &theme) {
-        return theme.manifest.format_version < CurrentThemeFormatVersion;
-    }
 
     Result TryLoadTheme(const std::string &theme_name, Theme &out_theme);
     Result TryCacheLoadThemeIcon(const Theme &theme, std::string &out_icon_path);
@@ -319,10 +346,12 @@ namespace ul::cfg {
 
     void LoadLanguageJsons(const std::string &lang_base, util::JSON &lang, util::JSON &def);
 
+    constexpr auto DefaultString = "<unknown>";
+
     inline std::string GetLanguageString(const util::JSON &lang, const util::JSON &def, const std::string &name) {
-        auto str = lang.value(name, "");
+        auto str = lang.value(name, DefaultString);
         if(str.empty()) {
-            str = def.value(name, "");
+            str = def.value(name, DefaultString);
         }
         return str;
     }

@@ -27,7 +27,7 @@ namespace ul::menu::am {
 
 extern "C" {
 
-    // Wrap libappletStart and libappletLaunch to use our custom waiting system (mostly so that they respond to HOME menu presses)
+    // Wrap libappletStart and libappletLaunch to use our custom waiting system (mostly so that they respond to HOME Menu presses)
 
     Result __wrap_libappletStart(AppletHolder *h) {
         UL_RC_TRY(appletHolderStart(h));

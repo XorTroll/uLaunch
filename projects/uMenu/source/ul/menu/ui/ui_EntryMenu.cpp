@@ -33,18 +33,23 @@ namespace ul::menu::ui {
             return entry.Is<EntryType::Application>() && entry.app_info.IsGameCardNotInserted();
         }
 
-        inline bool EntryIsApplicationNeedsVerify(const Entry &entry) {
+        inline bool IsEntryApplicationNeedsVerify(const Entry &entry) {
             return entry.Is<EntryType::Application>() && entry.app_info.NeedsVerify();
         }
 
         inline bool IsEntryApplicationNotUpdated(const Entry &entry) {
-            // TODO: this will spit some false positives :P
             return entry.Is<EntryType::Application>() && entry.app_info.IsNotUpdated();
         }
         
         inline bool IsEntryApplicationNotLaunchable(const Entry &entry) {
             return entry.Is<EntryType::Application>() && !entry.app_info.CanBeLaunched();
         }
+
+        /*
+        inline void SetXOffset(const s32 x_offset) {
+            g_MenuApplication->GetMainMenuLayout()->SetBackgroundImageXOffset(x_offset % 1920);
+        }
+        */
 
     }
 
@@ -159,7 +164,7 @@ namespace ul::menu::ui {
             if(entry.Is<EntryType::Folder>()) {
                 auto &over_text_tex = this->entry_over_texts.at(idx);
                 if(over_text_tex == nullptr) {
-                    const auto side_margin = (u32)(((double)this->entry_size / (double)DefaultEntrySize) * (double)DefaultOverTextSideMargin);
+                    const auto side_margin = (u32)(((double)this->entry_size / (double)MinScalableEntrySize) * (double)DefaultOverTextSideMargin);
                     this->entry_over_texts.at(idx) = pu::ui::render::RenderText(pu::ui::GetDefaultFont(pu::ui::DefaultFontSize::Medium), entry.folder_info.name, g_MenuApplication->GetTextColor(), this->entry_size - 2 * side_margin);
                 }
             }
@@ -256,14 +261,21 @@ namespace ul::menu::ui {
         this->after_transition_entry_idx = -1;
     }
 
-    void EntryMenu::Initialize(const u32 last_idx) {
+    void EntryMenu::Initialize(const u32 last_idx, const std::string &new_path) {
+        UL_LOG_INFO("EntryMenu::Initialize start...");
+        const auto time = std::chrono::system_clock::now();
         u64 entry_height_count;
         UL_ASSERT_TRUE(g_GlobalSettings.config.GetEntry(cfg::ConfigEntryId::MenuEntryHeightCount, entry_height_count));
         g_EntryHeightCount = entry_height_count;
         this->ComputeSizes(g_EntryHeightCount);
 
         this->entry_idx_stack.push(last_idx);
-        this->MoveTo("", true);
+        this->MoveTo(new_path, true);
+        UL_LOG_INFO("EntryMenu initialized in %d ms", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - time).count());
+    }
+
+    bool EntryMenu::IsInRoot() {
+        return this->cur_path.length() == GetActiveMenuPath().length();
     }
 
     void EntryMenu::OnRender(pu::ui::render::Renderer::Ref &drawer, const s32 x, const s32 y) {
@@ -319,6 +331,12 @@ namespace ul::menu::ui {
         const auto cur_actual_entry_idx = this->IsCursorInTransition() ? this->pre_transition_entry_idx : this->cur_entry_idx;
         const auto base_idx = this->base_entry_idx_x * g_EntryHeightCount;
 
+        /*
+        const auto x_offset_per_entry = this->entry_size + this->entry_h_margin;
+        const auto x_offset = - (((s32)x_offset_per_entry * (s32)this->base_entry_idx_x) + (s32)this->entries_base_swipe_neg_offset);
+        SetXOffset((s32)(((double)x_offset) * 1.0f));
+        */
+
         // For the swipe animations, additional items are rendered (some will be outside the visible range)
         const auto entry_render_count = this->entry_page_count + this->extra_entry_swipe_show_h_count * g_EntryHeightCount;
         for(u32 i = 0; i < entry_render_count; i++) {
@@ -356,7 +374,7 @@ namespace ul::menu::ui {
                     const auto progress = this->entry_progresses.at(entry_i);
                     if(!std::isnan(progress)) {
                         const auto bar_width = this->entry_size;
-                        const auto bar_height = (u32)(((double)this->entry_size / (double)DefaultEntrySize) * (double)DefaultProgressBarHeight);
+                        const auto bar_height = (u32)(((double)this->entry_size / (double)MinScalableEntrySize) * (double)DefaultProgressBarHeight);
                         drawer->RenderRectangleFill(ProgressBackgroundColor, (s32)entry_x - (s32)this->entries_base_swipe_neg_offset, entry_y + this->entry_size - bar_height, bar_width, bar_height);
 
                         const auto progress_width = (u32)((float)bar_width * progress);
@@ -375,7 +393,7 @@ namespace ul::menu::ui {
                         _DRAW_OVER_ICON(gamecard);
                     }
 
-                    if(EntryIsApplicationNeedsVerify(entry)) {
+                    if(IsEntryApplicationNeedsVerify(entry)) {
                         _DRAW_OVER_ICON(corrupted);
                     }
                     else if(IsEntryApplicationNotLaunchable(entry)) {
@@ -422,7 +440,7 @@ namespace ul::menu::ui {
         drawer->RenderTexture(this->cursor_over_icon, cursor_x, cursor_y, pu::ui::render::TextureRenderOptions({}, this->cursor_size, this->cursor_size, {}, {}, {}));
 
         if((this->selected_entry_idx >= 0) && (this->selected_entry_icon != nullptr)) {
-            const auto entry_size_factor = (double)this->entry_size / (double)DefaultEntrySize;
+            const auto entry_size_factor = (double)this->entry_size / (double)MinScalableEntrySize;
             const auto over_icon_offset = (u32)(entry_size_factor * (double)DefaultMoveOverIconOffset);
             drawer->RenderTexture(this->selected_entry_icon->Get(), cursor_x - over_icon_offset, cursor_y - over_icon_offset, pu::ui::render::TextureRenderOptions(MoveOverIconAlpha, this->entry_size, this->entry_size, {}, {}, {}));
         }
@@ -526,6 +544,9 @@ namespace ul::menu::ui {
     }
 
     void EntryMenu::MoveTo(const std::string &new_path, const bool force_pop_idx) {
+        UL_LOG_INFO("EntryMenu::MoveTo start...");
+        const auto time = std::chrono::system_clock::now();
+
         const auto reloading = new_path.empty();
         const auto going_back = new_path.length() < this->cur_path.length();
         const auto old_entry_idx = this->cur_entry_idx;
@@ -551,7 +572,7 @@ namespace ul::menu::ui {
         this->cur_entries = LoadEntries(this->cur_path);
         this->OrganizeEntries();
         this->ComputeSizes(g_EntryHeightCount);
-        
+    
         for(auto &entry_icon : this->entry_icons) {
             if(entry_icon != this->selected_entry_icon) {
                 entry_icon = {};
@@ -583,6 +604,7 @@ namespace ul::menu::ui {
         if(!reloading && !going_back) {
             this->entry_idx_stack.push(old_entry_idx);
         }
+        UL_LOG_INFO("EntryMenu::MoveTo took %d ms", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - time).count());
     }
 
     void EntryMenu::OrganizeEntries() {
@@ -686,6 +708,10 @@ namespace ul::menu::ui {
         this->NotifyFocusedEntryChanged(-1);
         g_MenuApplication->FadeIn();
     }
+
+    bool EntryMenu::CanDecrementEntryHeightCount() {
+        return g_EntryHeightCount > 1;
+    }
     
     void EntryMenu::DecrementEntryHeightCount() {
         auto h_count = g_EntryHeightCount;
@@ -717,7 +743,7 @@ namespace ul::menu::ui {
         }
     }
 
-    void EntryMenu::MoveToPreviousPage() {
+    bool EntryMenu::MoveToPreviousPage() {
         if((this->base_entry_idx_x > 0) && this->IsNotInSwipe()) {
             const auto prev_base_entry_idx_x = this->base_entry_idx_x;
             this->SwipeToPreviousPage();
@@ -725,15 +751,23 @@ namespace ul::menu::ui {
             this->entries_base_swipe_neg_offset = (this->entry_size + this->entry_h_margin) * this->extra_entry_swipe_show_h_count;
             this->entries_base_swipe_neg_offset_incr.StartToZero(EntriesSwipePageIncrementSteps, this->entries_base_swipe_neg_offset);
             this->swipe_mode = SwipeMode::LeftPage;
+            return true;
+        }
+        else {
+            return false;
         }
     }
 
-    void EntryMenu::MoveToNextPage() {
+    bool EntryMenu::MoveToNextPage() {
         if(this->IsNotInSwipe()) {
             this->extra_entry_swipe_show_h_count = this->entry_width_count;
             this->entries_base_swipe_neg_offset = 0;
             this->entries_base_swipe_neg_offset_incr.StartFromZero(EntriesSwipePageIncrementSteps, (this->entry_size + this->entry_h_margin) * this->extra_entry_swipe_show_h_count);
             this->swipe_mode = SwipeMode::RightPage;  
+            return true;
+        }
+        else {
+            return false;
         }
     }
 

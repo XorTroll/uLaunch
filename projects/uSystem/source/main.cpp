@@ -8,6 +8,7 @@
 #include <ul/menu/menu_Cache.hpp>
 #include <ul/acc/acc_Accounts.hpp>
 #include <ul/os/os_Applications.hpp>
+#include <ul/os/os_System.hpp>
 #include <ul/util/util_Scope.hpp>
 #include <ul/util/util_Size.hpp>
 #include <ul/fs/fs_Stdio.hpp>
@@ -98,6 +99,7 @@ namespace {
     bool g_AppletActive = false;
     AppletOperationMode g_OperationMode;
     ul::cfg::Config g_Config;
+    bool g_AmsIsEmuMMC = false;
 
     char g_CurrentMenuFsPath[FS_MAX_PATH] = {};
     char g_CurrentMenuPath[FS_MAX_PATH] = {};
@@ -180,7 +182,7 @@ namespace {
         u64 takeover_app_id;
         if(g_Config.GetEntry(ul::cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, takeover_app_id)) {
             if(takeover_app_id == app_id) {
-                g_Config.SetEntry(ul::cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, 0);
+                g_Config.SetEntry(ul::cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, ul::os::InvalidApplicationId);
                 ul::cfg::SaveConfig(g_Config);
             }
         }
@@ -229,7 +231,88 @@ namespace {
         appletStartSleepSequence(true);
     }
 
+    void LocateApplicationAndSpecialEntries(const std::string &path, std::vector<ul::menu::Entry> &out_app_entries, u32 &rem_special_entry_mask) {
+        auto entries = ul::menu::LoadEntries(path);
+        for(const auto &entry: entries) {
+            if(entry.Is<ul::menu::EntryType::Application>()) {
+                out_app_entries.push_back(entry);
+            }
+            else if(entry.IsSpecial()) {
+                // This special entry exists, remove from remaining
+                rem_special_entry_mask &= ~BITL(static_cast<u32>(entry.type));
+            }
+            else if(entry.Is<ul::menu::EntryType::Folder>()) {
+                LocateApplicationAndSpecialEntries(ul::fs::JoinPath(path, entry.folder_info.fs_name), out_app_entries, rem_special_entry_mask);
+            }
+        }
+    }
+
+    void CheckApplicationRecordChanges() {
+        g_LastDeletedApplications.clear();
+        g_LastAddedApplications.clear();
+
+        const auto menu_path = ul::menu::MakeMenuPath(g_AmsIsEmuMMC, g_SelectedUser);
+
+        std::vector<ul::menu::Entry> existing_app_entries;
+        u32 rem_special_entry_mask =
+            BITL(static_cast<u32>(ul::menu::EntryType::SpecialEntryMiiEdit)) |
+            BITL(static_cast<u32>(ul::menu::EntryType::SpecialEntryWebBrowser)) |
+            BITL(static_cast<u32>(ul::menu::EntryType::SpecialEntryUserPage)) |
+            BITL(static_cast<u32>(ul::menu::EntryType::SpecialEntrySettings)) |
+            BITL(static_cast<u32>(ul::menu::EntryType::SpecialEntryThemes)) |
+            BITL(static_cast<u32>(ul::menu::EntryType::SpecialEntryControllers)) |
+            BITL(static_cast<u32>(ul::menu::EntryType::SpecialEntryAlbum)) |
+            BITL(static_cast<u32>(ul::menu::EntryType::SpecialEntryAmiibo));
+
+        LocateApplicationAndSpecialEntries(menu_path, existing_app_entries, rem_special_entry_mask);
+
+        // Ensure all special entries exist
+        #define _CHECK_HAS_SPECIAL_ENTRY(type) { \
+            if((rem_special_entry_mask & BITL(static_cast<u32>(type))) != 0) { \
+                ul::menu::CreateSpecialEntry(menu_path, type); \
+            } \
+        }
+
+        _CHECK_HAS_SPECIAL_ENTRY(ul::menu::EntryType::SpecialEntryMiiEdit);
+        _CHECK_HAS_SPECIAL_ENTRY(ul::menu::EntryType::SpecialEntryWebBrowser);
+        _CHECK_HAS_SPECIAL_ENTRY(ul::menu::EntryType::SpecialEntryUserPage);
+        _CHECK_HAS_SPECIAL_ENTRY(ul::menu::EntryType::SpecialEntrySettings);
+        _CHECK_HAS_SPECIAL_ENTRY(ul::menu::EntryType::SpecialEntryThemes);
+        _CHECK_HAS_SPECIAL_ENTRY(ul::menu::EntryType::SpecialEntryControllers);
+        _CHECK_HAS_SPECIAL_ENTRY(ul::menu::EntryType::SpecialEntryAlbum);
+        _CHECK_HAS_SPECIAL_ENTRY(ul::menu::EntryType::SpecialEntryAmiibo);
+
+        // Check applications
+
+        for(auto &app_entry: existing_app_entries) {
+            if(std::find_if(g_CurrentRecords.begin(), g_CurrentRecords.end(), [app_entry](const NsApplicationRecord &rec) -> bool {
+                return rec.application_id == app_entry.app_info.app_id;
+            }) == g_CurrentRecords.end()) {
+                UL_LOG_INFO("Deleted application 0x%016lX", app_entry.app_info.app_id);
+                NotifyApplicationDeleted(app_entry.app_info.app_id);
+                ul::menu::Entry rm_entry(app_entry);
+                rm_entry.Remove();
+            }
+        }
+
+        for(const auto &record: g_CurrentRecords) {
+            if(std::find_if(existing_app_entries.begin(), existing_app_entries.end(), [record](const ul::menu::Entry &entry) -> bool {
+                return entry.app_info.app_id == record.application_id;
+            }) == existing_app_entries.end()) {
+                UL_LOG_INFO("Added application 0x%016lX", record.application_id);
+                g_LastAddedApplications.push_back(record.application_id);
+                while(!ul::menu::CacheSingleApplication(record.application_id)) {
+                    UL_LOG_INFO("> Failed to cache, retrying...");
+                    svcSleepThread(100'000ul);
+                }
+                ul::menu::CacheSingleApplication(record.application_id);
+                ul::menu::EnsureApplicationEntry(record);
+            }
+        }
+    }
+
     inline Result LaunchMenu(const ul::smi::MenuStartMode st_mode, const ul::smi::SystemStatus &status) {
+        UL_LOG_INFO("Launching uMenu with start mode %d...", static_cast<u32>(st_mode));
         return ecs::RegisterLaunchAsApplet(la::GetMenuProgramId(), static_cast<u32>(st_mode), "/ulaunch/bin/uMenu", std::addressof(status), sizeof(status));
     }
 
@@ -316,7 +399,7 @@ namespace {
         else if(app::IsActive() && app::HasForeground()) {
             // Hide the application currently on focus and open our menu
             UL_RC_ASSERT(sys::SetForeground());
-            UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::MainMenuApplicationSuspended, CreateStatus()));
+            UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::MainMenu, CreateStatus()));
         }
         else if(la::IsMenu()) {
             // Send a message to our menu to handle itself the home press
@@ -515,6 +598,7 @@ namespace {
                     switch(msg) {
                         case ul::smi::SystemMessage::SetSelectedUser: {
                             UL_RC_TRY(reader.Pop(g_SelectedUser));
+                            CheckApplicationRecordChanges();
                             break;
                         }
                         case ul::smi::SystemMessage::LaunchApplication: {
@@ -567,7 +651,7 @@ namespace {
 
                             u64 hb_application_takeover_program_id;
                             UL_ASSERT_TRUE(g_Config.GetEntry(ul::cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, hb_application_takeover_program_id));
-                            if(hb_application_takeover_program_id == 0) {
+                            if(hb_application_takeover_program_id == ul::os::InvalidApplicationId) {
                                 return ul::ResultNoHomebrewTakeoverApplication;
                             }
 
@@ -1093,7 +1177,13 @@ namespace {
                         else {
                             UL_LOG_INFO("[EventManager] > Deleted application 0x%016lX", record.application_id);
                             NotifyApplicationDeleted(record.application_id);
-                            ul::menu::DeleteApplicationEntryRecursively(record.application_id, ul::MenuPath);
+
+                            std::vector<AccountUid> uids;
+                            UL_RC_ASSERT(ul::acc::ListAccounts(uids));
+                            for(const auto &uid: uids) {
+                                const auto menu_path = ul::menu::MakeMenuPath(g_AmsIsEmuMMC, uid);
+                                ul::menu::DeleteApplicationEntryRecursively(record.application_id, menu_path);
+                            }
                         }
                     }
 
@@ -1168,80 +1258,16 @@ namespace {
         }
     }
 
-    void LocateApplicationAndSpecialEntries(const std::string &path, std::vector<ul::menu::Entry> &out_app_entries, u32 &rem_special_entry_mask) {
-        auto entries = ul::menu::LoadEntries(path);
-        for(const auto &entry: entries) {
-            if(entry.Is<ul::menu::EntryType::Application>()) {
-                out_app_entries.push_back(entry);
-            }
-            else if(entry.IsSpecial()) {
-                // This special entry exists, remove from remaining
-                rem_special_entry_mask &= ~BITL(static_cast<u32>(entry.type));
-            }
-            else if(entry.Is<ul::menu::EntryType::Folder>()) {
-                LocateApplicationAndSpecialEntries(ul::fs::JoinPath(path, entry.folder_info.fs_name), out_app_entries, rem_special_entry_mask);
-            }
-        }
-    }
-
-    void CheckApplicationRecordChanges() {
-        g_LastDeletedApplications.clear();
-        g_LastAddedApplications.clear();
-
-        std::vector<ul::menu::Entry> existing_app_entries;
-        u32 rem_special_entry_mask =
-            BITL(static_cast<u32>(ul::menu::EntryType::SpecialEntryMiiEdit)) |
-            BITL(static_cast<u32>(ul::menu::EntryType::SpecialEntryWebBrowser)) |
-            BITL(static_cast<u32>(ul::menu::EntryType::SpecialEntryUserPage)) |
-            BITL(static_cast<u32>(ul::menu::EntryType::SpecialEntrySettings)) |
-            BITL(static_cast<u32>(ul::menu::EntryType::SpecialEntryThemes)) |
-            BITL(static_cast<u32>(ul::menu::EntryType::SpecialEntryControllers)) |
-            BITL(static_cast<u32>(ul::menu::EntryType::SpecialEntryAlbum)) |
-            BITL(static_cast<u32>(ul::menu::EntryType::SpecialEntryAmiibo));
-
-        LocateApplicationAndSpecialEntries(ul::MenuPath, existing_app_entries, rem_special_entry_mask);
-
-        // Ensure all special entries exist
-        #define _CHECK_HAS_SPECIAL_ENTRY(type) { \
-            if((rem_special_entry_mask & BITL(static_cast<u32>(type))) != 0) { \
-                ul::menu::CreateSpecialEntry(ul::MenuPath, type); \
-            } \
-        }
-
-        _CHECK_HAS_SPECIAL_ENTRY(ul::menu::EntryType::SpecialEntryMiiEdit);
-        _CHECK_HAS_SPECIAL_ENTRY(ul::menu::EntryType::SpecialEntryWebBrowser);
-        _CHECK_HAS_SPECIAL_ENTRY(ul::menu::EntryType::SpecialEntryUserPage);
-        _CHECK_HAS_SPECIAL_ENTRY(ul::menu::EntryType::SpecialEntrySettings);
-        _CHECK_HAS_SPECIAL_ENTRY(ul::menu::EntryType::SpecialEntryThemes);
-        _CHECK_HAS_SPECIAL_ENTRY(ul::menu::EntryType::SpecialEntryControllers);
-        _CHECK_HAS_SPECIAL_ENTRY(ul::menu::EntryType::SpecialEntryAlbum);
-        _CHECK_HAS_SPECIAL_ENTRY(ul::menu::EntryType::SpecialEntryAmiibo);
-
-        // Check applications
-
-        for(auto &app_entry: existing_app_entries) {
-            if(std::find_if(g_CurrentRecords.begin(), g_CurrentRecords.end(), [app_entry](const NsApplicationRecord &rec) -> bool {
-                return rec.application_id == app_entry.app_info.app_id;
-            }) == g_CurrentRecords.end()) {
-                UL_LOG_INFO("Deleted application 0x%016lX", app_entry.app_info.app_id);
-                NotifyApplicationDeleted(app_entry.app_info.app_id);
-                ul::menu::Entry rm_entry(app_entry);
-                rm_entry.Remove();
-            }
-        }
-
-        for(const auto &record: g_CurrentRecords) {
-            if(std::find_if(existing_app_entries.begin(), existing_app_entries.end(), [record](const ul::menu::Entry &entry) -> bool {
-                return entry.app_info.app_id == record.application_id;
-            }) == existing_app_entries.end()) {
-                UL_LOG_INFO("Added application 0x%016lX", record.application_id);
-                g_LastAddedApplications.push_back(record.application_id);
-                while(!ul::menu::CacheSingleApplication(record.application_id)) {
-                    UL_LOG_INFO("> Failed to cache, retrying...");
-                    svcSleepThread(100'000ul);
-                }
-                ul::menu::CacheSingleApplication(record.application_id);
-                ul::menu::EnsureApplicationEntry(record);
+    void CheckHomebrewTakeoverApplicationId() {
+        u64 hb_application_takeover_program_id;
+        UL_ASSERT_TRUE(g_Config.GetEntry(ul::cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, hb_application_takeover_program_id));
+        if(hb_application_takeover_program_id != ul::os::InvalidApplicationId) {
+            // Simple command, not involving buffers (unlike GetApplicationControlData) that will fail if the ID is invalid
+            const auto valid_app = R_SUCCEEDED(nsTouchApplication(hb_application_takeover_program_id));
+            UL_LOG_INFO("Homebrew take-over application ID: 0x%016lX, valid: %d", hb_application_takeover_program_id, valid_app);
+            if(!valid_app) {
+                g_Config.SetEntry(ul::cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, ul::os::InvalidApplicationId);
+                ul::cfg::SaveConfig(g_Config);
             }
         }
     }
@@ -1250,14 +1276,14 @@ namespace {
         UL_RC_ASSERT(appletLoadAndApplyIdlePolicySettings());
         UpdateOperationMode();
 
+        g_AmsIsEmuMMC = ul::os::IsEmuMMC();
+
         // Remove old cache
-        ul::fs::DeleteDirectory(ul::OldApplicationCachePath);
-        ul::fs::DeleteDirectory(ul::OldHomebrewCachePath);
-        ul::fs::DeleteDirectory(ul::OldAccountCachePath);
+        ul::fs::DeleteDirectory(ul::PreV100ApplicationCachePath);
+        ul::fs::DeleteDirectory(ul::PreV100HomebrewCachePath);
+        ul::fs::DeleteDirectory(ul::PreV100AccountCachePath);
 
         ul::fs::CleanDirectory(ul::RootCachePath);
-
-        ul::util::CopyToStringBuffer(g_CurrentMenuFsPath, ul::MenuPath);
 
         CacheAccounts();
 
@@ -1265,7 +1291,7 @@ namespace {
         g_CurrentRecords = ul::os::ListApplicationRecords();
         ul::menu::CacheApplications(g_CurrentRecords);
         ul::menu::CacheHomebrew();
-        CheckApplicationRecordChanges();
+        CheckHomebrewTakeoverApplicationId();
 
         LoadConfig();
 
@@ -1276,7 +1302,6 @@ namespace {
 
         bool viewer_usb_enabled;
         UL_ASSERT_TRUE(g_Config.GetEntry(ul::cfg::ConfigEntryId::UsbScreenCaptureEnabled, viewer_usb_enabled));
-
         if(viewer_usb_enabled) {
             UL_RC_ASSERT(usbCommsInitialize());
             UL_RC_ASSERT(capsscInitialize());

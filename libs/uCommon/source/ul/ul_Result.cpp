@@ -1,5 +1,6 @@
 #include <ul/ul_Result.hpp>
 #include <ul/fs/fs_Stdio.hpp>
+#include <ul/os/os_System.hpp>
 #include <cstdarg>
 
 extern "C" {
@@ -110,6 +111,11 @@ namespace ul {
         _UL_DO_WITH_FSDEV({
             auto file = fopen(g_LogPath, "ab+");
             if(file) {
+                if(serviceIsActive(timeGetServiceSession_SteadyClock())) {
+                    const auto time = os::GetCurrentTime();
+                    fprintf(file, "[%02d:%02d:%02d] ", time.h, time.min, time.sec);
+                }
+
                 const auto kind_str = FormatLogKind(kind);
                 fprintf(file, "[%s] ", kind_str);
                 vfprintf(file, log_fmt, args);

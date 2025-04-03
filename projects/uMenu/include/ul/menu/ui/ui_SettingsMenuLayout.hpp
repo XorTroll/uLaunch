@@ -18,7 +18,10 @@ namespace ul::menu::ui {
     };
 
     enum class SettingSubmenu {
-        None
+        None,
+
+        Bluetooth_BluetoothAudioPaired,
+        Bluetooth_BluetoothAudioDiscover
     };
 
     enum class Setting {
@@ -53,6 +56,10 @@ namespace ul::menu::ui {
 
         uLaunchVersion,
         AudioService,
+        HomebrewApplicationTakeover,
+        BluetoothAudioPaired,
+        BluetoothAudioDiscover,
+        LaunchHomebrewApplicationByDefault,
     };
 
     class SettingsMenuLayout : public IMenuLayout {
@@ -61,10 +68,17 @@ namespace ul::menu::ui {
             static constexpr u32 SettingsMenuItemSize = 150;
             static constexpr u32 SettingsMenuItemsToShow = 5;
 
+            static constexpr u32 SettingsMenuTempXOffsetSteps = 14;
+
         private:
             pu::ui::elm::TextBlock::Ref menu_text;
             pu::ui::elm::TextBlock::Ref submenu_text;
             pu::ui::elm::Menu::Ref settings_menu;
+            pu::ui::elm::Menu::Ref settings_menu_temp;
+            s32 base_menu_x;
+            s32 settings_menu_temp_x_offset;
+            pu::ui::SigmoidIncrementer<s32> settings_menu_temp_x_offset_incr;
+            SettingMenu move_goal_menu;
             InputBar::Ref input_bar;
             bool inputs_changed;
             pu::audio::Sfx setting_edit_sfx;
@@ -74,9 +88,6 @@ namespace ul::menu::ui {
             SettingMenu cur_menu;
             SettingSubmenu cur_submenu;
 
-            void PushSettingItem(const std::string &name, const std::string &value_display, const int id);
-            void setting_DefaultKey(const u32 id);
-
         public:
             SettingsMenuLayout();
             PU_SMART_CTOR(SettingsMenuLayout)
@@ -85,6 +96,12 @@ namespace ul::menu::ui {
             bool OnHomeButtonPress() override;
             void LoadSfx() override;
             void DisposeSfx() override;
+
+            inline void Rewind() {
+                this->settings_menu_temp_x_offset = 0;
+                this->cur_menu = static_cast<SettingMenu>(0);
+                this->cur_submenu = SettingSubmenu::None;
+            }
 
             void Reload(const bool soft);
     };

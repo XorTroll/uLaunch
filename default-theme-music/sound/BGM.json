@@ -1,0 +1,22 @@
+{
+    "main_menu": {
+        "bgm_loop": true,
+        "bgm_fade_in_ms": 1500,
+        "bgm_fade_out_ms": 500
+    },
+    "startup_menu": {
+        "bgm_loop": false,
+        "bgm_fade_in_ms": 1500,
+        "bgm_fade_out_ms": 500
+    },
+    "themes_menu": {
+        "bgm_loop": true,
+        "bgm_fade_in_ms": 1500,
+        "bgm_fade_out_ms": 500
+    },
+    "settings_menu": {
+        "bgm_loop": true,
+        "bgm_fade_in_ms": 1500,
+        "bgm_fade_out_ms": 500
+    }
+}

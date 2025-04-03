@@ -162,6 +162,9 @@ namespace ul::fs {
 
     void RenameDirectory(const std::string &old_path, const std::string &new_path);
 
+    void CopyFile(const std::string &src_path, const std::string &dst_path);
+    void CopyDirectory(const std::string &src_path, const std::string &dst_path);
+
     #define UL_FS_FOR(dir, name_var, path_var, is_dir_var, is_file_var, ...) ({ \
         const std::string dir_str = (dir); \
         auto dp = opendir(dir_str.c_str()); \

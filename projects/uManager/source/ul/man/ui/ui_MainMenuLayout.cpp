@@ -1,11 +1,13 @@
 #include <ul/man/ui/ui_MainApplication.hpp>
 #include <ul/menu/menu_Cache.hpp>
+#include <ul/menu/menu_Entries.hpp>
 #include <ul/acc/acc_Accounts.hpp>
 #include <ul/util/util_Json.hpp>
 #include <ul/man/man_Manager.hpp>
 #include <ul/man/man_Network.hpp>
 #include <ul/cfg/cfg_Config.hpp>
 #include <ul/os/os_Applications.hpp>
+#include <ul/os/os_System.hpp>
 #include <ul/util/util_Zip.hpp>
 
 extern ul::man::ui::MainApplication::Ref g_MainApplication;
@@ -124,7 +126,15 @@ namespace ul::man::ui {
     void MainMenuLayout::resetMenu_DefaultKey() {
         const auto option = g_MainApplication->CreateShowDialog(GetLanguageString("reset_menu_title"), GetLanguageString("reset_menu_conf"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
         if(option == 0) {
-            fs::DeleteDirectory(MenuPath);
+            const auto is_emummc = os::IsEmuMMC();
+
+            std::vector<AccountUid> uids;
+            UL_RC_ASSERT(acc::ListAccounts(uids));
+
+            for(const auto &uid : uids) {
+                const auto menu_path = menu::MakeMenuPath(is_emummc, uid);
+                fs::DeleteDirectory(menu_path);
+            }
 
             // When returning to uMenu it will automatically regenerate the menu entries
 

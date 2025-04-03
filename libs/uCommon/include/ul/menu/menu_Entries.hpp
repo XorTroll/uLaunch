@@ -8,6 +8,11 @@
 
 namespace ul::menu {
 
+    inline std::string MakeMenuPath(const bool is_emummc, const AccountUid &user) {
+        const auto dir = (is_emummc ? "emu" : "sys") + ("_" + util::FormatAccount(user));
+        return fs::JoinPath(RootPath, dir);
+    }
+
     enum class EntryType : u32 {
         Invalid,
         Application,
@@ -128,8 +133,8 @@ namespace ul::menu {
             this->MoveTo(parent_path);
         }
         
-        inline void MoveToRoot() {
-            this->MoveTo(MenuPath);
+        inline void MoveToRoot(const std::string &menu_path) {
+            this->MoveTo(menu_path);
         }
 
         void Save() const;
@@ -138,8 +143,9 @@ namespace ul::menu {
 
     void SetLoadApplicationEntryVersions(const bool load);
 
-    void InitializeEntries();
+    void InitializeEntries(const bool is_emummc, const AccountUid &uid);
     std::vector<Entry> LoadEntries(const std::string &path);
+    const std::string &GetActiveMenuPath();
     
     void EnsureApplicationEntry(const NsApplicationRecord &app_record);
     Entry CreateFolderEntry(const std::string &base_path, const std::string &folder_name, const s32 index = -1);

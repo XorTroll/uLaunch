@@ -35,6 +35,8 @@ namespace ul::menu::ui {
             return path;
         }
 
+        constexpr const char InitialWebPageText[] = "https://";
+
         bool g_CommonResourcesLoaded = false;
         pu::sdl2::TextureHandle::Ref g_BackgroundTexture;
         pu::sdl2::TextureHandle::Ref g_LogoTexture;
@@ -206,6 +208,22 @@ namespace ul::menu::ui {
         }
     }
 
+    void GlobalSettings::SetSelectedUser(const AccountUid user_id) {
+        this->system_status.selected_user = user_id;
+
+        InitializeEntries(g_GlobalSettings.ams_is_emummc, user_id);
+        this->initial_last_menu_fs_path = GetActiveMenuPath();
+        util::CopyToStringBuffer(this->system_status.last_menu_fs_path, GetActiveMenuPath());
+        util::CopyToStringBuffer(this->system_status.last_menu_path, "");
+        this->system_status.last_menu_index = 0;
+
+        UL_RC_ASSERT(smi::SetSelectedUser(user_id));
+        UL_RC_ASSERT(smi::UpdateMenuPaths(this->system_status.last_menu_fs_path, this->system_status.last_menu_path));
+        UL_RC_ASSERT(smi::UpdateMenuIndex(this->system_status.last_menu_index));
+
+        LoadSelectedUserIconTexture();
+    }
+
     void RebootSystem() {
         PushPowerSystemAppletMessage(system::GeneralChannelMessage::Unk_Reboot);
     }
@@ -249,11 +267,11 @@ namespace ul::menu::ui {
                 swkbdClose(&swkbd);
             });
 
-            swkbdConfigSetInitialText(&swkbd, "https://");
+            swkbdConfigSetInitialText(&swkbd, InitialWebPageText);
             swkbdConfigSetGuideText(&swkbd, GetLanguageString("swkbd_webpage_guide").c_str());
             
             char url[500] = {};
-            // TODO: check if starts with http(s), maybe even add it if user did not put it (thus links like google.com would be valid regardless)
+            // TODO (low priority): check if starts with http(s), maybe even add it if user did not put it (thus links like google.com would be valid regardless)
             if(R_SUCCEEDED(swkbdShow(&swkbd, url, sizeof(url)))) {
                 UL_RC_ASSERT(ul::menu::smi::OpenWebPage(url));
 
@@ -263,7 +281,7 @@ namespace ul::menu::ui {
     }
 
     void ShowAlbum() {
-        // TODO: somehow force to load actual album? maybe play with ams's keys in some way?
+        // Cannot force to launch actual album applet, ams has no option for that (it will likely launch hbmenu due to default user key override config)
         UL_RC_ASSERT(ul::menu::smi::OpenAlbum());
 
         g_MenuApplication->Finalize();

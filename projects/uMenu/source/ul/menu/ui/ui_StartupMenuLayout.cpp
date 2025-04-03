@@ -15,6 +15,10 @@ namespace ul::menu::ui {
         pu::audio::PlaySfx(this->user_select_sfx);
         g_GlobalSettings.SetSelectedUser(uid);
 
+        auto &main_menu_lyt = g_MenuApplication->GetMainMenuLayout();
+        if(main_menu_lyt != nullptr) {
+            main_menu_lyt->NotifyNextReloadUserChanged();
+        }
         g_MenuApplication->LoadMenu(MenuType::Main);
     }
 
@@ -64,17 +68,16 @@ namespace ul::menu::ui {
         this->users_menu->ClearItems();
 
         std::vector<AccountUid> users;
-        if(R_SUCCEEDED(acc::ListAccounts(users))) {
-            for(const auto &user: users) {
-                std::string name;
-                if(R_SUCCEEDED(acc::GetAccountName(user, name))) {
-                    auto user_item = pu::ui::elm::MenuItem::New(name);
-                    auto user_icon = pu::sdl2::TextureHandle::New(pu::ui::render::LoadImage(acc::GetIconCacheImagePath(user)));
-                    user_item->SetIcon(user_icon);
-                    user_item->AddOnKey(std::bind(&StartupMenuLayout::user_DefaultKey, this, user));
-                    user_item->SetColor(g_MenuApplication->GetTextColor());
-                    this->users_menu->AddItem(user_item);
-                }
+        UL_RC_ASSERT(acc::ListAccounts(users));
+        for(const auto &user: users) {
+            std::string name;
+            if(R_SUCCEEDED(acc::GetAccountName(user, name))) {
+                auto user_item = pu::ui::elm::MenuItem::New(name);
+                auto user_icon = pu::sdl2::TextureHandle::New(pu::ui::render::LoadImage(acc::GetIconCacheImagePath(user)));
+                user_item->SetIcon(user_icon);
+                user_item->AddOnKey(std::bind(&StartupMenuLayout::user_DefaultKey, this, user));
+                user_item->SetColor(g_MenuApplication->GetTextColor());
+                this->users_menu->AddItem(user_item);
             }
         }
 

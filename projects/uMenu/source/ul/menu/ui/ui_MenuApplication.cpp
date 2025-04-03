@@ -80,6 +80,9 @@ namespace ul::menu::ui {
     }
 
     void MenuApplication::OnLoad() {
+        UL_LOG_INFO("MenuApplication::OnLoad start...");
+        const auto time = std::chrono::system_clock::now();
+
         this->launch_failed = false;
         this->pending_gc_mount_rc = ResultSuccess;
         this->needs_app_records_reload = false;
@@ -88,6 +91,8 @@ namespace ul::menu::ui {
         this->verify_finished_app_id = 0;
         this->verify_rc = ResultSuccess;
         this->verify_detail_rc = ResultSuccess;
+        this->active_theme_load_rc = ResultSuccess;
+
         this->screen_capture_buf = nullptr;
 
         this->startup_menu_lyt = nullptr;
@@ -99,10 +104,19 @@ namespace ul::menu::ui {
         // TODO: customize
         this->SetFadeAlphaIncrementStepCount(FastFadeAlphaIncrementSteps);
 
-        if(g_GlobalSettings.IsSuspended()) {
+        if(this->start_mode == smi::MenuStartMode::MainMenu) {
             this->screen_capture_buf = new u8[RawScreenRgbaBufferSize]();
             bool flag;
-            appletGetLastApplicationCaptureImageEx(this->screen_capture_buf, RawScreenRgbaBufferSize, &flag);
+            if(g_GlobalSettings.IsSuspended()) {
+                // Get last app frame
+                appletGetLastApplicationCaptureImageEx(this->screen_capture_buf, RawScreenRgbaBufferSize, &flag);
+            }
+            else {
+                // Get last applet frame
+                appletGetLastForegroundCaptureImageEx(this->screen_capture_buf, RawScreenRgbaBufferSize, &flag);
+            }
+
+            appletClearCaptureBuffer(true, AppletCaptureSharedBuffer_CallerApplet, 0xFF000000);
         }
 
         InitializeResources();
@@ -183,6 +197,8 @@ namespace ul::menu::ui {
             }
         }
         this->StartPlayBgm();
+
+        UL_LOG_INFO("MenuApplication::OnLoad end, took %lld ms", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - time).count());
     }
 
     void MenuApplication::Finalize() {
@@ -226,11 +242,12 @@ namespace ul::menu::ui {
                 break;
             }
             case MenuType::Main: {
-                this->main_menu_lyt->NotifyLoad();
+                this->main_menu_lyt->Reload();
                 this->LoadLayout(this->main_menu_lyt);
                 break;
             }
             case MenuType::Settings: {
+                this->settings_menu_lyt->Rewind();
                 this->settings_menu_lyt->Reload(false);
                 this->LoadLayout(this->settings_menu_lyt);
                 break;

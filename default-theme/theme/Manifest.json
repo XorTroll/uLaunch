@@ -1,7 +1,7 @@
 {
     "name": "Default theme",
-    "format_version": 2,
-    "release": "...",
+    "format_version": 3,
+    "release": "1.2.0",
     "description": "Default uLaunch theme",
     "author": "XorTroll"
 }

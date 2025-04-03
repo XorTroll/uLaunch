@@ -56,6 +56,7 @@ namespace ul::menu::ui {
             bool input_bar_changed;
             std::chrono::steady_clock::time_point startup_tp;
             bool start_time_elapsed;
+            bool is_incrementing_decrementing;
             u8 min_alpha;
             SuspendedImageMode mode;
             s32 suspended_screen_alpha;
@@ -89,6 +90,9 @@ namespace ul::menu::ui {
             pu::audio::Sfx create_hb_entry_sfx;
             pu::audio::Sfx entry_remove_sfx;
             pu::audio::Sfx error_sfx;
+            pu::audio::Sfx menu_increment_sfx;
+            pu::audio::Sfx menu_decrement_sfx;
+            bool next_reload_user_changed;
 
             void DoMoveTo(const std::string &new_path);
             void menu_EntryInputPressed(const u64 keys_down);
@@ -132,6 +136,8 @@ namespace ul::menu::ui {
                 this->top_menu_hb_bg->SetVisible(true);
             }
 
+            void LaunchHomebrewApplication(const Entry &hb_entry);
+
         public:
             MainMenuLayout(const u8 *captured_screen_buf, const u8 min_alpha);
             PU_SMART_CTOR(MainMenuLayout)
@@ -146,7 +152,7 @@ namespace ul::menu::ui {
             inline void MoveToRoot(const bool fade, std::function<void()> action = nullptr) {
                 this->cur_folder_path = "";
                 this->cur_path_text->SetText(this->cur_folder_path);
-                this->MoveTo(MenuPath, fade, action);
+                this->MoveTo(GetActiveMenuPath(), fade, action);
             }
 
             inline void MoveEntryToParentFolder(const Entry &entry) {
@@ -160,7 +166,7 @@ namespace ul::menu::ui {
 
             inline void MoveEntryToRoot(const Entry &entry) {
                 Entry entry_copy(entry);
-                entry_copy.MoveToRoot();
+                entry_copy.MoveToRoot(GetActiveMenuPath());
                 pu::audio::PlaySfx(this->entry_move_into_sfx);
                 this->StopSelection();
                 this->entry_menu->NotifyEntryRemoved(entry);
@@ -197,7 +203,12 @@ namespace ul::menu::ui {
 
             void Initialize();
 
-            void NotifyLoad();
+            void Reload();
+
+            inline void NotifyNextReloadUserChanged() {
+                this->next_reload_user_changed = true;
+            }
+
             void HandleCloseSuspended();
             void HandleHomebrewLaunch(const Entry &entry);
             void StopSelection();

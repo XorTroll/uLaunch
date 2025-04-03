@@ -29,19 +29,19 @@ namespace ul::menu::ui {
             return ipt;
         }
 
-        inline bool IsEntryNonRemovable(const Entry &entry) {
-            if(strcmp(entry.hb_info.nro_target.nro_path, ul::HbmenuPath) == 0) {
+        inline bool IsNroNonRemovable(const char *nro_path) {
+            if(strcmp(nro_path, ul::HbmenuPath) == 0) {
                 return true;
             }
-            if(strcmp(entry.hb_info.nro_target.nro_path, ul::ManagerPath) == 0) {
-                return true;
-            }
-
-            if(entry.IsSpecial()) {
+            if(strcmp(nro_path, ul::ManagerPath) == 0) {
                 return true;
             }
 
             return false;
+        }
+
+        inline bool IsEntryNonRemovable(const Entry &entry) {
+            return entry.IsSpecial() || IsNroNonRemovable(entry.hb_info.nro_target.nro_path);
         }
 
         std::string g_UserName;
@@ -552,24 +552,40 @@ namespace ul::menu::ui {
                         }
                     }
                     else if(cur_entry.Is<EntryType::Application>()) {
-                        std::vector<std::string> options = { GetLanguageString("app_take_over") };
-                        if(!this->entry_menu->IsInRoot()) {
-                            options.push_back(GetLanguageString("entry_move_parent"));
-                            options.push_back(GetLanguageString("entry_move_root"));
+                        std::vector<std::string> options = {};
+                        s32 cur_option_idx = 0;
+                        
+                        const auto has_app_take_over = g_GlobalSettings.cache_hb_takeover_app_id != cur_entry.app_info.app_id;
+                        s32 app_take_over_opt = -1;
+                        if(has_app_take_over) {
+                            options.push_back(GetLanguageString("app_take_over"));
+                            app_take_over_opt = cur_option_idx; cur_option_idx++;
                         }
+
+                        const auto has_non_root_opts = !this->entry_menu->IsInRoot();
+                        s32 entry_move_parent_opt = -1;
+                        s32 entry_move_root_opt = -1;
+                        if(has_non_root_opts) {
+                            options.push_back(GetLanguageString("entry_move_parent"));
+                            entry_move_parent_opt = cur_option_idx; cur_option_idx++;
+                            options.push_back(GetLanguageString("entry_move_root"));
+                            entry_move_root_opt = cur_option_idx; cur_option_idx++;
+                        }
+
                         options.push_back(GetLanguageString("cancel"));
+
                         const auto option = g_MenuApplication->DisplayDialog(GetLanguageString("entry_options"), GetLanguageString("entry_action"), options, true);
-                        if(option == 0) {
+                        if(has_app_take_over && (option == app_take_over_opt)) {
                             const auto option_2 = g_MenuApplication->DisplayDialog(GetLanguageString("app_launch"), GetLanguageString("app_take_over_select"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
                             if(option_2 == 0) {
                                 g_GlobalSettings.SetHomebrewTakeoverApplicationId(cur_entry.app_info.record.application_id);
                                 g_MenuApplication->ShowNotification(GetLanguageString("app_take_over_done"));
                             }
                         }
-                        else if(option == 1) {
+                        if(has_non_root_opts && (option == entry_move_parent_opt)) {
                             this->MoveEntryToParentFolder(cur_entry);
                         }
-                        else if(option == 2) {
+                        if(has_non_root_opts && (option == entry_move_root_opt)) {
                             this->MoveEntryToRoot(cur_entry);
                         }
                     }
@@ -592,12 +608,14 @@ namespace ul::menu::ui {
             }
         }
         else if(keys_down & HidNpadButton_L) {
-            pu::audio::PlaySfx(this->page_move_sfx);
-            this->entry_menu->MoveToPreviousPage();
+            if(this->entry_menu->MoveToPreviousPage()) {
+                pu::audio::PlaySfx(this->page_move_sfx);
+            }
         }
         else if(keys_down & HidNpadButton_R) {
-            pu::audio::PlaySfx(this->page_move_sfx);
-            this->entry_menu->MoveToNextPage();
+            if(this->entry_menu->MoveToNextPage()) {
+                pu::audio::PlaySfx(this->page_move_sfx);
+            }
         }
     }
 
@@ -710,7 +728,36 @@ namespace ul::menu::ui {
         }
     }
 
-    MainMenuLayout::MainMenuLayout(const u8 *captured_screen_buf, const u8 min_alpha) : IMenuLayout(), last_quick_menu_on(false), start_time_elapsed(false), min_alpha(min_alpha), mode(SuspendedImageMode::ShowingAfterStart), suspended_screen_alpha(0xFF) {
+    void MainMenuLayout::LaunchHomebrewApplication(const Entry &hb_entry) {
+        // Take care if there is a suspended app
+        auto do_launch = true;
+        if(g_GlobalSettings.IsSuspended()) {
+            do_launch = false;
+            this->HandleCloseSuspended();
+            if(!g_GlobalSettings.IsSuspended()) {
+                do_launch = true;
+            }
+        }
+
+        if(do_launch) {
+            pu::audio::PlaySfx(this->launch_hb_sfx);
+            
+            const auto ipt = CreateLaunchTargetInput(hb_entry.hb_info.nro_target);
+            const auto rc = smi::LaunchHomebrewApplication(ipt.nro_path, ipt.nro_argv);
+
+            if(R_SUCCEEDED(rc)) {
+                g_MenuApplication->Finalize();
+                return;
+            }
+            else {
+                g_MenuApplication->ShowNotification(GetLanguageString("app_launch_error") + ": " + util::FormatResultDisplay(rc));
+            }
+        }
+    }
+
+    MainMenuLayout::MainMenuLayout(const u8 *captured_screen_buf, const u8 min_alpha) : IMenuLayout(), last_quick_menu_on(false), start_time_elapsed(false), is_incrementing_decrementing(false), min_alpha(min_alpha), mode(SuspendedImageMode::ShowingAfterStart), suspended_screen_alpha(0xFF), next_reload_user_changed(true) {
+        UL_LOG_INFO("Creating MainMenuLayout...");
+        const auto time = std::chrono::system_clock::now();
         // TODO (low priority): like nxlink but for sending themes and quickly being able to test them?
         this->cur_folder_path = g_GlobalSettings.system_status.last_menu_path;
 
@@ -755,6 +802,8 @@ namespace ul::menu::ui {
         this->create_hb_entry_sfx = nullptr;
         this->entry_remove_sfx = nullptr;
         this->error_sfx = nullptr;
+        this->menu_increment_sfx = nullptr;
+        this->menu_decrement_sfx = nullptr;
 
         // Load banners first
         this->top_menu_default_bg = pu::ui::elm::Image::New(0, 0, TryFindLoadImageHandle("ui/Main/TopMenuBackground/Default"));
@@ -850,6 +899,7 @@ namespace ul::menu::ui {
         this->Add(this->quick_menu);
 
         this->startup_tp = std::chrono::steady_clock::now();
+        UL_LOG_INFO("MainMenuLayout created in %lld ms", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - time).count());
     }
 
     void MainMenuLayout::LoadSfx() {
@@ -883,8 +933,10 @@ namespace ul::menu::ui {
         this->create_hb_entry_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Main/CreateHomebrewEntry.wav"));
         this->entry_remove_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Main/EntryRemove.wav"));
         this->error_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Main/Error.wav"));
+        this->menu_increment_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Main/MenuIncrement.wav"));
+        this->menu_decrement_sfx = pu::audio::LoadSfx(TryGetActiveThemeResource("sound/Main/MenuDecrement.wav"));
     }
-    
+
     void MainMenuLayout::DisposeSfx() {
         pu::audio::DestroySfx(this->post_suspend_sfx);
         pu::audio::DestroySfx(this->cursor_move_sfx);
@@ -1037,19 +1089,36 @@ namespace ul::menu::ui {
             }
             else if(g_MenuApplication->HasChosenHomebrew()) {
                 const auto nro_path = g_MenuApplication->GetConsumeChosenHomebrew();
-                pu::audio::PlaySfx(this->create_hb_entry_sfx);
+                if(IsNroNonRemovable(nro_path.c_str())) {
+                    g_MenuApplication->ShowNotification(GetLanguageString("menu_chosen_hb_special"));
+                }
+                else {
+                    pu::audio::PlaySfx(this->create_hb_entry_sfx);
 
-                // TODO (low priority): custom argv option?
-                const auto hb_entry = CreateHomebrewEntry(g_GlobalSettings.initial_last_menu_fs_path, nro_path, nro_path, g_GlobalSettings.initial_last_menu_index);
-                this->entry_menu->NotifyEntryAdded(hb_entry);
-                this->entry_menu->OrganizeUpdateEntries();
-                g_MenuApplication->ShowNotification(GetLanguageString("menu_chosen_hb_added"));
+                    // TODO (low priority): custom argv option?
+                    const auto hb_entry = CreateHomebrewEntry(g_GlobalSettings.initial_last_menu_fs_path, nro_path, nro_path, g_GlobalSettings.initial_last_menu_index);
+                    this->entry_menu->NotifyEntryAdded(hb_entry);
+                    this->entry_menu->OrganizeUpdateEntries();
+                    g_MenuApplication->ShowNotification(GetLanguageString("menu_chosen_hb_added"));
+                }
             }
             else if(g_MenuApplication->HasGameCardMountFailure()) {
-                const auto gc_rc = g_MenuApplication->GetConsumeGameCardMountFailure();
                 pu::audio::PlaySfx(this->error_sfx);
 
+                const auto gc_rc = g_MenuApplication->GetConsumeGameCardMountFailure();
                 g_MenuApplication->DisplayDialog(GetLanguageString("gamecard"), GetLanguageString("gamecard_mount_failed") + " " + util::FormatResultDisplay(gc_rc), { GetLanguageString("ok") }, true);
+            }
+            else if(g_MenuApplication->HasActiveThemeLoadFailure()) {
+                pu::audio::PlaySfx(this->error_sfx);
+
+                const auto theme_rc = g_MenuApplication->GetConsumeActiveThemeLoadFailure();
+                g_MenuApplication->DisplayDialog(GetLanguageString("theme_active"), GetLanguageString("theme_load_failed") + " " + util::FormatResultDisplay(theme_rc), { GetLanguageString("ok") }, true);
+            }
+            else if(g_MenuApplication->HasActiveThemeOutdated()) {
+                pu::audio::PlaySfx(this->error_sfx);
+
+                g_MenuApplication->ConsumeActiveThemeOutdated();
+                g_MenuApplication->DisplayDialog(GetLanguageString("theme_active"), GetLanguageString("theme_outdated"), { GetLanguageString("ok") }, true);
             }
         }
 
@@ -1155,10 +1224,20 @@ namespace ul::menu::ui {
         }
 
         if(keys_down & HidNpadButton_Minus) {
-            this->entry_menu->DecrementEntryHeightCount();
+            if(!this->is_incrementing_decrementing && this->entry_menu->CanDecrementEntryHeightCount()) {
+                pu::audio::PlaySfx(this->menu_decrement_sfx);
+                this->is_incrementing_decrementing = true;
+                this->entry_menu->DecrementEntryHeightCount();
+                this->is_incrementing_decrementing = false;
+            }
         }
         else if(keys_down & HidNpadButton_Plus) {
-            this->entry_menu->IncrementEntryHeightCount();
+            if(!this->is_incrementing_decrementing) {
+                pu::audio::PlaySfx(this->menu_increment_sfx);
+                this->is_incrementing_decrementing = true;
+                this->entry_menu->IncrementEntryHeightCount();
+                this->is_incrementing_decrementing = false;
+            }
         }
     }
 
@@ -1169,7 +1248,7 @@ namespace ul::menu::ui {
             this->StartResume();
         }
         else {
-            if(!this->entry_menu->IsInRoot()) {
+            if(!this->entry_menu->IsInRoot() && this->entry_menu->IsMenuStart()) {
                 this->MoveToRoot(true);
             }
 
@@ -1202,10 +1281,11 @@ namespace ul::menu::ui {
         }   
     }
 
-    void MainMenuLayout::NotifyLoad() {
+    void MainMenuLayout::Reload() {
         UL_RC_ASSERT(acc::GetAccountName(g_GlobalSettings.system_status.selected_user, g_UserName));
-        this->entry_menu->Initialize(g_GlobalSettings.system_status.last_menu_index);
+        this->entry_menu->Initialize(g_GlobalSettings.system_status.last_menu_index, this->next_reload_user_changed ? GetActiveMenuPath() : "");
         this->quick_menu->UpdateItems();
+        this->next_reload_user_changed = false;
     }
 
     void MainMenuLayout::HandleCloseSuspended() {
@@ -1217,6 +1297,16 @@ namespace ul::menu::ui {
     }
 
     void MainMenuLayout::HandleHomebrewLaunch(const Entry &hb_entry) {
+        const auto can_launch_as_app = g_GlobalSettings.cache_hb_takeover_app_id != os::InvalidApplicationId;
+        if(can_launch_as_app) {
+            bool def_launch_as_app = false;
+            UL_ASSERT_TRUE(g_GlobalSettings.config.GetEntry(cfg::ConfigEntryId::LaunchHomebrewApplicationByDefault, def_launch_as_app));
+            if(def_launch_as_app) {
+                this->LaunchHomebrewApplication(hb_entry);
+                return;
+            }
+        }
+
         const auto option = g_MenuApplication->DisplayDialog(GetLanguageString("hb_launch"), GetLanguageString("hb_launch_conf"), { GetLanguageString("hb_applet"), GetLanguageString("hb_app"), GetLanguageString("cancel") }, true);
         if(option == 0) {
             pu::audio::PlaySfx(this->launch_hb_sfx);
@@ -1227,29 +1317,8 @@ namespace ul::menu::ui {
             g_MenuApplication->Finalize();
         }
         else if(option == 1) {
-            if(g_GlobalSettings.cache_hb_takeover_app_id != 0) {
-                auto launch = true;
-                if(g_GlobalSettings.IsSuspended()) {
-                    launch = false;
-                    this->HandleCloseSuspended();
-                    if(!g_GlobalSettings.IsSuspended()) {
-                        launch = true;
-                    }
-                }
-                if(launch) {
-                    pu::audio::PlaySfx(this->launch_hb_sfx);
-                    
-                    const auto ipt = CreateLaunchTargetInput(hb_entry.hb_info.nro_target);
-                    const auto rc = smi::LaunchHomebrewApplication(ipt.nro_path, ipt.nro_argv);
-
-                    if(R_SUCCEEDED(rc)) {
-                        g_MenuApplication->Finalize();
-                        return;
-                    }
-                    else {
-                        g_MenuApplication->ShowNotification(GetLanguageString("app_launch_error") + ": " + util::FormatResultDisplay(rc));
-                    }
-                }
+            if(can_launch_as_app) {
+                this->LaunchHomebrewApplication(hb_entry);
             }
             else {
                 g_MenuApplication->DisplayDialog(GetLanguageString("app_launch"), GetLanguageString("app_no_take_over_app"), { GetLanguageString("ok") }, true);

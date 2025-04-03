@@ -10,7 +10,6 @@ namespace ul::smi {
         Invalid,
         Start,
         MainMenu,
-        MainMenuApplicationSuspended,
         SettingsMenu
     };
 

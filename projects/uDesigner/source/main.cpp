@@ -79,9 +79,9 @@ namespace {
 
 namespace {
 
-    void *g_ThemeZipData = nullptr;
-    size_t g_ThemeZipDataSize = 0;
-    zip_t *g_ThemeZip = nullptr;
+    void *g_ThemeFileData = nullptr;
+    size_t g_ThemeFileDataSize = 0;
+    zip_t *g_ThemeFile = nullptr;
 
     void *g_FontData = nullptr;
     size_t g_FontDataSize = 0;
@@ -93,7 +93,7 @@ namespace {
     char g_ManifestAuthor[256] = {};
 
     inline bool IsLoadedTheme() {
-        return g_ThemeZip != nullptr;
+        return g_ThemeFile != nullptr;
     }
 
     #define IMGUI_COLOR_TO_U32(color) IM_COL32((u32)(color.Value.x * 255.0f), (u32)(color.Value.y * 255.0f), (u32)(color.Value.z * 255.0f), (u32)(color.Value.w * 255.0f))
@@ -132,7 +132,7 @@ namespace {
 
     constexpr u32 WindowTitleBarExtraHeight = 20;
     float g_Scale = 0.6f;
-    float g_MenuEntryScale = 0.7f;
+    float g_MenuEntryScale = 0.5f;
 
     ImFont *g_FontStandard_Small;
     ImFont *g_FontStandard_Medium;
@@ -146,7 +146,7 @@ namespace {
 }
 
 bool LoadThemeJsonAsset(const char *path, nlohmann::json &out_json) {
-    auto zip_rc = zip_entry_open(g_ThemeZip, path);
+    auto zip_rc = zip_entry_open(g_ThemeFile, path);
     if(zip_rc != 0) {
         emscripten_log(EM_LOG_CONSOLE, "Unable to open theme ZIP JSON asset at '%s'...: %d", path, zip_rc);
         return false;
@@ -154,16 +154,16 @@ bool LoadThemeJsonAsset(const char *path, nlohmann::json &out_json) {
 
     void *json_data;
     size_t json_data_size;
-    zip_rc = zip_entry_read(g_ThemeZip, &json_data, &json_data_size);
+    zip_rc = zip_entry_read(g_ThemeFile, &json_data, &json_data_size);
     if(zip_rc <= 0) {
-        zip_entry_close(g_ThemeZip);
+        zip_entry_close(g_ThemeFile);
         emscripten_log(EM_LOG_CONSOLE, "Unable to read theme ZIP JSON asset at '%s'...: %d", path, zip_rc);
         return false;
     }
 
     std::string json_str(reinterpret_cast<const char*>(json_data), json_data_size);
     free(json_data);
-    zip_entry_close(g_ThemeZip);
+    zip_entry_close(g_ThemeFile);
 
     out_json = nlohmann::json::parse(json_str);
     return true;
@@ -517,23 +517,23 @@ struct Element {
         else {
             int zip_rc;
             for(u32 i = 0; i < std::size(AllowedImageFormats); i++) {
-                zip_rc = zip_entry_open(g_ThemeZip, (path + "." + AllowedImageFormats[i]).c_str());
+                zip_rc = zip_entry_open(g_ThemeFile, (path + "." + AllowedImageFormats[i]).c_str());
                 if(zip_rc == 0) {
                     break;
                 }
             }
             if(zip_rc != 0) {
-                zip_entry_close(g_ThemeZip);
+                zip_entry_close(g_ThemeFile);
                 return;
             }
 
-            if(zip_entry_read(g_ThemeZip, &img_data, &img_data_size) <= 0) {
+            if(zip_entry_read(g_ThemeFile, &img_data, &img_data_size) <= 0) {
                 emscripten_log(EM_LOG_CONSOLE, "Unable to read image '%s' from theme ZIP", path.c_str());
-                zip_entry_close(g_ThemeZip);
+                zip_entry_close(g_ThemeFile);
                 return;
             }
 
-            zip_entry_close(g_ThemeZip);
+            zip_entry_close(g_ThemeFile);
         }
 
         this->LoadAsRawImage(img_data, img_data_size, custom_width, custom_height);
@@ -1256,14 +1256,14 @@ bool ReloadFromTheme() {
         elem->Load();
     }
 
-    auto zip_rc = zip_entry_open(g_ThemeZip, "ui/Font.ttf");
+    auto zip_rc = zip_entry_open(g_ThemeFile, "ui/Font.ttf");
     if(zip_rc == 0) {
         void *ttf_data;
         size_t ttf_data_size;
-        if(zip_entry_read(g_ThemeZip, &ttf_data, &ttf_data_size) <= 0) {
-            zip_entry_close(g_ThemeZip);
+        if(zip_entry_read(g_ThemeFile, &ttf_data, &ttf_data_size) <= 0) {
+            zip_entry_close(g_ThemeFile);
             emscripten_log(EM_LOG_CONSOLE, "Unable to read theme TTF font...");
-            zip_close(g_ThemeZip);
+            zip_close(g_ThemeFile);
             return false;
         }
 
@@ -1273,7 +1273,7 @@ bool ReloadFromTheme() {
 
         g_FontData = ttf_data;
         g_FontDataSize = ttf_data_size;
-        zip_entry_close(g_ThemeZip);
+        zip_entry_close(g_ThemeFile);
     }
 
     if(LoadThemeJsonAsset(ul::design::SoundSettingsPath, g_SoundSettings)) {
@@ -1313,42 +1313,42 @@ bool ReloadFromTheme() {
             free(sound_file->data);
         }
 
-        auto zip_rc = zip_entry_open(g_ThemeZip, sound_file->path.c_str());
+        auto zip_rc = zip_entry_open(g_ThemeFile, sound_file->path.c_str());
         if(zip_rc == 0) {
             void *sound_data;
             size_t sound_data_size;
-            if(zip_entry_read(g_ThemeZip, &sound_file->data, &sound_file->data_size) <= 0) {
-                zip_entry_close(g_ThemeZip);
+            if(zip_entry_read(g_ThemeFile, &sound_file->data, &sound_file->data_size) <= 0) {
+                zip_entry_close(g_ThemeFile);
                 emscripten_log(EM_LOG_CONSOLE, "Unable to read sound file at '%s'...", sound_file->path.c_str());
-                zip_close(g_ThemeZip);
+                zip_close(g_ThemeFile);
                 return false;
             }
 
-            zip_entry_close(g_ThemeZip);
+            zip_entry_close(g_ThemeFile);
         }
     }
 
     return true;
 }
 
-extern "C" EMSCRIPTEN_KEEPALIVE void cpp_LoadThemeZip(void *theme_zip_data, const size_t theme_zip_data_size) {
-    if(g_ThemeZip != nullptr) {
-        zip_close(g_ThemeZip);
+extern "C" EMSCRIPTEN_KEEPALIVE void cpp_LoadThemeFile(void *theme_zip_data, const size_t theme_zip_data_size) {
+    if(g_ThemeFile != nullptr) {
+        zip_close(g_ThemeFile);
     }
 
-    if(g_ThemeZipData != nullptr) {
-        free(g_ThemeZipData);
+    if(g_ThemeFileData != nullptr) {
+        free(g_ThemeFileData);
     }
 
-    g_ThemeZipData = theme_zip_data;
-    g_ThemeZipDataSize = theme_zip_data_size;
-    g_ThemeZip = zip_stream_open(reinterpret_cast<const char*>(theme_zip_data), theme_zip_data_size, 0, 'r');
+    g_ThemeFileData = theme_zip_data;
+    g_ThemeFileDataSize = theme_zip_data_size;
+    g_ThemeFile = zip_stream_open(reinterpret_cast<const char*>(theme_zip_data), theme_zip_data_size, 0, 'r');
 
     ReloadFromTheme();
 }
 
-void LoadDefaultThemeZip() {
-    auto f = fopen("assets/default-theme.zip", "rb");
+void LoadDefaultThemeFile() {
+    auto f = fopen("assets/default-theme.ultheme", "rb");
     if(f) {
         fseek(f, 0, SEEK_END);
         const auto theme_data_size = ftell(f);
@@ -1358,18 +1358,18 @@ void LoadDefaultThemeZip() {
         fread(theme_data, theme_data_size, 1, f);
         fclose(f);
 
-        cpp_LoadThemeZip(theme_data, theme_data_size);
+        cpp_LoadThemeFile(theme_data, theme_data_size);
     }
     else {
         emscripten_log(EM_LOG_CONSOLE, "Unable to open default theme ZIP...");
     }
 }
 
-EM_JS(void, LoadThemeZip, (), {
+EM_JS(void, LoadThemeFile, (), {
     var input = document.createElement("input");
     input.type = "file";
     input.id = "file-selector";
-    input.accept = ".zip";
+    input.accept = ".ultheme,.zip";
     input.addEventListener("change", (event) => {
         var file = event.target.files[0];
         var reader = new FileReader();
@@ -1377,7 +1377,7 @@ EM_JS(void, LoadThemeZip, (), {
             var file_data = new Uint8Array(reader.result);
             var file_ptr = Module._malloc(file_data.length);
             Module.HEAPU8.set(file_data, file_ptr);
-            Module.ccall("cpp_LoadThemeZip", null, ["number", "number"], [file_ptr, file_data.length]);
+            Module.ccall("cpp_LoadThemeFile", null, ["number", "number"], [file_ptr, file_data.length]);
         }, false);
         reader.readAsArrayBuffer(file);
     });
@@ -1392,11 +1392,11 @@ EM_JS(void, LoadThemeZip, (), {
     }
 });
 
-EM_JS(void, DoSaveThemeZip, (void *theme_zip_data, const size_t theme_zip_data_size), {
+EM_JS(void, DoSaveThemeFile, (void *theme_zip_data, const size_t theme_zip_data_size), {
     var data_array = Module.HEAPU8.subarray(theme_zip_data, theme_zip_data + theme_zip_data_size);
     var pom = document.createElement("a");
     pom.setAttribute("href", window.URL.createObjectURL(new Blob([data_array], {type: "octet/stream"})));
-    pom.setAttribute("download", "theme.zip");
+    pom.setAttribute("download", "custom-theme.ultheme");
 
     if(document.createEvent) {
         var event = document.createEvent("MouseEvents");
@@ -1408,7 +1408,7 @@ EM_JS(void, DoSaveThemeZip, (void *theme_zip_data, const size_t theme_zip_data_s
     }
 });
 
-void SaveThemeZip() {
+void SaveThemeFile() {
     auto theme_zip = zip_stream_open(nullptr, 0, ZIP_DEFAULT_COMPRESSION_LEVEL, 'w');
 
     for(auto &elem: g_AllElements)  {
@@ -1506,7 +1506,7 @@ void SaveThemeZip() {
 
     zip_stream_close(theme_zip);
 
-    DoSaveThemeZip(zip_buf, zip_buf_size);
+    DoSaveThemeFile(zip_buf, zip_buf_size);
 }
 
 void DrawItemMenu(const std::vector<Element*> &icons, const std::vector<std::string> &texts, const u32 focus_idx, const u32 base_x, const u32 base_y, const u32 width, const u32 item_height, const ImU32 bg_color) {
@@ -2049,16 +2049,16 @@ namespace {
             ImGui::Separator();
 
             if(ImGui::Button("Load theme")) {
-                LoadThemeZip();
+                LoadThemeFile();
             }
 
             if(ImGui::Button("Load default theme")) {
-                LoadDefaultThemeZip();
+                LoadDefaultThemeFile();
             }
 
             if(IsLoadedTheme()) {
                 if(ImGui::Button("Save theme")) {
-                    SaveThemeZip();
+                    SaveThemeFile();
                 }
 
                 ImGui::Separator();

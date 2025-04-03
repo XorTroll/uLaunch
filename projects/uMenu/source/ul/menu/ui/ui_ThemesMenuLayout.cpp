@@ -106,6 +106,13 @@ namespace ul::menu::ui {
 
                 const auto option = g_MenuApplication->DisplayDialog(selected_theme.manifest.name, theme_conf_msg, { GetLanguageString("yes"), GetLanguageString("cancel") }, true, this->loaded_theme_icons.at(idx));
                 if(option == 0) {
+                    if(selected_theme.IsOutdated()) {
+                        const auto option_2 = g_MenuApplication->DisplayDialog(selected_theme.manifest.name, GetLanguageString("theme_outdated"), { GetLanguageString("ok"), GetLanguageString("cancel") }, true);
+                        if(option_2 != 0) {
+                            return;
+                        }
+                    }
+
                     g_GlobalSettings.SetActiveTheme(selected_theme);
                     g_MenuApplication->ShowNotification(GetLanguageString("theme_cache"));
 

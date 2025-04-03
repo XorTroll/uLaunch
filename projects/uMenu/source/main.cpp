@@ -12,13 +12,6 @@ using namespace ul::util::size;
 
 ul::menu::ui::GlobalSettings g_GlobalSettings;
 
-namespace {
-
-    constexpr u32 ExosphereApiVersionConfigItem = 65000;
-    constexpr u32 ExosphereEmummcType = 65007;
-
-}
-
 extern "C" {
 
     AppletType __nx_applet_type = AppletType_LibraryApplet; // Explicitly declare we're a library applet (need to do so for non-hbloader homebrew)
@@ -27,7 +20,6 @@ extern "C" {
     size_t __nx_heap_size = 296_MB;
 
     void __libnx_init_time();
-    void __libnx_init_cwd();
 
     void __nx_win_init();
     void __nx_win_exit();
@@ -38,19 +30,14 @@ extern "C" {
         UL_RC_ASSERT(fsInitialize());
         UL_RC_ASSERT(fsdevMountSdmc());
 
-        UL_RC_ASSERT(splInitialize());
-        // Since we rely on ams for uLaunch to work, it *must* be present
-        u64 raw_ams_ver;
-        UL_RC_ASSERT(splGetConfig(static_cast<SplConfigItem>(ExosphereApiVersionConfigItem), &raw_ams_ver));
-        g_GlobalSettings.ams_version = {
-            .major = static_cast<u8>((raw_ams_ver >> 56) & 0xFF),
-            .minor = static_cast<u8>((raw_ams_ver >> 48) & 0xFF),
-            .micro = static_cast<u8>((raw_ams_ver >> 40) & 0xFF)
-        };
-        u64 emummc_type;
-        UL_RC_ASSERT(splGetConfig(static_cast<SplConfigItem>(ExosphereEmummcType), &emummc_type));
-        g_GlobalSettings.ams_is_emummc = emummc_type != 0;
-        splExit();
+        UL_RC_ASSERT(timeInitialize());
+        __libnx_init_time();
+        UL_RC_ASSERT(timeGetDeviceLocationName(&g_GlobalSettings.timezone));
+
+        ul::InitializeLogging("uMenu");
+        UL_LOG_INFO("Alive!");
+
+        ul::os::GetAmsConfig(g_GlobalSettings.ams_version, g_GlobalSettings.ams_is_emummc);
 
         UL_RC_ASSERT(setsysInitialize());
         UL_RC_ASSERT(setInitialize());
@@ -80,16 +67,14 @@ extern "C" {
         UL_RC_ASSERT(appletInitialize());
         UL_RC_ASSERT(hidInitialize());
 
-        UL_RC_ASSERT(timeInitialize());
-        __libnx_init_time();
-        UL_RC_ASSERT(timeGetDeviceLocationName(&g_GlobalSettings.timezone));
-
         UL_RC_ASSERT(accountInitialize(AccountServiceType_System));
         UL_RC_ASSERT(nsInitialize());
         UL_RC_ASSERT(nssuInitialize());
         UL_RC_ASSERT(avmInitialize());
         UL_RC_ASSERT(ul::net::Initialize());
         UL_RC_ASSERT(psmInitialize());
+
+        ul::menu::bt::InitializeBluetoothManager();
 
         __nx_win_init();
     }
@@ -104,6 +89,7 @@ extern "C" {
 
         __nx_win_exit();
 
+        ul::menu::bt::FinalizeBluetoothManager();
         setExit();
         setsysExit();
         psmExit();
@@ -134,21 +120,19 @@ namespace {
     ul::smi::MenuStartMode g_StartMode;
 
     void MainLoop() {
-        // After initializing RomFs, start initializing the rest of stuff here
-        ul::menu::InitializeEntries();
-
         // Load menu config
         g_GlobalSettings.config = ul::cfg::LoadConfig();
 
-        // Cache active theme if needed
+        // Cache active theme, if needed
         if(g_GlobalSettings.system_status.reload_theme_cache) {
             ul::cfg::CacheActiveTheme(g_GlobalSettings.config);
         }
 
         UL_ASSERT_TRUE(g_GlobalSettings.config.GetEntry(ul::cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, g_GlobalSettings.cache_hb_takeover_app_id));
 
-        // Load active theme if set
+        // Load active theme, if set
         std::string active_theme_name;
+        Result active_theme_load_rc = ul::ResultSuccess;
         UL_ASSERT_TRUE(g_GlobalSettings.config.GetEntry(ul::cfg::ConfigEntryId::ActiveThemeName, active_theme_name));
         if(!active_theme_name.empty()) {
             const auto rc = ul::cfg::TryLoadTheme(active_theme_name, g_GlobalSettings.active_theme);
@@ -159,7 +143,9 @@ namespace {
                 g_GlobalSettings.active_theme = {};
                 UL_LOG_WARN("Unable to load active theme '%s': %s, resetting to default theme...", active_theme_name.c_str(), ul::util::FormatResultDisplay(rc).c_str());
                 UL_ASSERT_TRUE(g_GlobalSettings.config.SetEntry(ul::cfg::ConfigEntryId::ActiveThemeName, g_GlobalSettings.active_theme.name));
+                g_GlobalSettings.SaveConfig();
                 ul::cfg::RemoveActiveThemeCache();
+                active_theme_load_rc = rc;
             }
         }
         else {
@@ -187,9 +173,7 @@ namespace {
                 UL_LOG_INFO("> Deleted app: 0x%016lX", app_buf[i]);
 
                 if(g_GlobalSettings.cache_hb_takeover_app_id == app_buf[i]) {
-                    g_GlobalSettings.cache_hb_takeover_app_id = 0;
-                    g_GlobalSettings.config.SetEntry(ul::cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, g_GlobalSettings.cache_hb_takeover_app_id);
-                    g_GlobalSettings.SaveConfig();
+                    g_GlobalSettings.ResetHomebrewTakeoverApplicationId();
                 }
 
                 g_GlobalSettings.deleted_app_ids.push_back(app_buf[i]);
@@ -247,10 +231,17 @@ namespace {
         g_MenuApplication->Initialize(g_StartMode);
         UL_RC_ASSERT(g_MenuApplication->Load());
 
+        if(R_FAILED(active_theme_load_rc)) {
+            g_MenuApplication->NotifyActiveThemeLoadFailure(active_theme_load_rc);
+        }
+        if(g_GlobalSettings.active_theme.IsValid() && g_GlobalSettings.active_theme.IsOutdated()) {
+            g_MenuApplication->NotifyActiveThemeOutdated();
+        }
+
         // With the handlers ready, initialize uSystem message handling
         UL_RC_ASSERT(ul::menu::smi::InitializeMenuMessageHandler());
 
-        if(g_StartMode == ul::smi::MenuStartMode::MainMenuApplicationSuspended) {
+        if(g_StartMode == ul::smi::MenuStartMode::MainMenu) {
             g_MenuApplication->Show();
         }
         else {
@@ -263,9 +254,6 @@ namespace {
 // uMenu procedure: read sent storages, initialize RomFs (externally), load config and other stuff, finally create the renderer and start the UI
 
 int main() {
-    ul::InitializeLogging("uMenu");
-    UL_LOG_INFO("Alive!");
-
     UL_RC_ASSERT(ul::menu::am::ReadStartMode(g_StartMode));
     UL_ASSERT_TRUE(g_StartMode != ul::smi::MenuStartMode::Invalid);
 

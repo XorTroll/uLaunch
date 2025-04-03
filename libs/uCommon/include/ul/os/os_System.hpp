@@ -40,9 +40,10 @@ namespace ul::os {
     struct Time {
         u32 h;
         u32 min;
+        u32 sec;
 
-        constexpr Time() : h(UINT32_MAX), min(UINT32_MAX) {}
-        constexpr Time(const u32 h, const u32 min) : h(h), min(min) {}
+        constexpr Time() : h(UINT32_MAX), min(UINT32_MAX), sec(UINT32_MAX) {}
+        constexpr Time(const u32 h, const u32 min, const u32 sec = 0) : h(h), min(min), sec(sec) {}
 
         inline bool operator==(const Time &other) const {
             return (this->h == other.h) && (this->min == other.min);
@@ -73,5 +74,8 @@ namespace ul::os {
     };
 
     Date GetCurrentDate();
+
+    void GetAmsConfig(ul::Version &out_ams_version, bool &out_is_emummc);
+    bool IsEmuMMC();
 
 }

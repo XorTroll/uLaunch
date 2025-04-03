@@ -23,7 +23,7 @@ namespace ul::menu::ui {
             static constexpr u32 EntryVerticalMargin = 32;
             static constexpr u32 CursorTransitionIncrementSteps = 6;
             static constexpr u32 DefaultEntrySize = 256;
-            static constexpr u32 MinScalableEntrySize = DefaultEntrySize * 1.5; // Equivalent to keeping 256x256 in 1280x720 resolution (otherwise they are be too small in 1080p)
+            static constexpr u32 MinScalableEntrySize = DefaultEntrySize * 1.5; // Equivalent to keeping 256x256 in 1280x720 resolution (otherwise they would be too small in 1080p)
             static constexpr u32 DefaultOverTextSideMargin = 15;
             static constexpr u32 DefaultProgressBarHeight = 25;
             static constexpr pu::ui::Color ProgressBackgroundColor = { 0, 0, 0, 215 };
@@ -144,7 +144,7 @@ namespace ul::menu::ui {
 
                 #define _COMPUTE_OVER_SIZE(name) { \
                     const auto over_def_size = pu::ui::render::GetTextureWidth(this->name##_over_icon); \
-                    this->name##_size = (u32)((double)this->entry_size * ((double)over_def_size / (double)DefaultEntrySize)); \
+                    this->name##_size = (u32)((double)this->entry_size * ((double)over_def_size / (double)MinScalableEntrySize)); \
                 }
 
                 _COMPUTE_OVER_SIZE(cursor)
@@ -167,7 +167,7 @@ namespace ul::menu::ui {
             EntryMenu(const s32 x, const s32 y, const std::string &path, FocusedEntryInputPressedCallback cur_entry_input_cb, FocusedEntryChangedCallback cur_entry_changed_cb, FocusedEntryChangeStartedCallback cur_entry_change_started_cb);
             PU_SMART_CTOR(EntryMenu)
 
-            void Initialize(const u32 last_idx);
+            void Initialize(const u32 last_idx, const std::string &new_path = "");
 
             inline s32 GetX() override {
                 return this->x;
@@ -205,9 +205,7 @@ namespace ul::menu::ui {
                 return this->cur_entries;
             }
 
-            inline bool IsInRoot() {
-                return this->cur_path.length() == __builtin_strlen(MenuPath);
-            }
+            bool IsInRoot();
 
             inline bool IsMenuStart() {
                 return this->base_entry_idx_x == 0;
@@ -239,10 +237,11 @@ namespace ul::menu::ui {
             }
 
             void IncrementEntryHeightCount();
+            bool CanDecrementEntryHeightCount();
             void DecrementEntryHeightCount();
 
-            void MoveToPreviousPage();
-            void MoveToNextPage();
+            bool MoveToPreviousPage();
+            bool MoveToNextPage();
             void Rewind();
 
             void ResetSelection();
