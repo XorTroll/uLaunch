@@ -88,6 +88,8 @@ Before anything, as always: new language texts were added to reflect the changes
 
 - New main menu SFX was added: `MenuIncrement.wav` and `MenuDecrement.wav`
 
+- Now, a version of the default theme with DSi/Wii/3DS BGM/SFX will be included in the release! You can now download it and experience the default theme in a more immersive way ;)
+
 ### Default theme
 
 - The main menu top part was reorganized to show game titles in a more convenient way
