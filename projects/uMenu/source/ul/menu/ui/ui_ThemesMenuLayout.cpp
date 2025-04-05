@@ -69,7 +69,7 @@ namespace ul::menu::ui {
                     UL_LOG_WARN("Theme '%s' unable to load image: %s", theme.name.c_str(), util::FormatResultDisplay(rc).c_str());
                 }
 
-                auto theme_icon = pu::sdl2::TextureHandle::New(pu::ui::render::LoadImage(theme_icon_path));
+                auto theme_icon = pu::sdl2::TextureHandle::New(pu::ui::render::LoadImageFromFile(theme_icon_path));
                 this->loaded_theme_icons.push_back(theme_icon);
 
                 auto theme_item = pu::ui::elm::MenuItem::New(theme.manifest.name + " (v" + theme.manifest.release + ", " + theme.manifest.author + ")");

@@ -112,7 +112,13 @@ namespace ul::menu::ui {
         auto icon_path = entry.control.icon_path;
         if(icon_path.empty()) {
             if(entry.Is<EntryType::Application>()) {
-                icon_path = "ui/Main/EntryIcon/DefaultApplication";
+                auto tex = LoadApplicationIconTexture(entry.app_info.app_id);
+                if(tex != nullptr) {
+                    return tex;
+                }
+                else {
+                    icon_path = "ui/Main/EntryIcon/DefaultApplication";
+                }
             }
             else if(entry.Is<EntryType::Homebrew>()) {
                 icon_path = "ui/Main/EntryIcon/DefaultHomebrew";
@@ -148,7 +154,7 @@ namespace ul::menu::ui {
             return TryFindLoadImageHandle(icon_path);
         }
         else {
-            return pu::sdl2::TextureHandle::New(pu::ui::render::LoadImage(icon_path));
+            return pu::sdl2::TextureHandle::New(pu::ui::render::LoadImageFromFile(icon_path));
         }
     }
 

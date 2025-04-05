@@ -67,15 +67,21 @@ namespace ul::menu::ui {
     void StartupMenuLayout::ReloadMenu() {
         this->users_menu->ClearItems();
 
-        std::vector<AccountUid> users;
-        UL_RC_ASSERT(acc::ListAccounts(users));
-        for(const auto &user: users) {
+        std::vector<AccountUid> user_ids;
+        UL_RC_ASSERT(acc::ListAccounts(user_ids));
+        for(const auto &user_id: user_ids) {
             std::string name;
-            if(R_SUCCEEDED(acc::GetAccountName(user, name))) {
+            if(R_SUCCEEDED(acc::GetAccountName(user_id, name))) {
                 auto user_item = pu::ui::elm::MenuItem::New(name);
-                auto user_icon = pu::sdl2::TextureHandle::New(pu::ui::render::LoadImage(acc::GetIconCacheImagePath(user)));
+
+                u8 *user_icon_buf = nullptr;
+                size_t user_icon_size = 0;
+                UL_RC_ASSERT(acc::LoadAccountImage(user_id, user_icon_buf, user_icon_size));
+                auto user_icon = pu::sdl2::TextureHandle::New(pu::ui::render::LoadImageFromBuffer(user_icon_buf, user_icon_size));
+                delete[] user_icon_buf;
                 user_item->SetIcon(user_icon);
-                user_item->AddOnKey(std::bind(&StartupMenuLayout::user_DefaultKey, this, user));
+
+                user_item->AddOnKey(std::bind(&StartupMenuLayout::user_DefaultKey, this, user_id));
                 user_item->SetColor(g_MenuApplication->GetTextColor());
                 this->users_menu->AddItem(user_item);
             }

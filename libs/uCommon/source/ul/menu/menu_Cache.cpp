@@ -79,18 +79,10 @@ namespace ul::menu {
             });
         }
 
+        /*
         bool CacheApplicationEntry(const u64 app_id, NsApplicationControlData *tmp_control_data) {
-            const auto cache_icon_path = GetApplicationCacheIconPath(app_id);
-            fs::DeleteFile(cache_icon_path);
-            const auto rc = nsGetApplicationControlData(NsApplicationControlSource_Storage, app_id, tmp_control_data, sizeof(NsApplicationControlData), nullptr);
-            if(R_SUCCEEDED(rc)) {
-                fs::WriteFile(cache_icon_path, tmp_control_data->icon, sizeof(tmp_control_data->icon), true);
-                return true;
-            }
-            else {
-                UL_LOG_WARN("Application cache failed: %s", util::FormatResultDisplay(rc).c_str());
-                return false;
-            }
+            // (...)
+            return true;
         }
 
         void CacheApplicationEntries(const std::vector<NsApplicationRecord> &records) {
@@ -100,6 +92,7 @@ namespace ul::menu {
             }
             delete tmp_control_data;
         }
+        */
 
     }
 
@@ -110,15 +103,24 @@ namespace ul::menu {
     }
 
     void CacheApplications(const std::vector<NsApplicationRecord> &records) {
+        // Nothing to cache for now (previously we cached the icon, but unlike homebrew this is not really needed)
+
+        /*
         fs::CleanDirectory(ApplicationCachePath);
         CacheApplicationEntries(records);
+        */
     }
 
     bool CacheSingleApplication(const u64 app_id) {
+        // Nothing to cache for now (previously we cached the icon, but unlike homebrew this is not really needed)
+        
+        /*
         auto tmp_control_data = new NsApplicationControlData();
         const auto ok = CacheApplicationEntry(app_id, tmp_control_data);
         delete tmp_control_data;
         return ok;
+        */
+        return true;
     }
 
     std::string GetHomebrewCacheIconPath(const std::string &nro_path) {

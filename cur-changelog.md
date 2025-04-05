@@ -52,6 +52,10 @@ Before anything, as always: new language texts were added to reflect the changes
 
 - Fixed a bug where renaming a folder would not update the folder name text over the folder icon
 
+- Game icons are no longer cache'd by uLaunch itself: the console already has its own cache system, and simply relying on it (like regular HOME Menu does) has always been faster than loading our cache'd icons from the SD card (just that it took me a few years to really notice); another consequence is that, when changing language in the console, icons will properly reflect the corresponding language (which previously did not always work as expected)
+
+- Account/user icons are also no longer cache'd (for more or less the same reason as with games) hence when creating a new user / editing a user's icon, the change is properly reflected in the menu ;)
+
 ## Settings menu
 
 - The setting that checks for system updates no longer freezes when its waiting for connection (a time-out prevents it now).

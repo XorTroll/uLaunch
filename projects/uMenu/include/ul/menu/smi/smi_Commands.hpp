@@ -288,4 +288,15 @@ namespace ul::menu::smi {
         );
     }
 
+    inline Result NotifyWarnedAboutOutdatedTheme() {
+        return SendCommand(SystemMessage::NotifyWarnedAboutOutdatedTheme,
+            [&](ScopedStorageWriter &writer) {
+                return ResultSuccess;
+            },
+            [&](ScopedStorageReader &reader) {
+                return ResultSuccess;
+            }
+        );
+    }
+
 }

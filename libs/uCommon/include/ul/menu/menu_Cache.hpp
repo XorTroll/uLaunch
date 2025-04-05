@@ -10,10 +10,6 @@ namespace ul::menu {
     void CacheApplications(const std::vector<NsApplicationRecord> &records);
     bool CacheSingleApplication(const u64 app_id);
 
-    inline std::string GetApplicationCacheIconPath(const u64 app_id) {
-        return fs::JoinPath(ApplicationCachePath, util::FormatProgramId(app_id) + ".jpg");
-    }
-
     std::string GetHomebrewCacheIconPath(const std::string &nro_path);
     std::string GetHomebrewCacheNacpPath(const std::string &nro_path);
 

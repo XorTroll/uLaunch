@@ -75,7 +75,8 @@ namespace ul::smi {
         ListDeletedApplications,
         OpenCabinet,
         StartVerifyApplication,
-        ListInVerifyApplications
+        ListInVerifyApplications,
+        NotifyWarnedAboutOutdatedTheme
     };
 
     struct SystemStatus {
@@ -86,6 +87,7 @@ namespace ul::smi {
         char last_menu_path[FS_MAX_PATH];
         u32 last_menu_index;
         bool reload_theme_cache;
+        bool warned_about_outdated_theme;
         u32 last_added_app_count;
         u32 last_deleted_app_count;
         u32 in_verify_app_count;

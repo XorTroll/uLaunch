@@ -22,9 +22,7 @@ namespace ul {
     constexpr const char BuiltinMenuLanguagesPath[] = "romfs:/lang";
 
     constexpr const char RootCachePath[] = "sdmc:/ulaunch/cache";
-    constexpr const char ApplicationCachePath[] = "sdmc:/ulaunch/cache/app";
     constexpr const char HomebrewCachePath[] = "sdmc:/ulaunch/cache/hb";
-    constexpr const char AccountCachePath[] = "sdmc:/ulaunch/cache/acc";
     constexpr const char ThemePreviewCachePath[] = "sdmc:/ulaunch/cache/preview";
     constexpr const char ActiveThemeCachePath[] = "sdmc:/ulaunch/cache/active";
 
@@ -49,6 +47,9 @@ namespace ul {
     constexpr const char PreV100AccountCachePath[] = "sdmc:/ulaunch/user";
 
     constexpr const char V100_V110MenuPath[] = "sdmc:/ulaunch/menu";
+
+    constexpr const char PreV120AccountCachePath[] = "sdmc:/ulaunch/cache/acc";
+    constexpr const char PreV120ApplicationCachePath[] = "sdmc:/ulaunch/cache/app";
 
     //////////////////////
 

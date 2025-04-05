@@ -1116,10 +1116,13 @@ namespace ul::menu::ui {
                 g_MenuApplication->DisplayDialog(GetLanguageString("theme_active"), GetLanguageString("theme_load_failed") + " " + util::FormatResultDisplay(theme_rc), { GetLanguageString("ok") }, true);
             }
             else if(g_MenuApplication->HasActiveThemeOutdated()) {
-                pu::audio::PlaySfx(this->error_sfx);
-
                 g_MenuApplication->ConsumeActiveThemeOutdated();
-                g_MenuApplication->DisplayDialog(GetLanguageString("theme_active"), GetLanguageString("theme_outdated"), { GetLanguageString("ok") }, true);
+
+                if(!g_GlobalSettings.system_status.warned_about_outdated_theme) {
+                    pu::audio::PlaySfx(this->error_sfx);
+                    UL_RC_ASSERT(smi::NotifyWarnedAboutOutdatedTheme());
+                    g_MenuApplication->DisplayDialog(GetLanguageString("theme_active"), GetLanguageString("theme_outdated"), { GetLanguageString("ok") }, true);
+                }
             }
         }
 
@@ -1139,7 +1142,7 @@ namespace ul::menu::ui {
             const auto detail_rc = g_MenuApplication->GetConsumeVerifyDetailResult();
 
             if(R_SUCCEEDED(rc) && R_SUCCEEDED(detail_rc)) {
-                g_MenuApplication->DisplayDialog(GetLanguageString("app_verify"), GetLanguageString("app_verify_ok"), { GetLanguageString("ok") }, true, pu::sdl2::TextureHandle::New(pu::ui::render::LoadImage(GetApplicationCacheIconPath(app_id))));
+                g_MenuApplication->DisplayDialog(GetLanguageString("app_verify"), GetLanguageString("app_verify_ok"), { GetLanguageString("ok") }, true, LoadApplicationIconTexture(app_id));
             }
             else {
                 g_MenuApplication->DisplayDialog(GetLanguageString("app_verify"), GetLanguageString("app_verify_error") + ":\n\n" + util::FormatResultDisplay(rc) + "\n" + util::FormatResultDisplay(detail_rc), { GetLanguageString("ok") }, true);

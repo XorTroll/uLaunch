@@ -150,10 +150,6 @@ namespace ul::man::ui {
             menu::CacheApplications(cur_app_recs);
             menu::CacheHomebrew();
 
-            UL_RC_ASSERT(accountInitialize(AccountServiceType_System));
-            UL_RC_ASSERT(acc::CacheAccounts());
-            accountExit();
-
             cfg::RemoveActiveThemeCache();
 
             g_MainApplication->ShowNotification(GetLanguageString("reset_cache_success"));

@@ -537,14 +537,6 @@ namespace ul::menu {
                         case EntryType::Application: {
                             const auto application_id = entry_json.value("application_id", static_cast<u64>(0));
 
-                            if(!entry.control.custom_icon_path) {
-                                // Only set the icon if it's valid
-                                const auto cache_icon_path = GetApplicationCacheIconPath(application_id);
-                                if(fs::ExistsFile(cache_icon_path)) {
-                                    entry.control.icon_path = cache_icon_path;
-                                }
-                            }
-
                             entry.app_info = {
                                 .app_id = application_id
                             };

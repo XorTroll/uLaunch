@@ -52,6 +52,8 @@ namespace ul::menu::ui {
         util::JSON g_ActiveThemeBgmJson;
         util::JSON g_DefaultThemeBgmJson;
 
+        NsApplicationControlData g_ControlDataTempBuffer = {};
+
     }
 
     std::string TryGetActiveThemeResource(const std::string &resource_base) {
@@ -82,7 +84,7 @@ namespace ul::menu::ui {
     pu::sdl2::Texture TryFindLoadImage(const std::string &path_no_ext) {
         for(const auto &fmt: ImageFormatList) {
             const auto path = TryGetActiveThemeResource(path_no_ext + "." + fmt);
-            const auto img = pu::ui::render::LoadImage(path);
+            const auto img = pu::ui::render::LoadImageFromFile(path);
             if(img != nullptr) {
                 return img;
             }
@@ -94,7 +96,7 @@ namespace ul::menu::ui {
     void InitializeResources() {
         if(!g_CommonResourcesLoaded) {
             g_BackgroundTexture = TryFindLoadImageHandle("ui/Background");
-            g_LogoTexture = pu::sdl2::TextureHandle::New(pu::ui::render::LoadImage("romfs:/Logo.png"));
+            g_LogoTexture = pu::sdl2::TextureHandle::New(pu::ui::render::LoadImageFromFile("romfs:/Logo.png"));
 
             g_NonEditableSettingIconTexture = TryFindLoadImageHandle("ui/Settings/SettingNonEditableIcon");
             g_EditableSettingIconTexture = TryFindLoadImageHandle("ui/Settings/SettingEditableIcon");
@@ -134,8 +136,11 @@ namespace ul::menu::ui {
     }
 
     void LoadSelectedUserIconTexture() {
-        const auto icon_path = acc::GetIconCacheImagePath(g_GlobalSettings.system_status.selected_user);
-        g_UserIconTexture = pu::sdl2::TextureHandle::New(pu::ui::render::LoadImage(icon_path));
+        u8 *user_icon_buf = nullptr;
+        size_t user_icon_size = 0;
+        UL_RC_ASSERT(acc::LoadAccountImage(g_GlobalSettings.system_status.selected_user, user_icon_buf, user_icon_size));
+        g_UserIconTexture = pu::sdl2::TextureHandle::New(pu::ui::render::LoadImageFromBuffer(user_icon_buf, user_icon_size));
+        delete[] user_icon_buf;
     }
 
     pu::sdl2::TextureHandle::Ref GetSelectedUserIconTexture() {
@@ -230,6 +235,21 @@ namespace ul::menu::ui {
         UL_RC_ASSERT(smi::UpdateMenuIndex(this->system_status.last_menu_index));
 
         LoadSelectedUserIconTexture();
+    }
+
+    pu::sdl2::TextureHandle::Ref LoadApplicationIconTexture(const u64 app_id) {
+        // No need to make our own cache system for app icons, NS has its own system for that already
+        u64 control_data_size;
+        const auto rc = nsGetApplicationControlData(NsApplicationControlSource_Storage, app_id, &g_ControlDataTempBuffer, sizeof(g_ControlDataTempBuffer), &control_data_size);
+        if(R_SUCCEEDED(rc)) {
+            // Icon = remaining control data ignoring the NACP
+            const auto icon_size = control_data_size - sizeof(g_ControlDataTempBuffer.nacp);
+            return pu::sdl2::TextureHandle::New(pu::ui::render::LoadImageFromBuffer(g_ControlDataTempBuffer.icon, icon_size));
+        }
+        else {
+            UL_LOG_WARN("Failed to get control data for application ID %016lX: %s", app_id, util::FormatResultDisplay(rc).c_str());
+            return nullptr;
+        }
     }
 
     void RebootSystem() {

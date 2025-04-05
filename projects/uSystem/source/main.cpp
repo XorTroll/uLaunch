@@ -100,6 +100,7 @@ namespace {
     AppletOperationMode g_OperationMode;
     ul::cfg::Config g_Config;
     bool g_AmsIsEmuMMC = false;
+    bool g_WarnedAboutOutdatedTheme = false;
 
     char g_CurrentMenuFsPath[FS_MAX_PATH] = {};
     char g_CurrentMenuPath[FS_MAX_PATH] = {};
@@ -193,6 +194,7 @@ namespace {
         ul::smi::SystemStatus status = {
             .selected_user = g_SelectedUser,
             .last_menu_index = g_CurrentMenuIndex,
+            .warned_about_outdated_theme = g_WarnedAboutOutdatedTheme,
             .last_added_app_count = (u32)g_LastAddedApplications.size(),
             .last_deleted_app_count = (u32)g_LastDeletedApplications.size(),
             .in_verify_app_count = (u32)g_ApplicationVerifyContexts->size()
@@ -218,13 +220,6 @@ namespace {
         }
 
         return status;
-    }
-
-    inline void CacheAccounts() {
-        // Do it this way to avoid wasting a service session all the time
-        UL_RC_ASSERT(accountInitialize(AccountServiceType_System));
-        UL_RC_ASSERT(ul::acc::CacheAccounts());
-        accountExit();
     }
 
     void HandleSleep() {
@@ -680,6 +675,9 @@ namespace {
                         }
                         case ul::smi::SystemMessage::RestartMenu: {
                             UL_RC_TRY(reader.Pop(g_MenuRestartReloadThemeCacheFlag));
+                            if(g_MenuRestartReloadThemeCacheFlag) {
+                                g_WarnedAboutOutdatedTheme = false;
+                            }
                             g_MenuRestartFlag = true;
                             break;
                         }
@@ -747,6 +745,10 @@ namespace {
                         }
                         case ul::smi::SystemMessage::ListInVerifyApplications: {
                             UL_RC_TRY(reader.Pop(app_list_count));
+                            break;
+                        }
+                        case ul::smi::SystemMessage::NotifyWarnedAboutOutdatedTheme: {
+                            g_WarnedAboutOutdatedTheme = true;
                             break;
                         }
                         default: {
@@ -1034,11 +1036,6 @@ namespace {
             u64 hb_applet_takeover_program_id;
             UL_ASSERT_TRUE(g_Config.GetEntry(ul::cfg::ConfigEntryId::HomebrewAppletTakeoverProgramId, hb_applet_takeover_program_id));
             if(IsUsedLibraryApplet(cur_id) || (cur_id == la::GetAppletIdForProgramId(hb_applet_takeover_program_id))) {
-                // A user may have been created...
-                if(cur_id == AppletId_LibraryAppletPlayerSelect) {
-                    CacheAccounts();
-                }
-
                 ul::loader::TargetOutput target_opt;
                 if(g_LoaderChooseFlag) {
                     UL_LOG_INFO("Getting loader output...");
@@ -1284,8 +1281,6 @@ namespace {
         ul::fs::DeleteDirectory(ul::PreV100AccountCachePath);
 
         ul::fs::CleanDirectory(ul::RootCachePath);
-
-        CacheAccounts();
 
         ul::menu::SetLoadApplicationEntryVersions(false);
         g_CurrentRecords = ul::os::ListApplicationRecords();

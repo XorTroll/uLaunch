@@ -324,6 +324,8 @@ namespace ul::menu::ui {
         }
     };
 
+    pu::sdl2::TextureHandle::Ref LoadApplicationIconTexture(const u64 app_id);
+
     void RebootSystem();
     void ShutdownSystem();
     void SleepSystem();
