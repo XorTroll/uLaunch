@@ -22,8 +22,11 @@ namespace ul::menu::ui {
             static constexpr u32 VerticalSideMargin = 35;
             static constexpr u32 EntryVerticalMargin = 32;
             static constexpr u32 CursorTransitionIncrementSteps = 6;
+
             static constexpr u32 DefaultEntrySize = 256;
             static constexpr u32 MinScalableEntrySize = DefaultEntrySize * 1.5; // Equivalent to keeping 256x256 in 1280x720 resolution (otherwise they would be too small in 1080p)
+            static constexpr u32 V2MinScalableEntrySize = DefaultEntrySize; // Old scale size used in theme v2
+
             static constexpr u32 DefaultOverTextSideMargin = 15;
             static constexpr u32 DefaultProgressBarHeight = 25;
             static constexpr pu::ui::Color ProgressBackgroundColor = { 0, 0, 0, 215 };
@@ -144,7 +147,11 @@ namespace ul::menu::ui {
 
                 #define _COMPUTE_OVER_SIZE(name) { \
                     const auto over_def_size = pu::ui::render::GetTextureWidth(this->name##_over_icon); \
-                    this->name##_size = (u32)((double)this->entry_size * ((double)over_def_size / (double)MinScalableEntrySize)); \
+                    auto factor = ((double)over_def_size / (double)MinScalableEntrySize); \
+                    if(factor < 1.0f) { \
+                        factor = ((double)over_def_size / (double)V2MinScalableEntrySize); \
+                    } \
+                    this->name##_size = (u32)((double)this->entry_size * factor); \
                 }
 
                 _COMPUTE_OVER_SIZE(cursor)

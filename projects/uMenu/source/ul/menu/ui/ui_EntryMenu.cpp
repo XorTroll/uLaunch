@@ -363,8 +363,8 @@ namespace ul::menu::ui {
                 entry_alpha_incr.Increment(entry_alpha);
 
                 #define _DRAW_OVER_ICON(name) { \
-                    const auto over_icon_x = (s32)(entry_x - ((this->name##_size - this->entry_size) / 2)) - (s32)this->entries_base_swipe_neg_offset; \
-                    const auto over_icon_y = entry_y - ((this->name##_size - this->entry_size) / 2); \
+                    const auto over_icon_x = (s32)(entry_x - (std::abs((s32)(this->name##_size - this->entry_size)) / 2)) - (s32)this->entries_base_swipe_neg_offset; \
+                    const auto over_icon_y = entry_y - (std::abs((s32)(this->name##_size - this->entry_size)) / 2); \
                     drawer->RenderTexture(this->name##_over_icon, over_icon_x, over_icon_y, pu::ui::render::TextureRenderOptions({}, this->name##_size, this->name##_size, {}, {}, {})); \
                 }
 
@@ -435,8 +435,8 @@ namespace ul::menu::ui {
         const auto cur_actual_entry_idx_y = cur_actual_entry_idx % g_EntryHeightCount;
 
         // Cursor is an special over icon
-        const auto cursor_x = x + HorizontalSideMargin + cur_actual_entry_idx_x * (this->entry_size + this->entry_h_margin) - ((this->cursor_size - this->entry_size) / 2) + (this->IsCursorInTransition() ? this->cursor_transition_x : 0);
-        const auto cursor_y = y + this->v_side_margin + cur_actual_entry_idx_y * (this->entry_size + EntryVerticalMargin) - ((this->cursor_size - this->entry_size) / 2) + (this->IsCursorInTransition() ? this->cursor_transition_y : 0);
+        const auto cursor_x = x + HorizontalSideMargin + cur_actual_entry_idx_x * (this->entry_size + this->entry_h_margin) - (std::abs((s32)(this->cursor_size - this->entry_size)) / 2) + (this->IsCursorInTransition() ? this->cursor_transition_x : 0);
+        const auto cursor_y = y + this->v_side_margin + cur_actual_entry_idx_y * (this->entry_size + EntryVerticalMargin) - (std::abs((s32)(this->cursor_size - this->entry_size)) / 2) + (this->IsCursorInTransition() ? this->cursor_transition_y : 0);
         drawer->RenderTexture(this->cursor_over_icon, cursor_x, cursor_y, pu::ui::render::TextureRenderOptions({}, this->cursor_size, this->cursor_size, {}, {}, {}));
 
         if((this->selected_entry_idx >= 0) && (this->selected_entry_icon != nullptr)) {
@@ -665,6 +665,11 @@ namespace ul::menu::ui {
     }
 
     void EntryMenu::OrganizeUpdateEntries(const s32 is_prev_entry_suspended_override) {
+        // Force reset all over texts
+        for(auto &over_text_tex: this->entry_over_texts) {
+            pu::ui::render::DeleteTexture(over_text_tex);
+        }
+
         this->OrganizeEntries();
         this->NotifyFocusedEntryChanged(-1, is_prev_entry_suspended_override);
     }

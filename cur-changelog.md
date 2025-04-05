@@ -1,4 +1,4 @@
-# Changelog (provisional for `v1.2.0`)
+# Changelog for `v1.2.0`
 
 ## General
 
@@ -47,6 +47,8 @@ Before anything, as always: new language texts were added to reflect the changes
 - Now pressing the HOME button inside a folder first rewinds it to the start, then a second press gets it back to the HOME menu root (previously it directly went back to the root menu)
 
 - Menu layouts are now unique per user and sys/emuMMC! uLaunch will automatically copy the current (global) menu to all users, and from then, any menu modifications will be unique for the user ;)
+
+- Fixed a bug where renaming a folder would not update the folder name text over the folder icon
 
 ## Settings menu
 
@@ -99,3 +101,5 @@ Before anything, as always: new language texts were added to reflect the changes
   - The background colors (unique for app, folder, homebrew, etc) were changed to more visually appealing ones
 
 - Updated EntryIcons, OverIcons and QuickIcons to reflect the maximum `384x384` size in icons. In some of them, the base icon design / colors were changed to more fitting ones ;)
+
+> For previous versions, please visit their respective release pages
