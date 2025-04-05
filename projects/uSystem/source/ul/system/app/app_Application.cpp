@@ -1,6 +1,7 @@
 #include <ul/system/app/app_Application.hpp>
 #include <ul/ul_Result.hpp>
 #include <ul/util/util_Scope.hpp>
+#include <ul/util/util_String.hpp>
 
 namespace ul::system::app {
 
@@ -39,7 +40,10 @@ namespace ul::system::app {
                 }
                 else {
                     // Not yet created, create it then
-                    UL_RC_ASSERT(fsCreateSaveDataFileSystem(&attr, &cr_info, &meta_info));
+                    const auto rc = fsCreateSaveDataFileSystem(&attr, &cr_info, &meta_info);
+                    if(R_FAILED(rc)) {
+                        UL_LOG_WARN("Failed to create save data for application ID 0x%016lX: %s", app_id, util::FormatResultDisplay(rc).c_str());
+                    }
                 }
             }
         }
@@ -90,7 +94,9 @@ namespace ul::system::app {
             size_t dummy_size;
             UL_RC_TRY(nsGetApplicationControlData(NsApplicationControlSource_Storage, app_id, control_data, sizeof(NsApplicationControlData), &dummy_size));
 
-            // Ensure it's launchable (TODO: does this do anything at all?)
+            // Ensure it's launchable
+            
+            // TODO: does this do anything at all? qlaunch does not seem to use this...
             UL_RC_TRY(nsTouchApplication(app_id));
 
             // Ensure Account savedata

@@ -22,6 +22,15 @@ EM_JS(void, ShowError, (const char *error), {
     js_ShowError(UTF8ToString(error));
 });
 
+void ShowErrorFmt(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    char buffer[1024];
+    vsnprintf(buffer, sizeof(buffer), fmt, args);
+    va_end(args);
+    ShowError(buffer);
+}
+
 EM_JS(void, ShowInformation, (const char *info), {
     alert(UTF8ToString(info));
 });
@@ -203,6 +212,9 @@ constexpr const char *AllowedImageFormats[] = {
 struct TextElement {
     std::string text;
     int font_size;
+    int clamp_width;
+    int clamp_speed;
+    int clamp_delay;
 };
 
 void DrawRectangle(const u32 x, const u32 y, const u32 width, const u32 height, const ImU32 color) {
@@ -569,6 +581,9 @@ struct Element {
                 emscripten_log(EM_LOG_CONSOLE, "Unknown font size value '%s' for text element '%s'...", raw_font_size.c_str(), this->ui_name.c_str());
             }
         }
+        this->el_text.clamp_width = text_json.value("clamp_width", 0);
+        this->el_text.clamp_speed = text_json.value("clamp_speed", 0);
+        this->el_text.clamp_delay = text_json.value("clamp_delay", 0);
     }
 
     inline void LoadAsDefault() {
@@ -746,6 +761,13 @@ struct Element {
             case ul::design::FontSize::Large:
                 text_json["font_size"] = "large";
                 break;
+        }
+
+        const auto has_clamp = (this->el_text.clamp_width > 0) && (this->el_text.clamp_speed > 0);
+        if(has_clamp) {
+            text_json["clamp_width"] = this->el_text.clamp_width;
+            text_json["clamp_speed"] = this->el_text.clamp_speed;
+            text_json["clamp_delay"] = this->el_text.clamp_delay;
         }
 
         return true;
@@ -1197,16 +1219,18 @@ EM_JS(void, LoadFont, (), {
 
 bool ReloadFromTheme() {
     if(!LoadThemeJsonAsset(ul::design::ManifestPath, g_Manifest)) {
+        ShowErrorFmt("Unable to load theme manifest...");
         return false;
     }
     if(g_Manifest.count("format_version")) {
         const auto fmt_version = g_Manifest["format_version"].get<u32>();
         if(fmt_version < ul::design::CurrentFormatVersion) {
-            emscripten_log(EM_LOG_CONSOLE, "Loaded theme is outdated (theme version %d vs current version %d)", fmt_version, ul::design::CurrentFormatVersion);
+            ShowErrorFmt("Loaded theme is outdated (theme version %d vs current version %d)", fmt_version, ul::design::CurrentFormatVersion);
         }
     }
     else {
-        emscripten_log(EM_LOG_CONSOLE, "Unable to find manifest format version...");
+        ShowErrorFmt("Unable to find manifest format version...");
+        return false;
     }
 
     #define _MANIFEST_LOAD_FIELD(var, name) { \
@@ -1215,7 +1239,7 @@ bool ReloadFromTheme() {
             strncpy(var, tmp.c_str(), tmp.length()); \
         } \
         else { \
-            emscripten_log(EM_LOG_CONSOLE, "Unable to find manifest field '" name "'..."); \
+            ShowErrorFmt("Unable to find manifest field '" name "'..."); \
         } \
     }
     _MANIFEST_LOAD_FIELD(g_ManifestName, "name")
@@ -1232,7 +1256,7 @@ bool ReloadFromTheme() {
             g_##name = ParseHexColor(g_UiSettings[#name].get<std::string>()); \
         } \
         else { \
-            emscripten_log(EM_LOG_CONSOLE, "Unable to find UI color '" #name "'..."); \
+            ShowErrorFmt("Unable to find UI color '" #name "'..."); \
         } \
     }
     _UI_LOAD_COLOR(text_color)
@@ -1248,7 +1272,7 @@ bool ReloadFromTheme() {
         g_suspended_app_final_alpha = g_UiSettings["suspended_app_final_alpha"].get<int>();
     }
     else {
-        emscripten_log(EM_LOG_CONSOLE, "Unable to find suspended app final alpha...");
+        ShowErrorFmt("Unable to find suspended app final alpha...");
     }
 
     for(u32 i = 0; i < std::size(g_AllElements); i++) {
@@ -1262,7 +1286,7 @@ bool ReloadFromTheme() {
         size_t ttf_data_size;
         if(zip_entry_read(g_ThemeFile, &ttf_data, &ttf_data_size) <= 0) {
             zip_entry_close(g_ThemeFile);
-            emscripten_log(EM_LOG_CONSOLE, "Unable to read theme TTF font...");
+            ShowErrorFmt("Unable to read theme TTF font...");
             zip_close(g_ThemeFile);
             return false;
         }
@@ -1319,7 +1343,7 @@ bool ReloadFromTheme() {
             size_t sound_data_size;
             if(zip_entry_read(g_ThemeFile, &sound_file->data, &sound_file->data_size) <= 0) {
                 zip_entry_close(g_ThemeFile);
-                emscripten_log(EM_LOG_CONSOLE, "Unable to read sound file at '%s'...", sound_file->path.c_str());
+                ShowErrorFmt("Unable to read sound file at '%s'...", sound_file->path.c_str());
                 zip_close(g_ThemeFile);
                 return false;
             }
@@ -1361,7 +1385,7 @@ void LoadDefaultThemeFile() {
         cpp_LoadThemeFile(theme_data, theme_data_size);
     }
     else {
-        emscripten_log(EM_LOG_CONSOLE, "Unable to open default theme ZIP...");
+        ShowErrorFmt("Unable to open default theme ZIP...");
     }
 }
 
@@ -1413,7 +1437,7 @@ void SaveThemeFile() {
 
     for(auto &elem: g_AllElements)  {
         if(!elem->Save(theme_zip)) {
-            emscripten_log(EM_LOG_CONSOLE, "Unable to save element...");
+            ShowErrorFmt("Unable to save element...");
             zip_stream_close(theme_zip);
             return;
         }
@@ -1422,7 +1446,7 @@ void SaveThemeFile() {
     for(auto &sound_file: g_AllSoundFiles)  {
         if(sound_file->data != nullptr) {
             if(!SaveThemeAsset(theme_zip, sound_file->path, sound_file->data, sound_file->data_size)) {
-                emscripten_log(EM_LOG_CONSOLE, "Unable to save sound file at '%s'...", sound_file->path.c_str());
+                ShowErrorFmt("Unable to save sound file at '%s'...", sound_file->path.c_str());
                 zip_stream_close(theme_zip);
                 return;
             }
@@ -1436,7 +1460,7 @@ void SaveThemeFile() {
     g_Manifest["release"] = g_ManifestRelease;
 
     if(!SaveThemeJsonAsset(theme_zip, ul::design::ManifestPath, g_Manifest)) {
-        emscripten_log(EM_LOG_CONSOLE, "Unable to save manifest JSON...");
+        ShowErrorFmt("Unable to save manifest JSON...");
         zip_stream_close(theme_zip);
         return;
     }
@@ -1456,7 +1480,7 @@ void SaveThemeFile() {
     g_UiSettings["suspended_app_final_alpha"] = g_suspended_app_final_alpha;
 
     if(!SaveThemeJsonAsset(theme_zip, ul::design::UiSettingsPath, g_UiSettings)) {
-        emscripten_log(EM_LOG_CONSOLE, "Unable to save UI settings JSON...");
+        ShowErrorFmt("Unable to save UI settings JSON...");
         zip_stream_close(theme_zip);
         return;
     }
@@ -1482,7 +1506,7 @@ void SaveThemeFile() {
         _SAVE_BGM_FIELDS(g_SoundSettings["lockscreen_menu"]);
 
         if(!SaveThemeJsonAsset(theme_zip, ul::design::SoundSettingsPath, g_SoundSettings)) {
-            emscripten_log(EM_LOG_CONSOLE, "Unable to save sound settings JSON...");
+            ShowErrorFmt("Unable to save sound settings JSON...");
             zip_stream_close(theme_zip);
             return;
         }
@@ -1490,7 +1514,7 @@ void SaveThemeFile() {
 
     if(g_FontData != nullptr) {
         if(!SaveThemeAsset(theme_zip, "ui/Font.ttf", g_FontData, g_FontDataSize)) {
-            emscripten_log(EM_LOG_CONSOLE, "Unable to save UI font...");
+            ShowErrorFmt("Unable to save UI font...");
             zip_stream_close(theme_zip);
             return;
         }
@@ -1499,7 +1523,7 @@ void SaveThemeFile() {
     void *zip_buf;
     size_t zip_buf_size;
     if(zip_stream_copy(theme_zip, &zip_buf, &zip_buf_size) <= 0) {
-        emscripten_log(EM_LOG_CONSOLE, "Unable to save theme ZIP...");
+        ShowErrorFmt("Unable to save theme ZIP...");
         zip_stream_close(theme_zip);
         return;
     }
@@ -1681,6 +1705,21 @@ namespace {
                 }
                 case ul::design::ElementType::Text: {
                     ImGui::Combo(("Font size##" + id_name).c_str(), &elem->el_text.font_size, FontSizeNames, std::size(FontSizeNames));
+                    if(ImGui::InputInt(("Clamp width##inc" + id_name).c_str(), &elem->el_text.clamp_width) || ImGui::SliderInt(("Clamp width##sld" + id_name).c_str(), &elem->el_text.clamp_width, 0, ul::design::ScreenWidth)) {
+                        for(auto &mod_elem: modifiable_elems) {
+                            mod_elem->el_text.clamp_width = elem->el_text.clamp_width;
+                        }
+                    }
+                    if(ImGui::InputInt(("Clamp speed##inc" + id_name).c_str(), &elem->el_text.clamp_speed) || ImGui::SliderInt(("Clamp speed##sld" + id_name).c_str(), &elem->el_text.clamp_speed, 0, 500)) {
+                        for(auto &mod_elem: modifiable_elems) {
+                            mod_elem->el_text.clamp_speed = elem->el_text.clamp_speed;
+                        }
+                    }
+                    if(ImGui::InputInt(("Clamp delay##inc" + id_name).c_str(), &elem->el_text.clamp_delay) || ImGui::SliderInt(("Clamp delay##sld" + id_name).c_str(), &elem->el_text.clamp_delay, 0, 1500)) {
+                        for(auto &mod_elem: modifiable_elems) {
+                            mod_elem->el_text.clamp_delay = elem->el_text.clamp_delay;
+                        }
+                    }
                     break;
                 }
                 default:
@@ -2675,7 +2714,7 @@ namespace {
 
     int InitializeGlfw() {
         if(glfwInit() != GLFW_TRUE) {
-            ShowError("Failed to initialize GLFW!");
+            ShowErrorFmt("Failed to initialize GLFW!");
             return 1;
         }
 
@@ -2685,7 +2724,7 @@ namespace {
         // Open a window and create its OpenGL context
         g_Window = glfwCreateWindow(g_Width, g_Height, "WebGui Demo", nullptr, nullptr);
         if(g_Window == nullptr) {
-            ShowError("Failed to open GLFW window!");
+            ShowErrorFmt("Failed to open GLFW window!");
             glfwTerminate();
             return -1;
         }
@@ -2752,7 +2791,7 @@ namespace {
 
 extern "C" int main(int argc, char **argv) {
     if(Initialize() != 0) {
-        ShowError("Failed to initialize!");
+        ShowErrorFmt("Failed to initialize!");
         return 1;
     }
 

@@ -34,7 +34,9 @@ namespace ul::menu::bt {
             return memcmp(&device.address, &InvalidAddress, sizeof(BtdrvAddress)) != 0;
         }
 
-        inline void UpdateAudioDeviceList(std::vector<BtmAudioDevice> &dst, const std::vector<BtmAudioDevice> &src, std::atomic_bool &out_has_changes) {
+        inline bool UpdateAudioDeviceList(std::vector<BtmAudioDevice> &dst, const std::vector<BtmAudioDevice> &src, std::atomic_bool &out_has_changes) {
+            const bool already_had_changes = out_has_changes;
+
             if(src.size() != dst.size()) {
                 out_has_changes = true;
             }
@@ -43,6 +45,7 @@ namespace ul::menu::bt {
             }
 
             dst = src;
+            return out_has_changes != already_had_changes;
         }
 
         void ReloadConnectedDevice() {
@@ -65,7 +68,7 @@ namespace ul::menu::bt {
                 }
             }
         }
-        
+
         void ReloadPairedDevices() {
             ScopedLock lock(g_PairedLock);
 
@@ -78,8 +81,7 @@ namespace ul::menu::bt {
                 new_paired_devices.push_back(cur_dev);
             }
 
-            UpdateAudioDeviceList(g_PairedAudioDevices, new_paired_devices, g_PairedHasChanges);
-            if(g_PairedHasChanges) {
+            if(UpdateAudioDeviceList(g_PairedAudioDevices, new_paired_devices, g_PairedHasChanges)) {
                 UL_LOG_INFO("[bt] Paired devices changed");
             }
         }
@@ -96,8 +98,7 @@ namespace ul::menu::bt {
                 new_discovered_devices.push_back(cur_dev);
             }
 
-            UpdateAudioDeviceList(g_DiscoveredAudioDevices, new_discovered_devices, g_DiscoveredHasChanges);
-            if(g_DiscoveredHasChanges) {
+            if(UpdateAudioDeviceList(g_DiscoveredAudioDevices, new_discovered_devices, g_DiscoveredHasChanges)) {
                 UL_LOG_INFO("[bt] Discovered devices changed");
             }
         }
@@ -110,6 +111,7 @@ namespace ul::menu::bt {
             UL_RC_ASSERT(btmsysAcquireAudioDeviceConnectionEvent(&g_AudioDeviceConnectionEvent, false));
     
             while(g_ThreadRunning) {
+                // This fires all the time for some reason, but we can still treat it as a loop check for every 500ms
                 const auto rc = eventWait(&g_AudioDeviceConnectionEvent, 500'000'000);
                 eventClear(&g_AudioDeviceConnectionEvent);
                 if(R_FAILED(rc) && (rc != KERNELRESULT(TimedOut))) {

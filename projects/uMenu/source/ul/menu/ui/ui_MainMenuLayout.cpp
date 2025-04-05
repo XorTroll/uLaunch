@@ -313,7 +313,7 @@ namespace ul::menu::ui {
                             }
                             else if(!cur_entry.app_info.HasContents()) {
                                 pu::audio::PlaySfx(this->error_sfx);
-                                g_MenuApplication->ShowNotification("App has no contents, cannot be launched...");
+                                g_MenuApplication->ShowNotification(GetLanguageString("app_no_contents"));
                                 do_launch_entry = false;
                             }
                             else if(!cur_entry.app_info.CanBeLaunched()) {
@@ -328,11 +328,11 @@ namespace ul::menu::ui {
                                     const auto rc = nsCheckApplicationLaunchVersion(cur_entry.app_info.app_id);
                                     if(R_FAILED(rc)) {
                                         pu::audio::PlaySfx(this->error_sfx);
-                                        g_MenuApplication->ShowNotification("Game is not updated and cannot be launched: " + util::FormatResultDisplay(rc));
+                                        g_MenuApplication->ShowNotification(GetLanguageString("app_needs_update_cannot_launch") + ": " + util::FormatResultDisplay(rc));
                                         do_launch_entry = false;
                                     }
                                     else {
-                                        const auto option = g_MenuApplication->DisplayDialog(GetLanguageString("app_launch"), "Game is not updated but can be launched, be careful!", { GetLanguageString("ok"), GetLanguageString("cancel") }, true);
+                                        const auto option = g_MenuApplication->DisplayDialog(GetLanguageString("app_launch"), GetLanguageString("app_needs_update_can_launch"), { GetLanguageString("ok"), GetLanguageString("cancel") }, true);
                                         do_launch_entry = option == 0;
                                     }
 
@@ -884,6 +884,7 @@ namespace ul::menu::ui {
         this->Add(this->cur_entry_sub_text);
 
         this->Add(this->cur_path_text);
+        UL_LOG_INFO("MainMenuLayout create: done before entry menu, so far %lld ms", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - time).count());
 
         this->entry_menu = EntryMenu::New(0, 0, g_GlobalSettings.system_status.last_menu_fs_path, std::bind(&MainMenuLayout::menu_EntryInputPressed, this, std::placeholders::_1), std::bind(&MainMenuLayout::menu_FocusedEntryChanged, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), [&]() {
             pu::audio::PlaySfx(this->cursor_move_sfx);
@@ -1278,7 +1279,9 @@ namespace ul::menu::ui {
     void MainMenuLayout::Initialize() {
         if(this->suspended_screen_img != nullptr) {
             pu::audio::PlaySfx(this->post_suspend_sfx);
-        }   
+        }
+
+        g_GlobalSettings.InitializeEntries();
     }
 
     void MainMenuLayout::Reload() {

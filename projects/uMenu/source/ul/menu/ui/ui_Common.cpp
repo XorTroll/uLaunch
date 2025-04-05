@@ -208,10 +208,18 @@ namespace ul::menu::ui {
         }
     }
 
+    void GlobalSettings::InitializeEntries() {
+        if(accountUidIsValid(&this->system_status.selected_user)) {
+            menu::InitializeEntries(this->ams_is_emummc, this->system_status.selected_user);
+        }
+    }
+
     void GlobalSettings::SetSelectedUser(const AccountUid user_id) {
         this->system_status.selected_user = user_id;
 
-        InitializeEntries(g_GlobalSettings.ams_is_emummc, user_id);
+        this->InitializeEntries();
+        // The last_menu_fs_path sent by uSystem was empty if a user was not yet selected
+        // We need to set it to the user root menu path to properly load the main menu
         this->initial_last_menu_fs_path = GetActiveMenuPath();
         util::CopyToStringBuffer(this->system_status.last_menu_fs_path, GetActiveMenuPath());
         util::CopyToStringBuffer(this->system_status.last_menu_path, "");

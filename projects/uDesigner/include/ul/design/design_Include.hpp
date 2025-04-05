@@ -88,7 +88,7 @@ namespace ul::design {
     constexpr auto UiSettingsPath = "ui/UI.json";
     constexpr auto SoundSettingsPath = "sound/BGM.json";
 
-    constexpr u32 CurrentFormatVersion = 2;
+    constexpr u32 CurrentFormatVersion = 3;
 
     constexpr u32 ScreenWidth = 1920;
     constexpr u32 ScreenHeight = 1080;

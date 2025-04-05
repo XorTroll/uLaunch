@@ -257,12 +257,11 @@ int main() {
     UL_RC_ASSERT(ul::menu::am::ReadStartMode(g_StartMode));
     UL_ASSERT_TRUE(g_StartMode != ul::smi::MenuStartMode::Invalid);
 
-    UL_LOG_INFO("Start mode: %d", (u32)g_StartMode);
-
     // Information sent as an extra storage to uMenu
     UL_RC_ASSERT(ul::menu::am::ReadFromInputStorage(&g_GlobalSettings.system_status, sizeof(g_GlobalSettings.system_status)));
     g_GlobalSettings.initial_last_menu_index = g_GlobalSettings.system_status.last_menu_index;
     g_GlobalSettings.initial_last_menu_fs_path = g_GlobalSettings.system_status.last_menu_fs_path;
+    UL_LOG_INFO("Start mode: %d, last path: '%s', last fs path: '%s', last menu index: %d", (u32)g_StartMode, g_GlobalSettings.system_status.last_menu_path, g_GlobalSettings.system_status.last_menu_fs_path, g_GlobalSettings.system_status.last_menu_index);
 
     // Check if our RomFs data exists...
     if(!ul::fs::ExistsFile(ul::MenuRomfsFile)) {

@@ -220,6 +220,7 @@ namespace ul::menu::ui {
             this->SetHomebrewTakeoverApplicationId(os::InvalidApplicationId);
         }
 
+        void InitializeEntries();
         void SetSelectedUser(const AccountUid user_id);
 
         inline void SetActiveTheme(const ul::cfg::Theme &theme) {

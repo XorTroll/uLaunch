@@ -87,9 +87,10 @@ default-theme-music:
 	@cp -r default-theme-music/sound $(THEME_MUSIC_TEMP)/sound
 	@cd $(THEME_MUSIC_TEMP) && zip -r ../$(OUT_THEME_MUSIC) sound theme ui
 	@rm -rf $(THEME_MUSIC_TEMP)
-	@echo "Created default-theme-music --> $(OUT_THEME_MUSIC)!"
+	@echo "Created default-theme-music: $(OUT_THEME_MUSIC)!"
 
 package:
-	@rm -rf $(OUT_DIR_ZIP).7z
+	@rm -rf $(OUT_DIR_ZIP).7z $(OUT_DIR_ZIP).zip
 	@cd $(OUT_DIR) && 7z a ../$(OUT_DIR_ZIP).7z atmosphere ulaunch switch
-	@echo Packaged $(OUT_DIR) into $(OUT_DIR_ZIP).7z!
+	@cd $(OUT_DIR) && zip -r ../$(OUT_DIR_ZIP).zip atmosphere ulaunch switch
+	@echo "Packaged $(OUT_DIR) into $(OUT_DIR_ZIP).7z & $(OUT_DIR_ZIP).zip!"

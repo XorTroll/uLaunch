@@ -18,6 +18,8 @@ Before anything, as always: new language texts were added to reflect the changes
 
 - Suspending applets has now a similar fade-out effect as suspending applications, which looks really nice IMO ;)
 
+- Added additional logging for future troubleshooting of load times
+
 ## Main menu
 
 - Menus are lazy-loaded now (only loaded when you get into it), which might improve performance (marginally?)

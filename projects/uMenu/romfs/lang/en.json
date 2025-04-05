@@ -219,5 +219,8 @@
     "bt_audio_device_unpair_error": "An error ocurred while unpairing the audio device",
     "set_ul_launch_hb_app_by_default": "Launch homebrew as applications by default",
     "theme_outdated": "The theme is outdated. It should work correctly, but some aspects might cause issues.",
-    "theme_active": "Active theme"
+    "theme_active": "Active theme",
+    "app_no_contents": "This application has no contents, it cannot be launched.",
+    "app_needs_update_can_launch": "This application expects an update.\nIt still can be launched, would you like to launch it?",
+    "app_needs_update_cannot_launch": "This application expects an update in order to be launched"
 }

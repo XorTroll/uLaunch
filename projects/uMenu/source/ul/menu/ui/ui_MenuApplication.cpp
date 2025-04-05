@@ -83,6 +83,8 @@ namespace ul::menu::ui {
         UL_LOG_INFO("MenuApplication::OnLoad start...");
         const auto time = std::chrono::system_clock::now();
 
+        #define _LOG_SOFAR(kind) UL_LOG_INFO("MenuApplication::OnLoad -> " kind ", so far took %lld ms", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - time).count());
+
         this->launch_failed = false;
         this->pending_gc_mount_rc = ResultSuccess;
         this->needs_app_records_reload = false;
@@ -119,7 +121,11 @@ namespace ul::menu::ui {
             appletClearCaptureBuffer(true, AppletCaptureSharedBuffer_CallerApplet, 0xFF000000);
         }
 
+        _LOG_SOFAR("done capture buffers");
+
         InitializeResources();
+
+        _LOG_SOFAR("done initializing resources");
 
         // BGM
 
@@ -149,6 +155,8 @@ namespace ul::menu::ui {
             g_GlobalSettings.settings_menu_bgm.bgm_fade_out_ms = global_bgm_fade_out_ms;
             g_GlobalSettings.lockscreen_menu_bgm.bgm_fade_out_ms = global_bgm_fade_out_ms;
         }
+
+        _LOG_SOFAR("done loading bgm");
 
         // UI
 
@@ -181,6 +189,8 @@ namespace ul::menu::ui {
             }
         }
 
+        _LOG_SOFAR("done loading ui");
+
         this->loaded_menu = MenuType::Main;
         switch(this->start_mode) {
             case smi::MenuStartMode::Start: {
@@ -198,7 +208,7 @@ namespace ul::menu::ui {
         }
         this->StartPlayBgm();
 
-        UL_LOG_INFO("MenuApplication::OnLoad end, took %lld ms", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - time).count());
+        _LOG_SOFAR("done everything");
     }
 
     void MenuApplication::Finalize() {
