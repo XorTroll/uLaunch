@@ -14,8 +14,6 @@ namespace ul::system::la {
             AppletId applet_id;
         };
 
-        constexpr u32 AppletTransitionBackgroundColor = RGBA8(0, 0, 0, 0xff);
-
         constexpr LibraryAppletInfo g_LibraryAppletTable[] = {
             { 0x0100000000001001, AppletId_LibraryAppletAuth },
             { 0x0100000000001002, AppletId_LibraryAppletCabinet },
@@ -54,8 +52,6 @@ namespace ul::system::la {
         UL_RC_TRY(appletHolderRequestExitOrTerminate(&g_LibraryAppletHolder, 15'000'000'000ul));
         appletHolderClose(&g_LibraryAppletHolder);
 
-        /* UL_RC_ASSERT(appletClearAppletTransitionBuffer(AppletTransitionBackgroundColor)); */
-
         UL_RC_SUCCEED;
     }
 
@@ -78,8 +74,6 @@ namespace ul::system::la {
         if(in_size > 0) {
             UL_RC_TRY(Send(in_data, in_size));
         }
-
-        /* UL_RC_ASSERT(appletClearCaptureBuffer(true, AppletCaptureSharedBuffer_LastForeground, AppletTransitionBackgroundColor)); */
 
         UL_RC_TRY(appletHolderStart(&g_LibraryAppletHolder));
         g_LastAppletId = id;

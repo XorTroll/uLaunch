@@ -87,7 +87,6 @@ namespace ul::system::app {
             UL_RC_TRY(appletCreateSystemApplication(&g_ApplicationHolder, app_id));
         }
         else {
-            fsDeleteSaveDataFileSystem(app_id);
             auto control_data = new NsApplicationControlData;
             UL_ON_SCOPE_EXIT({ delete[] control_data; });
 

@@ -1076,9 +1076,11 @@ namespace {
         if(!sth_done && !prev_applet_active) {
             // If nothing was done but nothing is active, an application or applet might have crashed, terminated, failed to launch...
             if(!app::IsActive() && !la::IsActive()) {
-                auto terminate_rc = ul::ResultSuccess;
-                if(R_SUCCEEDED(nsGetApplicationTerminateResult(app::GetId(), &terminate_rc))) {
-                    UL_LOG_WARN("Application 0x%016lX terminated with result %s", app::GetId(), ul::util::FormatResultDisplay(terminate_rc).c_str());
+                if(hosversionAtLeast(6,0,0)) {
+                    auto terminate_rc = ul::ResultSuccess;
+                    if(R_SUCCEEDED(nsGetApplicationTerminateResult(app::GetId(), &terminate_rc))) {
+                        UL_LOG_WARN("Application 0x%016lX terminated with result %s", app::GetId(), ul::util::FormatResultDisplay(terminate_rc).c_str());
+                    }
                 }
 
                 // Reopen uMenu, notify failure
@@ -1143,12 +1145,25 @@ namespace {
         UL_LOG_INFO("[EventManager] registered ApplicationRecordUpdateSystemEvent");
 
         Event gc_mount_fail_event;
-        UL_RC_ASSERT(nsGetGameCardMountFailureEvent(&gc_mount_fail_event));
-        UL_LOG_INFO("[EventManager] registered GameCardMountFailureEvent");
+        if(hosversionAtLeast(3,0,0)) {
+            UL_RC_ASSERT(nsGetGameCardMountFailureEvent(&gc_mount_fail_event));
+            UL_LOG_INFO("[EventManager] registered GameCardMountFailureEvent");
+        }
+        else {
+            UL_LOG_INFO("[EventManager] cannot register GameCardMountFailureEvent, too old firmware...");
+        }
 
         s32 ev_idx;
         while(true) {
-            if(R_SUCCEEDED(waitMulti(&ev_idx, UINT64_MAX, waiterForEvent(&record_ev), waiterForEvent(&gc_mount_fail_event)))) {
+            auto wait_rc = ul::ResultSuccess;
+            if(hosversionAtLeast(3,0,0)) {
+                wait_rc = waitMulti(&ev_idx, UINT64_MAX, waiterForEvent(&record_ev), waiterForEvent(&gc_mount_fail_event));
+            }
+            else {
+                wait_rc = waitMulti(&ev_idx, UINT64_MAX, waiterForEvent(&record_ev));
+            }
+
+            if(R_SUCCEEDED(wait_rc)) {
                 if(ev_idx == 0) {
                     g_LastAddedApplications.clear();
                     g_LastDeletedApplications.clear();
@@ -1306,7 +1321,7 @@ namespace {
 
             void(*thread_read_fn)(void*) = nullptr;
             g_UsbViewerBufferDataOffset = reinterpret_cast<u8*>(g_UsbViewerBuffer) + sizeof(UsbMode) + sizeof(UsbPacketHeader::jpeg);
-            if(CaptureJpegScreenshot() > 0) {
+            if(hosversionAtLeast(9,0,0) && (CaptureJpegScreenshot() > 0)) {
                 g_UsbViewerBuffer->mode = UsbMode::Jpeg;
                 thread_read_fn = &UsbViewerJpegThread;
             }
@@ -1394,6 +1409,8 @@ namespace ams {
     void Main() {
         // Initialize everything
         Initialize();
+
+        UL_LOG_INFO("Initialized! launching menu...");
 
         // After having initialized everything, launch our menu
         UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::Start, CreateStatus()));
