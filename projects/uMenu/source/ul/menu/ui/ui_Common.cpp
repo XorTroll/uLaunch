@@ -295,6 +295,7 @@ namespace ul::menu::ui {
                 swkbdClose(&swkbd);
             });
 
+            swkbdConfigMakePresetDefault(&swkbd);
             swkbdConfigSetInitialText(&swkbd, InitialWebPageText);
             swkbdConfigSetGuideText(&swkbd, GetLanguageString("swkbd_webpage_guide").c_str());
             

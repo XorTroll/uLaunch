@@ -440,12 +440,13 @@ namespace ul::menu::ui {
                 else {
                     const auto option = g_MenuApplication->DisplayDialog(GetLanguageString("menu_new_entry"), GetLanguageString("menu_new_entry_conf"), { GetLanguageString("menu_new_folder"), GetLanguageString("menu_add_hb"), GetLanguageString("cancel") }, true);
                     if(option == 0) {
-                        SwkbdConfig cfg;
-                        UL_RC_ASSERT(swkbdCreate(&cfg, 0));
-                        swkbdConfigSetGuideText(&cfg, GetLanguageString("swkbd_folder_name_guide").c_str());
+                        SwkbdConfig swkbd;
+                        UL_RC_ASSERT(swkbdCreate(&swkbd, 0));
+                        swkbdConfigMakePresetDefault(&swkbd);
+                        swkbdConfigSetGuideText(&swkbd, GetLanguageString("swkbd_folder_name_guide").c_str());
                         char new_folder_name_buf[500] = {};
-                        const auto rc = swkbdShow(&cfg, new_folder_name_buf, sizeof(new_folder_name_buf));
-                        swkbdClose(&cfg);
+                        const auto rc = swkbdShow(&swkbd, new_folder_name_buf, sizeof(new_folder_name_buf));
+                        swkbdClose(&swkbd);
 
                         std::string new_folder_name(new_folder_name_buf);
                         while(!new_folder_name.empty() && new_folder_name.at(0) == ' ') {
@@ -495,13 +496,14 @@ namespace ul::menu::ui {
                         options.push_back(GetLanguageString("cancel"));
                         const auto option = g_MenuApplication->DisplayDialog(GetLanguageString("entry_options"), GetLanguageString("entry_action"), options, true);
                         if(option == 0) {
-                            SwkbdConfig cfg;
-                            UL_RC_ASSERT(swkbdCreate(&cfg, 0));
-                            swkbdConfigSetInitialText(&cfg, cur_entry.folder_info.name);
-                            swkbdConfigSetGuideText(&cfg, GetLanguageString("swkbd_folder_name_guide").c_str());
+                            SwkbdConfig swkbd;
+                            UL_RC_ASSERT(swkbdCreate(&swkbd, 0));
+                            swkbdConfigMakePresetDefault(&swkbd);
+                            swkbdConfigSetInitialText(&swkbd, cur_entry.folder_info.name);
+                            swkbdConfigSetGuideText(&swkbd, GetLanguageString("swkbd_folder_name_guide").c_str());
                             char new_folder_name[500] = {};
-                            const auto rc = swkbdShow(&cfg, new_folder_name, sizeof(new_folder_name));
-                            swkbdClose(&cfg);
+                            const auto rc = swkbdShow(&swkbd, new_folder_name, sizeof(new_folder_name));
+                            swkbdClose(&swkbd);
                             
                             if(R_SUCCEEDED(rc)) {
                                 util::CopyToStringBuffer(cur_entry.folder_info.name, new_folder_name);
@@ -755,7 +757,7 @@ namespace ul::menu::ui {
         }
     }
 
-    MainMenuLayout::MainMenuLayout(const u8 *captured_screen_buf, const u8 min_alpha) : IMenuLayout(), last_quick_menu_on(false), start_time_elapsed(false), is_incrementing_decrementing(false), min_alpha(min_alpha), mode(SuspendedImageMode::ShowingAfterStart), suspended_screen_alpha(0xFF), next_reload_user_changed(true) {
+    MainMenuLayout::MainMenuLayout(const u8 *captured_screen_buf, const u8 min_alpha) : IMenuLayout(), last_quick_menu_on(false), start_time_elapsed(false), is_incrementing_decrementing(false), min_alpha(min_alpha), mode(SuspendedImageMode::ShowingAfterStart), suspended_screen_alpha(0xFF), next_reload_user_changed(false) {
         UL_LOG_INFO("Creating MainMenuLayout...");
         const auto time = std::chrono::system_clock::now();
         // TODO (low priority): like nxlink but for sending themes and quickly being able to test them?
@@ -1289,7 +1291,7 @@ namespace ul::menu::ui {
 
     void MainMenuLayout::Reload() {
         UL_RC_ASSERT(acc::GetAccountName(g_GlobalSettings.system_status.selected_user, g_UserName));
-        this->entry_menu->Initialize(g_GlobalSettings.system_status.last_menu_index, this->next_reload_user_changed ? GetActiveMenuPath() : "");
+        this->entry_menu->Initialize(g_GlobalSettings.system_status.last_menu_index, this->next_reload_user_changed ? g_GlobalSettings.system_status.last_menu_fs_path : "");
         this->quick_menu->UpdateItems();
         this->next_reload_user_changed = false;
     }

@@ -456,6 +456,7 @@ namespace ul::menu::ui {
                 .select_cb = [](SettingSubmenu&) {
                     SwkbdConfig swkbd;
                     if(R_SUCCEEDED(swkbdCreate(&swkbd, 0))) {
+                        swkbdConfigMakePresetDefault(&swkbd);
                         swkbdConfigSetGuideText(&swkbd, GetLanguageString("swkbd_console_nick_guide").c_str());
                         swkbdConfigSetInitialText(&swkbd, g_GlobalSettings.nickname.nickname);
                         swkbdConfigSetStringLenMax(&swkbd, 32);

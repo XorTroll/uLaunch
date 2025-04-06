@@ -20,6 +20,8 @@ Before anything, as always: new language texts were added to reflect the changes
 
 - Added additional logging for future troubleshooting of load times
 
+- Minor fix when showing the keyboard: now the cursor is properly initialized at the end (if there was some initial text, like when changing the console nickname)
+
 ## Main menu
 
 - Menus are lazy-loaded now (only loaded when you get into it), which might improve performance (marginally?)
