@@ -11,7 +11,8 @@ namespace ul {
     constexpr const char RootPath[] = "sdmc:/ulaunch";
     constexpr const char DefaultLanguage[] = "en";
 
-    constexpr const char ConfigPath[] = "sdmc:/ulaunch/config.cfg";
+    constexpr const char SysMMCConfigPath[] = "sdmc:/ulaunch/sys-config.cfg";
+    constexpr const char EmuMMCConfigPath[] = "sdmc:/ulaunch/emu-config.cfg";
 
     constexpr const char ThemesPath[] = "sdmc:/ulaunch/themes";
     constexpr const char DefaultThemePath[] = "romfs:/default";
@@ -50,6 +51,8 @@ namespace ul {
 
     constexpr const char PreV120AccountCachePath[] = "sdmc:/ulaunch/cache/acc";
     constexpr const char PreV120ApplicationCachePath[] = "sdmc:/ulaunch/cache/app";
+
+    constexpr const char PreV120ConfigPath[] = "sdmc:/ulaunch/config.cfg";
 
     //////////////////////
 

@@ -8,6 +8,9 @@ namespace ul::os {
 
         constexpr u32 ExosphereApiVersionConfigItem = 65000;
         constexpr u32 ExosphereEmuMMCType = 65007;
+
+        bool g_GotIsEmuMMC = false;
+        bool g_IsEmuMMC = false;
     
     }
 
@@ -54,12 +57,18 @@ namespace ul::os {
     }
 
     bool IsEmuMMC() {
+        if(g_GotIsEmuMMC) {
+            return g_IsEmuMMC;
+        }
+
         UL_RC_ASSERT(splInitialize());
         u64 emummc_type;
         UL_RC_ASSERT(splGetConfig(static_cast<SplConfigItem>(ExosphereEmuMMCType), &emummc_type));
-        const auto is_emummc = emummc_type != 0;
+        g_IsEmuMMC = emummc_type != 0;
         splExit();
-        return is_emummc;
+        g_GotIsEmuMMC = true;
+        
+        return g_IsEmuMMC;
     }
 
 }

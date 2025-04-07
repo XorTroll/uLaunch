@@ -13,6 +13,14 @@ namespace ul::cfg {
 
         constexpr auto ThemeManifestPath = "theme/Manifest.json";
 
+        void ConvertOldConfig() {
+            if(fs::ExistsFile(PreV120ConfigPath)) {
+                UL_LOG_INFO("Converting old pre-v1.2.0 config file into sys/emu configs...");
+                fs::CopyFile(PreV120ConfigPath, SysMMCConfigPath);
+                fs::RenameFile(PreV120ConfigPath, EmuMMCConfigPath);
+            }
+        }
+
     }
 
     Result TryLoadTheme(const std::string &theme_name, Theme &out_theme) {
@@ -248,10 +256,13 @@ namespace ul::cfg {
     }
 
     Config LoadConfig() {
+        ConvertOldConfig();
+
         Config cfg = {};
-        const auto cfg_file_size = fs::GetFileSize(ConfigPath);
+        const auto config_path = os::IsEmuMMC() ? EmuMMCConfigPath : SysMMCConfigPath;
+        const auto cfg_file_size = fs::GetFileSize(config_path);
         auto cfg_file_buf = new u8[cfg_file_size]();
-        if(fs::ReadFile(ConfigPath, cfg_file_buf, cfg_file_size)) {
+        if(fs::ReadFile(config_path, cfg_file_buf, cfg_file_size)) {
             size_t cur_offset = 0;
             const auto cfg_header = *reinterpret_cast<ConfigHeader*>(cfg_file_buf);
             if(cfg_header.magic == ConfigHeader::Magic) {
@@ -306,7 +317,8 @@ namespace ul::cfg {
     }
 
     void SaveConfig(const Config &cfg) {
-        auto f = fopen(ConfigPath, "wb");
+        const auto config_path = os::IsEmuMMC() ? EmuMMCConfigPath : SysMMCConfigPath;
+        auto f = fopen(config_path, "wb");
         UL_ASSERT_TRUE(f != nullptr);
 
         const ConfigHeader cfg_header = {

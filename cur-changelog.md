@@ -10,6 +10,12 @@ Before anything, as always: new language texts were added to reflect the changes
 
 - Invalid, previously selected homebrew takeover applications are reset (if you selected an application as homebrew takeover and then deleted the application, uLaunch would previously crash trying to launch homebrew over it,but now such invalid setting is automatically cleaned)
 
+- The config is now unique per emuMMC or sysMMC!
+
+  - This means that emu/sysmmC will have independent configs (yeah, that means different themes!)
+
+  - uLaunch will automatically convert the global settings so far into sys/emu settings: they will be the same, copied from the global one, but from now on any change will only be made on the current MMC (sys/emu)!
+
 ## uMenu
 
 - When pressing B on a dialog, the cancel button is briefly focused before fading out, to show more clearly that the dialog was cancelled

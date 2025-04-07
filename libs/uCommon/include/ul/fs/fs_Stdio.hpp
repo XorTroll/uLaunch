@@ -54,8 +54,8 @@ namespace ul::fs {
         CreateDirectory(path);
     }
 
-    template<typename S>
-    inline bool RenameFile(const S &old_path, const S &new_path) {
+    template<typename S1, typename S2>
+    inline bool RenameFile(const S1 &old_path, const S2 &new_path) {
         return rename(util::GetCString(old_path), util::GetCString(new_path)) == 0;
     }
 
