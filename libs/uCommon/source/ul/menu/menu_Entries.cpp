@@ -588,8 +588,16 @@ namespace ul::menu {
                             if(!entry.control.custom_icon_path) {
                                 // Only set the icon if it's valid
                                 const auto cache_icon_path = GetHomebrewCacheIconPath(nro_path);
+                                if(!fs::ExistsFile(cache_icon_path)) {
+                                    // If the homebrew changed before the system reboots, we need to cache it again
+                                    CacheHomebrewEntry(nro_path);
+                                }
+                                
                                 if(fs::ExistsFile(cache_icon_path)) {
-                                    entry.control.icon_path = cache_icon_path;
+                                    entry.control.icon_path = cache_icon_path;   
+                                }
+                                else {
+                                    UL_LOG_WARN("Unable to cache homebrew entry: '%s'", nro_path.c_str());
                                 }
                             }
 

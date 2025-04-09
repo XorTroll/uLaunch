@@ -7,6 +7,8 @@
 namespace ul::menu {
 
     void CacheHomebrew(const std::string &hb_base_path = RootHomebrewPath);
+    void CacheHomebrewEntry(const std::string &nro_path);
+
     void CacheApplications(const std::vector<NsApplicationRecord> &records);
     bool CacheSingleApplication(const u64 app_id);
 

@@ -1366,6 +1366,7 @@ namespace ams {
             UL_RC_ASSERT(ldrShellInitialize());
             UL_RC_ASSERT(pmshellInitialize());
             UL_RC_ASSERT(setsysInitialize());
+            UL_RC_ASSERT(accountInitialize(AccountServiceType_System));
 
             // FS and log init is intentionally done at the end, otherwise the SD doesn't seem to be always ready...?
             UL_RC_ASSERT(fsdevMountSdmc());
@@ -1373,6 +1374,7 @@ namespace ams {
         }
 
         void FinalizeSystemModule() {
+            accountExit();
             setsysExit();
             capsscExit();
             pmshellExit();

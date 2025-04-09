@@ -24,50 +24,6 @@ namespace ul::menu {
             return fs::JoinPath(HomebrewCachePath, util::FormatSha256Hash(hash, true) + "." + ext);
         }
 
-        void CacheHomebrewEntry(const std::string &nro_path) {
-            const auto cache_nro_icon_path = GetHomebrewCacheIconPath(nro_path);
-            const auto cache_nro_nacp_path = GetHomebrewCacheNacpPath(nro_path);
-            if(fs::ExistsFile(cache_nro_icon_path) && fs::ExistsFile(cache_nro_nacp_path)) {
-                // We know it's already cached
-                return;
-            }
-
-            auto f = fopen(nro_path.c_str(), "rb");
-            if(f) {
-                if(fseek(f, sizeof(NroStart), SEEK_SET) == 0) {
-                    NroHeader header = {};
-                    if(fread(&header, sizeof(header), 1, f) == 1) {
-                        if(fseek(f, header.size, SEEK_SET) == 0) {
-                            NroAssetHeader asset_header = {};
-                            if(fread(&asset_header, sizeof(asset_header), 1, f) == 1) {
-                                if(asset_header.magic == NROASSETHEADER_MAGIC) {
-                                    if(!fs::ExistsFile(cache_nro_icon_path) && (asset_header.icon.offset > 0) && (asset_header.icon.size > 0)) {
-                                        auto icon_buf = new u8[asset_header.icon.size]();
-                                        if(fseek(f, header.size + asset_header.icon.offset, SEEK_SET) == 0) {
-                                            if(fread(icon_buf, asset_header.icon.size, 1, f) == 1) {
-                                                fs::WriteFile(cache_nro_icon_path, icon_buf, asset_header.icon.size, true);
-                                            }
-                                        }
-                                        delete[] icon_buf;
-                                    }
-                                    if(!fs::ExistsFile(cache_nro_nacp_path) && (asset_header.nacp.offset > 0) && (asset_header.nacp.size > 0)) {
-                                        auto nacp_buf = new u8[asset_header.nacp.size]();
-                                        if(fseek(f, header.size + asset_header.nacp.offset, SEEK_SET) == 0) {
-                                            if(fread(nacp_buf, asset_header.nacp.size, 1, f) == 1) {
-                                                fs::WriteFile(cache_nro_nacp_path, nacp_buf, asset_header.nacp.size, true);
-                                            }
-                                        }
-                                        delete[] nacp_buf;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                fclose(f);
-            }
-        }
-
         void CacheHomebrewEntries(const std::string &hb_base_path) {
             UL_FS_FOR(hb_base_path, name, path, is_dir, is_file, {
                 if(dt->d_type & DT_DIR) {
@@ -100,6 +56,50 @@ namespace ul::menu {
         fs::CleanDirectory(HomebrewCachePath);
         CacheHomebrewEntry(HbmenuPath);
         CacheHomebrewEntries(hb_base_path);
+    }
+
+    void CacheHomebrewEntry(const std::string &nro_path) {
+        const auto cache_nro_icon_path = GetHomebrewCacheIconPath(nro_path);
+        const auto cache_nro_nacp_path = GetHomebrewCacheNacpPath(nro_path);
+        if(fs::ExistsFile(cache_nro_icon_path) && fs::ExistsFile(cache_nro_nacp_path)) {
+            // We know it's already cached
+            return;
+        }
+
+        auto f = fopen(nro_path.c_str(), "rb");
+        if(f) {
+            if(fseek(f, sizeof(NroStart), SEEK_SET) == 0) {
+                NroHeader header = {};
+                if(fread(&header, sizeof(header), 1, f) == 1) {
+                    if(fseek(f, header.size, SEEK_SET) == 0) {
+                        NroAssetHeader asset_header = {};
+                        if(fread(&asset_header, sizeof(asset_header), 1, f) == 1) {
+                            if(asset_header.magic == NROASSETHEADER_MAGIC) {
+                                if(!fs::ExistsFile(cache_nro_icon_path) && (asset_header.icon.offset > 0) && (asset_header.icon.size > 0)) {
+                                    auto icon_buf = new u8[asset_header.icon.size]();
+                                    if(fseek(f, header.size + asset_header.icon.offset, SEEK_SET) == 0) {
+                                        if(fread(icon_buf, asset_header.icon.size, 1, f) == 1) {
+                                            fs::WriteFile(cache_nro_icon_path, icon_buf, asset_header.icon.size, true);
+                                        }
+                                    }
+                                    delete[] icon_buf;
+                                }
+                                if(!fs::ExistsFile(cache_nro_nacp_path) && (asset_header.nacp.offset > 0) && (asset_header.nacp.size > 0)) {
+                                    auto nacp_buf = new u8[asset_header.nacp.size]();
+                                    if(fseek(f, header.size + asset_header.nacp.offset, SEEK_SET) == 0) {
+                                        if(fread(nacp_buf, asset_header.nacp.size, 1, f) == 1) {
+                                            fs::WriteFile(cache_nro_nacp_path, nacp_buf, asset_header.nacp.size, true);
+                                        }
+                                    }
+                                    delete[] nacp_buf;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            fclose(f);
+        }
     }
 
     void CacheApplications(const std::vector<NsApplicationRecord> &records) {

@@ -16,6 +16,8 @@ Before anything, as always: new language texts were added to reflect the changes
 
   - uLaunch will automatically convert the global settings so far into sys/emu settings: they will be the same, copied from the global one, but from now on any change will only be made on the current MMC (sys/emu)!
 
+- A minor homebrew entry cache bug was fixed, now if a homebrew is updated while uLaunch is active (homebrew that auto-updates, sending via hbmenu's NetLoader) it will be cache'd accordingly (prior to this, cache loading would fail and it would show as an invalid "???" entry)
+
 ## uMenu
 
 - When pressing B on a dialog, the cancel button is briefly focused before fading out, to show more clearly that the dialog was cancelled
