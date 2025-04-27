@@ -26,8 +26,8 @@ namespace ul::menu::ui {
         public:
             using MenuFadeCallback = std::function<void()>;
 
-            static constexpr u8 DefaultFadeAlphaIncrementSteps = 20;
             static constexpr u8 FastFadeAlphaIncrementSteps = 12;
+            static constexpr u8 DefaultFadeAlphaIncrementSteps = 24;
 
         private:
             smi::MenuStartMode start_mode;
@@ -81,6 +81,7 @@ namespace ul::menu::ui {
 
             inline void FadeOutToColor(const pu::ui::Color clr) {
                 this->SetFadeBackgroundColor(clr);
+                this->SetFadeAlphaIncrementStepCount(DefaultFadeAlphaIncrementSteps);
                 this->FadeOut();
                 appletClearCaptureBuffer(true, AppletCaptureSharedBuffer_CallerApplet, GetColorARGB(clr));
             }

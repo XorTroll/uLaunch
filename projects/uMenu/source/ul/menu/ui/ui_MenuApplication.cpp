@@ -213,6 +213,7 @@ namespace ul::menu::ui {
     }
 
     void MenuApplication::SetBackgroundFade() {
+        this->SetFadeAlphaIncrementStepCount(FastFadeAlphaIncrementSteps);
         if(!this->HasFadeBackgroundImage()) {
             this->SetFadeBackgroundImage(GetBackgroundTexture());
         }

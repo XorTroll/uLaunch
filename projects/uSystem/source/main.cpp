@@ -45,17 +45,6 @@ std::queue<ul::smi::MenuMessageContext> *g_MenuMessageQueue;
 
 namespace {
 
-    constexpr AppletId UsedLibraryAppletList[] = {
-        AppletId_LibraryAppletPhotoViewer,
-        AppletId_LibraryAppletWeb,
-        AppletId_LibraryAppletMyPage,
-        AppletId_LibraryAppletMiiEdit,
-        AppletId_LibraryAppletPlayerSelect,
-        AppletId_LibraryAppletNetConnect,
-        AppletId_LibraryAppletCabinet,
-        AppletId_LibraryAppletController
-    };
-
     constexpr const char ChooseHomebrewCaption[] = "Choose a homebrew for uMenu";
 
     struct ApplicationVerifyContext {
@@ -69,54 +58,88 @@ namespace {
         ApplicationVerifyContext(const u64 app_id) : app_id(app_id), thread(), thread_stack(), finished(false) {}
     };
 
-    inline bool IsUsedLibraryApplet(const AppletId applet_id) {
-        for(u32 i = 0; i < std::size(UsedLibraryAppletList); i++) {
-            if(applet_id == UsedLibraryAppletList[i]) {
-                return true;
-            }
-        }
+    enum class ActionType : u32 {
+        LaunchApplication,
+        LaunchLoader,
+        LaunchHomebrewApplication,
+        OpenWebPage,
+        OpenAlbum,
+        RestartMenu,
+        OpenUserPage,
+        OpenMiiEdit,
+        OpenAddUser,
+        OpenNetConnect,
+        OpenCabinet,
+        TerminateMenu,
+        OpenControllerKeyRemapping,
+    };
 
-        return false;
+    struct Action {
+        ActionType type;
+        union {
+            struct {
+                u64 app_id;
+            } launch_application;
+            struct {
+                ul::loader::TargetInput target_input;
+                bool choose_mode;
+            } launch_loader;
+            struct {
+                u64 app_id;
+                ul::loader::TargetInput app_target_input;
+            } launch_homebrew_application;
+            struct {
+                WebCommonConfig cfg;
+            } open_web_page;
+            struct {
+                NfpLaStartParamTypeForAmiiboSettings type;
+            } open_cabinet;
+            struct {
+                u32 npad_style_set;
+                HidNpadJoyHoldType hold_type;
+            } open_controller_key_remapping;
+        };
+    };
+
+    // Global state variables
+
+    std::vector<Action> g_ActionQueue;
+
+    AppletOperationMode g_OperationMode;
+    bool g_ExpectsLoaderChooseOutput = false;
+    ul::loader::TargetInput g_LastHomebrewApplicationLaunchTarget = {};
+    bool g_LastLibraryAppletLaunchedHere = false;
+    bool g_NextMenuLaunchAtStartup = false;
+    bool g_NextMenuLaunchAtSettings = false;
+    bool g_MenuRestartReloadThemeCache = false;
+    bool g_IsLibraryAppletActive = false;
+
+    inline bool WasLoaderOpenedAsApplication() {
+        return g_LastHomebrewApplicationLaunchTarget.IsValid();
     }
 
     AccountUid g_SelectedUser = {};
-    ul::loader::TargetInput g_LoaderLaunchFlag = {};
-    bool g_LoaderChooseFlag = false;
-    ul::loader::TargetInput g_LoaderApplicationLaunchFlag = {};
-    ul::loader::TargetInput g_LoaderApplicationLaunchFlagCopy = {};
-    u64 g_ApplicationLaunchFlag = 0;
-    WebCommonConfig g_WebAppletLaunchFlag = {};
-    bool g_AlbumAppletLaunchFlag = false;
-    bool g_UserPageAppletLaunchFlag = false;
-    bool g_MiiEditAppletLaunchFlag = false;
-    bool g_AddUserAppletLaunchFlag = false;
-    bool g_NetConnectAppletLaunchFlag = false;
-    bool g_CabinetAppletLaunchFlag = false;
-    NfpLaStartParamTypeForAmiiboSettings g_CabinetAppletLaunchType;
-    bool g_ControllerAppletKeyRemappingLaunchFlag = false;
-    u32 g_ControllerAppletKeyRemappingNpadStyleSet = 0;
-    HidNpadJoyHoldType g_ControllerAppletKeyRemappingHoldType = HidNpadJoyHoldType_Vertical;
-    bool g_NextMenuLaunchStartupFlag = false;
-    bool g_NextMenuLaunchSettingsFlag = false;
-    bool g_MenuRestartReloadThemeCacheFlag = false;
-    bool g_MenuRestartFlag = false;
-    bool g_LoaderOpenedAsApplication = false;
-    bool g_AppletActive = false;
-    AppletOperationMode g_OperationMode;
     ul::cfg::Config g_Config;
     bool g_AmsIsEmuMMC = false;
     bool g_WarnedAboutOutdatedTheme = false;
-
-    bool g_CloseMenuFlag = false;
 
     char g_CurrentMenuFsPath[FS_MAX_PATH] = {};
     char g_CurrentMenuPath[FS_MAX_PATH] = {};
     u32 g_CurrentMenuIndex = 0;
 
+    constexpr size_t VerifyWorkBufferSize = 0x100000;
+    constexpr size_t VerifyStepWaitTimeNs = 100'000;
+
+    std::vector<ApplicationVerifyContext> *g_ApplicationVerifyContexts;
+
+    std::vector<NsApplicationRecord> g_CurrentRecords;
+    std::vector<u64> g_LastDeletedApplications;
+    std::vector<u64> g_LastAddedApplications;
+
     alignas(ams::os::MemoryPageSize) constinit u8 g_EventManagerThreadStack[16_KB];
     Thread g_EventManagerThread;
 
-    std::vector<ApplicationVerifyContext> *g_ApplicationVerifyContexts;
+    // USB types and globals
 
     enum class UsbMode : u32 {
         Invalid,
@@ -147,19 +170,13 @@ namespace {
     UsbPacketHeader *g_UsbViewerBuffer = nullptr;
     u8 *g_UsbViewerBufferDataOffset = nullptr;
 
-    std::vector<NsApplicationRecord> g_CurrentRecords;
-    
-    std::vector<u64> g_LastDeletedApplications;
-    std::vector<u64> g_LastAddedApplications;
+    // Heap definitions
 
     constexpr size_t LibstratosphereHeapSize = 4_MB;
     alignas(ams::os::MemoryPageSize) constinit u8 g_LibstratosphereHeap[LibstratosphereHeapSize];
 
     constexpr size_t LibnxHeapSize = 8_MB;
     alignas(ams::os::MemoryPageSize) constinit u8 g_LibnxHeap[LibnxHeapSize];
-
-    constexpr size_t VerifyWorkBufferSize = 0x100000;
-    constexpr size_t VerifyStepWaitTimeNs = 100'000;
 
 }
 
@@ -207,18 +224,18 @@ namespace {
             .in_verify_app_count = (u32)g_ApplicationVerifyContexts->size()
         };
 
-        if(g_MenuRestartReloadThemeCacheFlag) {
+        if(g_MenuRestartReloadThemeCache) {
             status.reload_theme_cache = true;
-            g_MenuRestartReloadThemeCacheFlag = false;
+            g_MenuRestartReloadThemeCache = false;
         }
 
         ul::util::CopyToStringBuffer(status.last_menu_fs_path, g_CurrentMenuFsPath);
         ul::util::CopyToStringBuffer(status.last_menu_path, g_CurrentMenuPath);
 
         if(app::IsActive()) {
-            if(g_LoaderOpenedAsApplication) {
+            if(WasLoaderOpenedAsApplication()) {
                 // Homebrew
-                status.suspended_hb_target_ipt = g_LoaderApplicationLaunchFlagCopy;
+                status.suspended_hb_target_ipt = g_LastHomebrewApplicationLaunchTarget;
             }
             else {
                 // Regular title
@@ -315,6 +332,8 @@ namespace {
     }
 
     inline Result LaunchMenu(const ul::smi::MenuStartMode st_mode, const ul::smi::SystemStatus &status) {
+        g_LastLibraryAppletLaunchedHere = false;
+
         UL_LOG_INFO("Launching uMenu with start mode %d...", static_cast<u32>(st_mode));
         return ecs::RegisterLaunchAsApplet(la::GetMenuProgramId(), static_cast<u32>(st_mode), "/ulaunch/bin/uMenu", std::addressof(status), sizeof(status));
     }
@@ -395,13 +414,16 @@ namespace {
 
     void HandleHomeButton() {
         if(la::IsActive() && !la::IsMenu()) {
-            // An applet is opened (which is not our menu), thus close it and reopen the menu
+            // A library applet is opened which is not uMenu, close it and open uMenu
             UL_RC_ASSERT(la::Terminate());
+            g_LastLibraryAppletLaunchedHere = false;
+
             UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::MainMenu, CreateStatus()));
         }
         else if(app::IsActive() && app::HasForeground()) {
-            // Hide the application currently on focus and open our menu
+            // Hide the application currently on focus and open uMenu
             UL_RC_ASSERT(sys::SetForeground());
+
             UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::MainMenu, CreateStatus()));
         }
         else if(la::IsMenu()) {
@@ -614,11 +636,13 @@ namespace {
                             if(!accountUidIsValid(&g_SelectedUser)) {
                                 return ul::ResultInvalidSelectedUser;
                             }
-                            if(g_ApplicationLaunchFlag > 0) {
-                                return ul::ResultAlreadyQueued;
-                            }
 
-                            g_ApplicationLaunchFlag = launch_app_id;
+                            g_ActionQueue.push_back({
+                                .type = ActionType::LaunchApplication,
+                                .launch_application = {
+                                    .app_id = launch_app_id
+                                }
+                            });
                             break;
                         }
                         case ul::smi::SystemMessage::ResumeApplication: {
@@ -631,11 +655,20 @@ namespace {
                         }
                         case ul::smi::SystemMessage::TerminateApplication: {
                             UL_RC_TRY(app::Terminate());
-                            g_LoaderOpenedAsApplication = false;
+                            g_LastHomebrewApplicationLaunchTarget = {};
                             break;
                         }
                         case ul::smi::SystemMessage::LaunchHomebrewLibraryApplet: {
-                            UL_RC_TRY(reader.Pop(g_LoaderLaunchFlag));
+                            ul::loader::TargetInput temp_ipt;
+                            UL_RC_TRY(reader.Pop(temp_ipt));
+
+                            g_ActionQueue.push_back({
+                                .type = ActionType::LaunchLoader,
+                                .launch_loader = {
+                                    .target_input = temp_ipt,
+                                    .choose_mode = false
+                                }
+                            });
                             break;
                         }
                         case ul::smi::SystemMessage::LaunchHomebrewApplication: {
@@ -648,9 +681,6 @@ namespace {
                             if(!accountUidIsValid(&g_SelectedUser)) {
                                 return ul::ResultInvalidSelectedUser;
                             }
-                            if(g_ApplicationLaunchFlag > 0) {
-                                return ul::ResultAlreadyQueued;
-                            }
 
                             u64 hb_application_takeover_program_id;
                             UL_ASSERT_TRUE(g_Config.GetEntry(ul::cfg::ConfigEntryId::HomebrewApplicationTakeoverApplicationId, hb_application_takeover_program_id));
@@ -658,35 +688,55 @@ namespace {
                                 return ul::ResultNoHomebrewTakeoverApplication;
                             }
 
-                            g_LoaderApplicationLaunchFlag = temp_ipt;
-                            g_LoaderApplicationLaunchFlagCopy = temp_ipt;
-
-                            g_ApplicationLaunchFlag = hb_application_takeover_program_id;
+                            g_ActionQueue.push_back({
+                                .type = ActionType::LaunchHomebrewApplication,
+                                .launch_homebrew_application = {
+                                    .app_id = hb_application_takeover_program_id,
+                                    .app_target_input = temp_ipt
+                                }
+                            });
                             break;
                         }
                         case ul::smi::SystemMessage::ChooseHomebrew: {
-                            g_LoaderLaunchFlag = ul::loader::TargetInput::Create(ul::HbmenuPath, ul::HbmenuPath, true, ChooseHomebrewCaption);
-                            g_LoaderChooseFlag = true;
+                            g_ActionQueue.push_back({
+                                .type = ActionType::LaunchLoader,
+                                .launch_loader = {
+                                    .target_input = ul::loader::TargetInput::Create(ul::HbmenuPath, ul::HbmenuPath, true, ChooseHomebrewCaption),
+                                    .choose_mode = true
+                                }
+                            });
                             break;
                         }
                         case ul::smi::SystemMessage::OpenWebPage: {
                             char web_url[500] = {};
                             UL_RC_TRY(reader.PopData(web_url, sizeof(web_url)));
 
-                            UL_RC_TRY(webPageCreate(&g_WebAppletLaunchFlag, web_url));
-                            UL_RC_TRY(webConfigSetWhitelist(&g_WebAppletLaunchFlag, ".*"));
+                            WebCommonConfig cfg;
+                            UL_RC_TRY(webPageCreate(&cfg, web_url));
+                            UL_RC_TRY(webConfigSetWhitelist(&cfg, ".*"));
+                            g_ActionQueue.push_back({
+                                .type = ActionType::OpenWebPage,
+                                .open_web_page = {
+                                    .cfg = cfg
+                                }
+                            });
                             break;
                         }
                         case ul::smi::SystemMessage::OpenAlbum: {
-                            g_AlbumAppletLaunchFlag = true;
+                            g_ActionQueue.push_back({
+                                .type = ActionType::OpenAlbum
+                            });
                             break;
                         }
                         case ul::smi::SystemMessage::RestartMenu: {
-                            UL_RC_TRY(reader.Pop(g_MenuRestartReloadThemeCacheFlag));
-                            if(g_MenuRestartReloadThemeCacheFlag) {
+                            UL_RC_TRY(reader.Pop(g_MenuRestartReloadThemeCache));
+                            if(g_MenuRestartReloadThemeCache) {
                                 g_WarnedAboutOutdatedTheme = false;
                             }
-                            g_MenuRestartFlag = true;
+                            
+                            g_ActionQueue.push_back({
+                                .type = ActionType::RestartMenu
+                            });
                             break;
                         }
                         case ul::smi::SystemMessage::ReloadConfig: {
@@ -712,19 +762,27 @@ namespace {
                             break;
                         }
                         case ul::smi::SystemMessage::OpenUserPage: {
-                            g_UserPageAppletLaunchFlag = true;
+                            g_ActionQueue.push_back({
+                                .type = ActionType::OpenUserPage
+                            });
                             break;
                         }
                         case ul::smi::SystemMessage::OpenMiiEdit: {
-                            g_MiiEditAppletLaunchFlag = true;
+                            g_ActionQueue.push_back({
+                                .type = ActionType::OpenMiiEdit
+                            });
                             break;
                         }
                         case ul::smi::SystemMessage::OpenAddUser: {
-                            g_AddUserAppletLaunchFlag = true;
+                            g_ActionQueue.push_back({
+                                .type = ActionType::OpenAddUser
+                            });
                             break;
                         }
                         case ul::smi::SystemMessage::OpenNetConnect: {
-                            g_NetConnectAppletLaunchFlag = true;
+                            g_ActionQueue.push_back({
+                                .type = ActionType::OpenNetConnect
+                            });
                             break;
                         }
                         case ul::smi::SystemMessage::ListAddedApplications: {
@@ -738,8 +796,13 @@ namespace {
                         case ul::smi::SystemMessage::OpenCabinet: {
                             u8 type;
                             UL_RC_TRY(reader.Pop(type));
-                            g_CabinetAppletLaunchFlag = true;
-                            g_CabinetAppletLaunchType = static_cast<NfpLaStartParamTypeForAmiiboSettings>(type);
+
+                            g_ActionQueue.push_back({
+                                .type = ActionType::OpenCabinet,
+                                .open_cabinet = {
+                                    .type = static_cast<NfpLaStartParamTypeForAmiiboSettings>(type)
+                                }
+                            });
                             break;
                         }
                         case ul::smi::SystemMessage::StartVerifyApplication: {
@@ -760,13 +823,24 @@ namespace {
                             break;
                         }
                         case ul::smi::SystemMessage::TerminateMenu: {
-                            g_CloseMenuFlag = true;
+                            g_ActionQueue.push_back({
+                                .type = ActionType::TerminateMenu
+                            });
                             break;
                         }
                         case ul::smi::SystemMessage::OpenControllerKeyRemapping: {
-                            UL_RC_TRY(reader.Pop(g_ControllerAppletKeyRemappingNpadStyleSet));
-                            UL_RC_TRY(reader.Pop(g_ControllerAppletKeyRemappingHoldType));
-                            g_ControllerAppletKeyRemappingLaunchFlag = true;
+                            u32 npad_style_set;
+                            HidNpadJoyHoldType hold_type;
+                            UL_RC_TRY(reader.Pop(npad_style_set));
+                            UL_RC_TRY(reader.Pop(hold_type));
+                            
+                            g_ActionQueue.push_back({
+                                .type = ActionType::OpenControllerKeyRemapping,
+                                .open_controller_key_remapping = {
+                                    .npad_style_set = npad_style_set,
+                                    .hold_type = hold_type
+                                }
+                            });
                             break;
                         }
                         default: {
@@ -779,58 +853,6 @@ namespace {
                 [&](const ul::smi::SystemMessage msg, smi::ScopedStorageWriter &writer) -> Result {
                     AMS_UNUSED(writer);
                     switch(msg) {
-                        case ul::smi::SystemMessage::SetSelectedUser: {
-                            // ...
-                            break;
-                        }
-                        case ul::smi::SystemMessage::LaunchApplication: {
-                            // ...
-                            break;
-                        }
-                        case ul::smi::SystemMessage::ResumeApplication: {
-                            // ...
-                            break;
-                        }
-                        case ul::smi::SystemMessage::TerminateApplication: {
-                            // ...
-                            break;
-                        }
-                        case ul::smi::SystemMessage::LaunchHomebrewLibraryApplet: {
-                            // ...
-                            break;
-                        }
-                        case ul::smi::SystemMessage::LaunchHomebrewApplication: {
-                            // ...
-                            break;
-                        }
-                        case ul::smi::SystemMessage::OpenWebPage: {
-                            // ...
-                            break;
-                        }
-                        case ul::smi::SystemMessage::OpenAlbum: {
-                            // ...
-                            break;
-                        }
-                        case ul::smi::SystemMessage::RestartMenu: {
-                            // ...
-                            break;
-                        }
-                        case ul::smi::SystemMessage::ReloadConfig: {
-                            // ...
-                            break;
-                        }
-                        case ul::smi::SystemMessage::OpenUserPage: {
-                            // ...
-                            break;
-                        }
-                        case ul::smi::SystemMessage::OpenMiiEdit: {
-                            // ...
-                            break;
-                        }
-                        case ul::smi::SystemMessage::OpenNetConnect: {
-                            // ...
-                            break;
-                        }
                         case ul::smi::SystemMessage::ListAddedApplications: {
                             if(app_list_count > g_LastAddedApplications.size()) {
                                 return ul::ResultInvalidApplicationListCount;
@@ -855,14 +877,6 @@ namespace {
                             g_LastDeletedApplications.clear();
                             break;
                         }
-                        case ul::smi::SystemMessage::OpenCabinet: {
-                            // ...
-                            break;
-                        }
-                        case ul::smi::SystemMessage::StartVerifyApplication: {
-                            // ...
-                            break;
-                        }
                         case ul::smi::SystemMessage::ListInVerifyApplications: {
                             if(app_list_count > g_ApplicationVerifyContexts->size()) {
                                 return ul::ResultInvalidApplicationListCount;
@@ -884,142 +898,183 @@ namespace {
         }
     }
 
+    bool HandleAction(Action &action) {
+        UL_LOG_INFO("Trying to handle action of type %d in queue", static_cast<u32>(action.type));
+        switch(action.type) {
+            case ActionType::LaunchApplication: {
+                if(!la::IsActive()) {
+                    UL_LOG_INFO("Launching application 0x%016lX...", action.launch_application.app_id);
+                    UL_RC_ASSERT(app::Start(action.launch_application.app_id, false, g_SelectedUser));
+    
+                    return true;
+                }
+                break;
+            }
+            case ActionType::LaunchLoader: {
+                if(!la::IsActive()) {
+                    UL_LOG_INFO("Launching homebrew '%s' as library applet (target once: %s)...", action.launch_loader.target_input.nro_path, action.launch_loader.target_input.target_once ? "true" : "false");
+                    u64 hb_applet_takeover_program_id;
+                    UL_ASSERT_TRUE(g_Config.GetEntry(ul::cfg::ConfigEntryId::HomebrewAppletTakeoverProgramId, hb_applet_takeover_program_id));
+    
+                    // TODO (new): consider not asserting and sending the error result to menu instead? same for various other asserts in this code...
+                    UL_RC_ASSERT(ecs::RegisterLaunchAsApplet(hb_applet_takeover_program_id, 0, "/ulaunch/bin/uLoader/applet", &action.launch_loader.target_input, sizeof(action.launch_loader.target_input)));
+                    
+                    // This will be used later to know if we should retrieve the output of uLoader or not
+                    g_ExpectsLoaderChooseOutput = action.launch_loader.choose_mode;
+                    return true;
+                }
+                break;
+            }
+            case ActionType::LaunchHomebrewApplication: {
+                if(!la::IsActive()) {
+                    UL_LOG_INFO("Launching homebrew '%s' over application 0x%016lX (target once: %s)...", action.launch_homebrew_application.app_target_input.nro_path, action.launch_homebrew_application.app_id, action.launch_homebrew_application.app_target_input.target_once ? "true" : "false");
+                    UL_RC_ASSERT(ecs::RegisterLaunchAsApplication(action.launch_homebrew_application.app_id, "/ulaunch/bin/uLoader/application", &action.launch_homebrew_application.app_target_input, sizeof(action.launch_homebrew_application.app_target_input), g_SelectedUser));
+
+                    // Store target input of the launched application
+                    g_LastHomebrewApplicationLaunchTarget = action.launch_homebrew_application.app_target_input;
+
+                    return true;
+                }
+                break;
+            }
+            case ActionType::OpenWebPage: {
+                if(!la::IsActive()) {
+                    UL_LOG_INFO("Launching Web...");
+                    UL_RC_ASSERT(la::OpenWeb(&action.open_web_page.cfg));
+
+                    g_LastLibraryAppletLaunchedHere = true;
+                    return true;
+                }
+                break;
+            }
+            case ActionType::OpenAlbum: {
+                if(!la::IsActive()) {
+                    UL_LOG_INFO("Launching PhotoViewer (ShowAllAlbumFilesForHomeMenu)...");
+                    UL_RC_ASSERT(la::OpenPhotoViewerAllAlbumFilesForHomeMenu());
+    
+                    g_LastLibraryAppletLaunchedHere = true;
+                    return true;
+                }
+                break;
+            }
+            case ActionType::RestartMenu: {
+                if(!la::IsActive()) {
+                    UL_LOG_INFO("Restarting uMenu...");
+                    UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::StartupMenuPostBoot, CreateStatus()));
+    
+                    return true;
+                }
+                break;
+            }
+            case ActionType::OpenUserPage: {
+                if(!la::IsActive()) {
+                    UL_LOG_INFO("Launching MyPage (MyProfile)...");
+                    UL_RC_ASSERT(la::OpenMyPageMyProfile(g_SelectedUser));
+    
+                    g_LastLibraryAppletLaunchedHere = true;
+                    return true;
+                }
+                break;
+            }
+            case ActionType::OpenMiiEdit: {
+                if(!la::IsActive()) {
+                    UL_LOG_INFO("Launching MiiEdit...");
+                    UL_RC_ASSERT(la::OpenMiiEdit());
+    
+                    g_LastLibraryAppletLaunchedHere = true;
+                    return true;
+                }
+                break;
+            }
+            case ActionType::OpenAddUser: {
+                if(!la::IsActive()) {
+                    UL_LOG_INFO("Launching PlayerSelect (UserCreator)...");
+                    UL_RC_ASSERT(la::OpenPlayerSelectUserCreator());
+    
+                    g_LastLibraryAppletLaunchedHere = true;
+                    g_NextMenuLaunchAtStartup = true;
+                    return true;
+                }
+                break;
+            }
+            case ActionType::OpenNetConnect: {
+                if(!la::IsActive()) {
+                    UL_LOG_INFO("Launching NetConnect...");
+                    UL_RC_ASSERT(la::OpenNetConnect());
+
+                    g_LastLibraryAppletLaunchedHere = true;
+                    g_NextMenuLaunchAtSettings = true;
+                    return true;
+                }
+                break;
+            }
+            case ActionType::OpenCabinet: {
+                if(!la::IsActive()) {
+                    UL_LOG_INFO("Launching Cabinet...");
+                    UL_RC_ASSERT(la::OpenCabinet(action.open_cabinet.type));
+    
+                    g_LastLibraryAppletLaunchedHere = true;
+                    return true;
+                }
+                break;
+            }
+            case ActionType::TerminateMenu: {
+                UL_LOG_INFO("Terminating uMenu...");
+                UL_RC_ASSERT(la::Terminate());
+
+                return true;
+                break;
+            }
+            case ActionType::OpenControllerKeyRemapping: {
+                if(!la::IsActive()) {
+                    UL_LOG_INFO("Launching Controller (KeyRemapping)...");
+                    UL_RC_ASSERT(la::OpenControllerKeyRemappingForSystem(action.open_controller_key_remapping.npad_style_set, action.open_controller_key_remapping.hold_type));
+    
+                    g_LastLibraryAppletLaunchedHere = true;
+                    return true;
+                }
+                break;
+            }
+        }
+
+        UL_LOG_INFO("Failed to handle action in queue");
+        return false;
+    }
+
     void MainLoop() {
         HandleGeneralChannelMessage();
         HandleAppletMessage();
         HandleMenuMessage();
 
-        auto sth_done = false;
-
-        if(g_CloseMenuFlag) {
-            UL_RC_ASSERT(la::Terminate());
-            g_CloseMenuFlag = false;
-            sth_done = true;
+        auto consumed_action = false;
+        // Try to consume one action per loop
+        if(!g_ActionQueue.empty()) {
+            UL_LOG_INFO("Action queue has %lu actions", g_ActionQueue.size());
         }
-
-        // A valid version will always be >= 0x20000
-        if(g_WebAppletLaunchFlag.version > 0) {
-            if(!la::IsActive()) {
-                UL_LOG_INFO("Launching Web...");
-                UL_RC_ASSERT(la::OpenWeb(&g_WebAppletLaunchFlag));
-
-                sth_done = true;
-                g_WebAppletLaunchFlag = {};
-            }
-        }
-        if(g_MenuRestartFlag) {
-            if(!la::IsActive()) {
-                UL_LOG_INFO("Launching uMenu...");
-                UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::StartupMenuPostBoot, CreateStatus()));
-
-                sth_done = true;
-                g_MenuRestartFlag = false;
-            }
-        }
-        if(g_AlbumAppletLaunchFlag) {
-            if(!la::IsActive()) {
-                UL_LOG_INFO("Launching PhotoViewer (ShowAllAlbumFilesForHomeMenu)...");
-                UL_RC_ASSERT(la::OpenPhotoViewerAllAlbumFilesForHomeMenu());
-
-                sth_done = true;
-                g_AlbumAppletLaunchFlag = false;
-            }
-        }
-        if(g_UserPageAppletLaunchFlag) {
-            if(!la::IsActive()) {
-                UL_LOG_INFO("Launching MyPage (MyProfile)...");
-                UL_RC_ASSERT(la::OpenMyPageMyProfile(g_SelectedUser));
-
-                sth_done = true;
-                g_UserPageAppletLaunchFlag = false;
-            }
-        }
-        if(g_MiiEditAppletLaunchFlag) {
-            if(!la::IsActive()) {
-                UL_LOG_INFO("Launching MiiEdit...");
-                UL_RC_ASSERT(la::OpenMiiEdit());
-
-                sth_done = true;
-                g_MiiEditAppletLaunchFlag = false;
-            }
-        }
-        if(g_AddUserAppletLaunchFlag) {
-            if(!la::IsActive()) {
-                UL_LOG_INFO("Launching PlayerSelect (UserCreator)...");
-                UL_RC_ASSERT(la::OpenPlayerSelectUserCreator());
-
-                sth_done = true;
-                g_AddUserAppletLaunchFlag = false;
-                g_NextMenuLaunchStartupFlag = true;
-            }
-        }
-        if(g_NetConnectAppletLaunchFlag) {
-            if(!la::IsActive()) {
-                UL_LOG_INFO("Launching NetConnect...");
-                UL_RC_ASSERT(la::OpenNetConnect());
-
-                sth_done = true;
-                g_NetConnectAppletLaunchFlag = false;
-                g_NextMenuLaunchSettingsFlag = true;
-            }
-        }
-        if(g_CabinetAppletLaunchFlag) {
-            if(!la::IsActive()) {
-                UL_LOG_INFO("Launching Cabinet...");
-                UL_RC_ASSERT(la::OpenCabinet(g_CabinetAppletLaunchType));
-
-                sth_done = true;
-                g_CabinetAppletLaunchFlag = false;
-            }
-        }
-        if(g_ControllerAppletKeyRemappingLaunchFlag) {
-            if(!la::IsActive()) {
-                UL_LOG_INFO("Launching Controller (KeyRemapping)...");
-                UL_RC_ASSERT(la::OpenControllerKeyRemappingForSystem(g_ControllerAppletKeyRemappingNpadStyleSet, g_ControllerAppletKeyRemappingHoldType));
-
-                sth_done = true;
-                g_ControllerAppletKeyRemappingLaunchFlag = false;
+        for(u32 i = 0; i < g_ActionQueue.size(); i++) {
+            auto &action = g_ActionQueue.at(i);
+            consumed_action |= HandleAction(action);
+            if(consumed_action) {
+                // Action consumed, remove it from the queue
+                g_ActionQueue.erase(g_ActionQueue.begin() + i);
+                break;
             }
         }
 
-        if(g_ApplicationLaunchFlag > 0) {
-            if(!la::IsActive()) {
-                UL_LOG_INFO("Launching application 0x%016lX...", g_ApplicationLaunchFlag);
-                if(g_LoaderApplicationLaunchFlag.magic == ul::loader::TargetInput::Magic) {
-                    UL_RC_ASSERT(ecs::RegisterLaunchAsApplication(g_ApplicationLaunchFlag, "/ulaunch/bin/uLoader/application", &g_LoaderApplicationLaunchFlag, sizeof(g_LoaderApplicationLaunchFlag), g_SelectedUser));
+        auto something_done = consumed_action;
 
-                    g_LoaderOpenedAsApplication = true;
-                    g_LoaderApplicationLaunchFlag = {};
-                }
-                else {
-                    UL_RC_ASSERT(app::Start(g_ApplicationLaunchFlag, false, g_SelectedUser));
-                }
+        // Handle finalized library applets
 
-                sth_done = true;
-                g_ApplicationLaunchFlag = 0;
-            }
-        }
-        if(g_LoaderLaunchFlag.magic == ul::loader::TargetInput::Magic) {
-            if(!la::IsActive()) {
-                UL_LOG_INFO("Launching homebrew '%s' as library applet (once: %d)...", g_LoaderLaunchFlag.nro_path, g_LoaderLaunchFlag.target_once);
-                u64 hb_applet_takeover_program_id;
-                UL_ASSERT_TRUE(g_Config.GetEntry(ul::cfg::ConfigEntryId::HomebrewAppletTakeoverProgramId, hb_applet_takeover_program_id));
-
-                // TODO (new): consider not asserting and sending the error result to menu instead? same for various other asserts in this code...
-                UL_RC_ASSERT(ecs::RegisterLaunchAsApplet(hb_applet_takeover_program_id, 0, "/ulaunch/bin/uLoader/applet", &g_LoaderLaunchFlag, sizeof(g_LoaderLaunchFlag)));
-                
-                sth_done = true;
-                g_LoaderLaunchFlag = {};
-            }
-        }
         if(!la::IsActive()) {
             const auto cur_id = la::GetLastAppletId();
             u64 hb_applet_takeover_program_id;
             UL_ASSERT_TRUE(g_Config.GetEntry(ul::cfg::ConfigEntryId::HomebrewAppletTakeoverProgramId, hb_applet_takeover_program_id));
-            if(IsUsedLibraryApplet(cur_id) || (cur_id == la::GetAppletIdForProgramId(hb_applet_takeover_program_id))) {
+            if(g_LastLibraryAppletLaunchedHere || (cur_id == la::GetAppletIdForProgramId(hb_applet_takeover_program_id))) {
+                UL_LOG_INFO("Launched library applet finished, checking if we need to launch uMenu...");
+
                 ul::loader::TargetOutput target_opt;
-                if(g_LoaderChooseFlag) {
-                    UL_LOG_INFO("Getting loader output...");
+                if(g_ExpectsLoaderChooseOutput) {
+                    UL_LOG_INFO("Getting loader chosen output...");
 
                     AppletStorage target_opt_st;
                     UL_RC_ASSERT(la::Pop(&target_opt_st));
@@ -1027,17 +1082,17 @@ namespace {
                 }
 
                 auto menu_start_mode = ul::smi::MenuStartMode::MainMenu;
-                if(g_NextMenuLaunchStartupFlag) {
+                if(g_NextMenuLaunchAtStartup) {
                     menu_start_mode = ul::smi::MenuStartMode::StartupMenu;
-                    g_NextMenuLaunchStartupFlag = false;
+                    g_NextMenuLaunchAtStartup = false;
                 }
-                if(g_NextMenuLaunchSettingsFlag) {
+                if(g_NextMenuLaunchAtSettings) {
                     menu_start_mode = ul::smi::MenuStartMode::SettingsMenu;
-                    g_NextMenuLaunchSettingsFlag = false;
+                    g_NextMenuLaunchAtSettings = false;
                 }
                 UL_RC_ASSERT(LaunchMenu(menu_start_mode, CreateStatus()));
 
-                if(g_LoaderChooseFlag) {
+                if(g_ExpectsLoaderChooseOutput) {
                     ul::smi::MenuMessageContext msg_ctx = {
                         .msg = ul::smi::MenuMessage::ChosenHomebrew,
                         .chosen_hb = {}
@@ -1045,18 +1100,22 @@ namespace {
                     memcpy(msg_ctx.chosen_hb.nro_path, target_opt.nro_path, sizeof(msg_ctx.chosen_hb.nro_path));
                     PushMenuMessageContext(msg_ctx);
 
-                    g_LoaderChooseFlag = false;
+                    g_ExpectsLoaderChooseOutput = false;
                 }
                 
-                sth_done = true;
+                something_done = true;
             }
         }
 
-        const auto prev_applet_active = g_AppletActive;
-        g_AppletActive = la::IsActive();
-        if(!sth_done && !prev_applet_active) {
-            // If nothing was done but nothing is active, an application or applet might have crashed, terminated, failed to launch...
+        // Final check
+
+        const auto prev_applet_active = g_IsLibraryAppletActive;
+        g_IsLibraryAppletActive = la::IsActive();
+        if(!something_done && !prev_applet_active) {
+            // If nothing was done but nothing is active, an application or library applet might have crashed, terminated, failed to launch...
             if(!app::IsActive() && !la::IsActive()) {
+                UL_LOG_INFO("No application or library applet is active, checking for application launch failure...");
+
                 if(hosversionAtLeast(6,0,0)) {
                     auto terminate_rc = ul::ResultSuccess;
                     if(R_SUCCEEDED(nsGetApplicationTerminateResult(app::GetId(), &terminate_rc))) {
@@ -1064,10 +1123,11 @@ namespace {
                     }
                 }
 
+                g_LastHomebrewApplicationLaunchTarget = {};
+
                 // Reopen uMenu, notify failure
                 UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::MainMenu, CreateStatus()));
                 PushSimpleMenuMessage(ul::smi::MenuMessage::PreviousLaunchFailure);
-                g_LoaderOpenedAsApplication = false;
             }
         }
 
@@ -1131,7 +1191,7 @@ namespace {
             UL_LOG_INFO("[EventManager] registered GameCardMountFailureEvent");
         }
         else {
-            UL_LOG_INFO("[EventManager] cannot register GameCardMountFailureEvent, too old firmware...");
+            UL_LOG_INFO("[EventManager] cannot register GameCardMountFailureEvent, unsuported by firmware!");
         }
 
         s32 ev_idx;
@@ -1398,7 +1458,7 @@ namespace ams {
         // Initialize everything
         Initialize();
 
-        UL_LOG_INFO("Initialized! launching menu...");
+        UL_LOG_INFO("Hello World from uSystem! Launching uMenu...");
 
         // After having initialized everything, launch our menu
         UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::StartupMenuPostBoot, CreateStatus()));
