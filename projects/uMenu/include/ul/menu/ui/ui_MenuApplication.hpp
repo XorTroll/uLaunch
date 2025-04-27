@@ -5,6 +5,7 @@
 #include <ul/menu/ui/ui_ThemesMenuLayout.hpp>
 #include <ul/menu/ui/ui_SettingsMenuLayout.hpp>
 #include <ul/menu/ui/ui_LockscreenMenuLayout.hpp>
+#include <ul/menu/ui/ui_BackgroundScreenCapture.hpp>
 #include <ul/menu/smi/smi_Commands.hpp>
 
 namespace ul::menu::ui {
@@ -55,7 +56,6 @@ namespace ul::menu::ui {
             pu::ui::Color dialog_opt_clr;
             pu::ui::Color dialog_clr;
             pu::ui::Color dialog_over_clr;
-            u8 *screen_capture_buf;
 
             MenuBgmEntry &GetCurrentMenuBgm();
 
@@ -77,6 +77,22 @@ namespace ul::menu::ui {
 
             inline void ResetFade() {
                 this->ResetFadeBackgroundImage();
+            }
+
+            inline void FadeOutToColor(const pu::ui::Color clr) {
+                this->SetFadeBackgroundColor(clr);
+                this->FadeOut();
+                appletClearCaptureBuffer(true, AppletCaptureSharedBuffer_CallerApplet, GetColorARGB(clr));
+            }
+
+            inline void FadeOutToLibraryApplet(const AppletId applet_id) {
+                this->FadeOutToColor(GetLibraryAppletFadeColor(applet_id));
+            }
+
+            // TODO: custom fades for homebrew?
+
+            inline void FadeOutToNonLibraryApplet() {
+                this->FadeOutToColor(GetDefaultFadeColor());
             }
 
             void LoadMenu(const MenuType type, const bool fade = true, MenuFadeCallback fade_cb = nullptr);

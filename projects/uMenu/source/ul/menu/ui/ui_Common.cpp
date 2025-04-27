@@ -35,6 +35,9 @@ namespace ul::menu::ui {
             return path;
         }
 
+        constexpr pu::ui::Color LibraryAppletFadeColorLight = { 0xEB, 0xEB, 0xEB, 0xFF };
+        constexpr pu::ui::Color LibraryAppletFadeColorDark = { 0x2D, 0x2D, 0x2D, 0xFF };
+
         constexpr const char InitialWebPageText[] = "https://";
 
         bool g_CommonResourcesLoaded = false;
@@ -54,6 +57,25 @@ namespace ul::menu::ui {
 
         NsApplicationControlData g_ControlDataTempBuffer = {};
 
+    }
+
+    pu::ui::Color GetLibraryAppletFadeColor(const AppletId applet_id) {
+        // Special case for MiiEdit, which for some reason is always light
+        if(applet_id == AppletId_LibraryAppletMiiEdit) {
+            return LibraryAppletFadeColorLight;
+        }
+
+        ColorSetId qlaunch_color_set_id;
+        UL_RC_ASSERT(setsysGetColorSetId(&qlaunch_color_set_id));
+
+        switch(qlaunch_color_set_id) {
+            case ColorSetId_Light:
+                return LibraryAppletFadeColorLight;
+            case ColorSetId_Dark:
+                return LibraryAppletFadeColorDark;
+        }
+
+        return {};
     }
 
     std::string TryGetActiveThemeResource(const std::string &resource_base) {
@@ -277,15 +299,53 @@ namespace ul::menu::ui {
     }
 
     void ShowUserPage() {
+        g_MenuApplication->FadeOutToLibraryApplet(AppletId_LibraryAppletMyPage);
         UL_RC_ASSERT(ul::menu::smi::OpenUserPage());
-
         g_MenuApplication->Finalize();
     }
 
-    void ShowControllerSupport() {
-        HidLaControllerSupportArg arg = {};
-        hidLaCreateControllerSupportArg(&arg);
-        hidLaShowControllerSupportForSystem(nullptr, &arg, true);
+    void ShowController() {
+        std::vector<std::string> options = { GetLanguageString("controllers_entry_support") };
+        if(hosversionAtLeast(3,0,0)) {
+            options.push_back(GetLanguageString("controllers_entry_update"));
+        }
+        if(hosversionAtLeast(11,0,0)) {
+            options.push_back(GetLanguageString("controllers_entry_mapping"));
+        }
+        options.push_back(GetLanguageString("cancel"));
+
+        const auto option = g_MenuApplication->DisplayDialog(GetLanguageString("special_entry_text_controllers"), GetLanguageString("controllers_entry_info"), options, true);
+        switch(option) {
+            case 0: {
+                // Controller support is light enough that can be shown over ourselves (and by the looks of the applet UI, it's meant to)
+                HidLaControllerSupportArg arg;
+                hidLaCreateControllerSupportArg(&arg);
+
+                UpdateBackgroundBeforeLibraryAppletLaunch();
+                hidLaShowControllerSupportForSystem(nullptr, &arg, true);
+                break;
+            }
+            case 1: {
+                // Same for firmware update, it can be shown over ourselves
+                HidLaControllerFirmwareUpdateArg arg;
+                hidLaCreateControllerFirmwareUpdateArg(&arg);
+
+                UpdateBackgroundBeforeLibraryAppletLaunch();
+                // TODO: put an extra dialog? This jumps directly to the update screen
+                hidLaShowControllerFirmwareUpdateForSystem(&arg, HidLaControllerSupportCaller_System);
+                break;
+            }
+            case 2: {
+                g_MenuApplication->FadeOutToLibraryApplet(AppletId_LibraryAppletController);
+                u32 style_set;
+                UL_RC_ASSERT(hidGetSupportedNpadStyleSet(&style_set));
+                HidNpadJoyHoldType hold_type;
+                UL_RC_ASSERT(hidGetNpadJoyHoldType(&hold_type));
+                UL_RC_ASSERT(ul::menu::smi::OpenControllerKeyRemapping(style_set, hold_type));
+                g_MenuApplication->Finalize();
+                break;
+            }
+        }
     }
 
     void ShowWebPage() {
@@ -301,9 +361,9 @@ namespace ul::menu::ui {
             
             char url[500] = {};
             // TODO (low priority): check if starts with http(s), maybe even add it if user did not put it (thus links like google.com would be valid regardless)
-            if(R_SUCCEEDED(swkbdShow(&swkbd, url, sizeof(url)))) {
+            if(R_SUCCEEDED(ShowSwkbd(&swkbd, url, sizeof(url)))) {
+                g_MenuApplication->FadeOutToLibraryApplet(AppletId_LibraryAppletSwkbd);
                 UL_RC_ASSERT(ul::menu::smi::OpenWebPage(url));
-
                 g_MenuApplication->Finalize();
             }
         }
@@ -311,43 +371,32 @@ namespace ul::menu::ui {
 
     void ShowAlbum() {
         // Cannot force to launch actual album applet, ams has no option for that (it will likely launch hbmenu due to default user key override config)
+        g_MenuApplication->FadeOutToLibraryApplet(AppletId_LibraryAppletPhotoViewer);
         UL_RC_ASSERT(ul::menu::smi::OpenAlbum());
-
         g_MenuApplication->Finalize();
     }
 
     void ShowMiiEdit() {
+        g_MenuApplication->FadeOutToLibraryApplet(AppletId_LibraryAppletMiiEdit);
         UL_RC_ASSERT(ul::menu::smi::OpenMiiEdit());
-
         g_MenuApplication->Finalize();
     }
 
     void ShowNetConnect() {
+        g_MenuApplication->FadeOutToLibraryApplet(AppletId_LibraryAppletNetConnect);
         UL_RC_ASSERT(ul::menu::smi::OpenNetConnect());
-
         g_MenuApplication->Finalize();
     }
 
     void ShowCabinet() {
         const auto option = g_MenuApplication->DisplayDialog(GetLanguageString("special_entry_text_amiibo"), GetLanguageString("amiibo_entry_info"), { GetLanguageString("amiibo_entry_nickname_owner_settings"), GetLanguageString("amiibo_entry_game_data_erase"), GetLanguageString("amiibo_entry_restore"), GetLanguageString("amiibo_entry_format"), GetLanguageString("cancel") }, true);
-        switch(option) {
-            case 0:
-                UL_RC_ASSERT(ul::menu::smi::OpenCabinet(NfpLaStartParamTypeForAmiiboSettings_NicknameAndOwnerSettings));
-                g_MenuApplication->Finalize();
-                break;
-            case 1:
-                UL_RC_ASSERT(ul::menu::smi::OpenCabinet(NfpLaStartParamTypeForAmiiboSettings_GameDataEraser));
-                g_MenuApplication->Finalize();
-                break;
-            case 2:
-                UL_RC_ASSERT(ul::menu::smi::OpenCabinet(NfpLaStartParamTypeForAmiiboSettings_Restorer));
-                g_MenuApplication->Finalize();
-                break;
-            case 3:
-                UL_RC_ASSERT(ul::menu::smi::OpenCabinet(NfpLaStartParamTypeForAmiiboSettings_Formatter));
-                g_MenuApplication->Finalize();
-                break;
+        if((option < 0) || (option > 4)) {
+            return;
         }
+
+        g_MenuApplication->FadeOutToLibraryApplet(AppletId_LibraryAppletCabinet);
+        UL_RC_ASSERT(ul::menu::smi::OpenCabinet(static_cast<NfpLaStartParamTypeForAmiiboSettings>(option)));
+        g_MenuApplication->Finalize();
     }
 
     void ShowPowerDialog() {

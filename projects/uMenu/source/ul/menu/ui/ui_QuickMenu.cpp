@@ -33,7 +33,7 @@ namespace ul::menu::ui {
 
         this->controller_menu_item = pu::ui::elm::MenuItem::New(GetLanguageString("quick_controller_options"));
         this->controller_menu_item->SetIcon(TryFindLoadImageHandle("ui/Main/QuickIcon/Controllers"));
-        this->controller_menu_item->AddOnKey(&ShowControllerSupport);
+        this->controller_menu_item->AddOnKey(&ShowController);
         this->controller_menu_item->SetColor(g_MenuApplication->GetTextColor());
         this->options_menu->AddItem(this->controller_menu_item);
 

@@ -35,6 +35,31 @@ namespace ul::system::la {
         };
         constexpr size_t LibraryAppletCount = sizeof(g_LibraryAppletTable) / sizeof(LibraryAppletInfo);
 
+        Result Create(const AppletId id, const s32 la_version) {
+            if(IsActive()) {
+                UL_RC_TRY(Terminate());
+            }
+        
+            UL_RC_TRY(appletCreateLibraryApplet(&g_LibraryAppletHolder, id, LibAppletMode_AllForeground));
+    
+            // Treat -1/any negative pseudovalue as to not push these args
+            if(la_version >= 0) {
+                LibAppletArgs la_args;
+                libappletArgsCreate(&la_args, (u32)la_version);
+                // TODO (low priority): does this make any difference?
+                libappletArgsSetPlayStartupSound(&la_args, true);
+                UL_RC_TRY(libappletArgsPush(&la_args, &g_LibraryAppletHolder));
+            }
+    
+            return ResultSuccess;
+        }
+
+        Result Launch(const AppletId created_id) {
+            UL_RC_TRY(appletHolderStart(&g_LibraryAppletHolder));
+            g_LastAppletId = created_id;
+            return ResultSuccess;
+        }
+
     }
 
     bool IsActive() {
@@ -55,28 +80,34 @@ namespace ul::system::la {
         UL_RC_SUCCEED;
     }
 
-    Result Start(const AppletId id, const s32 la_version, const void *in_data, const size_t in_size) {
-        if(IsActive()) {
-            UL_RC_TRY(Terminate());
-        }
+    Result Start(const AppletId id, const s32 la_version) {
+        UL_RC_TRY(Create(id, la_version));
+        UL_RC_TRY(Launch(id));
+        return ResultSuccess;
+    }
     
-        UL_RC_TRY(appletCreateLibraryApplet(&g_LibraryAppletHolder, id, LibAppletMode_AllForeground));
+    Result Start(const AppletId id, const s32 la_version, const void *in_data, const size_t in_size) {
+        UL_RC_TRY(Create(id, la_version));
 
-        // Treat -1/any negative pseudovalue as to not push these args
-        if(la_version >= 0) {
-            LibAppletArgs la_args;
-            libappletArgsCreate(&la_args, (u32)la_version);
-            // TODO (low priority): does this make any difference?
-            libappletArgsSetPlayStartupSound(&la_args, true);
-            UL_RC_TRY(libappletArgsPush(&la_args, &g_LibraryAppletHolder));
-        }
-
-        if(in_size > 0) {
+        if((in_data != nullptr) && (in_size > 0)) {
             UL_RC_TRY(Send(in_data, in_size));
         }
 
-        UL_RC_TRY(appletHolderStart(&g_LibraryAppletHolder));
-        g_LastAppletId = id;
+        UL_RC_TRY(Launch(id));
+        return ResultSuccess;
+    }
+
+    Result Start(const AppletId id, const s32 la_version, const void *in_data, const size_t in_size, const void *in_data_2, const size_t in_size_2) {
+        UL_RC_TRY(Create(id, la_version));
+
+        if((in_data != nullptr) && (in_size > 0)) {
+            UL_RC_TRY(Send(in_data, in_size));
+        }
+        if((in_data_2 != nullptr) && (in_size_2 > 0)) {
+            UL_RC_TRY(Send(in_data_2, in_size_2));
+        }
+
+        UL_RC_TRY(Launch(id));
         return ResultSuccess;
     }
 

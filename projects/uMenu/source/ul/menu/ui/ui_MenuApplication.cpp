@@ -6,12 +6,6 @@ extern ul::menu::ui::MenuApplication::Ref g_MenuApplication;
 
 namespace ul::menu::ui {
 
-    namespace {
-
-        constexpr size_t RawScreenRgbaBufferSize = 1280 * 720 * 4;
-
-    }
-
     std::string GetLanguageString(const std::string &name) {
         return cfg::GetLanguageString(g_GlobalSettings.main_lang, g_GlobalSettings.default_lang, name);
     }
@@ -48,8 +42,7 @@ namespace ul::menu::ui {
                 break;
             case MenuType::Main:
                 if(this->main_menu_lyt == nullptr) {
-                    const auto suspended_app_final_alpha = GetRequiredUiValue<u32>("suspended_app_final_alpha");
-                    this->main_menu_lyt = MainMenuLayout::New(this->screen_capture_buf, static_cast<u8>(suspended_app_final_alpha));
+                    this->main_menu_lyt = MainMenuLayout::New();
                     this->main_menu_lyt->LoadSfx();
                     TryParseBgmEntry("main_menu", "Main", g_GlobalSettings.main_menu_bgm);
                     this->main_menu_lyt->Initialize();
@@ -95,8 +88,6 @@ namespace ul::menu::ui {
         this->verify_detail_rc = ResultSuccess;
         this->active_theme_load_rc = ResultSuccess;
 
-        this->screen_capture_buf = nullptr;
-
         this->startup_menu_lyt = nullptr;
         this->main_menu_lyt = nullptr;
         this->themes_menu_lyt = nullptr;
@@ -106,26 +97,13 @@ namespace ul::menu::ui {
         // TODO: customize
         this->SetFadeAlphaIncrementStepCount(FastFadeAlphaIncrementSteps);
 
-        if(this->start_mode == smi::MenuStartMode::MainMenu) {
-            this->screen_capture_buf = new u8[RawScreenRgbaBufferSize]();
-            bool flag;
-            if(g_GlobalSettings.IsSuspended()) {
-                // Get last app frame
-                appletGetLastApplicationCaptureImageEx(this->screen_capture_buf, RawScreenRgbaBufferSize, &flag);
-            }
-            else {
-                // Get last applet frame
-                appletGetLastForegroundCaptureImageEx(this->screen_capture_buf, RawScreenRgbaBufferSize, &flag);
-            }
-
-            appletClearCaptureBuffer(true, AppletCaptureSharedBuffer_CallerApplet, 0xFF000000);
-        }
-
-        _LOG_SOFAR("done capture buffers");
-
         InitializeResources();
 
         _LOG_SOFAR("done initializing resources");
+
+        InitializeScreenCaptures(this->start_mode);
+
+        _LOG_SOFAR("done screen capture buffers");
 
         // BGM
 
@@ -180,7 +158,8 @@ namespace ul::menu::ui {
         this->dialog_over_clr = GetRequiredUiValue<pu::ui::Color>("dialog_over_color");
 
         switch(this->start_mode) {
-            case smi::MenuStartMode::Start: {
+            case smi::MenuStartMode::StartupMenu:
+            case smi::MenuStartMode::StartupMenuPostBoot: {
                 break;
             }
             default: {
@@ -193,7 +172,8 @@ namespace ul::menu::ui {
 
         this->loaded_menu = MenuType::Main;
         switch(this->start_mode) {
-            case smi::MenuStartMode::Start: {
+            case smi::MenuStartMode::StartupMenu:
+            case smi::MenuStartMode::StartupMenuPostBoot: {
                 this->LoadMenu(MenuType::Startup, false);
                 break;
             }
@@ -213,6 +193,8 @@ namespace ul::menu::ui {
 
     void MenuApplication::Finalize() {
         UL_LOG_INFO("Finalizing...");
+
+        /*
         this->ResetFade();
         this->FadeOut();
 
@@ -223,6 +205,11 @@ namespace ul::menu::ui {
         pu::audio::Finalize();
 
         this->Close(true);
+        */
+
+        // This might look very ugly, but it is a simple and quick way to exit fast: let uSystem terminate us directly (the OS itself deals with the cleanup)
+        // Most importantly, this allows us to exit without cleaning the screen to black when exiting SDL2 stuff (as regular homebrew apps do) so we can do cool transitions with applets/games
+        ul::menu::smi::TerminateMenu();
     }
 
     void MenuApplication::SetBackgroundFade() {

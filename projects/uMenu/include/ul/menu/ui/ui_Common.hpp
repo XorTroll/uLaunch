@@ -10,6 +10,16 @@
 
 namespace ul::menu::ui {
 
+    NX_CONSTEXPR u32 GetColorARGB(const pu::ui::Color clr) {
+        return ((clr.a << 24) | (clr.r << 16) | (clr.g << 8) | clr.b);
+    }
+
+    pu::ui::Color GetLibraryAppletFadeColor(const AppletId applet_id);
+
+    NX_CONSTEXPR pu::ui::Color GetDefaultFadeColor() {
+        return { 0, 0, 0, 0xFF };
+    }
+
     std::string TryGetActiveThemeResource(const std::string &resource_base);
 
     std::string TryFindImage(const std::string &path_no_ext);
@@ -332,10 +342,20 @@ namespace ul::menu::ui {
 
     void ShowAboutDialog();
 
+    inline void UpdateBackgroundBeforeLibraryAppletLaunch() {
+        // This makes our current screen to be shown blurred in the background (as with regular qlaunch/applets)
+        appletUpdateCallerAppletCaptureImage();
+    }
+
+    inline Result ShowSwkbd(SwkbdConfig *cfg, char *out_str_buf, const size_t out_str_buf_size) {
+        UpdateBackgroundBeforeLibraryAppletLaunch();
+        return swkbdShow(cfg, out_str_buf, out_str_buf_size);
+    }
+
     void ShowSettingsMenu();
     void ShowThemesMenu();
     void ShowUserPage();
-    void ShowControllerSupport();
+    void ShowController();
     void ShowWebPage();
     void ShowAlbum();
     void ShowMiiEdit();

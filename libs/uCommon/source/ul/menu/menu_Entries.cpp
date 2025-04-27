@@ -651,12 +651,15 @@ namespace ul::menu {
         return g_ActiveMenuPath;
     }
 
-    void EnsureApplicationEntry(const NsApplicationRecord &app_record) {
+    void EnsureApplicationEntry(const NsApplicationRecord &app_record, const std::string &menu_path) {
+        // Treat empty menu path argument as to use the active menu path
+        const auto actual_menu_path = menu_path.empty() ? g_ActiveMenuPath : menu_path;
+
         // Just fill enough fields needed to save the path
-        const auto entry_idx = FindNextEntryIndex(g_ActiveMenuPath);
+        const auto entry_idx = FindNextEntryIndex(actual_menu_path);
         Entry app_entry = {
             .type = EntryType::Application,
-            .entry_path = MakeEntryPath(g_ActiveMenuPath, entry_idx),
+            .entry_path = MakeEntryPath(actual_menu_path, entry_idx),
 
             .app_info = {
                 .app_id = app_record.application_id,

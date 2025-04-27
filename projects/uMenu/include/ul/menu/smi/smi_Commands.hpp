@@ -299,4 +299,28 @@ namespace ul::menu::smi {
         );
     }
 
+    inline Result TerminateMenu() {
+        return SendCommand(SystemMessage::TerminateMenu,
+            [&](ScopedStorageWriter &writer) {
+                return ResultSuccess;
+            },
+            [&](ScopedStorageReader &reader) {
+                return ResultSuccess;
+            }
+        );
+    }
+
+    inline Result OpenControllerKeyRemapping(const u32 style_set, const HidNpadJoyHoldType hold_type) {
+        return SendCommand(SystemMessage::OpenControllerKeyRemapping,
+            [&](ScopedStorageWriter &writer) {
+                writer.Push(style_set);
+                writer.Push(hold_type);
+                return ResultSuccess;
+            },
+            [&](ScopedStorageReader &reader) {
+                return ResultSuccess;
+            }
+        );
+    }
+
 }

@@ -222,5 +222,9 @@
     "theme_active": "Active theme",
     "app_no_contents": "This application has no contents, it cannot be launched.",
     "app_needs_update_can_launch": "This application expects an update.\nIt still can be launched, would you like to launch it?",
-    "app_needs_update_cannot_launch": "This application expects an update in order to be launched"
+    "app_needs_update_cannot_launch": "This application expects an update in order to be launched",
+    "controllers_entry_info": "What would you like to do?",
+    "controllers_entry_support": "Controller support",
+    "controllers_entry_mapping": "Button mapping",
+    "controllers_entry_update": "Update controllers"
 }

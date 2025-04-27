@@ -461,7 +461,7 @@ namespace ul::menu::ui {
                         swkbdConfigSetInitialText(&swkbd, g_GlobalSettings.nickname.nickname);
                         swkbdConfigSetStringLenMax(&swkbd, 32);
                         SetSysDeviceNickName new_name = {};
-                        auto rc = swkbdShow(&swkbd, new_name.nickname, sizeof(new_name.nickname));
+                        auto rc = ShowSwkbd(&swkbd, new_name.nickname, sizeof(new_name.nickname));
                         swkbdClose(&swkbd);
                         if(R_SUCCEEDED(rc)) {
                             g_GlobalSettings.nickname = new_name;
@@ -910,6 +910,8 @@ namespace ul::menu::ui {
         g_GlobalSettings.ApplyConfigForElement("settings_menu", "input_bar", this->input_bar);
         this->Add(this->input_bar);
         this->inputs_changed = true;
+
+        this->Add(GetScreenCaptureBackground());
     }
 
     void SettingsMenuLayout::LoadSfx() {
@@ -927,6 +929,8 @@ namespace ul::menu::ui {
     }
 
     void SettingsMenuLayout::OnMenuInput(const u64 keys_down, const u64 keys_up, const u64 keys_held, const pu::ui::TouchPoint touch_pos) {
+        UpdateScreenCaptureBackground(false);
+
         const auto is_in_submenu = this->cur_submenu != SettingSubmenu::None;
         const auto can_move_left = !is_in_submenu && (static_cast<u32>(this->cur_menu) > 0) && (this->settings_menu_temp_x_offset == 0);
         const auto can_move_right = !is_in_submenu && ((static_cast<u32>(this->cur_menu) + 1) < static_cast<u32>(SettingMenu::Count)) && (this->settings_menu_temp_x_offset == 0);

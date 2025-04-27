@@ -147,7 +147,7 @@ namespace ul::menu {
     std::vector<Entry> LoadEntries(const std::string &path);
     const std::string &GetActiveMenuPath();
     
-    void EnsureApplicationEntry(const NsApplicationRecord &app_record);
+    void EnsureApplicationEntry(const NsApplicationRecord &app_record, const std::string &menu_path = "");
     Entry CreateFolderEntry(const std::string &base_path, const std::string &folder_name, const s32 index = -1);
     Entry CreateHomebrewEntry(const std::string &base_path, const std::string &nro_path, const std::string &nro_argv, const s32 index = -1);
     Entry CreateSpecialEntry(const std::string &base_path, const EntryType type, const s32 index = -1);

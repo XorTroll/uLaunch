@@ -8,7 +8,8 @@ namespace ul::smi {
 
     enum class MenuStartMode : u32 {
         Invalid,
-        Start,
+        StartupMenu,
+        StartupMenuPostBoot,
         MainMenu,
         SettingsMenu
     };
@@ -76,7 +77,9 @@ namespace ul::smi {
         OpenCabinet,
         StartVerifyApplication,
         ListInVerifyApplications,
-        NotifyWarnedAboutOutdatedTheme
+        NotifyWarnedAboutOutdatedTheme,
+        TerminateMenu,
+        OpenControllerKeyRemapping
     };
 
     struct SystemStatus {

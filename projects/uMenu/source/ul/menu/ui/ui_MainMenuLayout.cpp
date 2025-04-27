@@ -103,116 +103,6 @@ namespace ul::menu::ui {
                 this->cur_path_text->SetText(this->cur_folder_path);
                 this->MoveTo(parent_path, true);
             }
-
-            ////////////////////////////////////////////////////
-
-            /*
-            for(auto &cur_entry: this->entry_menu->GetEntries()) {
-                if(cur_entry.Is<EntryType::Application>()) {
-                    // Test: qlaunch checks these flags on apps
-                    uintptr_t a1 = (uintptr_t)&cur_entry.app_info.view;
-                    u8 flags1[12] = {};
-                    flags1[0] = *(u32*)(a1 + 12) & 1;
-                    flags1[1] = (*(u8 *)(a1 + 12) >> 1) & 1;
-                    flags1[2] = (*(u8 *)(a1 + 12) >> 4) & 1;
-                    flags1[3] = (*(u8 *)(a1 + 12) >> 5) & 1;
-                    flags1[4] = (*(u8 *)(a1 + 12) >> 6) & 1;
-                    flags1[5] = *(u8 *)(a1 + 12) >> 7;
-                    flags1[6] = *(u8 *)(a1 + 13) & 1;
-                    flags1[7] = (*(u8 *)(a1 + 13) >> 1) & 1;
-                    flags1[8] = (*(u8 *)(a1 + 13) >> 2) & 1;
-                    flags1[9] = (*(u8 *)(a1 + 13) >> 5) & 1;
-                    flags1[10] = (*(u32 *)(a1 + 12) & 0x4C000) != 0;
-                    flags1[11] = *(u8 *)(a1 + 13) >> 7;
-                    u8 flags2[6] = {};
-                    flags2[0] = *(u8 *)(a1 + 14) >> 7;
-                    flags2[1] = *(u8 *)(a1 + 14) & 1;
-                    flags2[2] = (*(u8 *)(a1 + 14) >> 1) & 1;
-                    flags2[3] = ((*(u32 *)(a1 + 12) & 0x4C000) != 0) && (*(u8 *)(a1 + 36) == 5); // is waiting commit + other fn
-                    flags2[4] = (*(u8 *)(a1 + 14) >> 5) & 1;
-                    flags2[5] = (*(u8 *)(a1 + 14) >> 6) & 1;
-                    u8 flags3[5] = {};
-                    flags3[0] = (u8)cur_entry.app_info.view.unk_x24;
-                    flags3[1] = (u8)(cur_entry.app_info.view.unk_x24 >> 8);
-                    flags3[2] = cur_entry.app_info.view.unk_x26[0];
-                    flags3[3] = cur_entry.app_info.view.unk_x45[0];
-                    flags3[4] = cur_entry.app_info.view.unk_x44;
-
-                    std::string flagbits;
-                    for(u32 i = 0; i < 12; i++) {
-                        if(flags1[i] != 0) {
-                            flagbits += "1";
-                        }
-                        else {
-                            flagbits += "0";
-                        }
-                    }
-
-                    flagbits += "-";
-                    for(u32 i = 0; i < 6; i++) {
-                        if(flags2[i] != 0) {
-                            flagbits += "1";
-                        }
-                        else {
-                            flagbits += "0";
-                        }
-                    }
-
-                    flagbits += "-";
-                    for(u32 i = 0; i < 5; i++) {
-                        flagbits += std::to_string((int)flags3[i]);
-                        flagbits += ":";
-                    }
-
-                    cur_entry.TryLoadControlData();
-
-                    bool is_update_requested = false;
-                    u32 tmp = 0;
-                    auto rc = nsIsApplicationUpdateRequested(cur_entry.app_info.app_id, &is_update_requested, &tmp);
-                    if(R_FAILED(rc)) {
-                        flagbits += "-E";
-                    }
-                    else {
-                        flagbits += "-";
-                        flagbits += is_update_requested ? "1" : "0";
-                    }
-
-                    AsyncValue asval;
-                    rc = nsRequestApplicationUpdateInfo(&asval, cur_entry.app_info.app_id);
-                    if(R_FAILED(rc)) {
-                        flagbits += "-E1";
-                    }
-                    else {
-                        flagbits += "-";
-
-                        rc = asyncValueWait(&asval, UINT64_MAX);
-                        if(R_FAILED(rc)) {
-                            flagbits += "E2";
-                        }
-                        else {
-                            u8 upd;
-                            rc = asyncValueGet(&asval, &upd, 1);
-                            if(R_FAILED(rc)) {
-                                flagbits += "E3";
-                            }
-                            else {
-                                flagbits += upd ? "1" : "0";
-                            }
-                        }
-                    }
-
-                    rc = nsCheckApplicationLaunchVersion(cur_entry.app_info.app_id);
-                    if(R_FAILED(rc)) {
-                        flagbits += "-E";
-                    }
-                    else {
-                        flagbits += "-K";
-                    }
-
-                    UL_LOG_INFO("[DEV-APP-Q-FLAGS] %s --> %s", cur_entry.control.name.c_str(), flagbits.c_str());
-                }
-            }
-            */
         }
         else if(keys_down & HidNpadButton_A) {
             if(this->entry_menu->IsFocusedNonemptyEntry()) {
@@ -263,12 +153,99 @@ namespace ul::menu::ui {
                         this->cur_path_text->SetText(this->cur_folder_path);
                     }
                     else if(cur_entry.Is<EntryType::Application>() || cur_entry.Is<EntryType::Homebrew>()) {
+                        if(cur_entry.Is<EntryType::Application>()) {
+                            for(auto &cur_entry: this->entry_menu->GetEntries()) {
+                                if(cur_entry.Is<EntryType::Application>()) {
+                                    // Test: qlaunch checks these flags on apps
+                                    uintptr_t a1 = (uintptr_t)&cur_entry.app_info.view;
+                                    u8 flags1[12] = {};
+                                    flags1[0] = *(u32*)(a1 + 12) & 1;
+                                    flags1[1] = (*(u8 *)(a1 + 12) >> 1) & 1;
+                                    flags1[2] = (*(u8 *)(a1 + 12) >> 4) & 1;
+                                    flags1[3] = (*(u8 *)(a1 + 12) >> 5) & 1;
+                                    flags1[4] = (*(u8 *)(a1 + 12) >> 6) & 1;
+                                    flags1[5] = *(u8 *)(a1 + 12) >> 7;
+                                    flags1[6] = *(u8 *)(a1 + 13) & 1;
+                                    flags1[7] = (*(u8 *)(a1 + 13) >> 1) & 1;
+                                    flags1[8] = (*(u8 *)(a1 + 13) >> 2) & 1;
+                                    flags1[9] = (*(u8 *)(a1 + 13) >> 5) & 1;
+                                    flags1[10] = (*(u32 *)(a1 + 12) & 0x4C000) != 0;
+                                    flags1[11] = *(u8 *)(a1 + 13) >> 7;
+                                    u8 flags2[6] = {};
+                                    flags2[0] = *(u8 *)(a1 + 14) >> 7;
+                                    flags2[1] = *(u8 *)(a1 + 14) & 1;
+                                    flags2[2] = (*(u8 *)(a1 + 14) >> 1) & 1;
+                                    flags2[3] = ((*(u32 *)(a1 + 12) & 0x4C000) != 0) && (*(u8 *)(a1 + 36) == 5); // is waiting commit + other fn
+                                    flags2[4] = (*(u8 *)(a1 + 14) >> 5) & 1;
+                                    flags2[5] = (*(u8 *)(a1 + 14) >> 6) & 1;
+                                    u8 flags3[5] = {};
+                                    flags3[0] = (u8)(*(NsApplicationView*)&cur_entry.app_info.view).unk_x24;
+                                    flags3[1] = (u8)((*(NsApplicationView*)&cur_entry.app_info.view).unk_x24 >> 8);
+                                    flags3[2] = (*(NsApplicationView*)&cur_entry.app_info.view).unk_x26[0];
+                                    flags3[3] = (*(NsApplicationView*)&cur_entry.app_info.view).unk_x45[0];
+                                    flags3[4] = (*(NsApplicationView*)&cur_entry.app_info.view).unk_x44;
+                
+                                    std::string flagbits;
+                                    for(u32 i = 0; i < 12; i++) {
+                                        if(flags1[i] != 0) {
+                                            flagbits += "1";
+                                        }
+                                        else {
+                                            flagbits += "0";
+                                        }
+                                    }
+                
+                                    flagbits += "-";
+                                    for(u32 i = 0; i < 6; i++) {
+                                        if(flags2[i] != 0) {
+                                            flagbits += "1";
+                                        }
+                                        else {
+                                            flagbits += "0";
+                                        }
+                                    }
+                
+                                    flagbits += "-";
+                                    for(u32 i = 0; i < 5; i++) {
+                                        flagbits += std::to_string((int)flags3[i]);
+                                        flagbits += ":";
+                                    }
+                
+                                    cur_entry.TryLoadControlData();
+                
+                                    bool is_update_requested = false;
+                                    u32 tmp = 0;
+                                    auto rc = nsIsApplicationUpdateRequested(cur_entry.app_info.app_id, &is_update_requested, &tmp);
+                                    if(R_FAILED(rc)) {
+                                        flagbits += "-E";
+                                    }
+                                    else {
+                                        flagbits += "-";
+                                        flagbits += is_update_requested ? "1" : "0";
+                                    }
+                
+                                    rc = nsCheckApplicationLaunchVersion(cur_entry.app_info.app_id);
+                                    if(R_FAILED(rc)) {
+                                        flagbits += "-E";
+                                    }
+                                    else {
+                                        flagbits += "-K";
+                                    }
+
+                                    flagbits += "-reqver:" + std::to_string(cur_entry.app_info.launch_required_version);
+                                    flagbits += "-ver:" + std::to_string(cur_entry.app_info.version);
+                
+                                    UL_LOG_INFO("[DEV-APP-Q-FLAGS] %s --> %s", cur_entry.control.name.c_str(), flagbits.c_str());
+                                }
+                            }
+                        }
+
                         auto do_launch_entry = true;
 
                         if(g_GlobalSettings.IsSuspended()) {
                             // Play animations, then resume the suspended hb/app
                             if(g_GlobalSettings.IsEntrySuspended(cur_entry)) {
-                                if(this->mode == SuspendedImageMode::Focused) {
+                                if(IsScreenCaptureBackgroundFocused()) {
                                     this->StartResume();
                                 }
                                 do_launch_entry = false;
@@ -361,12 +338,15 @@ namespace ul::menu::ui {
                             else {
                                 pu::audio::PlaySfx(this->launch_app_sfx);
 
+                                g_MenuApplication->FadeOutToNonLibraryApplet();
                                 const auto rc = smi::LaunchApplication(cur_entry.app_info.app_id);
                                 if(R_SUCCEEDED(rc)) {
                                     g_MenuApplication->Finalize();
                                     return;
                                 }
                                 else {
+                                    g_MenuApplication->FadeIn();
+                                    g_MenuApplication->ResetFade();
                                     g_MenuApplication->ShowNotification(GetLanguageString("app_launch_error") + ": " + util::FormatResultDisplay(rc));
                                 }
                             }
@@ -401,7 +381,7 @@ namespace ul::menu::ui {
                             }
                             case EntryType::SpecialEntryControllers: {
                                 pu::audio::PlaySfx(this->open_controllers_sfx);
-                                ShowControllerSupport();
+                                ShowController();
                                 break;
                             }
                             case EntryType::SpecialEntryAlbum: {
@@ -445,7 +425,7 @@ namespace ul::menu::ui {
                         swkbdConfigMakePresetDefault(&swkbd);
                         swkbdConfigSetGuideText(&swkbd, GetLanguageString("swkbd_folder_name_guide").c_str());
                         char new_folder_name_buf[500] = {};
-                        const auto rc = swkbdShow(&swkbd, new_folder_name_buf, sizeof(new_folder_name_buf));
+                        const auto rc = ShowSwkbd(&swkbd, new_folder_name_buf, sizeof(new_folder_name_buf));
                         swkbdClose(&swkbd);
 
                         std::string new_folder_name(new_folder_name_buf);
@@ -462,6 +442,7 @@ namespace ul::menu::ui {
                         }
                     }
                     else if(option == 1) {
+                        g_MenuApplication->FadeOutToNonLibraryApplet();
                         UL_RC_ASSERT(smi::ChooseHomebrew());
                         g_MenuApplication->Finalize();
                     }
@@ -502,7 +483,7 @@ namespace ul::menu::ui {
                             swkbdConfigSetInitialText(&swkbd, cur_entry.folder_info.name);
                             swkbdConfigSetGuideText(&swkbd, GetLanguageString("swkbd_folder_name_guide").c_str());
                             char new_folder_name[500] = {};
-                            const auto rc = swkbdShow(&swkbd, new_folder_name, sizeof(new_folder_name));
+                            const auto rc = ShowSwkbd(&swkbd, new_folder_name, sizeof(new_folder_name));
                             swkbdClose(&swkbd);
                             
                             if(R_SUCCEEDED(rc)) {
@@ -722,10 +703,10 @@ namespace ul::menu::ui {
 
         if(g_GlobalSettings.IsSuspended() && has_prev_entry) {
             if(is_prev_entry_suspended && !is_cur_entry_suspended) {
-                this->mode = SuspendedImageMode::HidingLostFocus;
+                RequestHideLoseFocusScreenCaptureBackground();
             }
             else if(!is_prev_entry_suspended && is_cur_entry_suspended) {
-                this->mode = SuspendedImageMode::ShowingGainedFocus;
+                RequestShowGainFocusScreenCaptureBackground();
             }
         }
     }
@@ -745,32 +726,26 @@ namespace ul::menu::ui {
             pu::audio::PlaySfx(this->launch_hb_sfx);
             
             const auto ipt = CreateLaunchTargetInput(hb_entry.hb_info.nro_target);
-            const auto rc = smi::LaunchHomebrewApplication(ipt.nro_path, ipt.nro_argv);
 
+            g_MenuApplication->FadeOutToNonLibraryApplet();
+            const auto rc = smi::LaunchHomebrewApplication(ipt.nro_path, ipt.nro_argv);
             if(R_SUCCEEDED(rc)) {
                 g_MenuApplication->Finalize();
                 return;
             }
             else {
+                g_MenuApplication->FadeIn();
+                g_MenuApplication->ResetFade();
                 g_MenuApplication->ShowNotification(GetLanguageString("app_launch_error") + ": " + util::FormatResultDisplay(rc));
             }
         }
     }
 
-    MainMenuLayout::MainMenuLayout(const u8 *captured_screen_buf, const u8 min_alpha) : IMenuLayout(), last_quick_menu_on(false), start_time_elapsed(false), is_incrementing_decrementing(false), min_alpha(min_alpha), mode(SuspendedImageMode::ShowingAfterStart), suspended_screen_alpha(0xFF), next_reload_user_changed(false) {
+    MainMenuLayout::MainMenuLayout() : IMenuLayout(), last_quick_menu_on(false), start_time_elapsed(false), is_incrementing_decrementing(false), next_reload_user_changed(false) {
         UL_LOG_INFO("Creating MainMenuLayout...");
         const auto time = std::chrono::system_clock::now();
         // TODO (low priority): like nxlink but for sending themes and quickly being able to test them?
         this->cur_folder_path = g_GlobalSettings.system_status.last_menu_path;
-
-        if(captured_screen_buf != nullptr) {
-            this->suspended_screen_img = RawRgbaImage::New(0, 0, captured_screen_buf, 1280, 720, 4);
-            this->suspended_screen_img->SetWidth(pu::ui::render::ScreenWidth);
-            this->suspended_screen_img->SetHeight(pu::ui::render::ScreenHeight);
-        }
-        else {
-            this->suspended_screen_img = nullptr;
-        }
 
         this->quick_menu = nullptr;
 
@@ -894,9 +869,7 @@ namespace ul::menu::ui {
         g_GlobalSettings.ApplyConfigForElement("main_menu", "entry_menu", this->entry_menu);
         this->Add(this->entry_menu);
 
-        if(captured_screen_buf != nullptr) {
-            this->Add(this->suspended_screen_img);
-        }
+        this->Add(GetScreenCaptureBackground());
 
         this->quick_menu = QuickMenu::New();
         this->Add(this->quick_menu);
@@ -1075,6 +1048,7 @@ namespace ul::menu::ui {
         this->UpdateTimeText(this->time_mtext);
         this->UpdateDateText(this->date_text);
         this->UpdateBatteryTextAndTopIcons(this->battery_text, this->battery_top_icon, this->battery_charging_top_icon);
+        UpdateScreenCaptureBackground(this->entry_menu->IsFocusedEntrySuspended());
 
         if(!this->start_time_elapsed) {
             // Wait a bit before handling sent messages
@@ -1083,9 +1057,7 @@ namespace ul::menu::ui {
             }
         }
 
-        const auto can_show_stuff = this->start_time_elapsed && ((this->suspended_screen_img == nullptr) || ((this->mode == SuspendedImageMode::Focused) || (this->mode == SuspendedImageMode::NotFocused)));
-
-        if(can_show_stuff) {
+        if(this->start_time_elapsed && IsScreenCaptureBackgroundNotTransitioning()) {
             if(g_MenuApplication->GetConsumeLastLaunchFailed()) {
                 pu::audio::PlaySfx(this->error_sfx);
                 g_MenuApplication->DisplayDialog(GetLanguageString("app_launch"), GetLanguageString("app_unexpected_error"), { GetLanguageString("ok") }, true);
@@ -1157,78 +1129,6 @@ namespace ul::menu::ui {
             ReloadApplicationEntryInfos(this->entry_menu->GetEntries());
         }
 
-        if(this->suspended_screen_img) {
-            switch(this->mode) {
-                case SuspendedImageMode::ShowingAfterStart: {
-                    if(this->entry_menu->IsFocusedEntrySuspended() && (this->suspended_screen_alpha <= this->min_alpha)) {
-                        this->suspended_screen_alpha = this->min_alpha;
-                        this->suspended_screen_img->SetAlpha(this->suspended_screen_alpha);
-                        this->mode = SuspendedImageMode::Focused;
-                    }
-                    else if(!this->entry_menu->IsFocusedEntrySuspended() && (this->suspended_screen_alpha == 0)) {
-                        this->suspended_screen_img->SetAlpha(this->suspended_screen_alpha);
-                        this->mode = SuspendedImageMode::NotFocused;
-                    }
-                    else {
-                        this->suspended_screen_img->SetAlpha(this->suspended_screen_alpha);
-                        this->suspended_screen_alpha -= SuspendedScreenAlphaIncrement;
-                        if(this->suspended_screen_alpha < 0) {
-                            this->suspended_screen_alpha = 0;
-                        }
-                    }
-                    break;
-                }
-                case SuspendedImageMode::Focused: {
-                    break;
-                }
-                case SuspendedImageMode::HidingForResume: {
-                    if(this->suspended_screen_alpha == 0xFF) {
-                        this->suspended_screen_img->SetAlpha(this->suspended_screen_alpha);
-                        UL_RC_ASSERT(smi::ResumeApplication());
-                    }
-                    else {
-                        this->suspended_screen_img->SetAlpha(this->suspended_screen_alpha);
-                        this->suspended_screen_alpha += SuspendedScreenAlphaIncrement;
-                        if(this->suspended_screen_alpha > 0xFF) {
-                            this->suspended_screen_alpha = 0xFF;
-                        }
-                    }
-                    break;
-                }
-                case SuspendedImageMode::NotFocused: {
-                    break;
-                }
-                case SuspendedImageMode::ShowingGainedFocus: {
-                    if(this->suspended_screen_alpha == this->min_alpha) {
-                        this->suspended_screen_img->SetAlpha(this->suspended_screen_alpha);
-                        this->mode = SuspendedImageMode::Focused;
-                    }
-                    else {
-                        this->suspended_screen_img->SetAlpha(this->suspended_screen_alpha);
-                        this->suspended_screen_alpha += SuspendedScreenAlphaIncrement;
-                        if(this->suspended_screen_alpha > this->min_alpha) {
-                            this->suspended_screen_alpha = this->min_alpha;
-                        }
-                    }
-                    break;
-                }
-                case SuspendedImageMode::HidingLostFocus: {
-                    if(this->suspended_screen_alpha == 0) {
-                        this->suspended_screen_img->SetAlpha(this->suspended_screen_alpha);
-                        this->mode = SuspendedImageMode::NotFocused;
-                    }
-                    else {
-                        this->suspended_screen_img->SetAlpha(this->suspended_screen_alpha);
-                        this->suspended_screen_alpha -= SuspendedScreenAlphaIncrement;
-                        if(this->suspended_screen_alpha < 0) {
-                            this->suspended_screen_alpha = 0;
-                        }
-                    }
-                    break;
-                }
-            }
-        }
-
         if(keys_down & HidNpadButton_Minus) {
             if(!this->is_incrementing_decrementing && this->entry_menu->CanDecrementEntryHeightCount()) {
                 pu::audio::PlaySfx(this->menu_decrement_sfx);
@@ -1245,6 +1145,10 @@ namespace ul::menu::ui {
                 this->is_incrementing_decrementing = false;
             }
         }
+    }
+
+    void MainMenuLayout::OnMenuUpdate() {
+        
     }
 
     bool MainMenuLayout::OnHomeButtonPress() {
@@ -1282,7 +1186,7 @@ namespace ul::menu::ui {
     }
 
     void MainMenuLayout::Initialize() {
-        if(this->suspended_screen_img != nullptr) {
+        if(HasScreenCaptureBackground()) {
             pu::audio::PlaySfx(this->post_suspend_sfx);
         }
 
@@ -1320,8 +1224,9 @@ namespace ul::menu::ui {
             pu::audio::PlaySfx(this->launch_hb_sfx);
             
             const auto proper_ipt = CreateLaunchTargetInput(hb_entry.hb_info.nro_target);
-            UL_RC_ASSERT(smi::LaunchHomebrewLibraryApplet(proper_ipt.nro_path, proper_ipt.nro_argv));
 
+            g_MenuApplication->FadeOutToNonLibraryApplet();
+            UL_RC_ASSERT(smi::LaunchHomebrewLibraryApplet(proper_ipt.nro_path, proper_ipt.nro_argv));
             g_MenuApplication->Finalize();
         }
         else if(option == 1) {
@@ -1360,10 +1265,7 @@ namespace ul::menu::ui {
 
         g_GlobalSettings.ResetSuspendedApplication();
 
-        this->mode = SuspendedImageMode::NotFocused;
-        if(this->suspended_screen_img) {
-            this->suspended_screen_img->SetAlpha(0);
-        }
+        RequestHideScreenCaptureBackground();
     }
 
 }

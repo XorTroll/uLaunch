@@ -118,6 +118,8 @@ namespace ul::menu::ui {
 
                     pu::audio::PlaySfx(this->theme_change_sfx);
                     g_MenuApplication->ShowNotification(GetLanguageString("theme_changed"));
+
+                    g_MenuApplication->FadeOutToNonLibraryApplet();
                     UL_RC_ASSERT(ul::menu::smi::RestartMenu(true));
                     g_MenuApplication->Finalize();
                 }
@@ -132,6 +134,8 @@ namespace ul::menu::ui {
 
                     pu::audio::PlaySfx(this->theme_change_sfx);
                     g_MenuApplication->ShowNotification(GetLanguageString("theme_changed"));
+
+                    g_MenuApplication->FadeOutToNonLibraryApplet();
                     UL_RC_ASSERT(ul::menu::smi::RestartMenu(true));
                     g_MenuApplication->Finalize();
                 }

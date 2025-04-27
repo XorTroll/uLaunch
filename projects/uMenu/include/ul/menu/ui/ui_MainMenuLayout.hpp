@@ -3,6 +3,7 @@
 #include <ul/menu/ui/ui_IMenuLayout.hpp>
 #include <ul/menu/ui/ui_RawRgbaImage.hpp>
 #include <ul/menu/ui/ui_ClickableImage.hpp>
+#include <ul/menu/ui/ui_BackgroundScreenCapture.hpp>
 #include <ul/menu/ui/ui_QuickMenu.hpp>
 #include <ul/menu/ui/ui_InputBar.hpp>
 #include <ul/menu/ui/ui_EntryMenu.hpp>
@@ -15,21 +16,11 @@ namespace ul::menu::ui {
     class MainMenuLayout : public IMenuLayout {
         public:
             // TODO (new): config in theme?
-            static constexpr u8 SuspendedScreenAlphaIncrement = 10;
             static constexpr s64 MessagesWaitTimeSeconds = 1;
             static constexpr s64 TimeDotsDisplayChangeWaitTimeSeconds = 1;
             static constexpr u32 LogoSize = 90;
 
         private:
-            enum class SuspendedImageMode {
-                ShowingAfterStart = 0,
-                Focused = 1,
-                HidingForResume = 2,
-                NotFocused = 3,
-                ShowingGainedFocus = 4,
-                HidingLostFocus = 5
-            };
-
             bool last_quick_menu_on;
             pu::ui::elm::Image::Ref top_menu_default_bg;
             pu::ui::elm::Image::Ref top_menu_folder_bg;
@@ -47,7 +38,6 @@ namespace ul::menu::ui {
             pu::ui::elm::Image::Ref entry_menu_left_icon;
             pu::ui::elm::Image::Ref entry_menu_right_icon;
             std::string cur_folder_path;
-            RawRgbaImage::Ref suspended_screen_img;
             pu::ui::elm::TextBlock::Ref cur_path_text;
             pu::ui::elm::TextBlock::Ref cur_entry_main_text;
             pu::ui::elm::TextBlock::Ref cur_entry_sub_text;
@@ -57,9 +47,6 @@ namespace ul::menu::ui {
             std::chrono::steady_clock::time_point startup_tp;
             bool start_time_elapsed;
             bool is_incrementing_decrementing;
-            u8 min_alpha;
-            SuspendedImageMode mode;
-            s32 suspended_screen_alpha;
             pu::audio::Sfx post_suspend_sfx;
             pu::audio::Sfx cursor_move_sfx;
             pu::audio::Sfx page_move_sfx;
@@ -139,10 +126,12 @@ namespace ul::menu::ui {
             void LaunchHomebrewApplication(const Entry &hb_entry);
 
         public:
-            MainMenuLayout(const u8 *captured_screen_buf, const u8 min_alpha);
+            MainMenuLayout();
             PU_SMART_CTOR(MainMenuLayout)
 
             void OnMenuInput(const u64 keys_down, const u64 keys_up, const u64 keys_held, const pu::ui::TouchPoint touch_pos) override;
+            void OnMenuUpdate() override;
+
             bool OnHomeButtonPress() override;
             void LoadSfx() override;
             void DisposeSfx() override;
@@ -187,7 +176,7 @@ namespace ul::menu::ui {
 
             inline void StartResume() {
                 pu::audio::PlaySfx(this->resume_app_sfx);
-                this->mode = SuspendedImageMode::HidingForResume;
+                RequestResumeScreenCaptureBackground();
             }
 
             inline void UpdateApplicationVerifyProgress(const u64 app_id, const float progress) {

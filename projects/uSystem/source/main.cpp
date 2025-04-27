@@ -1,4 +1,5 @@
 #include <ul/system/ecs/ecs_ExternalContent.hpp>
+#include <ul/system/la/la_Open.hpp>
 #include <ul/system/sf/sf_IpcManager.hpp>
 #include <ul/system/smi/smi_SystemProtocol.hpp>
 #include <ul/system/sys/sys_SystemApplet.hpp>
@@ -51,7 +52,8 @@ namespace {
         AppletId_LibraryAppletMiiEdit,
         AppletId_LibraryAppletPlayerSelect,
         AppletId_LibraryAppletNetConnect,
-        AppletId_LibraryAppletCabinet
+        AppletId_LibraryAppletCabinet,
+        AppletId_LibraryAppletController
     };
 
     constexpr const char ChooseHomebrewCaption[] = "Choose a homebrew for uMenu";
@@ -91,6 +93,9 @@ namespace {
     bool g_NetConnectAppletLaunchFlag = false;
     bool g_CabinetAppletLaunchFlag = false;
     NfpLaStartParamTypeForAmiiboSettings g_CabinetAppletLaunchType;
+    bool g_ControllerAppletKeyRemappingLaunchFlag = false;
+    u32 g_ControllerAppletKeyRemappingNpadStyleSet = 0;
+    HidNpadJoyHoldType g_ControllerAppletKeyRemappingHoldType = HidNpadJoyHoldType_Vertical;
     bool g_NextMenuLaunchStartupFlag = false;
     bool g_NextMenuLaunchSettingsFlag = false;
     bool g_MenuRestartReloadThemeCacheFlag = false;
@@ -101,6 +106,8 @@ namespace {
     ul::cfg::Config g_Config;
     bool g_AmsIsEmuMMC = false;
     bool g_WarnedAboutOutdatedTheme = false;
+
+    bool g_CloseMenuFlag = false;
 
     char g_CurrentMenuFsPath[FS_MAX_PATH] = {};
     char g_CurrentMenuPath[FS_MAX_PATH] = {};
@@ -301,6 +308,7 @@ namespace {
                     svcSleepThread(100'000ul);
                 }
                 ul::menu::CacheSingleApplication(record.application_id);
+
                 ul::menu::EnsureApplicationEntry(record);
             }
         }
@@ -751,6 +759,16 @@ namespace {
                             g_WarnedAboutOutdatedTheme = true;
                             break;
                         }
+                        case ul::smi::SystemMessage::TerminateMenu: {
+                            g_CloseMenuFlag = true;
+                            break;
+                        }
+                        case ul::smi::SystemMessage::OpenControllerKeyRemapping: {
+                            UL_RC_TRY(reader.Pop(g_ControllerAppletKeyRemappingNpadStyleSet));
+                            UL_RC_TRY(reader.Pop(g_ControllerAppletKeyRemappingHoldType));
+                            g_ControllerAppletKeyRemappingLaunchFlag = true;
+                            break;
+                        }
                         default: {
                             // ...
                             break;
@@ -873,11 +891,17 @@ namespace {
 
         auto sth_done = false;
 
+        if(g_CloseMenuFlag) {
+            UL_RC_ASSERT(la::Terminate());
+            g_CloseMenuFlag = false;
+            sth_done = true;
+        }
+
         // A valid version will always be >= 0x20000
         if(g_WebAppletLaunchFlag.version > 0) {
             if(!la::IsActive()) {
-                UL_LOG_INFO("Launching web...");
-                UL_RC_ASSERT(la::StartWeb(&g_WebAppletLaunchFlag));
+                UL_LOG_INFO("Launching Web...");
+                UL_RC_ASSERT(la::OpenWeb(&g_WebAppletLaunchFlag));
 
                 sth_done = true;
                 g_WebAppletLaunchFlag = {};
@@ -885,8 +909,8 @@ namespace {
         }
         if(g_MenuRestartFlag) {
             if(!la::IsActive()) {
-                UL_LOG_INFO("Launching menu...");
-                UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::Start, CreateStatus()));
+                UL_LOG_INFO("Launching uMenu...");
+                UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::StartupMenuPostBoot, CreateStatus()));
 
                 sth_done = true;
                 g_MenuRestartFlag = false;
@@ -894,11 +918,8 @@ namespace {
         }
         if(g_AlbumAppletLaunchFlag) {
             if(!la::IsActive()) {
-                UL_LOG_INFO("Launching album...");
-                const struct {
-                    u8 album_arg;
-                } album_data = { AlbumLaArg_ShowAllAlbumFilesForHomeMenu };
-                UL_RC_ASSERT(la::Start(AppletId_LibraryAppletPhotoViewer, 0x10000, &album_data, sizeof(album_data)));
+                UL_LOG_INFO("Launching PhotoViewer (ShowAllAlbumFilesForHomeMenu)...");
+                UL_RC_ASSERT(la::OpenPhotoViewerAllAlbumFilesForHomeMenu());
 
                 sth_done = true;
                 g_AlbumAppletLaunchFlag = false;
@@ -906,24 +927,8 @@ namespace {
         }
         if(g_UserPageAppletLaunchFlag) {
             if(!la::IsActive()) {
-                UL_LOG_INFO("Launching user page...");
-                FriendsLaArgHeader arg_hdr = {
-                    .type = FriendsLaArgType_ShowMyProfile,
-                    .uid = g_SelectedUser
-                };
-
-                if(hosversionAtLeast(9,0,0)) {
-                    FriendsLaArg arg = {
-                        .hdr = arg_hdr
-                    };
-                    UL_RC_ASSERT(la::Start(AppletId_LibraryAppletMyPage, 0x10000, &arg, sizeof(arg)));
-                }
-                else {
-                    FriendsLaArgV1 arg = {
-                        .hdr = arg_hdr
-                    };
-                    UL_RC_ASSERT(la::Start(AppletId_LibraryAppletMyPage, 0x1, &arg, sizeof(arg)));
-                }
+                UL_LOG_INFO("Launching MyPage (MyProfile)...");
+                UL_RC_ASSERT(la::OpenMyPageMyProfile(g_SelectedUser));
 
                 sth_done = true;
                 g_UserPageAppletLaunchFlag = false;
@@ -931,14 +936,8 @@ namespace {
         }
         if(g_MiiEditAppletLaunchFlag) {
             if(!la::IsActive()) {
-                UL_LOG_INFO("Launching mii edit...");
-                const auto mii_ver = hosversionAtLeast(10,2,0) ? 0x4 : 0x3;
-                MiiLaAppletInput mii_in = {
-                    .version = mii_ver,
-                    .mode = MiiLaAppletMode_ShowMiiEdit,
-                    .special_key_code = MiiSpecialKeyCode_Normal
-                };
-                UL_RC_ASSERT(la::Start(AppletId_LibraryAppletMiiEdit, -1, &mii_in, sizeof(mii_in)));
+                UL_LOG_INFO("Launching MiiEdit...");
+                UL_RC_ASSERT(la::OpenMiiEdit());
 
                 sth_done = true;
                 g_MiiEditAppletLaunchFlag = false;
@@ -946,20 +945,8 @@ namespace {
         }
         if(g_AddUserAppletLaunchFlag) {
             if(!la::IsActive()) {
-                UL_LOG_INFO("Launching add-user page...");
-                PselUiSettings psel_ui;
-                UL_RC_ASSERT(pselUiCreate(&psel_ui, PselUiMode_UserCreator));
-
-                // Thanks again libnx for not exposing version stuff :P
-                if(hosversionAtLeast(6,0,0)) {
-                    UL_RC_ASSERT(la::Start(AppletId_LibraryAppletPlayerSelect, 0x20000, &psel_ui, sizeof(psel_ui)));
-                }
-                else if (hosversionAtLeast(2,0,0)) {
-                    UL_RC_ASSERT(la::Start(AppletId_LibraryAppletPlayerSelect, 0x10000, &psel_ui, sizeof(psel_ui)));
-                }
-                else {
-                    UL_RC_ASSERT(la::Start(AppletId_LibraryAppletPlayerSelect, 0x20000, &psel_ui.settings, sizeof(psel_ui.settings)));
-                }
+                UL_LOG_INFO("Launching PlayerSelect (UserCreator)...");
+                UL_RC_ASSERT(la::OpenPlayerSelectUserCreator());
 
                 sth_done = true;
                 g_AddUserAppletLaunchFlag = false;
@@ -968,16 +955,8 @@ namespace {
         }
         if(g_NetConnectAppletLaunchFlag) {
             if(!la::IsActive()) {
-                UL_LOG_INFO("Launching net connect...");
-                u8 in[28] = {};
-                // TODO (low priority): 0 = normal, 1 = qlaunch, 2 = starter...? (consider documenting this better, maybe a PR to libnx even)
-                *reinterpret_cast<u32*>(in) = 1;
-                UL_RC_ASSERT(la::Start(AppletId_LibraryAppletNetConnect, 0, &in, sizeof(in)));
-
-                /* TODO: send this to uMenu? is it really needed, since it will reload anyway?
-                    u8 out[8] = {0};
-                    rc = *reinterpret_cast<Result*>(out);
-                */
+                UL_LOG_INFO("Launching NetConnect...");
+                UL_RC_ASSERT(la::OpenNetConnect());
 
                 sth_done = true;
                 g_NetConnectAppletLaunchFlag = false;
@@ -986,18 +965,20 @@ namespace {
         }
         if(g_CabinetAppletLaunchFlag) {
             if(!la::IsActive()) {
-                UL_LOG_INFO("Launching cabinet...");
-                // Not sending any initial TagInfo/RegisterInfo makes the applet take care of the wait for the user to input amiibos
-                // No neeed for us/uMenu to handle any amiibo functionality at all ;)
-                const NfpLaStartParamForAmiiboSettings settings = {
-                    .unk_x0 = 0,
-                    .type = g_CabinetAppletLaunchType,
-                    .flags = 1
-                };
-                UL_RC_ASSERT(la::Start(AppletId_LibraryAppletCabinet, 1, &settings, sizeof(settings)));
+                UL_LOG_INFO("Launching Cabinet...");
+                UL_RC_ASSERT(la::OpenCabinet(g_CabinetAppletLaunchType));
 
                 sth_done = true;
                 g_CabinetAppletLaunchFlag = false;
+            }
+        }
+        if(g_ControllerAppletKeyRemappingLaunchFlag) {
+            if(!la::IsActive()) {
+                UL_LOG_INFO("Launching Controller (KeyRemapping)...");
+                UL_RC_ASSERT(la::OpenControllerKeyRemappingForSystem(g_ControllerAppletKeyRemappingNpadStyleSet, g_ControllerAppletKeyRemappingHoldType));
+
+                sth_done = true;
+                g_ControllerAppletKeyRemappingLaunchFlag = false;
             }
         }
 
@@ -1047,7 +1028,7 @@ namespace {
 
                 auto menu_start_mode = ul::smi::MenuStartMode::MainMenu;
                 if(g_NextMenuLaunchStartupFlag) {
-                    menu_start_mode = ul::smi::MenuStartMode::Start;
+                    menu_start_mode = ul::smi::MenuStartMode::StartupMenu;
                     g_NextMenuLaunchStartupFlag = false;
                 }
                 if(g_NextMenuLaunchSettingsFlag) {
@@ -1169,6 +1150,9 @@ namespace {
                     g_LastDeletedApplications.clear();
                     UL_LOG_INFO("[EventManager] Application records changed!");
 
+                    std::vector<AccountUid> uids;
+                    UL_RC_ASSERT(ul::acc::ListAccounts(uids));
+
                     const auto diff_records = ListChangedRecords();
                     for(const auto &record: diff_records) {
                         if(std::find_if(g_CurrentRecords.begin(), g_CurrentRecords.end(), [record](const NsApplicationRecord &rec) -> bool {
@@ -1184,14 +1168,16 @@ namespace {
 
                             UL_LOG_INFO("[EventManager] > cached!");
 
-                            ul::menu::EnsureApplicationEntry(record);
+                            for(const auto &uid: uids) {
+                                const auto menu_path = ul::menu::MakeMenuPath(g_AmsIsEmuMMC, uid);
+                                UL_LOG_INFO("[EventManager] > Ensuring application ID 0x%016X entry in user menu (%s)", record.application_id, menu_path.c_str());
+                                ul::menu::EnsureApplicationEntry(record, menu_path);
+                            }
                         }
                         else {
                             UL_LOG_INFO("[EventManager] > Deleted application 0x%016lX", record.application_id);
                             NotifyApplicationDeleted(record.application_id);
 
-                            std::vector<AccountUid> uids;
-                            UL_RC_ASSERT(ul::acc::ListAccounts(uids));
                             for(const auto &uid: uids) {
                                 const auto menu_path = ul::menu::MakeMenuPath(g_AmsIsEmuMMC, uid);
                                 ul::menu::DeleteApplicationEntryRecursively(record.application_id, menu_path);
@@ -1415,7 +1401,7 @@ namespace ams {
         UL_LOG_INFO("Initialized! launching menu...");
 
         // After having initialized everything, launch our menu
-        UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::Start, CreateStatus()));
+        UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::StartupMenuPostBoot, CreateStatus()));
 
         // Loop forever, since qlaunch should NEVER terminate (AM would crash in that case)
         while(true) {

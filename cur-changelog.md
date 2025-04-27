@@ -24,7 +24,13 @@ Before anything, as always: new language texts were added to reflect the changes
 
 - The issue where uMenu opening applets (the keyboard, user page and so on) would show previous applet graphics in the background is finally fixed!
 
+- Added support for button remapping and controller updating! These are now additional options in the "Controllers" special menu entry.
+
 - Suspending applets has now a similar fade-out effect as suspending applications, which looks really nice IMO ;)
+
+- Similar fixes were done when launching applets over uMenu (keyboard, controller) where previously a dark background was shown, now (as with regular HOME Menu) the uMenu screen is shown blurred in the background (little details that make everything nicer!)
+
+- When launching applets, a fade-out effect is done with the underlying theme color (light or dark) to make a nicer transition from out colorful themes to the minimalistic dark/light style that applets use regardless ;)
 
 - Added additional logging for future troubleshooting of load times
 

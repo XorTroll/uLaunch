@@ -241,11 +241,11 @@ namespace {
         // With the handlers ready, initialize uSystem message handling
         UL_RC_ASSERT(ul::menu::smi::InitializeMenuMessageHandler());
 
-        if(g_StartMode == ul::smi::MenuStartMode::MainMenu) {
-            g_MenuApplication->Show();
+        if(g_StartMode == ul::smi::MenuStartMode::StartupMenuPostBoot) {
+            g_MenuApplication->ShowWithFadeIn();
         }
         else {
-            g_MenuApplication->ShowWithFadeIn();
+            g_MenuApplication->Show();
         }
     }
 

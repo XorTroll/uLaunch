@@ -24,8 +24,9 @@ namespace ul::menu::ui {
 
     void StartupMenuLayout::create_DefaultKey() {
         pu::audio::PlaySfx(this->user_create_sfx);
-        UL_RC_ASSERT(smi::OpenAddUser());
 
+        g_MenuApplication->FadeOutToLibraryApplet(AppletId_LibraryAppletMyPage);
+        UL_RC_ASSERT(smi::OpenAddUser());
         g_MenuApplication->Finalize();
     }
 
@@ -43,6 +44,8 @@ namespace ul::menu::ui {
         this->users_menu = pu::ui::elm::Menu::New(0, 0, UsersMenuWidth, g_MenuApplication->GetMenuBackgroundColor(), g_MenuApplication->GetMenuFocusColor(), UsersMenuItemSize, UsersMenuItemsToShow);
         g_GlobalSettings.ApplyConfigForElement("startup_menu", "users_menu", this->users_menu);
         this->Add(this->users_menu);
+
+        this->Add(GetScreenCaptureBackground());
     }
 
     void StartupMenuLayout::LoadSfx() {
@@ -56,7 +59,7 @@ namespace ul::menu::ui {
     }
 
     void StartupMenuLayout::OnMenuInput(const u64 keys_down, const u64 keys_up, const u64 keys_held, const pu::ui::TouchPoint touch_pos) {
-        // ...
+        UpdateScreenCaptureBackground(false);
     }
 
     bool StartupMenuLayout::OnHomeButtonPress() {
