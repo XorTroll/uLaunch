@@ -37,16 +37,14 @@ namespace ul::menu {
             }
             UL_ASSERT_TRUE(lang_entry != nullptr);
 
-            if(lang_entry != nullptr) {
-                if(!out_control.custom_name) {
-                    out_control.name = lang_entry->name;
-                }
-                if(!out_control.custom_author) {
-                    out_control.author = lang_entry->author;
-                }
-                if(!out_control.custom_version) {
-                    out_control.version = nacp->display_version;
-                }
+            if(!out_control.custom_name) {
+                out_control.name = lang_entry->name;
+            }
+            if(!out_control.custom_author) {
+                out_control.author = lang_entry->author;
+            }
+            if(!out_control.custom_version) {
+                out_control.version = nacp->display_version;
             }
         }
 

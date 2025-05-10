@@ -27,14 +27,14 @@ namespace ul::os {
     }
     
     Time GetCurrentTime() {
-        const auto time_val = time(nullptr);
+        const auto time_val = ::time(nullptr);
         const auto local_time = localtime(&time_val);
 
         return Time(static_cast<u32>(local_time->tm_hour), static_cast<u32>(local_time->tm_min), static_cast<u32>(local_time->tm_sec));
     }
 
     Date GetCurrentDate() {
-        const auto time_val = time(nullptr);
+        const auto time_val = ::time(nullptr);
         const auto local_time = localtime(&time_val);
 
         return Date(static_cast<u32>(local_time->tm_mday), static_cast<u32>(local_time->tm_wday), static_cast<u32>(local_time->tm_mon + 1));

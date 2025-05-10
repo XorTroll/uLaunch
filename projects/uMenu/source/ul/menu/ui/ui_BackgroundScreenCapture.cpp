@@ -17,7 +17,7 @@ namespace ul::menu::ui {
 
         RawRgbaImage::Ref g_ScreenCaptureBackground;
 
-        constexpr u8 ScreenCaptureBackgroundAlphaIncrement = 24;
+        constexpr u8 ScreenCaptureBackgroundAlphaIncrement = 14;
 
         enum class SuspendedImageMode {
             ShowingAfterStart = 0,

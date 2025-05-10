@@ -4,6 +4,8 @@
 
 Before anything, as always: new language texts were added to reflect the changes below, and other minor internal fixes were made (which probably have very little impact on the user experience)
 
+- Compiled with latest libnx changes and Atmosphère 1.9.0, supporting up to firmware 20.0.1
+
 - Fixed issues where some theme files were not properly cache'd and thus would not load
 
 - The default string (if all language files failed to load) is now `<unknown>` instead of an empty string.

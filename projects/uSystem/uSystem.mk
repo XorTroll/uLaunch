@@ -1,13 +1,14 @@
+ATMOSPHERE_LIBS_REL	:= ../../libs/Atmosphere-libs
+
 #---------------------------------------------------------------------------------
 # pull in common stratosphere sysmodule configuration
 #---------------------------------------------------------------------------------
 THIS_MAKEFILE := $(abspath $(lastword $(MAKEFILE_LIST)))
 CURRENT_DIRECTORY := $(abspath $(dir $(THIS_MAKEFILE)))
-include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/../../libs/Atmosphere-libs/config/templates/stratosphere.mk
+include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/$(ATMOSPHERE_LIBS_REL)/config/templates/stratosphere.mk
 
 ATMOSPHERE_SYSTEM_MODULE_TARGETS := nsp
 
-LIBSTRAT	:=	$(CURDIR)/../../libs/Atmosphere-libs/libstratosphere
 LIBUCOMMON	:=	$(CURDIR)/../../libs/uCommon
 
 CXXFLAGS	+=	$(UL_DEFS)

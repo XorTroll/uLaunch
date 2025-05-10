@@ -351,7 +351,7 @@ namespace {
         Result verify_detail_rc;
         while(true) {
             const auto rc = nsProgressAsyncResultWait(&async_rc, VerifyStepWaitTimeNs);
-            if(rc == ul::ams::svc::ResultTimedOut) {
+            if(rc == ul::svc::ResultTimedOut) {
                 // Still not finished
                 UL_RC_ASSERT(nsProgressAsyncResultGetProgress(&async_rc, &progress, sizeof(progress)));
 
