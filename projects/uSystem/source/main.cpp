@@ -14,6 +14,7 @@
 #include <ul/util/util_Size.hpp>
 #include <ul/fs/fs_Stdio.hpp>
 #include <queue>
+#include <unordered_set>
 
 extern "C" {
 
@@ -132,7 +133,7 @@ namespace {
 
     std::vector<ApplicationVerifyContext> *g_ApplicationVerifyContexts;
 
-    std::vector<NsApplicationRecord> g_CurrentRecords;
+    std::vector<NsExtApplicationRecord> g_CurrentRecords;
     std::vector<u64> g_LastDeletedApplications;
     std::vector<u64> g_LastAddedApplications;
 
@@ -304,8 +305,8 @@ namespace {
         // Check applications
 
         for(auto &app_entry: existing_app_entries) {
-            if(std::find_if(g_CurrentRecords.begin(), g_CurrentRecords.end(), [app_entry](const NsApplicationRecord &rec) -> bool {
-                return rec.application_id == app_entry.app_info.app_id;
+            if(std::find_if(g_CurrentRecords.begin(), g_CurrentRecords.end(), [app_entry](const NsExtApplicationRecord &rec) -> bool {
+                return rec.id == app_entry.app_info.app_id;
             }) == g_CurrentRecords.end()) {
                 UL_LOG_INFO("Deleted application 0x%016lX", app_entry.app_info.app_id);
                 NotifyApplicationDeleted(app_entry.app_info.app_id);
@@ -316,15 +317,15 @@ namespace {
 
         for(const auto &record: g_CurrentRecords) {
             if(std::find_if(existing_app_entries.begin(), existing_app_entries.end(), [record](const ul::menu::Entry &entry) -> bool {
-                return entry.app_info.app_id == record.application_id;
+                return entry.app_info.app_id == record.id;
             }) == existing_app_entries.end()) {
-                UL_LOG_INFO("Added application 0x%016lX", record.application_id);
-                g_LastAddedApplications.push_back(record.application_id);
-                while(!ul::menu::CacheSingleApplication(record.application_id)) {
+                UL_LOG_INFO("Added application 0x%016lX", record.id);
+                g_LastAddedApplications.push_back(record.id);
+                while(!ul::menu::CacheSingleApplication(record.id)) {
                     UL_LOG_INFO("> Failed to cache, retrying...");
                     svcSleepThread(100'000ul);
                 }
-                ul::menu::CacheSingleApplication(record.application_id);
+                ul::menu::CacheSingleApplication(record.id);
 
                 ul::menu::EnsureApplicationEntry(record);
             }
@@ -1134,48 +1135,34 @@ namespace {
         svcSleepThread(10'000'000ul);
     }
 
-    std::vector<NsApplicationRecord> ListChangedRecords() {
-        auto old_records = g_CurrentRecords;
-        g_CurrentRecords = ul::os::ListApplicationRecords();
-        auto new_records = g_CurrentRecords;
-
-        std::vector<NsApplicationRecord> diff_records;
-        u32 old_i = 0;
-        u32 new_i = 0;
-        while(true) {
-            if(old_records.at(old_i).application_id == new_records.at(new_i).application_id) {
-                old_records.erase(old_records.begin() + old_i);
-                new_records.erase(new_records.begin() + new_i);
-            }
-            else {
-                u32 new_j = new_i;
-                while(true) {
-                    if(old_records.at(old_i).application_id == new_records.at(new_j).application_id) {
-                        old_records.erase(old_records.begin() + old_i);
-                        new_records.erase(new_records.begin() + new_j);
-                        break;
-                    }
-
-                    new_j++;
-                    if(new_j >= new_records.size()) {
-                        diff_records.push_back(old_records.at(old_i));
-                        old_records.erase(old_records.begin() + old_i);
-                        break;
-                    }
-                }
-            }
-
-            if(old_i >= old_records.size()) {
-                break;
-            }
-            if(new_i >= new_records.size()) {
-                break;
-            }
+    std::vector<NsExtApplicationRecord> ListAddedRecords(const std::vector<NsExtApplicationRecord> &old_records, const std::vector<NsExtApplicationRecord> &cur_records) {
+        std::unordered_set<u64> prev_app_ids;
+        for(const auto &rec: old_records) {
+            prev_app_ids.insert(rec.id);
         }
 
-        diff_records.insert(diff_records.end(), old_records.begin(), old_records.end());
-        diff_records.insert(diff_records.end(), new_records.begin(), new_records.end());
-        return diff_records;
+        std::vector<NsExtApplicationRecord> added;
+        for(const auto &rec: cur_records) {
+            if(prev_app_ids.find(rec.id) == prev_app_ids.end()) {
+                added.push_back(rec);
+            }
+        }
+        return added;
+    }
+
+    std::vector<NsExtApplicationRecord> ListRemovedRecords(const std::vector<NsExtApplicationRecord> &old_records, const std::vector<NsExtApplicationRecord> &cur_records) {
+        std::unordered_set<u64> cur_app_ids;
+        for(const auto &rec: cur_records) {
+            cur_app_ids.insert(rec.id);
+        }
+
+        std::vector<NsExtApplicationRecord> removed;
+        for(const auto &rec: old_records) {
+            if(cur_app_ids.find(rec.id) == cur_app_ids.end()) {
+                removed.push_back(rec);
+            }
+        }
+        return removed;
     }
 
     void EventManagerMain(void*) {
@@ -1213,44 +1200,51 @@ namespace {
                     std::vector<AccountUid> uids;
                     UL_RC_ASSERT(ul::acc::ListAccounts(uids));
 
-                    const auto diff_records = ListChangedRecords();
-                    for(const auto &record: diff_records) {
-                        if(std::find_if(g_CurrentRecords.begin(), g_CurrentRecords.end(), [record](const NsApplicationRecord &rec) -> bool {
-                            return rec.application_id == record.application_id;
-                        }) != g_CurrentRecords.end()) {
-                            UL_LOG_INFO("[EventManager] > Added application 0x%016lX, caching...", record.application_id);
-                            g_LastAddedApplications.push_back(record.application_id);
+                    const auto old_records = std::move(g_CurrentRecords);
+                    g_CurrentRecords = ul::os::ListApplicationRecords();
 
-                            while(!ul::menu::CacheSingleApplication(record.application_id)) {
-                                UL_LOG_INFO("[EventManager] > Failed to cache, retrying...");
-                                svcSleepThread(100'000ul);
+                    const auto added_records = ListAddedRecords(old_records, g_CurrentRecords);
+                    for(const auto &record: added_records) {
+                        UL_LOG_INFO("[EventManager] > Added application 0x%016lX, caching...", record.id);
+                        g_LastAddedApplications.push_back(record.id);
+
+                        u32 i = 0;
+                        while(!ul::menu::CacheSingleApplication(record.id)) {
+                            if(i >= 50) {
+                                UL_LOG_WARN("[EventManager] > Failed to cache application 0x%016lX 50 times, giving up...", record.id);
+                                break;
                             }
 
-                            UL_LOG_INFO("[EventManager] > cached!");
+                            UL_LOG_INFO("[EventManager] > Failed to cache, retrying...");
+                            svcSleepThread(100'000ul);
 
-                            for(const auto &uid: uids) {
-                                const auto menu_path = ul::menu::MakeMenuPath(g_AmsIsEmuMMC, uid);
-                                UL_LOG_INFO("[EventManager] > Ensuring application ID 0x%016X entry in user menu (%s)", record.application_id, menu_path.c_str());
-                                ul::menu::EnsureApplicationEntry(record, menu_path);
-                            }
+                            i++;
                         }
-                        else {
-                            UL_LOG_INFO("[EventManager] > Deleted application 0x%016lX", record.application_id);
-                            NotifyApplicationDeleted(record.application_id);
 
-                            for(const auto &uid: uids) {
-                                const auto menu_path = ul::menu::MakeMenuPath(g_AmsIsEmuMMC, uid);
-                                ul::menu::DeleteApplicationEntryRecursively(record.application_id, menu_path);
-                            }
+                        for(const auto &uid: uids) {
+                            const auto menu_path = ul::menu::MakeMenuPath(g_AmsIsEmuMMC, uid);
+                            UL_LOG_INFO("[EventManager] > Ensuring application ID 0x%016lX entry in user menu (%s)", record.id, menu_path.c_str());
+                            ul::menu::EnsureApplicationEntry(record, menu_path);
                         }
                     }
 
+                    const auto removed_records = ListRemovedRecords(old_records, g_CurrentRecords);
+                    for(const auto &record: removed_records) {
+                        UL_LOG_INFO("[EventManager] > Deleted application 0x%016lX", record.id);
+                        NotifyApplicationDeleted(record.id);
+
+                        for(const auto &uid: uids) {
+                            const auto menu_path = ul::menu::MakeMenuPath(g_AmsIsEmuMMC, uid);
+                            ul::menu::DeleteApplicationEntryRecursively(record.id, menu_path);
+                        }
+                    }
+
+                    // Only push this if uMenu is currently active
                     if(la::IsMenu()) {
-                        // Only push this if uMenu is currently active
                         const ul::smi::MenuMessageContext msg_ctx = {
                             .msg = ul::smi::MenuMessage::ApplicationRecordsChanged,
                             .app_records_changed = {
-                                .records_added_or_deleted = !diff_records.empty()
+                                .records_added_or_deleted = !added_records.empty() || !removed_records.empty(),
                             }
                         };
                         PushMenuMessageContext(msg_ctx);

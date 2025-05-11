@@ -39,16 +39,19 @@ CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++20
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
-LIBUCOMMON	:=	$(CURDIR)/../../libs/uCommon
+LIBUCOMMON		:=	$(CURDIR)/../../libs/uCommon
+LIBNX_EXT		:=	$(CURDIR)/../../libs/libnx-ext/libnx-ext
+LIBNX_IPCEXT	:=	$(CURDIR)/../../libs/libnx-ext/libnx-ipcext
+
 INCLUDES 	+=	/../../libs/json/single_include/nlohmann
 
-LIBS	:= -luCommon -lnx
+LIBS	:= -luCommon -lnx -lnx-ext -lnx-ipcext
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS	:= $(PORTLIBS) $(LIBNX) $(LIBUCOMMON)
+LIBDIRS	:= $(PORTLIBS) $(LIBNX) $(LIBUCOMMON) $(LIBNX_EXT) $(LIBNX_IPCEXT)
 
 
 #---------------------------------------------------------------------------------

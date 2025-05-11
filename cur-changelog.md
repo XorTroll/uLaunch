@@ -126,4 +126,8 @@ Before anything, as always: new language texts were added to reflect the changes
 
 - Updated EntryIcons, OverIcons and QuickIcons to reflect the maximum `384x384` size in icons. In some of them, the base icon design / colors were changed to more fitting ones ;)
 
+## uSystem
+
+- Improved code for detecting added or deleted content
+
 > For previous versions, please visit their respective release pages

@@ -22,7 +22,7 @@ namespace ul::menu::ui {
         }
 
         inline bool IsEntryHomebrewTakeoverApplication(const Entry &entry) {
-            return entry.Is<EntryType::Application>() && (entry.app_info.record.application_id == g_GlobalSettings.cache_hb_takeover_app_id);
+            return entry.Is<EntryType::Application>() && (entry.app_info.record.id == g_GlobalSettings.cache_hb_takeover_app_id);
         }
 
         inline bool IsEntryGameCardApplicationInserted(const Entry &entry) {

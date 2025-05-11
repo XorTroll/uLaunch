@@ -1,7 +1,6 @@
 
 #pragma once
 #include <ul/ul_Result.hpp>
-#include <ul/menu/bt/bt_BtmSysExtra.h>
 #include <cstring>
 
 namespace ul::menu::bt {
@@ -14,7 +13,7 @@ namespace ul::menu::bt {
     }
     
     inline bool AudioDevicesEqual(const BtmAudioDevice &a, const BtmAudioDevice &b) {
-        return AudioDeviceAddressesEqual(a.address, b.address);
+        return AudioDeviceAddressesEqual(a.addr, b.addr);
     }
 
     std::vector<BtmAudioDevice> ListPairedAudioDevices();

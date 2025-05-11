@@ -19,3 +19,6 @@
 [submodule "libs/stb"]
 	path = libs/stb
 	url = https://github.com/nothings/stb
+[submodule "libs/libnx-ext"]
+	path = libs/libnx-ext
+	url = https://github.com/XorTroll/libnx-ext

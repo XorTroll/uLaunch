@@ -30,34 +30,34 @@ namespace ul::menu {
 
     struct EntryApplicationInfo {
         u64 app_id;
-        NsApplicationRecord record;
-        os::ApplicationView view;
+        NsExtApplicationRecord record;
+        NsExtApplicationView view;
         u32 version;
         u32 launch_required_version;
 
-        inline bool IsNotUpdated() const {
-            // Just checks whether the required launch version is greater
-            return this->launch_required_version > this->version;
-        }
-
         inline bool HasContents() const {
-            return this->view.HasFlag<os::ApplicationViewFlag::HasMainContents>();
+            return os::ApplicationViewHasFlag<NsExtApplicationViewFlag_HasMainContents>(this->view);
         }
 
         inline bool IsGameCardInserted() const {
-            return this->view.HasFlag<os::ApplicationViewFlag::IsGameCard>() && this->view.HasFlag<os::ApplicationViewFlag::IsGameCardInserted>();
+            return os::ApplicationViewHasFlag<NsExtApplicationViewFlag_IsGameCard>(this->view) && os::ApplicationViewHasFlag<NsExtApplicationViewFlag_IsGameCardInserted>(this->view);
         }
 
         inline bool IsGameCardNotInserted() const {
-            return this->view.HasFlag<os::ApplicationViewFlag::IsGameCard>() && !this->view.HasFlag<os::ApplicationViewFlag::IsGameCardInserted>();
+            return os::ApplicationViewHasFlag<NsExtApplicationViewFlag_IsGameCard>(this->view) && !os::ApplicationViewHasFlag<NsExtApplicationViewFlag_IsGameCardInserted>(this->view);
         }
 
         inline bool NeedsVerify() const {
-            return this->view.HasFlag<os::ApplicationViewFlag::NeedsVerify>();
+            return os::ApplicationViewHasFlag<NsExtApplicationViewFlag_NeedsVerify>(this->view);
         }
 
         inline bool CanBeLaunched() const {
-            return this->view.HasFlag<os::ApplicationViewFlag::CanLaunch>();
+            return os::ApplicationViewHasFlag<NsExtApplicationViewFlag_CanLaunch>(this->view);
+        }
+
+        inline bool IsNotUpdated() const {
+            // TODO: is this the right check?
+            return R_FAILED(nsCheckApplicationLaunchVersion(this->app_id));
         }
     };
 
@@ -147,7 +147,7 @@ namespace ul::menu {
     std::vector<Entry> LoadEntries(const std::string &path);
     const std::string &GetActiveMenuPath();
     
-    void EnsureApplicationEntry(const NsApplicationRecord &app_record, const std::string &menu_path = "");
+    void EnsureApplicationEntry(const NsExtApplicationRecord &app_record, const std::string &menu_path = "");
     Entry CreateFolderEntry(const std::string &base_path, const std::string &folder_name, const s32 index = -1);
     Entry CreateHomebrewEntry(const std::string &base_path, const std::string &nro_path, const std::string &nro_argv, const s32 index = -1);
     Entry CreateSpecialEntry(const std::string &base_path, const EntryType type, const s32 index = -1);

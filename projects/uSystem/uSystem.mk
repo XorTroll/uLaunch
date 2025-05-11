@@ -10,12 +10,14 @@ include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/$(ATMOSPHERE_LIBS_REL)/co
 ATMOSPHERE_SYSTEM_MODULE_TARGETS := nsp
 
 LIBUCOMMON	:=	$(CURDIR)/../../libs/uCommon
+LIBNX_EXT	:=	$(CURDIR)/../../libs/libnx-ext/libnx-ext
+LIBNX_IPCEXT	:=	$(CURDIR)/../../libs/libnx-ext/libnx-ipcext
 
 CXXFLAGS	+=	$(UL_DEFS)
 
 INCLUDES 	+=	/../../libs/json/single_include/nlohmann
-LIBDIRS		+=	$(LIBUCOMMON)
-LIBS		+=	-luCommon
+LIBDIRS		+=	$(LIBUCOMMON) $(LIBNX_EXT) $(LIBNX_IPCEXT)
+LIBS		+=	-luCommon -lnx-ext -lnx-ipcext
 
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional

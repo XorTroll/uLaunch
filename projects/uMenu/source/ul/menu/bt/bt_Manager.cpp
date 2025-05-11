@@ -31,7 +31,7 @@ namespace ul::menu::bt {
         std::atomic_bool g_ThreadRunning = true;
 
         inline bool IsAudioDeviceValid(const BtmAudioDevice &device) {
-            return memcmp(&device.address, &InvalidAddress, sizeof(BtdrvAddress)) != 0;
+            return memcmp(&device.addr, &InvalidAddress, sizeof(BtdrvAddress)) != 0;
         }
 
         inline bool UpdateAudioDeviceList(std::vector<BtmAudioDevice> &dst, const std::vector<BtmAudioDevice> &src, std::atomic_bool &out_has_changes) {
@@ -51,14 +51,14 @@ namespace ul::menu::bt {
         void ReloadConnectedDevice() {
             ScopedLock lock(g_ConnectedLock);
             
-            const auto prev_connected_device_addr = g_ConnectedAudioDevice.address;
+            const auto prev_connected_device_addr = g_ConnectedAudioDevice.addr;
             g_ConnectedAudioDevice = {};
 
             // qlaunch itself only expects 1 device to be connected at a time
             s32 connected_count = 0;
             UL_RC_ASSERT(btmsysGetConnectedAudioDevices(&g_ConnectedAudioDevice, 1, &connected_count));
 
-            g_ConnectedHasChanges = !AudioDeviceAddressesEqual(g_ConnectedAudioDevice.address, prev_connected_device_addr);
+            g_ConnectedHasChanges = !AudioDeviceAddressesEqual(g_ConnectedAudioDevice.addr, prev_connected_device_addr);
             if(g_ConnectedHasChanges) {
                 if(connected_count > 0) {
                     UL_LOG_INFO("[bt] Connected device changed: connected to '%s'", g_ConnectedAudioDevice.name);
@@ -108,12 +108,11 @@ namespace ul::menu::bt {
     
         void BluetoothThread(void*) {
             UL_LOG_INFO("[bt] Bluetooth thread alive!");
-            UL_RC_ASSERT(btmsysAcquireAudioDeviceConnectionEvent(&g_AudioDeviceConnectionEvent, false));
+            UL_RC_ASSERT(btmsysAcquireAudioDeviceConnectionEvent(&g_AudioDeviceConnectionEvent));
     
             while(g_ThreadRunning) {
                 // This fires all the time for some reason, but we can still treat it as a loop check for every 500ms
                 const auto rc = eventWait(&g_AudioDeviceConnectionEvent, 500'000'000);
-                eventClear(&g_AudioDeviceConnectionEvent);
                 if(R_FAILED(rc) && (rc != KERNELRESULT(TimedOut))) {
                     UL_LOG_WARN("[bt] Failed to wait for events (and not a time-out): %s", ul::util::FormatResultDisplay(rc));
                 }
@@ -192,18 +191,18 @@ namespace ul::menu::bt {
         g_ConnectedHasChanges = true;
         g_DiscoveredHasChanges = true;
         g_PairedHasChanges = true;
-        return btmsysConnectAudioDevice(device.address);
+        return btmsysConnectAudioDevice(device.addr);
     }
 
     Result DisconnectAudioDevice(const BtmAudioDevice &device) {
         g_ConnectedHasChanges = true;
-        return btmsysDisconnectAudioDevice(device.address);
+        return btmsysDisconnectAudioDevice(device.addr);
     }
 
     Result UnpairAudioDevice(const BtmAudioDevice &device) {
         g_PairedHasChanges = true;
         g_DiscoveredHasChanges = true;
-        return btmsysRemoveAudioDevicePairing(device.address);
+        return btmsysRemoveAudioDevicePairing(device.addr);
     }
 
     void StartAudioDeviceDiscovery() {

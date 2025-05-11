@@ -204,7 +204,7 @@ namespace ul::menu::ui {
 
         inline bool IsEntrySuspended(const Entry &entry) {
             if(entry.Is<EntryType::Application>()) {
-                return entry.app_info.record.application_id == this->system_status.suspended_app_id;
+                return entry.app_info.record.id == this->system_status.suspended_app_id;
             }
             else if(entry.Is<EntryType::Homebrew>()) {
                 // Enough to compare the NRO path

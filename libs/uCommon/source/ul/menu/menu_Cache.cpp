@@ -41,7 +41,7 @@ namespace ul::menu {
             return true;
         }
 
-        void CacheApplicationEntries(const std::vector<NsApplicationRecord> &records) {
+        void CacheApplicationEntries(const std::vector<NsExtApplicationRecord> &records) {
             auto tmp_control_data = new NsApplicationControlData();
             for(const auto &record: records) {
                 CacheApplicationEntry(record.application_id, tmp_control_data);
@@ -102,7 +102,7 @@ namespace ul::menu {
         }
     }
 
-    void CacheApplications(const std::vector<NsApplicationRecord> &records) {
+    void CacheApplications(const std::vector<NsExtApplicationRecord> &records) {
         // Nothing to cache for now (previously we cached the icon, but unlike homebrew this is not really needed)
 
         /*

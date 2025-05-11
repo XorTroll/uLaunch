@@ -8,12 +8,12 @@ export UL_DEFS	:=	-DUL_MAJOR=$(VERSION_MAJOR) -DUL_MINOR=$(VERSION_MINOR) -DUL_M
 OUT_DIR				:=	SdOut
 OUT_DIR_ZIP			:=	uLaunch-v$(VERSION)
 
-OUT_THEME_MUSIC	:=	default-theme-music-v$(VERSION).ultheme
+OUT_THEME_MUSIC		:=	default-theme-music-v$(VERSION).ultheme
 THEME_MUSIC_TEMP	:=	default-theme-music-tmp
 
-.PHONY: all fresh clean pu arc usystem uloader umenu umanager uscreen udesigner default-theme-music package
+.PHONY: all fresh clean libs arc usystem uloader umenu umanager uscreen udesigner default-theme-music package
 
-all: arc usystem uloader umenu umanager uscreen udesigner default-theme-music package
+all: package
 
 fresh: clean all
 
@@ -26,21 +26,23 @@ clean:
 	@cd projects/uScreen && mvn clean
 	@rm -rf $(OUT_DIR)
 
-pu:
+libs:
 	@$(MAKE) -C libs/Plutonium/
+	@$(MAKE) -C libs/libnx-ext/libnx-ext/
+	@$(MAKE) -C libs/libnx-ext/libnx-ipcext/
 
 arc:
 	@python arc/arc.py gen_db default+./libs/uCommon/include/ul/ul_Results.rc.hpp
 	@python arc/arc.py gen_cpp rc UL ./libs/uCommon/include/ul/ul_Results.gen.hpp
 
-usystem: arc
+usystem: arc libs
 	@$(MAKE) -C projects/uSystem
 	@mkdir -p $(OUT_DIR)/atmosphere/contents/0100000000001000
 	@cp projects/uSystem/out/nintendo_nx_arm64_armv8a/release/uSystem.nsp $(OUT_DIR)/atmosphere/contents/0100000000001000/exefs.nsp
 	@mkdir -p $(OUT_DIR)/ulaunch/bin/uSystem
 	@cp projects/uSystem/out/nintendo_nx_arm64_armv8a/release/uSystem.nsp $(OUT_DIR)/ulaunch/bin/uSystem/exefs.nsp
 
-uloader: arc
+uloader: arc libs
 	@$(MAKE) -C projects/uLoader
 	@mkdir -p $(OUT_DIR)/ulaunch/bin/uLoader
 	@mkdir -p $(OUT_DIR)/ulaunch/bin/uLoader/applet
@@ -50,7 +52,7 @@ uloader: arc
 	@cp projects/uLoader/uLoader.nso $(OUT_DIR)/ulaunch/bin/uLoader/application/main
 	@cp projects/uLoader/uLoader_application.npdm $(OUT_DIR)/ulaunch/bin/uLoader/application/main.npdm
 
-umenu: arc pu
+umenu: arc libs
 	@$(MAKE) -C projects/uMenu
 	@mkdir -p $(OUT_DIR)/ulaunch/bin/uMenu
 	@mkdir -p $(OUT_DIR)/ulaunch/lang/uMenu
@@ -62,7 +64,7 @@ umenu: arc pu
 	@cp -r default-theme/ projects/uMenu/romfs/default/
 	@build_romfs projects/uMenu/romfs $(OUT_DIR)/ulaunch/bin/uMenu/romfs.bin
 
-umanager: arc pu
+umanager: arc libs
 	@$(MAKE) -C projects/uManager
 	@mkdir -p $(OUT_DIR)/ulaunch/lang/uManager
 	@mkdir -p $(OUT_DIR)/switch
@@ -89,7 +91,7 @@ default-theme-music:
 	@rm -rf $(THEME_MUSIC_TEMP)
 	@echo "Created default-theme-music: $(OUT_THEME_MUSIC)!"
 
-package:
+package: arc usystem uloader umenu umanager uscreen udesigner default-theme-music
 	@rm -rf $(OUT_DIR_ZIP).7z $(OUT_DIR_ZIP).zip
 	@cd $(OUT_DIR) && 7z a ../$(OUT_DIR_ZIP).7z atmosphere ulaunch switch
 	@cd $(OUT_DIR) && zip -r ../$(OUT_DIR_ZIP).zip atmosphere ulaunch switch

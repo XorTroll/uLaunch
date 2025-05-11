@@ -20,8 +20,8 @@ namespace ul::menu {
             return (app_id & ~0x800) | 0x800;
         }
 
-        std::vector<NsApplicationRecord> g_ApplicationRecords = {};
-        std::vector<os::ApplicationView> g_ApplicationViews = {};
+        std::vector<NsExtApplicationRecord> g_ApplicationRecords = {};
+        std::vector<NsExtApplicationView> g_ApplicationViews = {};
 
         void LoadControlDataStrings(EntryControlData &out_control, NacpStruct *nacp) {
             NacpLanguageEntry *lang_entry = nullptr;
@@ -138,7 +138,7 @@ namespace ul::menu {
             return fs::JoinPath(V100_V110MenuPath, new_folder_entry.folder_info.fs_name);
         }
 
-        void InitializeRemainingEntries(const std::vector<NsApplicationRecord> &remaining_apps, u32 &entry_idx) {
+        void InitializeRemainingEntries(const std::vector<NsExtApplicationRecord> &remaining_apps, u32 &entry_idx) {
             const std::vector<std::string> DefaultHomebrewRecordPaths = { HbmenuPath, ManagerPath };
 
             // Add special homebrew entries
@@ -180,7 +180,7 @@ namespace ul::menu {
                     .entry_path = MakeEntryPath(g_ActiveMenuPath, entry_idx),
 
                     .app_info = {
-                        .app_id = app_record.application_id,
+                        .app_id = app_record.id,
                         .record = app_record
                     }
                 };
@@ -237,8 +237,8 @@ namespace ul::menu {
                                 const auto application_id = util::Get64FromString(application_id_fmt);
                                 entry.app_info.app_id = application_id;
 
-                                const auto find_rec = std::find_if(apps_copy.begin(), apps_copy.end(), [&](const NsApplicationRecord &rec) -> bool {
-                                    return rec.application_id == application_id;
+                                const auto find_rec = std::find_if(apps_copy.begin(), apps_copy.end(), [&](const NsExtApplicationRecord &rec) -> bool {
+                                    return rec.id == application_id;
                                 });
                                 if(find_rec != apps_copy.end()) {
                                     entry.app_info.record = *find_rec;
@@ -249,7 +249,7 @@ namespace ul::menu {
                                     UL_LOG_WARN("Found old pre-v1.0.0 menu application that could not be matched to an existing application record...");
                                 }
 
-                                const auto find_view = std::find_if(g_ApplicationViews.begin(), g_ApplicationViews.end(), [&](const os::ApplicationView &view) -> bool {
+                                const auto find_view = std::find_if(g_ApplicationViews.begin(), g_ApplicationViews.end(), [&](const NsExtApplicationView &view) -> bool {
                                     return view.app_id == application_id;
                                 });
                                 if(find_view != g_ApplicationViews.end()) {
@@ -353,8 +353,8 @@ namespace ul::menu {
             // Assume we need to reload here
             EnsureApplicationRecordsAndViews(force_reload_records_views);
 
-            const auto find_rec = std::find_if(g_ApplicationRecords.begin(), g_ApplicationRecords.end(), [&](const NsApplicationRecord &rec) -> bool {
-                return rec.application_id == app_id;
+            const auto find_rec = std::find_if(g_ApplicationRecords.begin(), g_ApplicationRecords.end(), [&](const NsExtApplicationRecord &rec) -> bool {
+                return rec.id == app_id;
             });
             if(find_rec != g_ApplicationRecords.end()) {
                 this->app_info.record = *find_rec;
@@ -363,7 +363,7 @@ namespace ul::menu {
                 UL_LOG_WARN("Unable to reload application record: not found?");
             }
 
-            const auto find_view = std::find_if(g_ApplicationViews.begin(), g_ApplicationViews.end(), [&](const os::ApplicationView &view) -> bool {
+            const auto find_view = std::find_if(g_ApplicationViews.begin(), g_ApplicationViews.end(), [&](const NsExtApplicationView &view) -> bool {
                 return view.app_id == app_id;
             });
             if(find_view != g_ApplicationViews.end()) {
@@ -539,8 +539,8 @@ namespace ul::menu {
                                 .app_id = application_id
                             };
 
-                            const auto find_rec = std::find_if(g_ApplicationRecords.begin(), g_ApplicationRecords.end(), [&](const NsApplicationRecord &rec) -> bool {
-                                return rec.application_id == application_id;
+                            const auto find_rec = std::find_if(g_ApplicationRecords.begin(), g_ApplicationRecords.end(), [&](const NsExtApplicationRecord &rec) -> bool {
+                                return rec.id == application_id;
                             });
                             if(find_rec != g_ApplicationRecords.end()) {
                                 entry.app_info.record = *find_rec;
@@ -549,7 +549,7 @@ namespace ul::menu {
                                 UL_LOG_WARN("Potentially invalid application entry: unable to match to application record");
                             }
 
-                            const auto find_view = std::find_if(g_ApplicationViews.begin(), g_ApplicationViews.end(), [&](const os::ApplicationView &view) -> bool {
+                            const auto find_view = std::find_if(g_ApplicationViews.begin(), g_ApplicationViews.end(), [&](const NsExtApplicationView &view) -> bool {
                                 return view.app_id == application_id;
                             });
                             if(find_view != g_ApplicationViews.end()) {
@@ -649,7 +649,7 @@ namespace ul::menu {
         return g_ActiveMenuPath;
     }
 
-    void EnsureApplicationEntry(const NsApplicationRecord &app_record, const std::string &menu_path) {
+    void EnsureApplicationEntry(const NsExtApplicationRecord &app_record, const std::string &menu_path) {
         // Treat empty menu path argument as to use the active menu path
         const auto actual_menu_path = menu_path.empty() ? g_ActiveMenuPath : menu_path;
 
@@ -660,7 +660,7 @@ namespace ul::menu {
             .entry_path = MakeEntryPath(actual_menu_path, entry_idx),
 
             .app_info = {
-                .app_id = app_record.application_id,
+                .app_id = app_record.id,
                 .record = app_record
             }
         };

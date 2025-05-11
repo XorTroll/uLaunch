@@ -294,40 +294,25 @@ namespace ul::menu::ui {
                                 do_launch_entry = false;
                             }
                             else if(!cur_entry.app_info.CanBeLaunched()) {
-                                UL_LOG_WARN("Tried to launch non-launchable application 0x%016lX with record type 0x%X and view flags 0x%D", cur_entry.app_info.app_id, cur_entry.app_info.record.type, cur_entry.app_info.view.flags);
+                                UL_LOG_WARN("Tried to launch non-launchable application 0x%016lX with record last event %d and view flags 0x%D", cur_entry.app_info.app_id, cur_entry.app_info.record.last_event, cur_entry.app_info.view.flags);
                                 pu::audio::PlaySfx(this->error_sfx);
                                 g_MenuApplication->ShowNotification(GetLanguageString("app_not_launchable"));
                                 do_launch_entry = false;
                             }
                             else {
+                                // Check if it can be launched
                                 if(cur_entry.app_info.IsNotUpdated()) {
-                                    // Despite not updated, check if it can be launched
-                                    const auto rc = nsCheckApplicationLaunchVersion(cur_entry.app_info.app_id);
-                                    if(R_FAILED(rc)) {
-                                        pu::audio::PlaySfx(this->error_sfx);
-                                        g_MenuApplication->ShowNotification(GetLanguageString("app_needs_update_cannot_launch") + ": " + util::FormatResultDisplay(rc));
-                                        do_launch_entry = false;
-                                    }
-                                    else {
-                                        const auto option = g_MenuApplication->DisplayDialog(GetLanguageString("app_launch"), GetLanguageString("app_needs_update_can_launch"), { GetLanguageString("ok"), GetLanguageString("cancel") }, true);
-                                        do_launch_entry = option == 0;
-                                    }
-
-                                    /*
+                                    pu::audio::PlaySfx(this->error_sfx);
+                                    const auto fail_rc = nsCheckApplicationLaunchVersion(cur_entry.app_info.app_id);
+                                    g_MenuApplication->ShowNotification(GetLanguageString("app_needs_update_cannot_launch") + ": " + util::FormatResultDisplay(fail_rc));
                                     do_launch_entry = false;
-                                    const auto opt = g_MenuApplication->DisplayDialog(GetLanguageString("app_launch"), "launch req ver " + std::to_string(cur_entry.app_info.launch_required_version) + " VS actual ver " + std::to_string(cur_entry.app_info.version) + "\n\n" + GetLanguageString("app_needs_update"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
-                                    if(opt == 0) {
-                                        const auto rc = avmPushLaunchVersion(cur_entry.app_info.app_id, cur_entry.app_info.version);
-                                        if(R_SUCCEEDED(rc)) {
-                                            cur_entry.app_info.launch_required_version = cur_entry.app_info.version;
-                                            do_launch_entry = true;
-                                        }
-                                        else {
-                                            g_MenuApplication->DisplayDialog(GetLanguageString("app_launch"), GetLanguageString("app_launch_version_reset_error") + ": " + util::FormatResultDisplay(rc), { GetLanguageString("ok") }, true);
-                                        }
-                                    }
-                                    */
                                 }
+                                /*
+                                else {
+                                    const auto option = g_MenuApplication->DisplayDialog(GetLanguageString("app_launch"), GetLanguageString("app_needs_update_can_launch"), { GetLanguageString("ok"), GetLanguageString("cancel") }, true);
+                                    do_launch_entry = option == 0;
+                                }
+                                */
                             }
                         }
 
@@ -561,7 +546,7 @@ namespace ul::menu::ui {
                         if(has_app_take_over && (option == app_take_over_opt)) {
                             const auto option_2 = g_MenuApplication->DisplayDialog(GetLanguageString("app_launch"), GetLanguageString("app_take_over_select"), { GetLanguageString("yes"), GetLanguageString("cancel") }, true);
                             if(option_2 == 0) {
-                                g_GlobalSettings.SetHomebrewTakeoverApplicationId(cur_entry.app_info.record.application_id);
+                                g_GlobalSettings.SetHomebrewTakeoverApplicationId(cur_entry.app_info.record.id);
                                 g_MenuApplication->ShowNotification(GetLanguageString("app_take_over_done"));
                             }
                         }

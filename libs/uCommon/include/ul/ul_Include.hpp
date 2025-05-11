@@ -1,6 +1,7 @@
 
 #pragma once
 #include <switch.h>
+#include <switch-ipcext.h>
 #include <vector>
 #include <string>
 #include <unistd.h>

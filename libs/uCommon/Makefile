@@ -37,7 +37,7 @@ ASFLAGS	:=	-g $(ARCH)
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS	:= $(PORTLIBS) $(LIBNX)
+LIBDIRS	:= $(PORTLIBS) $(LIBNX) $(CURDIR)/../libnx-ext/libnx-ext $(CURDIR)/../libnx-ext/libnx-ipcext
 
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional
