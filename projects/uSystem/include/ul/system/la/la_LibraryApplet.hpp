@@ -19,7 +19,6 @@ namespace ul::system::la {
 
     AppletId GetLastAppletId();
 
-    bool IsMenu();
     void SetMenuAppletId(const AppletId id);
     AppletId GetMenuAppletId();
 

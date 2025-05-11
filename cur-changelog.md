@@ -8,6 +8,14 @@ Before anything, as always: new language texts were added to reflect the changes
 
 - Fixed issues where some theme files were not properly cache'd and thus would not load
 
+- Now, uLaunch's applet processes (uMenu, aka the visible HOME menu, and uLoader, aka any homebrew launched as applets from uMenu) are loaded over the *album* applet by default
+
+  - Previously, uMenu would run over *eShop* and uLoader over *parental controls* by default... which was a rather arbitrary choice made years ago
+
+  - Now uSystem's code has been adapted so that uLoader, uMenu and other used applets run over the same applet type (now uMenu, uLoader and the regular album all run over the *album* applet process) since that would have caused issues in prior versions
+
+  - This might be speculation, but running our stuff over *album* might probably be safer than using something like *eShop* ;)
+
 - The default string (if all language files failed to load) is now `<unknown>` instead of an empty string.
 
 - Invalid, previously selected homebrew takeover applications are reset (if you selected an application as homebrew takeover and then deleted the application, uLaunch would previously crash trying to launch homebrew over it,but now such invalid setting is automatically cleaned)

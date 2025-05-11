@@ -653,6 +653,9 @@ namespace ul::menu {
         // Treat empty menu path argument as to use the active menu path
         const auto actual_menu_path = menu_path.empty() ? g_ActiveMenuPath : menu_path;
 
+        // Menu path must be valid by this point
+        UL_ASSERT_TRUE(!actual_menu_path.empty());
+
         // Just fill enough fields needed to save the path
         const auto entry_idx = FindNextEntryIndex(actual_menu_path);
         Entry app_entry = {

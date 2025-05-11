@@ -151,11 +151,13 @@ namespace ul::cfg {
 
         template<typename T>
         inline bool SetEntry(const ConfigEntryId id, const T &t) {
-            for(auto &entry : this->entries) {
-                if(entry.header.id == id) {
-                    return entry.Set(t);
-                }
+            auto entry_it = std::find_if(this->entries.begin(), this->entries.end(), [&](const ConfigEntry &entry) {
+                return entry.header.id == id;
+            });
+            if(entry_it != this->entries.end()) {
+                return entry_it->Set(t);
             }
+
             // Create new entry
             ConfigEntry new_entry = {
                 .header = {
@@ -238,18 +240,19 @@ namespace ul::cfg {
         
         template<typename T>
         inline bool GetEntry(const ConfigEntryId id, T &out_t) const {
-            for(const auto &entry : this->entries) {
-                if(entry.header.id == id) {
-                    return entry.Get(out_t);
-                }
+            auto entry_it = std::find_if(this->entries.begin(), this->entries.end(), [&](const ConfigEntry &entry) {
+                return entry.header.id == id;
+            });
+            if(entry_it != this->entries.end()) {
+                return entry_it->Get(out_t);
             }
 
             // Default values
             switch(id) {
                 case ConfigEntryId::MenuTakeoverProgramId: {
                     if constexpr(std::is_same_v<T, u64>) {
-                        // Take over eShop by default
-                        out_t = 0x010000000000100B;
+                        // Take over Album by default
+                        out_t = 0x010000000000100D;
                         return true;
                     }
                     else {
@@ -258,8 +261,8 @@ namespace ul::cfg {
                 }
                 case ConfigEntryId::HomebrewAppletTakeoverProgramId: {
                     if constexpr(std::is_same_v<T, u64>) {
-                        // Take over parental control applet by default
-                        out_t = 0x0100000000001001;
+                        // Take over Album by default
+                        out_t = 0x010000000000100D;
                         return true;
                     }
                     else {

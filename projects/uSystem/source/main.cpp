@@ -109,13 +109,17 @@ namespace {
     AppletOperationMode g_OperationMode;
     bool g_ExpectsLoaderChooseOutput = false;
     ul::loader::TargetInput g_LastHomebrewApplicationLaunchTarget = {};
-    bool g_LastLibraryAppletLaunchedHere = false;
+    bool g_LastLibraryAppletLaunchedNotMenu = false;
     bool g_NextMenuLaunchAtStartup = false;
     bool g_NextMenuLaunchAtSettings = false;
     bool g_MenuRestartReloadThemeCache = false;
     bool g_IsLibraryAppletActive = false;
 
-    inline bool WasLoaderOpenedAsApplication() {
+    NX_INLINE bool IsMenuRunning() {
+        return la::IsActive() && !g_LastLibraryAppletLaunchedNotMenu;
+    }
+
+    NX_INLINE bool WasLoaderOpenedAsApplication() {
         return g_LastHomebrewApplicationLaunchTarget.IsValid();
     }
 
@@ -191,12 +195,12 @@ namespace {
         la::SetMenuProgramId(menu_program_id);
     }
 
-    inline void PushMenuMessageContext(const ul::smi::MenuMessageContext msg_ctx) {
+    void PushMenuMessageContext(const ul::smi::MenuMessageContext msg_ctx) {
         ul::ScopedLock lk(g_MenuMessageQueueLock);
         g_MenuMessageQueue->push(msg_ctx);
     }
 
-    inline void PushSimpleMenuMessage(const ul::smi::MenuMessage msg) {
+    void PushSimpleMenuMessage(const ul::smi::MenuMessage msg) {
         ul::ScopedLock lk(g_MenuMessageQueueLock);
         const ul::smi::MenuMessageContext msg_ctx = {
             .msg = msg
@@ -327,13 +331,13 @@ namespace {
                 }
                 ul::menu::CacheSingleApplication(record.id);
 
-                ul::menu::EnsureApplicationEntry(record);
+                ul::menu::EnsureApplicationEntry(record, menu_path);
             }
         }
     }
 
-    inline Result LaunchMenu(const ul::smi::MenuStartMode st_mode, const ul::smi::SystemStatus &status) {
-        g_LastLibraryAppletLaunchedHere = false;
+    Result LaunchMenu(const ul::smi::MenuStartMode st_mode, const ul::smi::SystemStatus &status) {
+        g_LastLibraryAppletLaunchedNotMenu = false;
 
         UL_LOG_INFO("Launching uMenu with start mode %d...", static_cast<u32>(st_mode));
         return ecs::RegisterLaunchAsApplet(la::GetMenuProgramId(), static_cast<u32>(st_mode), "/ulaunch/bin/uMenu", std::addressof(status), sizeof(status));
@@ -360,7 +364,7 @@ namespace {
                     const auto progress_val = (float)progress.current_size / (float)progress.total_size;
                     UL_LOG_INFO("[Verify-0x%016lX] done: %lld, total: %lld, prog: %.2f%", ctx->app_id, progress.current_size, progress.total_size, progress_val * 100.0f);
 
-                    if(la::IsMenu()) {
+                    if(IsMenuRunning()) {
                         const ul::smi::MenuMessageContext menu_ctx = {
                             .msg = ul::smi::MenuMessage::ApplicationVerifyProgress,
                             .app_verify_progress = {
@@ -414,10 +418,10 @@ namespace {
     }
 
     void HandleHomeButton() {
-        if(la::IsActive() && !la::IsMenu()) {
+        if(la::IsActive() && !IsMenuRunning()) {
             // A library applet is opened which is not uMenu, close it and open uMenu
             UL_RC_ASSERT(la::Terminate());
-            g_LastLibraryAppletLaunchedHere = false;
+            g_LastLibraryAppletLaunchedNotMenu = false;
 
             UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::MainMenu, CreateStatus()));
         }
@@ -427,7 +431,7 @@ namespace {
 
             UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::MainMenu, CreateStatus()));
         }
-        else if(la::IsMenu()) {
+        else if(IsMenuRunning()) {
             // Send a message to our menu to handle itself the home press
             PushSimpleMenuMessage(ul::smi::MenuMessage::HomeRequest);
         }
@@ -582,7 +586,7 @@ namespace {
                     break;
                 }
                 case ul::system::AppletMessage::FinishedSleepSequence: {
-                    if(la::IsMenu()) {
+                    if(IsMenuRunning()) {
                         PushSimpleMenuMessage(ul::smi::MenuMessage::FinishedSleep);
                     }
                     break;
@@ -597,7 +601,7 @@ namespace {
                     break;
                 }
                 case ul::system::AppletMessage::SdCardRemoved: {
-                    if(la::IsMenu()) {
+                    if(IsMenuRunning()) {
                         PushSimpleMenuMessage(ul::smi::MenuMessage::SdCardEjected);
                     }
                     else {
@@ -615,7 +619,7 @@ namespace {
     }
 
     void HandleMenuMessage() {
-        if(la::IsMenu()) {
+        if(IsMenuRunning()) {
             u32 app_list_count;
 
             // Note: ignoring result since this won't always succeed, and would error if no commands were received
@@ -917,8 +921,10 @@ namespace {
                     u64 hb_applet_takeover_program_id;
                     UL_ASSERT_TRUE(g_Config.GetEntry(ul::cfg::ConfigEntryId::HomebrewAppletTakeoverProgramId, hb_applet_takeover_program_id));
     
-                    // TODO (new): consider not asserting and sending the error result to menu instead? same for various other asserts in this code...
+                    // TODO (new): consider not asserting and sending the error result to uMenu instead? same for various other asserts in this code...
                     UL_RC_ASSERT(ecs::RegisterLaunchAsApplet(hb_applet_takeover_program_id, 0, "/ulaunch/bin/uLoader/applet", &action.launch_loader.target_input, sizeof(action.launch_loader.target_input)));
+
+                    g_LastLibraryAppletLaunchedNotMenu = true;
                     
                     // This will be used later to know if we should retrieve the output of uLoader or not
                     g_ExpectsLoaderChooseOutput = action.launch_loader.choose_mode;
@@ -943,7 +949,7 @@ namespace {
                     UL_LOG_INFO("Launching Web...");
                     UL_RC_ASSERT(la::OpenWeb(&action.open_web_page.cfg));
 
-                    g_LastLibraryAppletLaunchedHere = true;
+                    g_LastLibraryAppletLaunchedNotMenu = true;
                     return true;
                 }
                 break;
@@ -953,7 +959,7 @@ namespace {
                     UL_LOG_INFO("Launching PhotoViewer (ShowAllAlbumFilesForHomeMenu)...");
                     UL_RC_ASSERT(la::OpenPhotoViewerAllAlbumFilesForHomeMenu());
     
-                    g_LastLibraryAppletLaunchedHere = true;
+                    g_LastLibraryAppletLaunchedNotMenu = true;
                     return true;
                 }
                 break;
@@ -972,7 +978,7 @@ namespace {
                     UL_LOG_INFO("Launching MyPage (MyProfile)...");
                     UL_RC_ASSERT(la::OpenMyPageMyProfile(g_SelectedUser));
     
-                    g_LastLibraryAppletLaunchedHere = true;
+                    g_LastLibraryAppletLaunchedNotMenu = true;
                     return true;
                 }
                 break;
@@ -982,7 +988,7 @@ namespace {
                     UL_LOG_INFO("Launching MiiEdit...");
                     UL_RC_ASSERT(la::OpenMiiEdit());
     
-                    g_LastLibraryAppletLaunchedHere = true;
+                    g_LastLibraryAppletLaunchedNotMenu = true;
                     return true;
                 }
                 break;
@@ -992,7 +998,7 @@ namespace {
                     UL_LOG_INFO("Launching PlayerSelect (UserCreator)...");
                     UL_RC_ASSERT(la::OpenPlayerSelectUserCreator());
     
-                    g_LastLibraryAppletLaunchedHere = true;
+                    g_LastLibraryAppletLaunchedNotMenu = true;
                     g_NextMenuLaunchAtStartup = true;
                     return true;
                 }
@@ -1003,7 +1009,7 @@ namespace {
                     UL_LOG_INFO("Launching NetConnect...");
                     UL_RC_ASSERT(la::OpenNetConnect());
 
-                    g_LastLibraryAppletLaunchedHere = true;
+                    g_LastLibraryAppletLaunchedNotMenu = true;
                     g_NextMenuLaunchAtSettings = true;
                     return true;
                 }
@@ -1014,7 +1020,7 @@ namespace {
                     UL_LOG_INFO("Launching Cabinet...");
                     UL_RC_ASSERT(la::OpenCabinet(action.open_cabinet.type));
     
-                    g_LastLibraryAppletLaunchedHere = true;
+                    g_LastLibraryAppletLaunchedNotMenu = true;
                     return true;
                 }
                 break;
@@ -1031,7 +1037,7 @@ namespace {
                     UL_LOG_INFO("Launching Controller (KeyRemapping)...");
                     UL_RC_ASSERT(la::OpenControllerKeyRemappingForSystem(action.open_controller_key_remapping.npad_style_set, action.open_controller_key_remapping.hold_type));
     
-                    g_LastLibraryAppletLaunchedHere = true;
+                    g_LastLibraryAppletLaunchedNotMenu = true;
                     return true;
                 }
                 break;
@@ -1064,48 +1070,48 @@ namespace {
 
         auto something_done = consumed_action;
 
-        // Handle finalized library applets
+        // Handle finalized active library applet
 
-        if(!la::IsActive()) {
-            const auto cur_id = la::GetLastAppletId();
-            u64 hb_applet_takeover_program_id;
-            UL_ASSERT_TRUE(g_Config.GetEntry(ul::cfg::ConfigEntryId::HomebrewAppletTakeoverProgramId, hb_applet_takeover_program_id));
-            if(g_LastLibraryAppletLaunchedHere || (cur_id == la::GetAppletIdForProgramId(hb_applet_takeover_program_id))) {
-                UL_LOG_INFO("Launched library applet finished, checking if we need to launch uMenu...");
+        if(!la::IsActive() && g_LastLibraryAppletLaunchedNotMenu) {
+            // The library applet that we launched and was active just finished, and it's not uMenu --> we either collect output (if needed) or just return to uMenu
 
-                ul::loader::TargetOutput target_opt;
-                if(g_ExpectsLoaderChooseOutput) {
-                    UL_LOG_INFO("Getting loader chosen output...");
+            UL_LOG_INFO("Active library applet finished, checking if we need to collect any output before launching uMenu...");
 
-                    AppletStorage target_opt_st;
-                    UL_RC_ASSERT(la::Pop(&target_opt_st));
-                    UL_RC_ASSERT(appletStorageRead(&target_opt_st, 0, &target_opt, sizeof(target_opt)));
-                }
+            // If we launched uLoader to choose a homebrew, we need to collect the output
+            ul::loader::TargetOutput target_opt;
+            if(g_ExpectsLoaderChooseOutput) {
+                UL_LOG_INFO("Getting loader chosen output...");
 
-                auto menu_start_mode = ul::smi::MenuStartMode::MainMenu;
-                if(g_NextMenuLaunchAtStartup) {
-                    menu_start_mode = ul::smi::MenuStartMode::StartupMenu;
-                    g_NextMenuLaunchAtStartup = false;
-                }
-                if(g_NextMenuLaunchAtSettings) {
-                    menu_start_mode = ul::smi::MenuStartMode::SettingsMenu;
-                    g_NextMenuLaunchAtSettings = false;
-                }
-                UL_RC_ASSERT(LaunchMenu(menu_start_mode, CreateStatus()));
-
-                if(g_ExpectsLoaderChooseOutput) {
-                    ul::smi::MenuMessageContext msg_ctx = {
-                        .msg = ul::smi::MenuMessage::ChosenHomebrew,
-                        .chosen_hb = {}
-                    };
-                    memcpy(msg_ctx.chosen_hb.nro_path, target_opt.nro_path, sizeof(msg_ctx.chosen_hb.nro_path));
-                    PushMenuMessageContext(msg_ctx);
-
-                    g_ExpectsLoaderChooseOutput = false;
-                }
-                
-                something_done = true;
+                AppletStorage target_opt_st;
+                UL_RC_ASSERT(la::Pop(&target_opt_st));
+                UL_RC_ASSERT(appletStorageRead(&target_opt_st, 0, &target_opt, sizeof(target_opt)));
             }
+
+            // Pick correct uMenu state to launch to, and launch uMenu
+            auto menu_start_mode = ul::smi::MenuStartMode::MainMenu;
+            if(g_NextMenuLaunchAtStartup) {
+                menu_start_mode = ul::smi::MenuStartMode::StartupMenu;
+                g_NextMenuLaunchAtStartup = false;
+            }
+            if(g_NextMenuLaunchAtSettings) {
+                menu_start_mode = ul::smi::MenuStartMode::SettingsMenu;
+                g_NextMenuLaunchAtSettings = false;
+            }
+            UL_RC_ASSERT(LaunchMenu(menu_start_mode, CreateStatus()));
+
+            // If we collected output from uLoader, send it to the just-launched uMenu
+            if(g_ExpectsLoaderChooseOutput) {
+                ul::smi::MenuMessageContext msg_ctx = {
+                    .msg = ul::smi::MenuMessage::ChosenHomebrew,
+                    .chosen_hb = {}
+                };
+                memcpy(msg_ctx.chosen_hb.nro_path, target_opt.nro_path, sizeof(msg_ctx.chosen_hb.nro_path));
+                PushMenuMessageContext(msg_ctx);
+
+                g_ExpectsLoaderChooseOutput = false;
+            }
+            
+            something_done = true;
         }
 
         // Final check
@@ -1240,7 +1246,7 @@ namespace {
                     }
 
                     // Only push this if uMenu is currently active
-                    if(la::IsMenu()) {
+                    if(IsMenuRunning()) {
                         const ul::smi::MenuMessageContext msg_ctx = {
                             .msg = ul::smi::MenuMessage::ApplicationRecordsChanged,
                             .app_records_changed = {
@@ -1270,7 +1276,7 @@ namespace {
         }
     }
 
-    inline size_t CaptureJpegScreenshot() {
+    size_t CaptureJpegScreenshot() {
         u64 size;
         const auto rc = capsscCaptureJpegScreenShot(&size, g_UsbViewerBufferDataOffset, PlainRgbaScreenBufferSize, ViLayerStack_Default, UINT64_MAX);
         if(R_SUCCEEDED(rc)) {

@@ -51,7 +51,7 @@ namespace ul {
     #define UL_LOG_WARN(log_fmt, ...) ::ul::LogImpl(::ul::LogKind::Warning, log_fmt, ##__VA_ARGS__)
 
     template<typename ...Args>
-    inline void NX_NORETURN OnAssertionFailed(const Result rc, const char *log_fmt, Args &&...args) {
+    NX_INLINE NX_NORETURN void OnAssertionFailed(const Result rc, const char *log_fmt, Args &&...args) {
         LogImpl(LogKind::Critical, log_fmt, args...);
 
         AbortImpl(rc);

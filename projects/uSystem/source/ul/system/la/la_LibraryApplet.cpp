@@ -157,10 +157,6 @@ namespace ul::system::la {
         return last_id_copy;
     }
 
-    bool IsMenu() {
-        return IsActive() && (g_MenuAppletId != AppletId_None) && (GetLastAppletId() == g_MenuAppletId);
-    }
-
     void SetMenuAppletId(const AppletId id) {
         g_MenuAppletId = id;
     }
