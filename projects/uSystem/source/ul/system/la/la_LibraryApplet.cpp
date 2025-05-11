@@ -1,4 +1,5 @@
 #include <ul/system/la/la_LibraryApplet.hpp>
+#include <ul/la/la_LibraryApplets.hpp>
 #include <ul/ul_Result.hpp>
 
 namespace ul::system::la {
@@ -14,24 +15,26 @@ namespace ul::system::la {
             AppletId applet_id;
         };
 
+        #define _UL_LA_TABLE_ENTRY(applet) LibraryAppletInfo { ::ul::la::applet, AppletId_##applet }
+
         constexpr LibraryAppletInfo g_LibraryAppletTable[] = {
-            { 0x0100000000001001, AppletId_LibraryAppletAuth },
-            { 0x0100000000001002, AppletId_LibraryAppletCabinet },
-            { 0x0100000000001003, AppletId_LibraryAppletController },
-            { 0x0100000000001004, AppletId_LibraryAppletDataErase },
-            { 0x0100000000001005, AppletId_LibraryAppletError },
-            { 0x0100000000001006, AppletId_LibraryAppletNetConnect },
-            { 0x0100000000001007, AppletId_LibraryAppletPlayerSelect },
-            { 0x0100000000001008, AppletId_LibraryAppletSwkbd },
-            { 0x0100000000001009, AppletId_LibraryAppletMiiEdit },
-            { 0x010000000000100A, AppletId_LibraryAppletWeb },
-            { 0x010000000000100B, AppletId_LibraryAppletShop },
-            { 0x010000000000100D, AppletId_LibraryAppletPhotoViewer },
-            { 0x010000000000100E, AppletId_LibraryAppletSet },
-            { 0x010000000000100F, AppletId_LibraryAppletOfflineWeb },
-            { 0x0100000000001010, AppletId_LibraryAppletLoginShare },
-            { 0x0100000000001011, AppletId_LibraryAppletWifiWebAuth },
-            { 0x0100000000001013, AppletId_LibraryAppletMyPage }
+            _UL_LA_TABLE_ENTRY(LibraryAppletAuth),
+            _UL_LA_TABLE_ENTRY(LibraryAppletCabinet),
+            _UL_LA_TABLE_ENTRY(LibraryAppletController),
+            _UL_LA_TABLE_ENTRY(LibraryAppletDataErase),
+            _UL_LA_TABLE_ENTRY(LibraryAppletError),
+            _UL_LA_TABLE_ENTRY(LibraryAppletNetConnect),
+            _UL_LA_TABLE_ENTRY(LibraryAppletPlayerSelect),
+            _UL_LA_TABLE_ENTRY(LibraryAppletSwkbd),
+            _UL_LA_TABLE_ENTRY(LibraryAppletMiiEdit),
+            _UL_LA_TABLE_ENTRY(LibraryAppletWeb),
+            _UL_LA_TABLE_ENTRY(LibraryAppletShop),
+            _UL_LA_TABLE_ENTRY(LibraryAppletPhotoViewer),
+            _UL_LA_TABLE_ENTRY(LibraryAppletSet),
+            _UL_LA_TABLE_ENTRY(LibraryAppletOfflineWeb),
+            _UL_LA_TABLE_ENTRY(LibraryAppletLoginShare),
+            _UL_LA_TABLE_ENTRY(LibraryAppletWifiWebAuth),
+            _UL_LA_TABLE_ENTRY(LibraryAppletMyPage),
         };
         constexpr size_t LibraryAppletCount = sizeof(g_LibraryAppletTable) / sizeof(LibraryAppletInfo);
 
@@ -135,7 +138,7 @@ namespace ul::system::la {
             }
         }
 
-        return 0;
+        UL_ASSERT_FAIL("Invalid applet ID: 0x%08X", id);
     }
 
     AppletId GetAppletIdForProgramId(const u64 id) {
@@ -146,7 +149,7 @@ namespace ul::system::la {
             }
         }
 
-        return AppletId_None;
+        UL_ASSERT_FAIL("Invalid applet program ID: %016lX", id);
     }
 
     AppletId GetLastAppletId() {

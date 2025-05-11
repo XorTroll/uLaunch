@@ -6,6 +6,7 @@
 #include <ul/util/util_String.hpp>
 #include <ul/util/util_Json.hpp>
 #include <ul/os/os_Applications.hpp>
+#include <ul/la/la_LibraryApplets.hpp>
 
 namespace ul::cfg {
 
@@ -252,7 +253,7 @@ namespace ul::cfg {
                 case ConfigEntryId::MenuTakeoverProgramId: {
                     if constexpr(std::is_same_v<T, u64>) {
                         // Take over Album by default
-                        out_t = 0x010000000000100D;
+                        out_t = ul::la::LibraryAppletPhotoViewer;
                         return true;
                     }
                     else {
@@ -262,7 +263,7 @@ namespace ul::cfg {
                 case ConfigEntryId::HomebrewAppletTakeoverProgramId: {
                     if constexpr(std::is_same_v<T, u64>) {
                         // Take over Album by default
-                        out_t = 0x010000000000100D;
+                        out_t = ul::la::LibraryAppletPhotoViewer;
                         return true;
                     }
                     else {

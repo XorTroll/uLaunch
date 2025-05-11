@@ -53,7 +53,7 @@ namespace {
 
         u64 app_id;
         Thread thread;
-        alignas(0x1000) u8 thread_stack[ThreadStackSize];
+        alignas(ams::os::ThreadStackAlignment) u8 thread_stack[ThreadStackSize];
         bool finished;
 
         ApplicationVerifyContext(const u64 app_id) : app_id(app_id), thread(), thread_stack(), finished(false) {}
@@ -128,6 +128,8 @@ namespace {
     bool g_AmsIsEmuMMC = false;
     bool g_WarnedAboutOutdatedTheme = false;
 
+    ul::smi::SystemStatus g_CurrentStatus = {};
+
     char g_CurrentMenuFsPath[FS_MAX_PATH] = {};
     char g_CurrentMenuPath[FS_MAX_PATH] = {};
     u32 g_CurrentMenuIndex = 0;
@@ -141,7 +143,7 @@ namespace {
     std::vector<u64> g_LastDeletedApplications;
     std::vector<u64> g_LastAddedApplications;
 
-    alignas(ams::os::MemoryPageSize) constinit u8 g_EventManagerThreadStack[16_KB];
+    alignas(ams::os::ThreadStackAlignment) constinit u8 g_EventManagerThreadStack[16_KB];
     Thread g_EventManagerThread;
 
     // USB types and globals
@@ -219,8 +221,8 @@ namespace {
         g_LastDeletedApplications.push_back(app_id);
     }
 
-    ul::smi::SystemStatus CreateStatus() {
-        ul::smi::SystemStatus status = {
+    void UpdateStatus() {
+        g_CurrentStatus = {
             .selected_user = g_SelectedUser,
             .last_menu_index = g_CurrentMenuIndex,
             .warned_about_outdated_theme = g_WarnedAboutOutdatedTheme,
@@ -230,25 +232,23 @@ namespace {
         };
 
         if(g_MenuRestartReloadThemeCache) {
-            status.reload_theme_cache = true;
+            g_CurrentStatus.reload_theme_cache = true;
             g_MenuRestartReloadThemeCache = false;
         }
 
-        ul::util::CopyToStringBuffer(status.last_menu_fs_path, g_CurrentMenuFsPath);
-        ul::util::CopyToStringBuffer(status.last_menu_path, g_CurrentMenuPath);
+        ul::util::CopyToStringBuffer(g_CurrentStatus.last_menu_fs_path, g_CurrentMenuFsPath);
+        ul::util::CopyToStringBuffer(g_CurrentStatus.last_menu_path, g_CurrentMenuPath);
 
         if(app::IsActive()) {
             if(WasLoaderOpenedAsApplication()) {
                 // Homebrew
-                status.suspended_hb_target_ipt = g_LastHomebrewApplicationLaunchTarget;
+                g_CurrentStatus.suspended_hb_target_ipt = g_LastHomebrewApplicationLaunchTarget;
             }
             else {
                 // Regular title
-                status.suspended_app_id = app::GetId();
+                g_CurrentStatus.suspended_app_id = app::GetId();
             }
         }
-
-        return status;
     }
 
     void HandleSleep() {
@@ -336,18 +336,19 @@ namespace {
         }
     }
 
-    Result LaunchMenu(const ul::smi::MenuStartMode st_mode, const ul::smi::SystemStatus &status) {
+    Result LaunchMenu(const ul::smi::MenuStartMode st_mode) {
         g_LastLibraryAppletLaunchedNotMenu = false;
+        UpdateStatus();
 
         UL_LOG_INFO("Launching uMenu with start mode %d...", static_cast<u32>(st_mode));
-        return ecs::RegisterLaunchAsApplet(la::GetMenuProgramId(), static_cast<u32>(st_mode), "/ulaunch/bin/uMenu", std::addressof(status), sizeof(status));
+        return ecs::RegisterLaunchAsApplet(la::GetMenuProgramId(), static_cast<u32>(st_mode), "/ulaunch/bin/uMenu", std::addressof(g_CurrentStatus), sizeof(g_CurrentStatus));
     }
 
     void ApplicationVerifyMain(void *ctx_raw) {
         auto ctx = reinterpret_cast<ApplicationVerifyContext*>(ctx_raw);
 
         // Like qlaunch does, same size and align
-        auto verify_buf = new (std::align_val_t(0x1000)) u8[VerifyWorkBufferSize]();
+        auto verify_buf = new (std::align_val_t(ams::os::MemoryPageSize)) u8[VerifyWorkBufferSize]();
         NsProgressAsyncResult async_rc;
         NsSystemUpdateProgress progress;
         UL_RC_ASSERT(nsRequestVerifyApplication(&async_rc, ctx->app_id, 0x7, verify_buf, VerifyWorkBufferSize));
@@ -423,13 +424,13 @@ namespace {
             UL_RC_ASSERT(la::Terminate());
             g_LastLibraryAppletLaunchedNotMenu = false;
 
-            UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::MainMenu, CreateStatus()));
+            UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::MainMenu));
         }
         else if(app::IsActive() && app::HasForeground()) {
             // Hide the application currently on focus and open uMenu
             UL_RC_ASSERT(sys::SetForeground());
 
-            UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::MainMenu, CreateStatus()));
+            UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::MainMenu));
         }
         else if(IsMenuRunning()) {
             // Send a message to our menu to handle itself the home press
@@ -967,7 +968,7 @@ namespace {
             case ActionType::RestartMenu: {
                 if(!la::IsActive()) {
                     UL_LOG_INFO("Restarting uMenu...");
-                    UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::StartupMenuPostBoot, CreateStatus()));
+                    UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::StartupMenuPostBoot));
     
                     return true;
                 }
@@ -1097,7 +1098,7 @@ namespace {
                 menu_start_mode = ul::smi::MenuStartMode::SettingsMenu;
                 g_NextMenuLaunchAtSettings = false;
             }
-            UL_RC_ASSERT(LaunchMenu(menu_start_mode, CreateStatus()));
+            UL_RC_ASSERT(LaunchMenu(menu_start_mode));
 
             // If we collected output from uLoader, send it to the just-launched uMenu
             if(g_ExpectsLoaderChooseOutput) {
@@ -1133,7 +1134,7 @@ namespace {
                 g_LastHomebrewApplicationLaunchTarget = {};
 
                 // Reopen uMenu, notify failure
-                UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::MainMenu, CreateStatus()));
+                UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::MainMenu));
                 PushSimpleMenuMessage(ul::smi::MenuMessage::PreviousLaunchFailure);
             }
         }
@@ -1461,7 +1462,7 @@ namespace ams {
         UL_LOG_INFO("Hello World from uSystem! Launching uMenu...");
 
         // After having initialized everything, launch our menu
-        UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::StartupMenuPostBoot, CreateStatus()));
+        UL_RC_ASSERT(LaunchMenu(ul::smi::MenuStartMode::StartupMenuPostBoot));
 
         // Loop forever, since qlaunch should NEVER terminate (AM would crash in that case)
         while(true) {
