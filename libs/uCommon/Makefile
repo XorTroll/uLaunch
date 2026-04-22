@@ -27,7 +27,7 @@ OUT_LIB		:=	lib
 #---------------------------------------------------------------------------------
 ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIC -ftls-model=local-exec
 
-CFLAGS	:=	-g -Wall -Werror -O2 -ffunction-sections -fdata-sections $(ARCH) $(INCLUDE) -D__SWITCH__ $(UL_DEFS)
+CFLAGS	:=	-g -Wall -Werror -O2 -ffunction-sections -fdata-sections $(ARCH) $(INCLUDE) -D__SWITCH__ $(UL_DEFS) -include unistd.h -Wno-stringop-truncation
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++23
 
