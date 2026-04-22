@@ -33,8 +33,8 @@ libs:
 	@$(MAKE) -C libs/libnx-ext/libnx-ipcext/
 
 arc:
-	@python arc/arc.py gen_db default+./libs/uCommon/include/ul/ul_Results.rc.hpp
-	@python arc/arc.py gen_cpp rc UL ./libs/uCommon/include/ul/ul_Results.gen.hpp
+	@python3 arc/arc.py gen_db default+./libs/uCommon/include/ul/ul_Results.rc.hpp
+	@python3 arc/arc.py gen_cpp rc UL ./libs/uCommon/include/ul/ul_Results.gen.hpp
 
 usystem: arc libs
 	@$(MAKE) -C projects/uSystem
