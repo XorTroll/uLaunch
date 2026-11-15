@@ -1,5 +1,9 @@
 # Current chamges
 
+# Changelog for `v1.2.6`
+
+- Recompiled with Atmosphère v1.12.2 support (23.5.0)
+
 # Changelog for `v1.2.5`
 
 - Recompiled with Atmosphère v1.11.2 support (22.5.0)
